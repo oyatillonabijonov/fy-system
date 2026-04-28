@@ -16,11 +16,8 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
     ChevronDownIcon,
-    UserPlusIcon,
     ChartBarIcon,
-    PlusCircleIcon,
-    ListBulletIcon,
-    PaperAirplaneIcon,
+PaperAirplaneIcon,
     ChatBubbleLeftEllipsisIcon,
     EnvelopeIcon,
     DevicePhoneMobileIcon,
@@ -29,8 +26,13 @@ import {
     Squares2X2Icon,
     CommandLineIcon
 } from "@heroicons/react/24/solid"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useQueryClient } from "@tanstack/react-query"
+import { useTheme } from "@/context/ThemeContext"
+import { DASHBOARD_KEY } from "@/hooks/useDashboard"
+import { CLIENTS_KEY } from "@/hooks/useClients"
+import { EVENTS_KEY } from "@/hooks/useEvents"
 
 const navigationSections = [
     {
@@ -43,20 +45,12 @@ const navigationSections = [
                 icon: CreditCardIcon,
                 active: false,
                 subItems: [
-                    { name: "Lidlar", icon: UserPlusIcon },
-                    { name: "Pipline", icon: ChartBarIcon }
+                    { name: "AmoCRM", icon: ChartBarIcon },
+                    { name: "CRM-N", icon: Squares2X2Icon }
                 ]
             },
             { name: "IP Telefoniya", icon: PhoneIcon, active: false },
-            {
-                name: "Tadbirlar",
-                icon: CalendarDaysIcon,
-                active: false,
-                subItems: [
-                    { name: "Yangi Tadbir", icon: PlusCircleIcon },
-                    { name: "Mavjud tadbirlar", icon: ListBulletIcon }
-                ]
-            },
+            { name: "Tadbirlar", icon: CalendarDaysIcon, active: false },
             { name: "Vazifalar", icon: CheckCircleIcon, active: false },
             { name: "Analitika", icon: PresentationChartLineIcon, active: false },
             { name: "Podkast", icon: MicrophoneIcon, active: false },
@@ -102,8 +96,31 @@ interface SidebarProps {
     onNavigate: (item: string) => void;
 }
 
+const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
+    Dashboard: { key: [...DASHBOARD_KEY], fn: () => import("@/lib/amocrm/analytics").then(m => m.getDashboardAnalytics()) },
+    Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
+    Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
+}
+
 export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
-    const [isCollapsed, setIsCollapsed] = useState(false)
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem('fy_sidebar_collapsed') === 'true'
+        } catch { return false }
+    })
+    useEffect(() => {
+        try { localStorage.setItem('fy_sidebar_collapsed', String(isCollapsed)) } catch { /* private browsing */ }
+    }, [isCollapsed])
+
+    const { themeId } = useTheme()
+    const queryClient = useQueryClient()
+    const handlePrefetch = (name: string) => {
+        const entry = prefetchMap[name]
+        if (entry) {
+            queryClient.prefetchQuery({ queryKey: entry.key, queryFn: entry.fn, staleTime: 1000 * 60 * 2 })
+        }
+    }
+
     const [searchQuery, setSearchQuery] = useState("")
     const [expandedItems, setExpandedItems] = useState<string[]>(["Sotuv bo'limi"])
     const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -152,7 +169,7 @@ export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
                     {!isCollapsed ? (
                         <motion.img
                             key="logo"
-                            src="/Sidebar/Logo.svg"
+                            src={themeId === 'black-orange' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
                             alt="Biznes Klub Logo"
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -252,6 +269,7 @@ export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
                                                     }}
                                                     onMouseEnter={e => {
                                                         if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--sidebar-hover-bg)'
+                                                        handlePrefetch(item.name)
                                                     }}
                                                     onMouseLeave={e => {
                                                         if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'

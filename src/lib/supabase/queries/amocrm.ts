@@ -23,6 +23,21 @@ export interface CachedPipeline {
   statuses: { id: number; name: string; color: string; sort: number }[]
 }
 
+export interface CachedUser {
+  id: number
+  name: string
+}
+
+export async function getCachedUsers(): Promise<CachedUser[]> {
+  const { data, error } = await supabase
+    .from("amocrm_users")
+    .select("id,name")
+    .order("name")
+
+  if (error) throw error
+  return (data ?? []) as CachedUser[]
+}
+
 export async function getCachedPipelines(): Promise<CachedPipeline[]> {
   const { data, error } = await supabase
     .from("amocrm_pipelines")
@@ -33,11 +48,16 @@ export async function getCachedPipelines(): Promise<CachedPipeline[]> {
   return (data ?? []) as unknown as CachedPipeline[]
 }
 
-export async function getCachedLeads(pipelineId?: number): Promise<CachedLead[]> {
+export async function getCachedLeads(
+  pipelineId?: number,
+  page = 0,
+  limit = 500
+): Promise<CachedLead[]> {
   let query = supabase
     .from("amocrm_leads")
     .select("id,pipeline_id,status_id,name,price,responsible_user_id,responsible_user_name,contact_name,contact_phone,company_name,tags,created_at,updated_at,synced_at")
     .order("updated_at", { ascending: false })
+    .range(page * limit, (page + 1) * limit - 1)
 
   if (pipelineId) {
     query = query.eq("pipeline_id", pipelineId)

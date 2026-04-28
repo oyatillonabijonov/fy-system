@@ -22,7 +22,11 @@ import {
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid"
 import { StarIcon as StarOutlineIcon } from "@heroicons/react/24/outline"
 import { motion, AnimatePresence } from "framer-motion"
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { ImageCropModal } from "@/components/ui/ImageCropModal"
+import { useClients, useDeleteClient, useDeleteClients, useUpdateClient, CLIENTS_KEY } from "@/hooks/useClients"
+import { CheckIcon } from "@heroicons/react/24/solid"
 import {
     createColumnHelper,
     flexRender,
@@ -52,10 +56,33 @@ interface Customer {
     image: string;
     totalSpent: string;
     history: EventHistory[];
-    industry: string;
 }
 
 export function Mijozlar() {
+    const qc = useQueryClient()
+    const { data: rawClients, isLoading: loading, error: queryError, refetch: fetchCustomers } = useClients()
+    const deleteClientMutation = useDeleteClient()
+    const deleteClientsMutation = useDeleteClients()
+    const updateClientMutation = useUpdateClient()
+
+    const customers = useMemo<Customer[]>(() =>
+        (rawClients ?? []).map(row => ({
+            id: row.id,
+            name: row.full_name,
+            email: row.email ?? '',
+            phone: row.phone ?? '',
+            activity: row.activity ?? '',
+            eventsCount: row.events_count,
+            status: row.status,
+            joinDate: row.join_date ?? '',
+            image: row.image ?? '',
+            totalSpent: `${Number(row.total_spent).toLocaleString("uz-UZ")} UZS`,
+            history: [],
+        }))
+    , [rawClients])
+
+    const error = queryError ? (queryError instanceof Error ? queryError.message : "Ma'lumotlarni yuklashda xatolik") : null
+
     const [selectedMijozlar, setSelectedMijozlar] = useState<string[]>([])
     const [sorting, setSorting] = useState<SortingState>([])
     const [globalFilter, setGlobalFilter] = useState('')
@@ -63,48 +90,46 @@ export function Mijozlar() {
     const [showFullHistory, setShowFullHistory] = useState(false)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
 
-    // Data State
-    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [cropImageSrc, setCropImageSrc] = useState("")
+    const [isCropOpen, setIsCropOpen] = useState(false)
+    const [pendingImageFile, setPendingImageFile] = useState<Blob | null>(null)
 
-    const fetchCustomers = useCallback(async () => {
-        try {
-            setLoading(true)
-            setError(null)
-            const { getClients } = await import("@/lib/supabase/queries/clients")
-            const rows = await getClients()
-            setCustomers(rows.map(row => ({
-                id: row.id,
-                name: row.full_name,
-                email: row.email ?? '',
-                phone: row.phone ?? '',
-                activity: row.activity ?? '',
-                industry: row.industry ?? '',
-                eventsCount: row.events_count,
-                status: row.status,
-                joinDate: row.join_date ?? '',
-                image: row.image ?? '',
-                totalSpent: `${Number(row.total_spent).toLocaleString("uz-UZ")} UZS`,
-                history: [],
-            })))
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklashda xatolik")
-        } finally {
-            setLoading(false)
-        }
-    }, [])
+    // Inline edit state for sidebar
+    const [editingField, setEditingField] = useState<"name" | "activity" | "phone" | "email" | null>(null)
+    const [editValue, setEditValue] = useState("")
 
-    useEffect(() => {
-        fetchCustomers()
-    }, [fetchCustomers]);
+    function startEdit(field: "name" | "activity" | "phone" | "email") {
+        if (!selectedCustomer) return
+        setEditingField(field)
+        setEditValue(selectedCustomer[field])
+    }
+
+    function saveEdit() {
+        if (!selectedCustomer || !editingField) return
+        const fieldMap = { name: "full_name", activity: "activity", phone: "phone", email: "email" } as const
+        const dbField = fieldMap[editingField]
+        updateClientMutation.mutate(
+            { id: selectedCustomer.id, data: { [dbField]: editValue.trim() || null } },
+            {
+                onSuccess: () => {
+                    setSelectedCustomer({ ...selectedCustomer, [editingField]: editValue.trim() })
+                    setEditingField(null)
+                },
+            }
+        )
+    }
+
+    function cancelEdit() {
+        setEditingField(null)
+        setEditValue("")
+    }
 
     // New Customer Form State
     const [newCustomer, setNewCustomer] = useState({
         name: '',
         activity: '',
-        industry: '',
+        role: '',
         phone: '+998 ',
         email: '',
         joinDate: new Date().toISOString().split('T')[0],
@@ -287,50 +312,79 @@ export function Mijozlar() {
     })
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+        const file = e.target.files?.[0]
         if (file) {
-            const reader = new FileReader();
+            const reader = new FileReader()
             reader.onloadend = () => {
-                setNewCustomer(prev => ({ ...prev, image: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
+                setCropImageSrc(reader.result as string)
+                setIsCropOpen(true)
+            }
+            reader.readAsDataURL(file)
         }
-    };
+        // Reset input so same file can be re-selected
+        e.target.value = ""
+    }
+
+    const handleCropped = async (blob: Blob) => {
+        setIsCropOpen(false)
+        setCropImageSrc("")
+
+        // If we're updating an existing client (sidebar open)
+        if (selectedCustomer) {
+            try {
+                const { uploadClientImage, updateClient } = await import("@/lib/supabase/queries/clients")
+                const imageUrl = await uploadClientImage(blob, selectedCustomer.id)
+                await updateClient(selectedCustomer.id, { image: imageUrl })
+                setSelectedCustomer(prev => prev ? { ...prev, image: imageUrl } : null)
+                qc.invalidateQueries({ queryKey: CLIENTS_KEY })
+            } catch (err) {
+                console.error("Rasm yuklashda xatolik:", err)
+            }
+            return
+        }
+
+        // For new client form — revoke prior preview before creating a new one
+        setPendingImageFile(blob)
+        const previewUrl = URL.createObjectURL(blob)
+        setNewCustomer(prev => {
+            if (prev.image && prev.image.startsWith("blob:")) URL.revokeObjectURL(prev.image)
+            return { ...prev, image: previewUrl }
+        })
+    }
 
     const handleAddCustomer = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { createClient } = await import("@/lib/supabase/queries/clients")
+            const { createClient, uploadClientImage } = await import("@/lib/supabase/queries/clients")
+
+            // First create client to get an ID
             const row = await createClient({
                 full_name: newCustomer.name,
                 email: newCustomer.email || null,
                 phone: newCustomer.phone || null,
                 activity: newCustomer.activity || null,
-                industry: newCustomer.industry || null,
-                image: newCustomer.image || null,
+                role: newCustomer.role || null,
+                image: null,
                 join_date: newCustomer.joinDate,
                 status: 'Faol',
             })
-            const newEntry: Customer = {
-                id: row.id,
-                name: row.full_name,
-                email: row.email ?? '',
-                phone: row.phone ?? '',
-                activity: row.activity ?? '',
-                industry: row.industry ?? '',
-                eventsCount: row.events_count,
-                status: row.status,
-                joinDate: row.join_date ?? '',
-                image: row.image || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=256&h=256&fit=crop',
-                totalSpent: '0 UZS',
-                history: [],
+
+            // Upload image if we have a pending crop
+            let imageUrl = ''
+            if (pendingImageFile) {
+                imageUrl = await uploadClientImage(pendingImageFile, row.id)
+                const { updateClient } = await import("@/lib/supabase/queries/clients")
+                await updateClient(row.id, { image: imageUrl })
             }
-            setCustomers(prev => [newEntry, ...prev]);
+
+            qc.invalidateQueries({ queryKey: CLIENTS_KEY })
+            if (newCustomer.image && newCustomer.image.startsWith("blob:")) URL.revokeObjectURL(newCustomer.image)
             setIsAddModalOpen(false);
+            setPendingImageFile(null);
             setNewCustomer({
                 name: '',
                 activity: '',
-                industry: '',
+                role: '',
                 phone: '+998 ',
                 email: '',
                 joinDate: new Date().toISOString().split('T')[0],
@@ -340,6 +394,13 @@ export function Mijozlar() {
             console.error('Mijoz qo\'shishda xatolik:', err)
         }
     };
+
+    function closeAddModal() {
+        if (newCustomer.image && newCustomer.image.startsWith("blob:")) URL.revokeObjectURL(newCustomer.image)
+        setPendingImageFile(null)
+        setNewCustomer((prev) => ({ ...prev, image: '' }))
+        setIsAddModalOpen(false)
+    }
 
     const rating = selectedCustomer ? Math.min(5, Math.ceil(selectedCustomer.eventsCount / 4)) : 0;
 
@@ -353,7 +414,7 @@ export function Mijozlar() {
             {error && !loading && (
                 <div className="flex flex-col items-center justify-center py-20 gap-2">
                     <span className="text-[14px] text-red-500 font-medium">{error}</span>
-                    <button onClick={fetchCustomers} className="text-[13px] text-[#141414] font-bold underline">Qayta urinish</button>
+                    <button onClick={() => fetchCustomers()} className="text-[13px] text-[#141414] font-bold underline">Qayta urinish</button>
                 </div>
             )}
             {!loading && !error && <>
@@ -397,15 +458,10 @@ export function Mijozlar() {
                             <div className="flex items-center gap-2 pl-4 border-l border-[#F0F0F0]">
                                 <span className="text-[13px] font-bold text-[#141414]">{selectedMijozlar.length} ta tanlandi</span>
                                 <button
-                                    onClick={async () => {
-                                        try {
-                                            const { deleteClients } = await import("@/lib/supabase/queries/clients")
-                                            await deleteClients(selectedMijozlar)
-                                            setCustomers(prev => prev.filter(c => !selectedMijozlar.includes(c.id)));
-                                            setSelectedMijozlar([]);
-                                        } catch (err) {
-                                            console.error("O'chirishda xatolik:", err)
-                                        }
+                                    onClick={() => {
+                                        deleteClientsMutation.mutate(selectedMijozlar, {
+                                            onSuccess: () => setSelectedMijozlar([]),
+                                        })
                                     }}
                                     className="p-1.5 hover:bg-red-50 text-red-600 rounded-[6px] transition-colors"
                                 >
@@ -500,11 +556,17 @@ export function Mijozlar() {
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0F0F0] bg-white sticky top-0 z-10">
                             <h2 className="text-[16px] font-bold text-[#141414]">Mijoz profili</h2>
                             <div className="flex items-center gap-2">
-                                <button className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999] hover:text-[#141414]">
-                                    <PencilIcon className="w-5 h-5" />
-                                </button>
-                                <button 
-                                    onClick={() => setSelectedCustomer(null)}
+                                {editingField ? (
+                                    <button onClick={cancelEdit} className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999] hover:text-[#141414]">
+                                        <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                ) : (
+                                    <button onClick={() => startEdit("name")} className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999] hover:text-[#141414]">
+                                        <PencilIcon className="w-5 h-5" />
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => { setSelectedCustomer(null); cancelEdit() }}
                                     className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999]"
                                 >
                                     <XMarkIcon className="w-5 h-5" />
@@ -514,18 +576,52 @@ export function Mijozlar() {
 
                         <div className="flex-1 overflow-y-auto no-scrollbar">
                             <div className="relative h-64 w-full group">
-                                <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover" />
+                                {selectedCustomer.image ? (
+                                    <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-[#F0F0F0] flex items-center justify-center">
+                                        <span className="text-[48px] font-bold text-[#CCCCCC]">
+                                            {selectedCustomer.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all" />
                                 <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between">
                                     <div className="flex gap-2">
-                                        <button className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[12px] font-bold hover:bg-white/20 transition-all flex items-center gap-1.5">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                document.getElementById('sidebar-image-upload')?.click()
+                                            }}
+                                            className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[12px] font-bold hover:bg-white/20 transition-all flex items-center gap-1.5"
+                                        >
                                             <PhotoIcon className="w-3.5 h-3.5" />
-                                            Update
+                                            Yangilash
                                         </button>
-                                        <button className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[12px] font-bold hover:bg-white/20 transition-all flex items-center gap-1.5">
-                                            <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                                            Save
-                                        </button>
+                                        {selectedCustomer.image && (
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation()
+                                                    try {
+                                                        const res = await fetch(selectedCustomer.image)
+                                                        const blob = await res.blob()
+                                                        const url = URL.createObjectURL(blob)
+                                                        const a = document.createElement("a")
+                                                        a.href = url
+                                                        a.download = `${selectedCustomer.name.replace(/\s+/g, "_")}.jpg`
+                                                        a.click()
+                                                        // Defer revoke so the browser starts the download first
+                                                        setTimeout(() => URL.revokeObjectURL(url), 1000)
+                                                    } catch (err) {
+                                                        console.error("Rasmni yuklashda xatolik:", err)
+                                                    }
+                                                }}
+                                                className="px-3 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[12px] font-bold hover:bg-white/20 transition-all flex items-center gap-1.5"
+                                            >
+                                                <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                                                Saqlash
+                                            </button>
+                                        )}
                                     </div>
                                     <span className={`px-2.5 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${selectedCustomer.status === 'Faol' ? 'bg-green-500/20 text-green-100 border-green-500/30' : 'bg-red-500/20 text-red-100 border-red-500/30'}`}>
                                         {selectedCustomer.status}
@@ -536,18 +632,47 @@ export function Mijozlar() {
                             <div className="p-8 flex flex-col gap-8 text-left">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center justify-between group">
-                                        <h1 className="text-[28px] font-bold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
-                                        <PencilIcon className="w-4 h-4 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity" />
+                                        {editingField === "name" ? (
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <input
+                                                    autoFocus
+                                                    value={editValue}
+                                                    onChange={(e) => setEditValue(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                    className="text-[28px] font-bold text-[#141414] leading-tight bg-transparent border-b-2 border-[#141414] outline-none w-full"
+                                                />
+                                                <button onClick={saveEdit} className="p-1 hover:bg-green-50 rounded-[6px] transition-colors">
+                                                    <CheckIcon className="w-5 h-5 text-green-600" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h1 className="text-[28px] font-bold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
+                                                <PencilIcon onClick={() => startEdit("name")} className="w-4 h-4 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity" />
+                                            </>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-2 mt-2 group">
                                         <BriefcaseIcon className="w-4 h-4 text-[#999999]" />
-                                        <span className="text-[15px] font-medium text-[#141414]">{selectedCustomer.activity}</span>
-                                        <PencilIcon className="w-3.5 h-3.5 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
-                                    </div>
-                                    <div className="inline-flex mt-2">
-                                        <span className="bg-[#F5F5F5] text-[#777777] text-[12px] font-bold px-2 py-0.5 rounded-[4px]">
-                                            Soha: {selectedCustomer.industry}
-                                        </span>
+                                        {editingField === "activity" ? (
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <input
+                                                    autoFocus
+                                                    value={editValue}
+                                                    onChange={(e) => setEditValue(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                    className="text-[15px] font-medium text-[#141414] bg-transparent border-b-2 border-[#141414] outline-none flex-1"
+                                                />
+                                                <button onClick={saveEdit} className="p-0.5 hover:bg-green-50 rounded-[4px] transition-colors">
+                                                    <CheckIcon className="w-4 h-4 text-green-600" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span className="text-[15px] font-medium text-[#141414]">{selectedCustomer.activity || "—"}</span>
+                                                <PencilIcon onClick={() => startEdit("activity")} className="w-3.5 h-3.5 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
@@ -555,22 +680,56 @@ export function Mijozlar() {
                                     <div className="p-4 bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px] group">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-[11px] font-bold text-[#999999] uppercase">Telefon</span>
-                                            <PencilIcon className="w-3 h-3 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
+                                            {editingField === "phone" ? (
+                                                <button onClick={saveEdit} className="p-0.5 hover:bg-green-50 rounded-[4px] transition-colors">
+                                                    <CheckIcon className="w-3 h-3 text-green-600" />
+                                                </button>
+                                            ) : (
+                                                <PencilIcon onClick={() => startEdit("phone")} className="w-3 h-3 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <PhoneIcon className="w-3.5 h-3.5 text-[#141414]" />
-                                            <span className="text-[14px] font-bold text-[#141414]">{selectedCustomer.phone}</span>
-                                        </div>
+                                        {editingField === "phone" ? (
+                                            <input
+                                                autoFocus
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                className="text-[14px] font-bold text-[#141414] bg-transparent border-b-2 border-[#141414] outline-none w-full"
+                                                placeholder="+998 90 123 45 67"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <PhoneIcon className="w-3.5 h-3.5 text-[#141414]" />
+                                                <span className="text-[14px] font-bold text-[#141414]">{selectedCustomer.phone || "—"}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-4 bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px] group">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-[11px] font-bold text-[#999999] uppercase">Email</span>
-                                            <PencilIcon className="w-3 h-3 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
+                                            {editingField === "email" ? (
+                                                <button onClick={saveEdit} className="p-0.5 hover:bg-green-50 rounded-[4px] transition-colors">
+                                                    <CheckIcon className="w-3 h-3 text-green-600" />
+                                                </button>
+                                            ) : (
+                                                <PencilIcon onClick={() => startEdit("email")} className="w-3 h-3 text-[#999999] opacity-0 group-hover:opacity-100 cursor-pointer" />
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <EnvelopeIcon className="w-3.5 h-3.5 text-[#141414]" />
-                                            <span className="text-[13px] font-bold text-[#141414] truncate">{selectedCustomer.email || '-'}</span>
-                                        </div>
+                                        {editingField === "email" ? (
+                                            <input
+                                                autoFocus
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                className="text-[13px] font-bold text-[#141414] bg-transparent border-b-2 border-[#141414] outline-none w-full"
+                                                placeholder="email@example.com"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <EnvelopeIcon className="w-3.5 h-3.5 text-[#141414]" />
+                                                <span className="text-[13px] font-bold text-[#141414] truncate">{selectedCustomer.email || '—'}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -663,7 +822,7 @@ export function Mijozlar() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setIsAddModalOpen(false)}
+                            onClick={closeAddModal}
                             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         />
                         <motion.div
@@ -674,8 +833,8 @@ export function Mijozlar() {
                         >
                             <div className="p-6 border-b border-[#F0F0F0] flex items-center justify-between bg-white">
                                 <h3 className="text-[18px] font-bold text-[#141414]">Yangi mijoz qo'shish</h3>
-                                <button 
-                                    onClick={() => setIsAddModalOpen(false)}
+                                <button
+                                    onClick={closeAddModal}
                                     className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all"
                                 >
                                     <XMarkIcon className="w-6 h-6 text-[#999999]" />
@@ -728,17 +887,6 @@ export function Mijozlar() {
                                                 className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
                                             />
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[12px] font-bold text-[#141414]">SOHA *</label>
-                                            <input 
-                                                required
-                                                type="text" 
-                                                value={newCustomer.industry}
-                                                onChange={e => setNewCustomer({...newCustomer, industry: e.target.value})}
-                                                placeholder="Masalan: IT, Marketing" 
-                                                className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
-                                            />
-                                        </div>
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
@@ -750,6 +898,17 @@ export function Mijozlar() {
                                             onChange={e => setNewCustomer({...newCustomer, activity: e.target.value})}
                                             placeholder="Kompaniya nomi yoki loyiha haqida..." 
                                             className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10 resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[12px] font-bold text-[#141414]">LAVOZIM</label>
+                                        <input
+                                            type="text"
+                                            value={newCustomer.role}
+                                            onChange={e => setNewCustomer({...newCustomer, role: e.target.value})}
+                                            placeholder="Masalan: Direktor, Menejer"
+                                            className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
                                         />
                                     </div>
 
@@ -789,9 +948,9 @@ export function Mijozlar() {
                                 </div>
 
                                 <div className="mt-8 flex gap-3">
-                                    <button 
+                                    <button
                                         type="button"
-                                        onClick={() => setIsAddModalOpen(false)}
+                                        onClick={closeAddModal}
                                         className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[8px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all"
                                     >
                                         Bekor qilish
@@ -808,6 +967,37 @@ export function Mijozlar() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Image Crop Modal */}
+            <ImageCropModal
+                isOpen={isCropOpen}
+                imageSrc={cropImageSrc}
+                onClose={() => {
+                    setIsCropOpen(false)
+                    setCropImageSrc("")
+                }}
+                onCropped={handleCropped}
+            />
+
+            {/* Hidden file input for sidebar image update */}
+            <input
+                id="sidebar-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => {
+                            setCropImageSrc(reader.result as string)
+                            setIsCropOpen(true)
+                        }
+                        reader.readAsDataURL(file)
+                    }
+                    e.target.value = ""
+                }}
+                className="hidden"
+            />
+
             {/* Delete Confirmation Modal */}
             <AnimatePresence>
                 {customerToDelete && (
@@ -844,15 +1034,10 @@ export function Mijozlar() {
                                     Bekor qilish
                                 </button>
                                 <button
-                                    onClick={async () => {
-                                        try {
-                                            const { deleteClient } = await import("@/lib/supabase/queries/clients")
-                                            await deleteClient(customerToDelete.id)
-                                            setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
-                                            setCustomerToDelete(null);
-                                        } catch (err) {
-                                            console.error("O'chirishda xatolik:", err)
-                                        }
+                                    onClick={() => {
+                                        deleteClientMutation.mutate(customerToDelete.id, {
+                                            onSuccess: () => setCustomerToDelete(null),
+                                        })
                                     }}
                                     className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-[10px] text-[13px] font-bold hover:bg-red-700 transition-all shadow-md shadow-red-200 active:scale-95"
                                 >

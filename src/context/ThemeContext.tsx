@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- themes data and useTheme hook are part of the theme context module */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
 export type ThemeId = 'neutral' | 'black-orange' | 'light-orange'
@@ -42,13 +43,24 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+const THEME_KEY = 'fy_theme'
+
+function getInitialTheme(): ThemeId {
+    try {
+        const saved = localStorage.getItem(THEME_KEY)
+        if (saved && themes.some(t => t.id === saved)) return saved as ThemeId
+    } catch { /* private browsing */ }
+    return 'neutral'
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [themeId, setThemeId] = useState<ThemeId>('neutral')
+    const [themeId, setThemeId] = useState<ThemeId>(getInitialTheme)
 
     useEffect(() => {
         const root = document.documentElement
         root.removeAttribute('data-theme')
         root.setAttribute('data-theme', themeId)
+        try { localStorage.setItem(THEME_KEY, themeId) } catch { /* private browsing */ }
     }, [themeId])
 
     const currentTheme = themes.find(t => t.id === themeId) ?? themes[0]

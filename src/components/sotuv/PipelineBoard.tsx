@@ -1,4 +1,9 @@
 import {
+  DragDropContext,
+  Droppable,
+  type DropResult,
+} from "@hello-pangea/dnd"
+import {
   filterLeadsByStage,
   formatAmount,
   getTotalAmount,
@@ -13,6 +18,7 @@ interface PipelineBoardProps {
   stageOrder: string[]
   pipelineName: string
   onLeadClick?: (lead: Lead) => void
+  onDragEnd?: (result: DropResult) => void
 }
 
 export function PipelineBoard({
@@ -21,9 +27,14 @@ export function PipelineBoard({
   stageOrder,
   pipelineName,
   onLeadClick,
+  onDragEnd,
 }: PipelineBoardProps) {
   const totalLeads = leads.length
   const totalAmount = getTotalAmount(leads)
+
+  function handleDragEnd(result: DropResult) {
+    onDragEnd?.(result)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -54,28 +65,34 @@ export function PipelineBoard({
         </div>
       </div>
 
-      {/* Kanban columns — horizontal scroll */}
-      <div
-        className="flex gap-3 overflow-x-auto pb-4"
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "#e0e0e0 transparent",
-        }}
-      >
-        {stageOrder.map((stageId) => {
-          const config = stageConfigs[stageId]
-          if (!config) return null
-          return (
-            <PipelineColumn
-              key={stageId}
-              stageId={stageId}
-              config={config}
-              leads={filterLeadsByStage(leads, stageId)}
-              onLeadClick={onLeadClick}
-            />
-          )
-        })}
-      </div>
+      {/* Kanban columns with drag & drop */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div
+          className="flex gap-3 overflow-x-auto pb-4"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#e0e0e0 transparent",
+          }}
+        >
+          {stageOrder.map((stageId) => {
+            const config = stageConfigs[stageId]
+            if (!config) return null
+            return (
+              <Droppable key={stageId} droppableId={stageId}>
+                {(provided, snapshot) => (
+                  <PipelineColumn
+                    config={config}
+                    leads={filterLeadsByStage(leads, stageId)}
+                    onLeadClick={onLeadClick}
+                    droppableProvided={provided}
+                    isDragOver={snapshot.isDraggingOver}
+                  />
+                )}
+              </Droppable>
+            )
+          })}
+        </div>
+      </DragDropContext>
     </div>
   )
 }

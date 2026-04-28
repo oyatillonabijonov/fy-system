@@ -335,13 +335,28 @@ async function syncToSupabase(
 
   if (logErr) console.error("[Sync] Log yozishda xatolik:", logErr.message)
 
+  // 4. Users upsert
+  const userRows = Array.from(usersMap.entries()).map(([id, name]) => ({
+    id,
+    name,
+    synced_at: new Date().toISOString(),
+  }))
+
+  if (userRows.length > 0) {
+    const { error: uErr } = await supabase
+      .from("amocrm_users")
+      .upsert(userRows, { onConflict: "id" })
+
+    if (uErr) console.error("[Sync] Users upsert xatolik:", uErr.message)
+  }
+
   console.log(
-    `[Sync] Muvaffaqiyat: ${leads.length} lid, ${pipelines.length} pipeline sinxronlandi`
+    `[Sync] Muvaffaqiyat: ${leads.length} lid, ${pipelines.length} pipeline, ${userRows.length} user sinxronlandi`
   )
 }
 
 // ── Main Handler ──
-Deno.serve(async (_req) => {
+Deno.serve(async () => {
   const startTime = Date.now()
 
   try {

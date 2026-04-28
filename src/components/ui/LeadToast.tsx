@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- toast trigger function is co-located with its provider component on purpose */
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 

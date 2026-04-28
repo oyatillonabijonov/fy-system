@@ -1,6 +1,7 @@
 // Replace mock with real AmoCRM API calls in Phase 2
 
-import type { Lead, LeadStage, LeadSource } from "./mock-data/sotuv"
+import type { Lead, LeadSource } from "./mock-data/sotuv"
+import type { LeadStage } from "./supabase/types"
 
 /** AmoCRM API lead response structure */
 export interface AmoCrmLead {

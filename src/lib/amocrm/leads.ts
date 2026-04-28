@@ -83,6 +83,7 @@ export interface CustomFieldRendered {
 }
 
 export interface ContactDetailRendered {
+  id: number
   name: string
   phones: { value: string; enumCode: string }[]
   emails: { value: string; enumCode: string }[]
@@ -256,6 +257,7 @@ export async function getAmoLeadDetail(leadId: string): Promise<AmoLeadDetail> {
       }
 
       contacts.push({
+        id: contactId,
         name: contact.name,
         phones,
         emails,

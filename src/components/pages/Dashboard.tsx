@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import {
     UsersIcon,
     TicketIcon,
@@ -17,22 +16,11 @@ import {
     BarChart,
     Bar,
 } from 'recharts';
-import { getDashboardAnalytics, type DashboardAnalytics } from "../../lib/amocrm/analytics"
-
-function Skeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
-    return <div className={`animate-pulse bg-[#F0F0F0] rounded-[4px] ${className ?? ""}`} style={style} />
-}
+import { useDashboardAnalytics } from "@/hooks/useDashboard"
+import { Skeleton } from "@/components/ui/Skeleton"
 
 export function Dashboard() {
-    const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        getDashboardAnalytics()
-            .then(setAnalytics)
-            .catch((err) => console.error("[Dashboard] Analytics xatolik:", err))
-            .finally(() => setLoading(false))
-    }, [])
+    const { data: analytics, isLoading: loading } = useDashboardAnalytics()
 
     const stats = [
         {
@@ -113,17 +101,17 @@ export function Dashboard() {
                     <div className="h-[300px] w-full">
                         {loading ? (
                             <div className="w-full h-full flex items-end gap-3 px-4 pb-4">
-                                {Array.from({ length: 7 }).map((_, i) => (
+                                {[55, 72, 41, 88, 63, 35, 79].map((h, i) => (
                                     <Skeleton
                                         key={i}
                                         className="flex-1"
-                                        style={{ height: `${30 + Math.random() * 60}%` } as React.CSSProperties}
+                                        style={{ height: `${h}%` } as React.CSSProperties}
                                     />
                                 ))}
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
+                                <AreaChart data={chartData ?? []}>
                                     <defs>
                                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#141414" stopOpacity={0.1} />
@@ -225,17 +213,17 @@ export function Dashboard() {
                     <div className="h-[240px] w-full">
                         {loading ? (
                             <div className="w-full h-full flex items-end gap-3 px-4 pb-4">
-                                {Array.from({ length: 7 }).map((_, i) => (
+                                {[35, 60, 78, 45, 82, 50, 70].map((h, i) => (
                                     <Skeleton
                                         key={i}
                                         className="flex-1"
-                                        style={{ height: `${20 + Math.random() * 70}%` } as React.CSSProperties}
+                                        style={{ height: `${h}%` } as React.CSSProperties}
                                     />
                                 ))}
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData}>
+                                <BarChart data={chartData ?? []}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
                                     <XAxis
                                         dataKey="month"

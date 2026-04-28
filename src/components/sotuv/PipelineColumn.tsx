@@ -1,16 +1,24 @@
+import { Draggable, type DroppableProvided } from "@hello-pangea/dnd"
 import { PlusIcon } from "@heroicons/react/24/solid"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
 import { formatAmount, getTotalAmount } from "@/lib/mock-data/sotuv"
 import { KanbanCard } from "./KanbanCard"
 
 interface PipelineColumnProps {
-  stageId: string
   config: StageConfig
   leads: Lead[]
   onLeadClick?: (lead: Lead) => void
+  droppableProvided?: DroppableProvided
+  isDragOver?: boolean
 }
 
-export function PipelineColumn({ stageId, config, leads, onLeadClick }: PipelineColumnProps) {
+export function PipelineColumn({
+  config,
+  leads,
+  onLeadClick,
+  droppableProvided,
+  isDragOver,
+}: PipelineColumnProps) {
   const total = getTotalAmount(leads)
   const isLost = config.color === "text-red-600"
   const isWon = config.color === "text-emerald-700"
@@ -44,15 +52,35 @@ export function PipelineColumn({ stageId, config, leads, onLeadClick }: Pipeline
       {/* Cards area — scrollable with bottom fade */}
       <div className="relative flex-1 min-h-0">
         <div
-          className="flex flex-col gap-2 h-full overflow-y-auto py-1 px-1"
+          ref={droppableProvided?.innerRef}
+          {...droppableProvided?.droppableProps}
+          className={`flex flex-col gap-2 h-full overflow-y-auto py-1 px-1 transition-colors rounded-[8px] ${
+            isDragOver ? "bg-[#f0f7ff]" : ""
+          }`}
           style={{
             scrollbarWidth: "thin",
             scrollbarColor: "#e0e0e0 transparent",
           }}
         >
-          {leads.map((lead) => (
-            <KanbanCard key={lead.id} lead={lead} isLost={isLost} onClick={onLeadClick} />
-          ))}
+          {leads.map((lead, index) =>
+            droppableProvided ? (
+              <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                {(dragProvided) => (
+                  <div
+                    ref={dragProvided.innerRef}
+                    {...dragProvided.draggableProps}
+                    {...dragProvided.dragHandleProps}
+                  >
+                    <KanbanCard lead={lead} isLost={isLost} onClick={onLeadClick} />
+                  </div>
+                )}
+              </Draggable>
+            ) : (
+              <KanbanCard key={lead.id} lead={lead} isLost={isLost} onClick={onLeadClick} />
+            )
+          )}
+
+          {droppableProvided?.placeholder}
 
           {/* Add card button */}
           {showAddButton && (

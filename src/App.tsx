@@ -1,8 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
 import { Sotuv } from "./components/pages/Sotuv"
+import { CrmN } from "./components/pages/CrmN"
+import { Events } from "./components/pages/Events"
+import { EventDetail } from "./components/pages/EventDetail"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
 import { motion, AnimatePresence } from "framer-motion"
@@ -13,9 +16,27 @@ import {
   Cog6ToothIcon
 } from "@heroicons/react/24/solid"
 
+const ROUTE_KEY = 'fy_last_route'
+const LANG_KEY = 'fy_lang'
+
+function getSaved(key: string, fallback: string): string {
+  try {
+    return localStorage.getItem(key) ?? fallback
+  } catch { return fallback }
+}
+
 function AppInner() {
-  const [activeItem, setActiveItem] = useState("Dashboard")
-  const [currentLang, setCurrentLang] = useState("uz")
+  const [activeItem, setActiveItem] = useState(() => getSaved(ROUTE_KEY, "Dashboard"))
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
+
+  useEffect(() => {
+    try { localStorage.setItem(ROUTE_KEY, activeItem) } catch { /* private browsing */ }
+  }, [activeItem])
+
+  useEffect(() => {
+    try { localStorage.setItem(LANG_KEY, currentLang) } catch { /* private browsing */ }
+  }, [currentLang])
   const [isLangOpen, setIsLangOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
 
@@ -30,6 +51,8 @@ function AppInner() {
       case "Dashboard": return "Tizimdagi barcha asosiy ko'rsatkichlar va statistika."
       case "Mijozlar": return "Barcha mijozlar bazasi va ular bilan ishlash bo'limi."
       case "Sotuv bo'limi": return "Savdo jarayonlari, lidlar va pipline tahlili."
+      case "AmoCRM": return "AmoCRM orqali savdo jarayonlari va lidlar."
+      case "CRM-N": return "Ichki CRM tizimi — mustaqil savdo boshqaruvi."
       case "Lidlar": return "Savdo jarayonlari, lidlar va pipline tahlili."
       case "Pipline": return "Savdo jarayonlari, lidlar va pipline tahlili."
       case "Tadbirlar": return "Klub doirasidagi barcha tadbirlar va uchrashuvlar."
@@ -49,8 +72,19 @@ function AppInner() {
       case "Dashboard": return <Dashboard />
       case "Mijozlar": return <Mijozlar />
       case "Sotuv bo'limi": return <Sotuv />
+      case "AmoCRM": return <Sotuv defaultTab="pipeline" />
+      case "CRM-N": return <CrmN />
       case "Lidlar": return <Sotuv defaultTab="lidlar" />
       case "Pipline": return <Sotuv defaultTab="pipeline" />
+      case "Tadbirlar":
+        return selectedEventId ? (
+          <EventDetail
+            eventId={selectedEventId}
+            onBack={() => setSelectedEventId(null)}
+          />
+        ) : (
+          <Events onSelectEvent={(id) => setSelectedEventId(id)} />
+        )
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30"
@@ -65,7 +99,12 @@ function AppInner() {
   return (
     <div className="h-screen text-foreground flex overflow-hidden transition-colors duration-300"
       style={{ background: 'var(--sidebar-bg)' }}>
-      <Sidebar activeItem={activeItem} onNavigate={setActiveItem} />
+      <Sidebar activeItem={activeItem} onNavigate={(item) => {
+        setActiveItem(item)
+        if (item !== "Tadbirlar") {
+          setSelectedEventId(null)
+        }
+      }} />
 
       {/* Main content panel */}
       <div
@@ -255,7 +294,7 @@ function AppInner() {
             <div className="max-w-[1400px] mx-auto h-full">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={["Sotuv bo'limi", "Lidlar", "Pipline"].includes(activeItem) ? "sotuv" : activeItem}
+                  key={["Sotuv bo'limi", "AmoCRM", "Lidlar", "Pipline"].includes(activeItem) ? "sotuv" : activeItem === "Tadbirlar" ? "tadbirlar" : activeItem}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}

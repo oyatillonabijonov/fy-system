@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import type { DropResult } from "@hello-pangea/dnd"
 import {
   ArrowPathIcon,
   PlusIcon,
   ArrowUpRightIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
 } from "@heroicons/react/24/solid"
 import {
   formatAmount,
@@ -19,16 +19,20 @@ import { type AmoPipelineInfo } from "@/lib/amocrm/pipelines"
 import {
   getCachedLeads,
   getCachedPipelines,
+  getCachedUsers,
   subscribeToLeads,
   type CachedLead,
   type CachedPipeline,
+  type CachedUser,
 } from "@/lib/supabase/queries/amocrm"
+import { updateLeadStage } from "@/lib/amocrm/mutations"
 import { playNewLeadSound } from "@/lib/sounds/notification"
 import { showNewLeadToast, LeadToastContainer } from "@/components/ui/LeadToast"
 import { Button } from "@/components/ui/button"
 import { LidlarTable } from "@/components/sotuv/LidlarTable"
 import { PipelineBoard } from "@/components/sotuv/PipelineBoard"
 import { LeadDetailDrawer } from "@/components/sotuv/LeadDetailDrawer"
+import { CreateLeadModal } from "@/components/sotuv/CreateLeadModal"
 
 const RESPONSIBLE_COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
@@ -97,6 +101,7 @@ const LAST_PIPELINE_KEY = "fy_last_pipeline_id"
 // Modul darajasidagi cache — komponent remount bo'lsa ham saqlanadi
 const moduleLeadsCache = new Map<number, Lead[]>()
 let modulePipelinesCache: AmoPipelineInfo[] | null = null
+let moduleUsersCache: CachedUser[] | null = null
 
 export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
   const [activeTab, setActiveTab] = useState<SotuvTab>(defaultTab)
@@ -110,6 +115,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
   })
   const [error, setError] = useState<string | null>(null)
 
+  const [users, setUsers] = useState<CachedUser[]>(moduleUsersCache ?? [])
   const [pipelines, setPipelines] = useState<AmoPipelineInfo[]>(modulePipelinesCache ?? [])
   const [selectedPipelineId, setSelectedPipelineId] = useState<number | null>(() =>
     Number(localStorage.getItem(LAST_PIPELINE_KEY)) || null
@@ -164,14 +170,16 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
 
     async function loadAll() {
       try {
-        // 1. Pipelines va (agar saqlangan ID bor) leads ni PARALLEL yuklash
+        // 1. Pipelines, users va (agar saqlangan ID bor) leads ni PARALLEL yuklash
         const pipelinesPromise = getCachedPipelines()
+        const usersPromise = getCachedUsers()
         const leadsPromise = savedPipelineId
           ? getCachedLeads(savedPipelineId)
           : null
 
-        const [cachedPipelines, cachedLeads] = await Promise.all([
+        const [cachedPipelines, cachedUsers, cachedLeads] = await Promise.all([
           pipelinesPromise,
+          usersPromise,
           leadsPromise,
         ])
 
@@ -189,7 +197,9 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
 
         if (cancelled) return
         modulePipelinesCache = pipelineData
+        moduleUsersCache = cachedUsers
         setPipelines(pipelineData)
+        setUsers(cachedUsers)
         setPipelinesLoading(false)
 
         // 3. Pipeline tanlash — saqlangan yoki birinchi
@@ -325,6 +335,34 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
     fetchLeads(pipelineId)
   }
 
+  const handleDragEnd = useCallback(async (result: DropResult) => {
+    if (!result.destination) return
+    if (result.destination.droppableId === result.source.droppableId) return
+    if (!selectedPipelineId) return
+
+    const leadId = Number(result.draggableId)
+    const newStatusId = Number(result.destination.droppableId)
+    const oldStatusId = Number(result.source.droppableId)
+
+    // Optimistic update
+    setLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === String(leadId) ? { ...lead, stage: String(newStatusId) } : lead
+      )
+    )
+
+    try {
+      await updateLeadStage(leadId, newStatusId, selectedPipelineId)
+    } catch {
+      // Revert on error
+      setLeads((prev) =>
+        prev.map((lead) =>
+          lead.id === String(leadId) ? { ...lead, stage: String(oldStatusId) } : lead
+        )
+      )
+    }
+  }, [selectedPipelineId])
+
   const totalLeads = leads.length
   const totalAmount = getTotalAmount(leads)
   // First stage = "new", middle stages = "in progress"
@@ -368,6 +406,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
 
   const [statsOpen, setStatsOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   const selectedPipeline = pipelines.find((p) => p.id === selectedPipelineId)
 
@@ -411,7 +450,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
             <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Yangilash
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowCreateModal(true)}>
             <PlusIcon className="w-3.5 h-3.5" />
             Yangi lid
           </Button>
@@ -552,6 +591,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
           stageOrder={stageOrder}
           pipelineName={selectedPipeline?.name ?? ""}
           onLeadClick={setSelectedLead}
+          onDragEnd={handleDragEnd}
         />
       )}
 
@@ -562,6 +602,18 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
         onClose={() => setSelectedLead(null)}
         stageConfigs={stageConfigs}
         pipelineName={selectedPipeline?.name ?? ""}
+        pipelineId={selectedPipelineId ?? undefined}
+        users={users}
+        onLeadUpdated={() => fetchLeads(undefined, true)}
+      />
+
+      <CreateLeadModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        pipelines={pipelines}
+        selectedPipelineId={selectedPipelineId}
+        users={users}
+        onLeadCreated={() => fetchLeads(undefined, true)}
       />
     </div>
   )
