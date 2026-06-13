@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/solid"
+import { X, Check } from "@phosphor-icons/react"
 import {
   createCrmPipeline,
   batchCreateCrmStages,
@@ -133,7 +133,7 @@ export function CreatePipelineModal({
                   onClick={handleClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                 >
-                  <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                  <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
 
@@ -191,7 +191,7 @@ export function CreatePipelineModal({
                           }`}
                           style={{ width: 18, height: 18 }}
                         >
-                          {stage.checked && <CheckIcon className="w-3 h-3 text-white" />}
+                          {stage.checked && <Check size={12} className="text-white" weight="bold" />}
                         </button>
                         <div
                           className="w-3 h-3 rounded-full shrink-0"

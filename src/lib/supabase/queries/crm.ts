@@ -288,14 +288,18 @@ export async function closeCrmLead(
   type: "won" | "lost",
   reason?: string
 ): Promise<void> {
+  if (type === "won") {
+    const { error } = await supabase.rpc("close_crm_lead_won", { p_lead_id: id })
+    if (error) throw error
+    return
+  }
+
   const updates: Record<string, unknown> = {
-    is_won: type === "won",
-    is_lost: type === "lost",
+    is_won: false,
+    is_lost: true,
     updated_at: new Date().toISOString(),
   }
-  if (type === "lost" && reason) {
-    updates.loss_reason = reason
-  }
+  if (reason) updates.loss_reason = reason
 
   const { error } = await supabase
     .from("crm_leads")

@@ -2,14 +2,14 @@ import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { motion } from "framer-motion"
 import {
-  PlusIcon,
-  CalendarDaysIcon,
-  MapPinIcon,
-  UsersIcon,
-  EllipsisVerticalIcon,
-  TrashIcon,
-  PencilIcon,
-} from "@heroicons/react/24/solid"
+  Plus,
+  CalendarBlank,
+  MapPin,
+  Users,
+  DotsThreeVertical,
+  Trash,
+  PencilSimple,
+} from "@phosphor-icons/react"
 import { type Event, getParticipants } from "@/lib/supabase/queries/events"
 import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import { CreateEventModal } from "@/components/events/CreateEventModal"
@@ -80,7 +80,7 @@ export function Events({ onSelectEvent }: EventsProps) {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-[#333] transition-colors"
         >
-          <PlusIcon className="w-4 h-4" />
+          <Plus size={16} weight="bold" />
           Yangi tadbir
         </button>
       </div>
@@ -88,7 +88,7 @@ export function Events({ onSelectEvent }: EventsProps) {
       {/* Grid */}
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4">
-          <CalendarDaysIcon className="w-16 h-16 text-[#E0E0E0]" />
+          <CalendarBlank size={64} className="text-[#E0E0E0]" weight="bold" />
           <p className="text-[14px] text-[#999]">Hozircha tadbirlar yo'q</p>
           <button
             onClick={() => setShowCreate(true)}
@@ -126,7 +126,7 @@ export function Events({ onSelectEvent }: EventsProps) {
                 </div>
               ) : (
                 <div className="h-[100px] bg-gradient-to-br from-[#F5F5F5] to-[#EBEBEB] flex items-center justify-center">
-                  <CalendarDaysIcon className="w-10 h-10 text-[#D0D0D0]" />
+                  <CalendarBlank size={40} className="text-[#D0D0D0]" weight="bold" />
                 </div>
               )}
 
@@ -144,7 +144,7 @@ export function Events({ onSelectEvent }: EventsProps) {
                       }}
                       className="p-1 rounded-[4px] hover:bg-[#F5F5F5] transition-colors"
                     >
-                      <EllipsisVerticalIcon className="w-4 h-4 text-[#999]" />
+                      <DotsThreeVertical size={16} className="text-[#999]" weight="bold" />
                     </button>
                     {menuOpen === event.id && (
                       <div className="absolute right-0 top-full mt-1 bg-white border border-[#F0F0F0] rounded-[8px] shadow-lg z-10 overflow-hidden min-w-[120px]">
@@ -156,7 +156,7 @@ export function Events({ onSelectEvent }: EventsProps) {
                           }}
                           className="w-full px-3 py-2 text-[12px] text-[#141414] hover:bg-[#F5F5F5] flex items-center gap-2 transition-colors"
                         >
-                          <PencilIcon className="w-3.5 h-3.5" />
+                          <PencilSimple size={14} weight="bold" />
                           Tahrirlash
                         </button>
                         <button
@@ -167,7 +167,7 @@ export function Events({ onSelectEvent }: EventsProps) {
                           disabled={deleteEventMutation.isPending}
                           className="w-full px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                         >
-                          <TrashIcon className="w-3.5 h-3.5" />
+                          <Trash size={14} weight="bold" />
                           {deleteEventMutation.isPending && deleteEventMutation.variables === event.id ? "O'chirilmoqda..." : "O'chirish"}
                         </button>
                       </div>
@@ -177,19 +177,19 @@ export function Events({ onSelectEvent }: EventsProps) {
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-1.5">
-                    <CalendarDaysIcon className="w-3.5 h-3.5 text-[#999]" />
+                    <CalendarBlank size={14} className="text-[#999]" weight="bold" />
                     <span className="text-[12px] text-[#999]">{formatDate(event.date)}</span>
                   </div>
                   {event.location && (
                     <div className="flex items-center gap-1.5">
-                      <MapPinIcon className="w-3.5 h-3.5 text-[#999]" />
+                      <MapPin size={14} className="text-[#999]" weight="bold" />
                       <span className="text-[12px] text-[#999] truncate">{event.location}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center gap-1.5 mt-1">
-                  <UsersIcon className="w-3.5 h-3.5 text-[#141414]" />
+                  <Users size={14} className="text-[#141414]" weight="bold" />
                   <span className="text-[12px] font-medium text-[#141414]">
                     {counts[event.id] ?? 0} ishtirokchi
                   </span>

@@ -1,4 +1,4 @@
-import { PhoneIcon } from "@heroicons/react/24/solid"
+import { Phone } from "@phosphor-icons/react"
 import type { Lead } from "@/lib/mock-data/sotuv"
 import { formatAmount } from "@/lib/mock-data/sotuv"
 
@@ -112,13 +112,13 @@ export function KanbanCard({ lead, isLost, onClick }: KanbanCardProps) {
         )}
         {lead.phone && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] text-[#666]">
-            <PhoneIcon className="w-2.5 h-2.5 text-[#bbb]" />
+            <Phone size={10} className="text-[#bbb]" weight="bold" />
             {lead.phone}
           </span>
         )}
         {lead.lastCall.type === "answered" && (
           <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-600">
-            <PhoneIcon className="w-2.5 h-2.5" />
+            <Phone size={10} weight="bold" />
             Javob
           </span>
         )}

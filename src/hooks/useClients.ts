@@ -6,6 +6,11 @@ import {
   deleteClient,
   deleteClients,
   uploadClientImage,
+  createMemberAccount,
+  getClientEventHistory,
+  getClientJourney,
+  getClientsLastEventDates,
+  type ClientJourney,
 } from "@/lib/supabase/queries/clients"
 import type { Database } from "@/lib/supabase/types"
 
@@ -88,11 +93,50 @@ export function useDeleteClients() {
   })
 }
 
+export function useCreateMemberAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { client_id: string; email: string; password: string }) =>
+      createMemberAccount(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
+  })
+}
+
 export function useUploadClientImage() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ file, clientId }: { file: Blob; clientId: string }) =>
       uploadClientImage(file, clientId),
     onSettled: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
+  })
+}
+
+export const CLIENT_EVENT_HISTORY_KEY = (clientId: string) => ["client-event-history", clientId] as const
+
+export function useClientEventHistory(clientId: string | null | undefined) {
+  return useQuery({
+    queryKey: CLIENT_EVENT_HISTORY_KEY(clientId ?? ""),
+    queryFn: () => getClientEventHistory(clientId!),
+    enabled: !!clientId,
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
+export const CLIENTS_LAST_EVENT_DATES_KEY = ["clients-last-event-dates"] as const
+
+export function useClientsLastEventDates() {
+  return useQuery<Map<string, string>>({
+    queryKey: CLIENTS_LAST_EVENT_DATES_KEY,
+    queryFn: getClientsLastEventDates,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useClientJourney(clientId: string | null) {
+  return useQuery<ClientJourney>({
+    queryKey: ['client-journey', clientId],
+    queryFn: () => getClientJourney(clientId!),
+    enabled: !!clientId,
+    staleTime: 1000 * 60,
   })
 }

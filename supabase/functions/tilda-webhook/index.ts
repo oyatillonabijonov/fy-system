@@ -1,5 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+function normalizePhone(p: string): string | null {
+  if (!p) return null
+  const c = p.replace(/[^+\d]/g, "")
+  if (/^\+998\d{9}$/.test(c)) return c
+  if (/^998\d{9}$/.test(c)) return "+" + c
+  if (/^\d{9}$/.test(c)) return "+998" + c
+  return c || null
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -105,7 +114,7 @@ Deno.serve(async (req) => {
       .from("crm_contacts")
       .insert({
         name,
-        phone: phone || null,
+        phone: normalizePhone(phone),
         email: email || null,
         company: soha || null,
         notes: notes || null,

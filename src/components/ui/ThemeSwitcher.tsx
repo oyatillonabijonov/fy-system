@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SwatchIcon, CheckIcon } from '@heroicons/react/24/solid'
+import { Swatches, Check } from '@phosphor-icons/react'
 import { useTheme, themes, type ThemeId } from '../../context/ThemeContext'
 
 const themeSwatches: Record<ThemeId, { sidebar: string; accent: string; bg: string }> = {
@@ -31,7 +31,7 @@ export function ThemeSwitcher() {
                 title="Mavzuni o'zgartirish"
                 className={`p-2 rounded-[8px] transition-colors group ${isOpen ? 'bg-[var(--header-hover)]' : 'hover:bg-[var(--header-hover)]'}`}
             >
-                <SwatchIcon className="w-6 h-6 text-[var(--header-icon)]" />
+                <Swatches size={24} className="text-[var(--header-icon)]" weight="bold" />
             </button>
 
             <AnimatePresence>
@@ -51,7 +51,7 @@ export function ThemeSwitcher() {
                             className="px-4 py-3 border-b flex items-center gap-2"
                             style={{ borderColor: 'var(--dropdown-border)' }}
                         >
-                            <SwatchIcon className="w-4 h-4" style={{ color: 'var(--dropdown-muted)' }} />
+                            <Swatches size={16} style={{ color: 'var(--dropdown-muted)' }} weight="bold" />
                             <span className="text-[13px] font-bold" style={{ color: 'var(--dropdown-text)' }}>
                                 Mavzu tanlash
                             </span>
@@ -93,7 +93,7 @@ export function ThemeSwitcher() {
                                         <span className="flex-1 text-[13px] font-medium">{theme.label}</span>
 
                                         {isActive && (
-                                            <CheckIcon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} />
+                                            <Check size={16} className="flex-shrink-0" style={{ color: 'var(--accent)' }} weight="bold" />
                                         )}
                                     </button>
                                 )

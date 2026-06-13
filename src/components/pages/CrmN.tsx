@@ -2,11 +2,11 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { DropResult } from "@hello-pangea/dnd"
 import {
-  ArrowPathIcon,
-  PlusIcon,
-  ChevronDownIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/solid"
+  ArrowsClockwise,
+  Plus,
+  CaretDown,
+  Gear,
+} from "@phosphor-icons/react"
 import {
   subscribeToCrmLeads,
   type CrmLeadWithContact,
@@ -163,7 +163,7 @@ export function CrmN() {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#999999] pointer-events-none" />
+                <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
               </div>
 
               {/* Settings button */}
@@ -173,7 +173,7 @@ export function CrmN() {
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                   title="Sozlamalar"
                 >
-                  <Cog6ToothIcon className="w-4 h-4 text-[#999]" />
+                  <Gear size={16} className="text-[#999]" weight="bold" />
                 </button>
               )}
 
@@ -182,7 +182,7 @@ export function CrmN() {
                 onClick={() => setShowCreatePipeline(true)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-[8px] text-[12px] font-medium text-[#999] hover:text-[#666] hover:bg-[#F5F5F5] transition-colors"
               >
-                <PlusIcon className="w-3.5 h-3.5" />
+                <Plus size={14} weight="bold" />
                 Voronka
               </button>
             </div>
@@ -191,7 +191,7 @@ export function CrmN() {
               onClick={() => setShowCreatePipeline(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-bold text-[#141414] border border-[#E0E0E0] hover:bg-[#F5F5F5] transition-colors"
             >
-              <PlusIcon className="w-3.5 h-3.5" />
+              <Plus size={14} weight="bold" />
               Voronka yaratish
             </button>
           )}
@@ -203,11 +203,11 @@ export function CrmN() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => invalidateAll()}>
-            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <ArrowsClockwise size={14} weight="bold" className={loading ? "animate-spin" : ""} />
             Yangilash
           </Button>
           <Button size="sm" onClick={() => setShowCreateModal(true)} disabled={!selectedPipelineId}>
-            <PlusIcon className="w-3.5 h-3.5" />
+            <Plus size={14} weight="bold" />
             Yangi lid
           </Button>
         </div>
@@ -253,7 +253,7 @@ export function CrmN() {
         >
           <span className="text-[12px] font-semibold text-[#999] uppercase">Statistika</span>
           <motion.div animate={{ rotate: statsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDownIcon className="w-3.5 h-3.5 text-[#999]" />
+            <CaretDown size={14} className="text-[#999]" weight="bold" />
           </motion.div>
         </button>
 
@@ -312,7 +312,7 @@ export function CrmN() {
             onClick={() => setShowCreatePipeline(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-[13px] font-bold text-white bg-[#141414] hover:bg-[#333] transition-colors"
           >
-            <PlusIcon className="w-4 h-4" />
+            <Plus size={16} weight="bold" />
             Birinchi voronkani yarating
           </button>
         </div>

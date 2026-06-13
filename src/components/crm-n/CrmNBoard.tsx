@@ -4,7 +4,7 @@ import {
   Draggable,
   type DropResult,
 } from "@hello-pangea/dnd"
-import { PlusIcon } from "@heroicons/react/24/solid"
+import { Plus } from "@phosphor-icons/react"
 import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { CrmNCard } from "./CrmNCard"
 
@@ -145,7 +145,7 @@ export function CrmNBoard({
                             onClick={onAddLead}
                             className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-[#D0D0D0] rounded-[10px] text-[12px] font-medium text-[#999] hover:border-[#999] hover:text-[#666] transition-colors shrink-0"
                           >
-                            <PlusIcon className="w-3.5 h-3.5" />
+                            <Plus size={14} weight="bold" />
                             Lid qo'shish
                           </button>
                         )}

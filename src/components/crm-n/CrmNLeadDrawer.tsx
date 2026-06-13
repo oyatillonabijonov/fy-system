@@ -1,16 +1,16 @@
 import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  XMarkIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  BuildingOfficeIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  PlusIcon,
-  PencilIcon,
-} from "@heroicons/react/24/solid"
+  X,
+  Phone,
+  Envelope,
+  Buildings,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Plus,
+  PencilSimple,
+} from "@phosphor-icons/react"
 import type {
   CrmLeadWithContact,
   CrmStage,
@@ -430,7 +430,7 @@ export function CrmNLeadDrawer({
                 onClick={onClose}
                 className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
               >
-                <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
 
@@ -524,7 +524,7 @@ export function CrmNLeadDrawer({
                                 }}
                                 className="p-1 rounded-[4px] hover:bg-[#EBEBEB] transition-colors"
                               >
-                                <PencilIcon className="w-3 h-3 text-[#999]" />
+                                <PencilSimple size={12} className="text-[#999]" weight="bold" />
                               </button>
                             )}
                           </div>
@@ -565,7 +565,7 @@ export function CrmNLeadDrawer({
                             <>
                               {contact.phone && (
                                 <div className="flex items-center gap-2">
-                                  <PhoneIcon className="w-3.5 h-3.5 text-[#999999]" />
+                                  <Phone size={14} className="text-[#999999]" weight="bold" />
                                   <a href={`tel:${contact.phone}`} className="text-[12px] text-[#141414] hover:underline">
                                     {contact.phone}
                                   </a>
@@ -573,7 +573,7 @@ export function CrmNLeadDrawer({
                               )}
                               {contact.email && (
                                 <div className="flex items-center gap-2">
-                                  <EnvelopeIcon className="w-3.5 h-3.5 text-[#999999]" />
+                                  <Envelope size={14} className="text-[#999999]" weight="bold" />
                                   <a href={`mailto:${contact.email}`} className="text-[12px] text-[#141414] hover:underline">
                                     {contact.email}
                                   </a>
@@ -581,7 +581,7 @@ export function CrmNLeadDrawer({
                               )}
                               {contact.company && (
                                 <div className="flex items-center gap-2">
-                                  <BuildingOfficeIcon className="w-3.5 h-3.5 text-[#999999]" />
+                                  <Buildings size={14} className="text-[#999999]" weight="bold" />
                                   <span className="text-[12px] text-[#141414]">{contact.company}</span>
                                 </div>
                               )}
@@ -640,7 +640,7 @@ export function CrmNLeadDrawer({
                         onClick={() => setShowTaskForm(true)}
                         className="flex items-center gap-1 text-[11px] font-medium text-[#999] hover:text-[#666] transition-colors"
                       >
-                        <PlusIcon className="w-3 h-3" />
+                        <Plus size={12} weight="bold" />
                         Qo'shish
                       </button>
                     </div>
@@ -689,8 +689,10 @@ export function CrmNLeadDrawer({
                               onClick={() => handleToggleTask(task.id, !task.is_done)}
                               className="mt-0.5 shrink-0"
                             >
-                              <CheckCircleIcon
-                                className={`w-4 h-4 ${task.is_done ? "text-emerald-500" : "text-[#D0D0D0]"}`}
+                              <CheckCircle
+                                size={16}
+                                className={task.is_done ? "text-emerald-500" : "text-[#D0D0D0]"}
+                                weight="bold"
                               />
                             </button>
                             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
@@ -699,7 +701,7 @@ export function CrmNLeadDrawer({
                               </span>
                               {task.due_date && (
                                 <div className="flex items-center gap-1">
-                                  <ClockIcon className="w-3 h-3 text-[#999]" />
+                                  <Clock size={12} className="text-[#999]" weight="bold" />
                                   <span className="text-[10px] text-[#999]">{formatDate(task.due_date)}</span>
                                 </div>
                               )}
@@ -762,13 +764,13 @@ export function CrmNLeadDrawer({
                   {/* AmoCRM link placeholder */}
                   {lead.is_won && (
                     <div className="flex items-center gap-2 bg-emerald-50 rounded-[8px] p-3">
-                      <CalendarIcon className="w-4 h-4 text-emerald-500" />
+                      <Calendar size={16} className="text-emerald-500" weight="bold" />
                       <span className="text-[12px] font-medium text-emerald-700">Bu lead yutilgan</span>
                     </div>
                   )}
                   {lead.is_lost && (
                     <div className="flex items-center gap-2 bg-red-50 rounded-[8px] p-3">
-                      <CalendarIcon className="w-4 h-4 text-red-500" />
+                      <Calendar size={16} className="text-red-500" weight="bold" />
                       <span className="text-[12px] font-medium text-red-700">
                         Bu lead yutqazilgan{lead.loss_reason ? `: ${lead.loss_reason}` : ""}
                       </span>

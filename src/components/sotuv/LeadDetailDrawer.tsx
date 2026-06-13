@@ -1,18 +1,18 @@
 import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  XMarkIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  BuildingOfficeIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  LinkIcon,
-  PlusIcon,
-  ChevronDownIcon,
-  PencilIcon,
-} from "@heroicons/react/24/solid"
+  X,
+  Phone,
+  Envelope,
+  Buildings,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Link as LinkIcon,
+  Plus,
+  CaretDown,
+  PencilSimple,
+} from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
 import { getStageConfig } from "@/lib/mock-data/sotuv"
 import {
@@ -116,7 +116,7 @@ function CustomFieldsList({ fields }: { fields: CustomFieldRendered[] }) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-blue-600 hover:underline"
             >
-              <LinkIcon className="w-3 h-3 shrink-0" />
+              <LinkIcon size={12} className="shrink-0" weight="bold" />
               <span className="truncate">
                 {field.value.length > 30 ? field.value.slice(0, 30) + "..." : field.value}
               </span>
@@ -485,7 +485,7 @@ export function LeadDetailDrawer({
                 onClick={onClose}
                 className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
               >
-                <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
 
@@ -551,7 +551,7 @@ export function LeadDetailDrawer({
                                     </option>
                                   ))}
                               </select>
-                              <ChevronDownIcon className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
+                              <CaretDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" weight="bold" />
                             </div>
                             {responsibleSaving && (
                               <div className="w-3 h-3 border border-[#141414] border-t-transparent rounded-full animate-spin" />
@@ -612,7 +612,7 @@ export function LeadDetailDrawer({
                           )}
                           {lead.phone && (
                             <div className="flex items-center gap-2">
-                              <PhoneIcon className="w-3.5 h-3.5 text-[#999999]" />
+                              <Phone size={14} className="text-[#999999]" weight="bold" />
                               <a
                                 href={`tel:${lead.phone}`}
                                 className="text-[12px] text-[#141414] hover:underline"
@@ -623,7 +623,7 @@ export function LeadDetailDrawer({
                           )}
                           {lead.email && (
                             <div className="flex items-center gap-2">
-                              <EnvelopeIcon className="w-3.5 h-3.5 text-[#999999]" />
+                              <Envelope size={14} className="text-[#999999]" weight="bold" />
                               <a
                                 href={`mailto:${lead.email}`}
                                 className="text-[12px] text-[#141414] hover:underline"
@@ -657,7 +657,7 @@ export function LeadDetailDrawer({
                                   className="p-1 rounded-[4px] hover:bg-[#EBEBEB] transition-colors"
                                   title="Tahrirlash"
                                 >
-                                  <PencilIcon className="w-3 h-3 text-[#999999]" />
+                                  <PencilSimple size={12} className="text-[#999999]" weight="bold" />
                                 </button>
                               )}
                             </div>
@@ -700,7 +700,7 @@ export function LeadDetailDrawer({
                               <>
                                 {contact.phones.map((phone, pi) => (
                                   <div key={`p-${pi}`} className="flex items-center gap-2">
-                                    <PhoneIcon className="w-3.5 h-3.5 text-[#999999] shrink-0" />
+                                    <Phone size={14} className="text-[#999999] shrink-0" weight="bold" />
                                     <a
                                       href={`tel:${phone.value}`}
                                       className="text-[12px] text-[#141414] hover:underline"
@@ -717,7 +717,7 @@ export function LeadDetailDrawer({
 
                                 {contact.emails.map((email, ei) => (
                                   <div key={`e-${ei}`} className="flex items-center gap-2">
-                                    <EnvelopeIcon className="w-3.5 h-3.5 text-[#999999] shrink-0" />
+                                    <Envelope size={14} className="text-[#999999] shrink-0" weight="bold" />
                                     <a
                                       href={`mailto:${email.value}`}
                                       className="text-[12px] text-[#141414] hover:underline"
@@ -755,14 +755,14 @@ export function LeadDetailDrawer({
                       <SectionHeader>Kompaniya</SectionHeader>
                       <div className="flex flex-col gap-2.5 bg-[#FBFBFB] rounded-[8px] p-4">
                         <div className="flex items-center gap-2.5">
-                          <BuildingOfficeIcon className="w-4 h-4 text-[#999999] shrink-0" />
+                          <Buildings size={16} className="text-[#999999] shrink-0" weight="bold" />
                           <span className="text-[13px] font-bold text-[#141414]">
                             {detail.company.name}
                           </span>
                         </div>
                         {detail.company.phone && (
                           <div className="flex items-center gap-2">
-                            <PhoneIcon className="w-3.5 h-3.5 text-[#999999] shrink-0" />
+                            <Phone size={14} className="text-[#999999] shrink-0" weight="bold" />
                             <a
                               href={`tel:${detail.company.phone}`}
                               className="text-[12px] text-[#141414] hover:underline"
@@ -784,7 +784,7 @@ export function LeadDetailDrawer({
                       <SectionHeader>Kompaniya</SectionHeader>
                       <div className="flex flex-col gap-2.5 bg-[#FBFBFB] rounded-[8px] p-4">
                         <div className="flex items-center gap-2.5">
-                          <BuildingOfficeIcon className="w-4 h-4 text-[#999999] shrink-0" />
+                          <Buildings size={16} className="text-[#999999] shrink-0" weight="bold" />
                           <span className="text-[13px] font-bold text-[#141414]">
                             {lead.company}
                           </span>
@@ -857,7 +857,7 @@ export function LeadDetailDrawer({
                           onClick={() => setShowTaskForm(true)}
                           className="flex items-center gap-1 text-[11px] font-bold text-[#141414] hover:text-[#666] transition-colors"
                         >
-                          <PlusIcon className="w-3 h-3" />
+                          <Plus size={12} weight="bold" />
                           Qo'shish
                         </button>
                       )}
@@ -871,9 +871,9 @@ export function LeadDetailDrawer({
                             className="bg-[#FBFBFB] rounded-[8px] p-3 flex items-start gap-2.5"
                           >
                             {task.isCompleted ? (
-                              <CheckCircleIcon className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                              <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" weight="bold" />
                             ) : (
-                              <ClockIcon className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                              <Clock size={16} className="text-orange-500 shrink-0 mt-0.5" weight="bold" />
                             )}
                             <div className="flex flex-col gap-0.5">
                               <span
@@ -882,7 +882,7 @@ export function LeadDetailDrawer({
                                 {task.text}
                               </span>
                               <div className="flex items-center gap-1.5">
-                                <CalendarIcon className="w-3 h-3 text-[#999999]" />
+                                <Calendar size={12} className="text-[#999999]" weight="bold" />
                                 <span className="text-[10px] text-[#999999]">
                                   {formatDate(task.dueDate)}
                                 </span>
@@ -912,7 +912,7 @@ export function LeadDetailDrawer({
                               className="w-full border border-[#F0F0F0] rounded-[8px] px-3 py-2 text-[12px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
                             />
                             <div className="flex items-center gap-2">
-                              <CalendarIcon className="w-3.5 h-3.5 text-[#999999] shrink-0" />
+                              <Calendar size={14} className="text-[#999999] shrink-0" weight="bold" />
                               <input
                                 type="date"
                                 value={taskDueDate}
@@ -1014,14 +1014,14 @@ export function LeadDetailDrawer({
                             onClick={() => setShowCloseConfirm("won")}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors"
                           >
-                            <CheckCircleIcon className="w-3.5 h-3.5" />
+                            <CheckCircle size={14} weight="bold" />
                             Yutildi
                           </button>
                           <button
                             onClick={() => setShowCloseConfirm("lost")}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-[12px] font-bold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
                           >
-                            <XMarkIcon className="w-3.5 h-3.5" />
+                            <X size={14} weight="bold" />
                             Yutqazildi
                           </button>
                         </motion.div>

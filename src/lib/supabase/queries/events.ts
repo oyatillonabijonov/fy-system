@@ -10,6 +10,8 @@ export interface Event {
   location: string | null
   cover_image: string | null
   is_active: boolean
+  cashback_percent: number
+  price: number
   created_at: string
   updated_at: string
 }
@@ -30,6 +32,9 @@ export interface Participant {
   paid: number
   attended: boolean
   sort_order: number
+  cashback_percent: number | null
+  cashback_earned: number
+  cashback_used: number
   created_at: string
 }
 
@@ -54,6 +59,8 @@ export interface CreateEventInput {
   date?: string
   location?: string
   cover_image?: string
+  cashback_percent?: number
+  price?: number
 }
 
 export interface CreateParticipantInput {
@@ -75,7 +82,7 @@ export interface CreateParticipantInput {
 export async function getEvents(): Promise<Event[]> {
   const { data, error } = await supabase
     .from("events")
-    .select("id, name, description, date, location, cover_image, is_active, created_at, updated_at")
+    .select("id, name, description, date, location, cover_image, is_active, cashback_percent, price, created_at, updated_at")
     .order("date", { ascending: false })
 
   if (error) throw error
@@ -102,6 +109,8 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       date: input.date ?? null,
       location: input.location ?? null,
       cover_image: input.cover_image ?? null,
+      ...(input.cashback_percent !== undefined ? { cashback_percent: input.cashback_percent } : {}),
+      ...(input.price !== undefined ? { price: input.price } : {}),
     })
     .select()
     .single()
@@ -112,7 +121,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 
 export async function updateEvent(
   id: string,
-  updates: Partial<Pick<Event, "name" | "description" | "date" | "location" | "cover_image" | "is_active">>
+  updates: Partial<Pick<Event, "name" | "description" | "date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price">>
 ): Promise<void> {
   const { error } = await supabase
     .from("events")
@@ -158,7 +167,7 @@ export async function uploadEventCover(
 export async function getParticipants(eventId: string): Promise<Participant[]> {
   const { data, error } = await supabase
     .from("event_participants")
-    .select("id, event_id, contact_id, full_name, phone, email, company, role, photo_url, notes, price, paid, attended, sort_order, created_at, clients(activity)")
+    .select("id, event_id, contact_id, full_name, phone, email, company, role, photo_url, notes, price, paid, attended, sort_order, cashback_percent, cashback_earned, cashback_used, created_at, clients(activity)")
     .eq("event_id", eventId)
     .order("sort_order")
     .order("created_at")
@@ -183,6 +192,9 @@ export async function getParticipants(eventId: string): Promise<Participant[]> {
       paid: row.paid,
       attended: row.attended,
       sort_order: row.sort_order ?? 0,
+      cashback_percent: row.cashback_percent,
+      cashback_earned: row.cashback_earned ?? 0,
+      cashback_used: row.cashback_used ?? 0,
       created_at: row.created_at ?? new Date().toISOString(),
     }
   })

@@ -34,6 +34,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          changes: Json | null
+          created_at: string | null
+          description: string | null
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          changes?: Json | null
+          created_at?: string | null
+          description?: string | null
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          changes?: Json | null
+          created_at?: string | null
+          description?: string | null
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amocrm_leads: {
         Row: {
           company_name: string | null
@@ -181,9 +240,102 @@ export type Database = {
         }
         Relationships: []
       }
+      cashback_transactions: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_id: string | null
+          id: string
+          participant_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_id?: string | null
+          id?: string
+          participant_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_id?: string | null
+          id?: string
+          participant_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashback_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cashback_transactions_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "event_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           activity: string | null
+          auth_user_id: string | null
+          cashback_balance: number | null
+          community_approved: boolean
           company: string | null
           created_at: string
           email: string | null
@@ -202,6 +354,9 @@ export type Database = {
         }
         Insert: {
           activity?: string | null
+          auth_user_id?: string | null
+          cashback_balance?: number | null
+          community_approved?: boolean
           company?: string | null
           created_at?: string
           email?: string | null
@@ -220,6 +375,9 @@ export type Database = {
         }
         Update: {
           activity?: string | null
+          auth_user_id?: string | null
+          cashback_balance?: number | null
+          community_approved?: boolean
           company?: string | null
           created_at?: string
           email?: string | null
@@ -492,10 +650,86 @@ export type Database = {
           },
         ]
       }
+      department_heads: {
+        Row: {
+          assigned_at: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          user_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          user_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          department?: Database["public"]["Enums"]["department_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_heads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_kpi_targets: {
+        Row: {
+          created_at: string | null
+          events_target: number | null
+          id: string
+          leads_target: number | null
+          notes: string | null
+          period_month: number
+          period_year: number
+          revenue_target: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          events_target?: number | null
+          id?: string
+          leads_target?: number | null
+          notes?: string | null
+          period_month: number
+          period_year: number
+          revenue_target?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          events_target?: number | null
+          id?: string
+          leads_target?: number | null
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          revenue_target?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_kpi_targets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           activity: string | null
           attended: boolean
+          cashback_earned: number | null
+          cashback_percent: number | null
+          cashback_used: number | null
           company: string | null
           contact_id: string | null
           created_at: string | null
@@ -511,12 +745,16 @@ export type Database = {
           price: number
           revenue: string | null
           role: string | null
+          skip_cashback_award: boolean | null
           sort_order: number | null
           status: string | null
         }
         Insert: {
           activity?: string | null
           attended?: boolean
+          cashback_earned?: number | null
+          cashback_percent?: number | null
+          cashback_used?: number | null
           company?: string | null
           contact_id?: string | null
           created_at?: string | null
@@ -532,12 +770,16 @@ export type Database = {
           price?: number
           revenue?: string | null
           role?: string | null
+          skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
         }
         Update: {
           activity?: string | null
           attended?: boolean
+          cashback_earned?: number | null
+          cashback_percent?: number | null
+          cashback_used?: number | null
           company?: string | null
           contact_id?: string | null
           created_at?: string | null
@@ -553,6 +795,7 @@ export type Database = {
           price?: number
           revenue?: string | null
           role?: string | null
+          skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
         }
@@ -575,6 +818,7 @@ export type Database = {
       }
       events: {
         Row: {
+          cashback_percent: number | null
           cover_image: string | null
           created_at: string | null
           date: string | null
@@ -583,9 +827,11 @@ export type Database = {
           is_active: boolean | null
           location: string | null
           name: string
+          price: number
           updated_at: string | null
         }
         Insert: {
+          cashback_percent?: number | null
           cover_image?: string | null
           created_at?: string | null
           date?: string | null
@@ -594,9 +840,11 @@ export type Database = {
           is_active?: boolean | null
           location?: string | null
           name: string
+          price?: number
           updated_at?: string | null
         }
         Update: {
+          cashback_percent?: number | null
           cover_image?: string | null
           created_at?: string | null
           date?: string | null
@@ -605,6 +853,7 @@ export type Database = {
           is_active?: boolean | null
           location?: string | null
           name?: string
+          price?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -660,6 +909,192 @@ export type Database = {
         }
         Relationships: []
       }
+      news_posts: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          published_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          published_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          published_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          paid_at: string
+          participant_id: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: string
+          note?: string | null
+          paid_at?: string
+          participant_id: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_at?: string
+          participant_id?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "event_participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          bio: string | null
+          birth_date: string | null
+          created_at: string | null
+          department: Database["public"]["Enums"]["department_type"] | null
+          email: string
+          emergency_contact: string | null
+          full_name: string
+          hire_date: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          phone: string | null
+          position: string | null
+          role: string
+          telegram: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string | null
+          department?: Database["public"]["Enums"]["department_type"] | null
+          email: string
+          emergency_contact?: string | null
+          full_name: string
+          hire_date?: string | null
+          id: string
+          is_active?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          role?: string
+          telegram?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birth_date?: string | null
+          created_at?: string | null
+          department?: Database["public"]["Enums"]["department_type"] | null
+          email?: string
+          emergency_contact?: string | null
+          full_name?: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          role?: string
+          telegram?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_view: boolean | null
+          created_at: string | null
+          id: string
+          module: string
+          user_id: string | null
+        }
+        Insert: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          id?: string
+          module: string
+          user_id?: string | null
+        }
+        Update: {
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          id?: string
+          module?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_logs: {
         Row: {
           created_at: string
@@ -700,10 +1135,70 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_employee_kpi_actual: {
+        Args: { p_month: number; p_user_id: string; p_year: number }
+        Returns: {
+          events_managed: number
+          leads_closed: number
+          revenue_actual: number
+        }[]
+      }
+      cleanup_old_activity_logs: { Args: never; Returns: undefined }
+      get_current_actor: {
+        Args: never
+        Returns: {
+          actor_email: string
+          actor_id: string
+          actor_name: string
+          actor_role: string
+        }[]
+      }
+      has_permission: {
+        Args: { p_module: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_admin: { Args: { p_user_id: string }; Returns: boolean }
+      is_staff: { Args: { p_user_id: string }; Returns: boolean }
+      member_update_profile: {
+        Args: {
+          p_activity?: string
+          p_company?: string
+          p_full_name?: string
+          p_industry?: string
+          p_phone?: string
+        }
+        Returns: undefined
+      }
+      my_client_id: { Args: never; Returns: string }
+      normalize_phone: { Args: { p: string }; Returns: string }
+      register_for_event: { Args: { p_event_id: string }; Returns: string }
+      setup_google_member: {
+        Args: { p_company: string; p_full_name: string; p_phone: string }
+        Returns: string
+      }
+      spend_cashback: {
+        Args: {
+          p_amount: number
+          p_client_id: string
+          p_event_id: string
+          p_participant_id: string
+        }
+        Returns: undefined
+      }
+      close_crm_lead_won: {
+        Args: { p_lead_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       call_type: "answered" | "missed" | "none"
+      department_type:
+        | "marketing"
+        | "sotuv"
+        | "buxgalteriya"
+        | "operatsion"
+        | "it"
+        | "hr"
       lead_source: "amocrm" | "manual" | "telegram"
       lead_stage:
         | "yangi_lid"
@@ -843,6 +1338,14 @@ export const Constants = {
   public: {
     Enums: {
       call_type: ["answered", "missed", "none"],
+      department_type: [
+        "marketing",
+        "sotuv",
+        "buxgalteriya",
+        "operatsion",
+        "it",
+        "hr",
+      ],
       lead_source: ["amocrm", "manual", "telegram"],
       lead_stage: [
         "yangi_lid",
@@ -856,9 +1359,3 @@ export const Constants = {
   },
 } as const
 
-
-// ── Project-specific aliases (preserved for back-compat with existing imports) ──
-export type LeadStage = Database["public"]["Enums"]["lead_stage"]
-export type LeadSource = Database["public"]["Enums"]["lead_source"]
-export type CallType = Database["public"]["Enums"]["call_type"]
-export type ClientStatus = "Faol" | "Nofaol"

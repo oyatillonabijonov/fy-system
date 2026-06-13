@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { DropResult } from "@hello-pangea/dnd"
 import {
-  ArrowPathIcon,
-  PlusIcon,
-  ArrowUpRightIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/solid"
+  ArrowsClockwise,
+  Plus,
+  ArrowUpRight,
+  CaretDown,
+} from "@phosphor-icons/react"
 import {
   formatAmount,
   getTotalAmount,
@@ -436,7 +436,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
                   </option>
                 ))}
               </select>
-              <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#999999] pointer-events-none" />
+              <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
             </div>
           ) : null}
 
@@ -447,11 +447,11 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => fetchLeads(undefined, true)}>
-            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <ArrowsClockwise size={14} weight="bold" className={loading ? "animate-spin" : ""} />
             Yangilash
           </Button>
           <Button size="sm" onClick={() => setShowCreateModal(true)}>
-            <PlusIcon className="w-3.5 h-3.5" />
+            <Plus size={14} weight="bold" />
             Yangi lid
           </Button>
         </div>
@@ -506,7 +506,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
             animate={{ rotate: statsOpen ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDownIcon className="w-3.5 h-3.5 text-[#999]" />
+            <CaretDown size={14} className="text-[#999]" weight="bold" />
           </motion.div>
         </button>
 
@@ -545,7 +545,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       {stat.isUp !== null && (
-                        <ArrowUpRightIcon className="w-3 h-3 text-green-600" />
+                        <ArrowUpRight size={12} className="text-green-600" weight="bold" />
                       )}
                       <span
                         className={`text-[11px] font-bold ${stat.isUp !== null ? "text-green-600" : "text-[#999999]"}`}

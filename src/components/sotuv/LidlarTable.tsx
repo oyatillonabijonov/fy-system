@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react"
 import {
-  MagnifyingGlassIcon,
-  ChevronDownIcon,
-  ListBulletIcon,
-  ViewColumnsIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/solid"
+  MagnifyingGlass,
+  CaretDown,
+  ListBullets,
+  Columns,
+  CaretLeft,
+  CaretRight,
+} from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
 import { LidCard } from "./LidCard"
 
@@ -91,7 +91,7 @@ export function LidlarTable({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative w-[260px]">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999999]" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999999]" weight="bold" />
           <input
             type="text"
             placeholder="Ism, kompaniya, telefon..."
@@ -125,7 +125,7 @@ export function LidlarTable({
               )
             })}
           </select>
-          <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#999999] pointer-events-none" />
+          <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
         </div>
 
         {/* Manager filter */}
@@ -145,7 +145,7 @@ export function LidlarTable({
               </option>
             ))}
           </select>
-          <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#999999] pointer-events-none" />
+          <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
         </div>
 
         {/* Source filter */}
@@ -163,7 +163,7 @@ export function LidlarTable({
             <option value="manual">Qo'lda</option>
             <option value="telegram">Telegram bot</option>
           </select>
-          <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#999999] pointer-events-none" />
+          <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
         </div>
 
         <div className="flex-1" />
@@ -171,13 +171,13 @@ export function LidlarTable({
         {/* View toggle */}
         <div className="flex items-center border border-[#E0E0E0] rounded-[8px] overflow-hidden">
           <button className="p-2 bg-[#141414] text-white">
-            <ListBulletIcon className="w-4 h-4" />
+            <ListBullets size={16} weight="bold" />
           </button>
           <button
             onClick={onSwitchToPipeline}
             className="p-2 bg-white text-[#999999] hover:text-[#141414] transition-colors"
           >
-            <ViewColumnsIcon className="w-4 h-4" />
+            <Columns size={16} weight="bold" />
           </button>
         </div>
       </div>
@@ -251,7 +251,7 @@ export function LidlarTable({
               disabled={currentPage === 1}
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <ChevronLeftIcon className="w-4 h-4 text-[#141414]" />
+              <CaretLeft size={16} className="text-[#141414]" weight="bold" />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
@@ -271,7 +271,7 @@ export function LidlarTable({
               disabled={currentPage === totalPages}
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <ChevronRightIcon className="w-4 h-4 text-[#141414]" />
+              <CaretRight size={16} className="text-[#141414]" weight="bold" />
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { XMarkIcon, ArrowUpTrayIcon } from "@heroicons/react/24/solid"
+import { X, UploadSimple } from "@phosphor-icons/react"
 import {
   createEvent,
   updateEvent,
@@ -25,6 +25,8 @@ export function CreateEventModal({
   const [date, setDate] = useState("")
   const [location, setLocation] = useState("")
   const [description, setDescription] = useState("")
+  const [cashbackPercent, setCashbackPercent] = useState<string>("5")
+  const [price, setPrice] = useState<string>("0")
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -41,12 +43,16 @@ export function CreateEventModal({
       setDate(editEvent.date ?? "")
       setLocation(editEvent.location ?? "")
       setDescription(editEvent.description ?? "")
+      setCashbackPercent(String(editEvent.cashback_percent ?? 5))
+      setPrice(String(editEvent.price ?? 0))
       setPreview(editEvent.cover_image ?? null)
     } else {
       setName("")
       setDate("")
       setLocation("")
       setDescription("")
+      setCashbackPercent("5")
+      setPrice("0")
       setPreview(null)
     }
     setCoverFile(null)
@@ -68,8 +74,30 @@ export function CreateEventModal({
     reader.readAsDataURL(file)
   }
 
+  function parseCashbackPercent(): number | null {
+    const v = Number(cashbackPercent)
+    if (!Number.isFinite(v) || v < 0 || v > 100) return null
+    return Math.round(v * 100) / 100
+  }
+
+  function parsePrice(): number | null {
+    const v = Number(price)
+    if (!Number.isFinite(v) || v < 0) return null
+    return Math.round(v * 100) / 100
+  }
+
   async function handleSubmit() {
     if (!name.trim()) return
+    const cb = parseCashbackPercent()
+    if (cb === null) {
+      setError("Cashback foizi 0 dan 100 gacha bo'lishi kerak")
+      return
+    }
+    const priceValue = parsePrice()
+    if (priceValue === null) {
+      setError("Narx manfiy bo'lishi mumkin emas")
+      return
+    }
     setSaving(true)
     setError(null)
 
@@ -84,6 +112,8 @@ export function CreateEventModal({
           date: date || null,
           location: location.trim() || null,
           description: description.trim() || null,
+          cashback_percent: cb,
+          price: priceValue,
         }
 
         if (coverFile) {
@@ -99,6 +129,8 @@ export function CreateEventModal({
           date: date || undefined,
           location: location.trim() || undefined,
           description: description.trim() || undefined,
+          cashback_percent: cb,
+          price: priceValue,
         })
 
         // Upload cover if selected
@@ -122,6 +154,8 @@ export function CreateEventModal({
     setDate("")
     setLocation("")
     setDescription("")
+    setCashbackPercent("5")
+    setPrice("0")
     setCoverFile(null)
     setPreview(null)
     setError(null)
@@ -159,7 +193,7 @@ export function CreateEventModal({
                   onClick={handleClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                 >
-                  <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                  <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
 
@@ -223,6 +257,46 @@ export function CreateEventModal({
                   />
                 </div>
 
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-medium text-[#999999]">
+                    Narxi (so'm)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={10000}
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="500000"
+                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                  />
+                  <span className="text-[11px] text-[#999]">
+                    A'zo mobil ilovadan ro'yxatdan o'tganda shu narx yoziladi (0 = bepul)
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-medium text-[#999999]">
+                    Cashback foizi (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={cashbackPercent}
+                      onChange={(e) => setCashbackPercent(e.target.value)}
+                      placeholder="5"
+                      className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 pr-9 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">%</span>
+                  </div>
+                  <span className="text-[11px] text-[#999]">
+                    Har bir mijoz uchun alohida o'zgartirish mumkin
+                  </span>
+                </div>
+
                 {/* Cover image upload */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[12px] font-medium text-[#999999]">
@@ -240,7 +314,7 @@ export function CreateEventModal({
                       />
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-[#999]">
-                        <ArrowUpTrayIcon className="w-6 h-6" />
+                        <UploadSimple size={24} weight="bold" />
                         <span className="text-[13px]">
                           Rasm yuklash uchun bosing
                         </span>

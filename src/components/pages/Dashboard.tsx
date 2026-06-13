@@ -1,9 +1,9 @@
 import {
-    UsersIcon,
-    TicketIcon,
-    ArrowTrendingUpIcon,
-    EllipsisHorizontalIcon,
-} from "@heroicons/react/24/solid"
+    Users,
+    Ticket,
+    TrendUp,
+    DotsThree,
+} from "@phosphor-icons/react"
 import { motion } from "framer-motion"
 import {
     AreaChart,
@@ -26,25 +26,25 @@ export function Dashboard() {
         {
             title: "Kecha tushgan lidlar",
             value: analytics ? String(analytics.leadsYesterday) : "—",
-            icon: ArrowTrendingUpIcon,
+            icon: TrendUp,
             suffix: "ta",
         },
         {
             title: "Jami aktiv lidlar",
             value: analytics ? String(analytics.activeLeads) : "—",
-            icon: UsersIcon,
+            icon: Users,
             suffix: "ta",
         },
         {
             title: "Bugun tushgan lidlar",
             value: analytics ? String(analytics.leadsToday) : "—",
-            icon: TicketIcon,
+            icon: Ticket,
             suffix: "ta",
         },
         {
             title: "Konversiya",
             value: analytics ? analytics.conversionRate.toFixed(1) : "—",
-            icon: ArrowTrendingUpIcon,
+            icon: TrendUp,
             suffix: "%",
         },
     ]
@@ -65,7 +65,7 @@ export function Dashboard() {
                     >
                         <div className="flex items-center justify-between">
                             <div className="w-10 h-10 rounded-[8px] bg-[#F5F5F5] flex items-center justify-center">
-                                <stat.icon className="w-5 h-5 text-[#141414]" />
+                                <stat.icon size={20} className="text-[#141414]" weight="bold" />
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -95,7 +95,7 @@ export function Dashboard() {
                             <p className="text-[12px] text-[#999999]">Oxirgi 7 oylik ko'rsatkichlar</p>
                         </div>
                         <button className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors">
-                            <EllipsisHorizontalIcon className="w-5 h-5 text-[#999999]" />
+                            <DotsThree size={20} className="text-[#999999]" weight="bold" />
                         </button>
                     </div>
                     <div className="h-[300px] w-full">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Routes, Route, Navigate, Outlet, useLocation, useParams, useNavigate } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
@@ -6,17 +7,30 @@ import { Sotuv } from "./components/pages/Sotuv"
 import { CrmN } from "./components/pages/CrmN"
 import { Events } from "./components/pages/Events"
 import { EventDetail } from "./components/pages/EventDetail"
+import { Sozlamalar } from "./components/pages/Sozlamalar"
+import { Hodimlar } from "./components/pages/Hodimlar"
+import { HodimDetail } from "./components/pages/HodimDetail"
+import { Bolimlar } from "./components/pages/Bolimlar"
+import { Faollik } from "./components/pages/Faollik"
+import { Yangiliklar } from "./components/pages/Yangiliklar"
+import { Pbx } from "./components/pages/Pbx"
+import { Login } from "./components/pages/Login"
+import { ProtectedRoute } from "./components/auth/ProtectedRoute"
+import { MemberRoute } from "./components/auth/MemberRoute"
+import { MemberAuthCallback } from "./components/pages/MemberAuthCallback"
+import MemberEvents from "./components/pages/MemberEvents"
+import MemberProfile from "./components/pages/MemberProfile"
+import { MemberHamjamiyat } from "./components/pages/MemberHamjamiyat"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  BellIcon,
-  MagnifyingGlassIcon,
-  ChevronDownIcon,
-  Cog6ToothIcon
-} from "@heroicons/react/24/solid"
+  Bell,
+  MagnifyingGlass,
+  CaretDown,
+  Gear,
+} from "@phosphor-icons/react"
 
-const ROUTE_KEY = 'fy_last_route'
 const LANG_KEY = 'fy_lang'
 
 function getSaved(key: string, fallback: string): string {
@@ -25,86 +39,82 @@ function getSaved(key: string, fallback: string): string {
   } catch { return fallback }
 }
 
-function AppInner() {
-  const [activeItem, setActiveItem] = useState(() => getSaved(ROUTE_KEY, "Dashboard"))
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-  const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
+interface PageMeta {
+  title: string
+  desc: string
+}
 
-  useEffect(() => {
-    try { localStorage.setItem(ROUTE_KEY, activeItem) } catch { /* private browsing */ }
-  }, [activeItem])
+const MEMBER_PAGE_META: Record<string, PageMeta> = {
+  '/member/events':    { title: 'Tadbirlar',    desc: "Klub tadbirlari va ro'yxatdan o'tish." },
+  '/member/profile':   { title: 'Mening profilim', desc: "Shaxsiy ma'lumotlaringiz." },
+  '/member/community': { title: 'Hamjamiyat',   desc: "A'zolar bilan muloqot va guruh kanallar." },
+}
+
+const PAGE_META: Record<string, PageMeta> = {
+  '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
+  '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
+  '/sotuv/amocrm':  { title: 'AmoCRM',          desc: 'AmoCRM orqali savdo jarayonlari va lidlar.' },
+  '/sotuv/crm-n':   { title: 'CRM-N',           desc: 'Ichki CRM tizimi — mustaqil savdo boshqaruvi.' },
+  '/tadbirlar':     { title: 'Tadbirlar',       desc: "Klub doirasidagi barcha tadbirlar va uchrashuvlar." },
+  '/pbx':           { title: 'IP Telefoniya',   desc: "Onlayn ATS integratsiyasi va qo'ng'iroqlar tarixi." },
+  '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
+  '/bolimlar':      { title: "Bo'limlar",       desc: "Tizim bo'limlari va hodimlar boshqaruvi." },
+  '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
+  '/yangiliklar':   { title: 'Yangiliklar',     desc: "Klub yangiliklari — a'zolar mobil ilovada ko'radi." },
+  '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash." },
+}
+
+function pageMetaFor(pathname: string): PageMeta {
+  if (/^\/tadbirlar\/[^/]+/.test(pathname)) {
+    return { title: 'Tadbir tafsilotlari', desc: "Ishtirokchilar va tadbir holati." }
+  }
+  if (/^\/hodimlar\/[^/]+/.test(pathname)) {
+    return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
+  }
+  if (pathname.startsWith('/member/')) {
+    return MEMBER_PAGE_META[pathname] ?? { title: '', desc: '' }
+  }
+  return PAGE_META[pathname] ?? { title: '', desc: '' }
+}
+
+// ─── Route adapters that turn callback-based pages into router-aware ones ──
+
+function EventsRoute() {
+  const navigate = useNavigate()
+  return <Events onSelectEvent={(id) => navigate(`/tadbirlar/${id}`)} />
+}
+
+function EventDetailRoute() {
+  const { eventId } = useParams<{ eventId: string }>()
+  const navigate = useNavigate()
+  if (!eventId) return <Navigate to="/tadbirlar" replace />
+  return <EventDetail eventId={eventId} onBack={() => navigate("/tadbirlar")} />
+}
+
+// ─── Shell layout (sidebar + header + outlet) ───────────────────────────
+
+function AppShell() {
+  const location = useLocation()
+  const meta = pageMetaFor(location.pathname)
+
+  const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
+  const [isLangOpen, setIsLangOpen] = useState(false)
+  const [isNotifOpen, setIsNotifOpen] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(LANG_KEY, currentLang) } catch { /* private browsing */ }
   }, [currentLang])
-  const [isLangOpen, setIsLangOpen] = useState(false)
-  const [isNotifOpen, setIsNotifOpen] = useState(false)
 
   const notifications = [
-    { id: 1, title: "Yangi tadbir", desc: "Biznes nonushta tadbiri yakunlandi.", time: "2 daqiqa oldin", type: "event", unread: true },
-    { id: 2, title: "To'lov tasdiqlandi", desc: "Mijoz #4412 tomonidan to'lov amalga oshirildi.", time: "1 soat oldin", type: "payment", unread: true },
-    { id: 3, title: "Tizim yangilanishi", desc: "Yangi versiya 2.4.0 muvaffaqiyatli o'rnatildi.", time: "3 soat oldin", type: "system", unread: false },
+    { id: 1, title: "Yangi tadbir",       desc: "Biznes nonushta tadbiri yakunlandi.",   time: "2 daqiqa oldin", type: "event",   unread: true },
+    { id: 2, title: "To'lov tasdiqlandi", desc: "Mijoz #4412 tomonidan to'lov amalga oshirildi.", time: "1 soat oldin",   type: "payment", unread: true },
+    { id: 3, title: "Tizim yangilanishi", desc: "Yangi versiya 2.4.0 muvaffaqiyatli o'rnatildi.",   time: "3 soat oldin",   type: "system",  unread: false },
   ]
-
-  const getPageDescription = () => {
-    switch (activeItem) {
-      case "Dashboard": return "Tizimdagi barcha asosiy ko'rsatkichlar va statistika."
-      case "Mijozlar": return "Barcha mijozlar bazasi va ular bilan ishlash bo'limi."
-      case "Sotuv bo'limi": return "Savdo jarayonlari, lidlar va pipline tahlili."
-      case "AmoCRM": return "AmoCRM orqali savdo jarayonlari va lidlar."
-      case "CRM-N": return "Ichki CRM tizimi — mustaqil savdo boshqaruvi."
-      case "Lidlar": return "Savdo jarayonlari, lidlar va pipline tahlili."
-      case "Pipline": return "Savdo jarayonlari, lidlar va pipline tahlili."
-      case "Tadbirlar": return "Klub doirasidagi barcha tadbirlar va uchrashuvlar."
-      case "Bildirishnomalar": return "Xabarnomalar, bot va SMS bildirishnomalar boshqaruvi."
-      case "Cash Flow": return "Pul oqimi va moliyaviy tranzaksiyalar monitoringi."
-      case "To'lovlar": return "Mijozlar tomonidan amalga oshirilgan barcha to'lovlar."
-      case "Hodimlar": return "Jamoa a'zolari va ularning ruxsatnomalarini boshqarish."
-      case "Sozlamalar": return "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash."
-      case "Podkast": return "Audio kontentlar va podkastlar ro'yxati."
-      case "API": return "Tizimning tashqi integratsiyalar va API sozlamalari."
-      default: return "Ushbu bo'lim haqida ma'lumot yaqin orada qo'shiladi."
-    }
-  }
-
-  const renderContent = () => {
-    switch (activeItem) {
-      case "Dashboard": return <Dashboard />
-      case "Mijozlar": return <Mijozlar />
-      case "Sotuv bo'limi": return <Sotuv />
-      case "AmoCRM": return <Sotuv defaultTab="pipeline" />
-      case "CRM-N": return <CrmN />
-      case "Lidlar": return <Sotuv defaultTab="lidlar" />
-      case "Pipline": return <Sotuv defaultTab="pipeline" />
-      case "Tadbirlar":
-        return selectedEventId ? (
-          <EventDetail
-            eventId={selectedEventId}
-            onBack={() => setSelectedEventId(null)}
-          />
-        ) : (
-          <Events onSelectEvent={(id) => setSelectedEventId(id)} />
-        )
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full gap-4 opacity-30"
-            style={{ color: 'var(--header-muted)' }}>
-            <h1 className="text-4xl font-bold" style={{ color: 'var(--header-text)' }}>{activeItem}</h1>
-            <p>Ushbu sahifa yaqin orada qo'shiladi.</p>
-          </div>
-        )
-    }
-  }
 
   return (
     <div className="h-screen text-foreground flex overflow-hidden transition-colors duration-300"
       style={{ background: 'var(--sidebar-bg)' }}>
-      <Sidebar activeItem={activeItem} onNavigate={(item) => {
-        setActiveItem(item)
-        if (item !== "Tadbirlar") {
-          setSelectedEventId(null)
-        }
-      }} />
+      <Sidebar />
 
       {/* Main content panel */}
       <div
@@ -125,10 +135,10 @@ function AppInner() {
               {/* Left: page title */}
               <div className="flex flex-col gap-[4px]">
                 <div className="text-[20px] font-bold leading-tight" style={{ color: 'var(--header-text)' }}>
-                  {activeItem}
+                  {meta.title}
                 </div>
                 <div className="text-[12px] font-medium leading-tight" style={{ color: 'var(--header-muted)' }}>
-                  {getPageDescription()}
+                  {meta.desc}
                 </div>
               </div>
 
@@ -137,8 +147,10 @@ function AppInner() {
 
                 {/* Search */}
                 <div className="relative w-[320px]">
-                  <MagnifyingGlassIcon
-                    className="absolute left-[12px] top-1/2 -translate-y-1/2 w-5 h-5"
+                  <MagnifyingGlass
+                    size={20}
+                    className="absolute left-[12px] top-1/2 -translate-y-1/2"
+                    weight="bold"
                     style={{ color: 'var(--header-muted)' }}
                   />
                   <input
@@ -161,7 +173,7 @@ function AppInner() {
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isNotifOpen ? 'var(--header-hover)' : 'transparent'}
                   >
-                    <BellIcon className="w-6 h-6" style={{ color: 'var(--header-icon)' }} />
+                    <Bell size={24} weight="bold" style={{ color: 'var(--header-icon)' }} />
                     <span className="absolute top-[8px] right-[8px] w-[10px] h-[10px] bg-[#FF3B30] border-2 rounded-full"
                       style={{ borderColor: 'var(--main-bg)' }}></span>
                   </button>
@@ -234,8 +246,10 @@ function AppInner() {
                     style={{ background: 'var(--header-input-bg)', color: 'var(--header-text)' }}
                   >
                     <span className="text-sm font-semibold uppercase">{currentLang}</span>
-                    <ChevronDownIcon
-                      className={`w-4 h-4 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`}
+                    <CaretDown
+                      size={16}
+                      weight="bold"
+                      className={`transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`}
                       style={{ color: 'var(--header-muted)' }}
                     />
                   </button>
@@ -282,7 +296,7 @@ function AppInner() {
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 >
-                  <Cog6ToothIcon className="w-6 h-6" />
+                  <Gear size={24} weight="bold" />
                 </button>
               </div>
             </div>
@@ -294,14 +308,14 @@ function AppInner() {
             <div className="max-w-[1400px] mx-auto h-full">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={["Sotuv bo'limi", "AmoCRM", "Lidlar", "Pipline"].includes(activeItem) ? "sotuv" : activeItem === "Tadbirlar" ? "tadbirlar" : activeItem}
+                  key={location.pathname}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                   className="h-full"
                 >
-                  {renderContent()}
+                  <Outlet />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -315,7 +329,73 @@ function AppInner() {
 function App() {
   return (
     <ThemeProvider>
-      <AppInner />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth/member-callback" element={<MemberAuthCallback />} />
+
+        {/* All routes below sit inside ProtectedRoute → AppShell */}
+        <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          <Route path="/dashboard" element={
+            <ProtectedRoute module="dashboard"><Dashboard /></ProtectedRoute>
+          } />
+
+          <Route path="/sotuv/amocrm" element={
+            <ProtectedRoute module="sotuv-amocrm"><Sotuv defaultTab="pipeline" /></ProtectedRoute>
+          } />
+
+          <Route path="/sotuv/crm-n" element={
+            <ProtectedRoute module="sotuv-crmn"><CrmN /></ProtectedRoute>
+          } />
+
+          <Route path="/mijozlar" element={
+            <ProtectedRoute module="mijozlar"><Mijozlar /></ProtectedRoute>
+          } />
+
+          <Route path="/tadbirlar" element={
+            <ProtectedRoute module="tadbirlar"><EventsRoute /></ProtectedRoute>
+          } />
+          <Route path="/tadbirlar/:eventId" element={
+            <ProtectedRoute module="tadbirlar"><EventDetailRoute /></ProtectedRoute>
+          } />
+
+          <Route path="/pbx" element={
+            <ProtectedRoute module="pbx"><Pbx /></ProtectedRoute>
+          } />
+
+          <Route path="/hodimlar" element={
+            <ProtectedRoute adminOnly><Hodimlar /></ProtectedRoute>
+          } />
+          <Route path="/hodimlar/:id" element={
+            <ProtectedRoute adminOnly><HodimDetail /></ProtectedRoute>
+          } />
+          <Route path="/bolimlar" element={
+            <ProtectedRoute adminOnly><Bolimlar /></ProtectedRoute>
+          } />
+          <Route path="/faollik" element={
+            <ProtectedRoute adminOnly><Faollik /></ProtectedRoute>
+          } />
+          <Route path="/yangiliklar" element={
+            <ProtectedRoute adminOnly><Yangiliklar /></ProtectedRoute>
+          } />
+
+          <Route path="/sozlamalar" element={
+            <ProtectedRoute module="sozlamalar"><Sozlamalar /></ProtectedRoute>
+          } />
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+
+        {/* Member portal routes */}
+        <Route element={<MemberRoute><AppShell /></MemberRoute>}>
+          <Route path="/member" element={<Navigate to="/member/events" replace />} />
+          <Route path="/member/events"    element={<MemberEvents />} />
+          <Route path="/member/profile"   element={<MemberProfile />} />
+          <Route path="/member/community" element={<MemberHamjamiyat />} />
+          <Route path="/member/*" element={<Navigate to="/member/events" replace />} />
+        </Route>
+      </Routes>
     </ThemeProvider>
   )
 }

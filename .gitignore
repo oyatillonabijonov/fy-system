@@ -24,3 +24,5 @@ cloud_data.sql
 *.njsproj
 *.sln
 *.sw?
+azure-deploy/
+azure-deploy.zip

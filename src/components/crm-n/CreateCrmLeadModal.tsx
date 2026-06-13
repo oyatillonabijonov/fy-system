@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { XMarkIcon } from "@heroicons/react/24/solid"
+import { X } from "@phosphor-icons/react"
 import type { CrmStage } from "@/lib/supabase/queries/crm"
 import {
   createCrmContact,
@@ -120,7 +120,7 @@ export function CreateCrmLeadModal({
                   onClick={handleClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                 >
-                  <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                  <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
 

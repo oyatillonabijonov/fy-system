@@ -9,10 +9,10 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import {
-  MagnifyingGlassIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@heroicons/react/24/solid"
+  MagnifyingGlass,
+  CaretDown,
+  CaretUp,
+} from "@phosphor-icons/react"
 import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase/queries/crm"
 import type { CachedUser } from "@/lib/supabase/queries/amocrm"
@@ -260,7 +260,7 @@ export function CrmNLeadsList({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999]" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
           <input
             type="text"
             value={globalFilter}
@@ -282,7 +282,7 @@ export function CrmNLeadsList({
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
-          <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
+          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" weight="bold" />
         </div>
 
         {/* Responsible filter */}
@@ -297,7 +297,7 @@ export function CrmNLeadsList({
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
-          <ChevronDownIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#999] pointer-events-none" />
+          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" weight="bold" />
         </div>
 
         <span className="text-[12px] text-[#999] font-medium ml-auto">
@@ -394,10 +394,10 @@ export function CrmNLeadsList({
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {header.column.getIsSorted() === "asc" && (
-                              <ChevronUpIcon className="w-3 h-3" />
+                              <CaretUp size={12} weight="bold" />
                             )}
                             {header.column.getIsSorted() === "desc" && (
-                              <ChevronDownIcon className="w-3 h-3" />
+                              <CaretDown size={12} weight="bold" />
                             )}
                           </div>
                         )}

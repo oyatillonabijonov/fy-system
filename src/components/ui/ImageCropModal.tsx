@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react"
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css"
 import { motion, AnimatePresence } from "framer-motion"
-import { XMarkIcon } from "@heroicons/react/24/solid"
+import { X } from "@phosphor-icons/react"
 
 interface ImageCropModalProps {
   isOpen: boolean
@@ -105,7 +105,7 @@ export function ImageCropModal({
                 onClick={onClose}
                 className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all"
               >
-                <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
 

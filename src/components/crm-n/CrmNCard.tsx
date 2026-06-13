@@ -1,4 +1,4 @@
-import { PhoneIcon } from "@heroicons/react/24/solid"
+import { Phone } from "@phosphor-icons/react"
 import type { CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 
 interface CrmNCardProps {
@@ -106,7 +106,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
         )}
         {contact?.phone && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] text-[#666]">
-            <PhoneIcon className="w-2.5 h-2.5 text-[#bbb]" />
+            <Phone size={10} className="text-[#bbb]" weight="bold" />
             {contact.phone}
           </span>
         )}

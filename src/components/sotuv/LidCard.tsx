@@ -1,4 +1,4 @@
-import { PhoneIcon, PhoneXMarkIcon } from "@heroicons/react/24/solid"
+import { Phone, PhoneSlash } from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
 import { formatAmount, getStageConfig } from "@/lib/mock-data/sotuv"
 
@@ -102,9 +102,9 @@ export function LidCard({ lead, isSelected, onSelect, stageConfigs, onClick }: L
         ) : (
           <div className="flex items-center gap-1.5">
             {lead.lastCall.type === "answered" ? (
-              <PhoneIcon className="w-3.5 h-3.5 text-green-500" />
+              <Phone size={14} className="text-green-500" weight="bold" />
             ) : (
-              <PhoneXMarkIcon className="w-3.5 h-3.5 text-red-500" />
+              <PhoneSlash size={14} className="text-red-500" weight="bold" />
             )}
             <span
               className={`text-[12px] font-medium ${lead.lastCall.type === "missed" ? "text-red-500" : "text-[#666666]"}`}

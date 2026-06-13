@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  XMarkIcon,
-  PlusIcon,
-  TrashIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  PencilIcon,
-  CheckIcon,
-} from "@heroicons/react/24/solid"
+  X,
+  Plus,
+  Trash,
+  ArrowUp,
+  ArrowDown,
+  PencilSimple,
+  Check,
+} from "@phosphor-icons/react"
 import type { CrmStage } from "@/lib/supabase/queries/crm"
 import {
   createCrmStage,
@@ -209,7 +209,7 @@ export function PipelineSettingsModal({
                         disabled={pipelineNameSaving}
                         className="p-1 rounded-[4px] hover:bg-[#F5F5F5] disabled:opacity-50"
                       >
-                        <CheckIcon className="w-4 h-4 text-emerald-500" />
+                        <Check size={16} className="text-emerald-500" weight="bold" />
                       </button>
                     </div>
                   ) : (
@@ -219,7 +219,7 @@ export function PipelineSettingsModal({
                         onClick={() => setEditingPipelineName(true)}
                         className="p-1 rounded-[4px] hover:bg-[#F5F5F5] shrink-0"
                       >
-                        <PencilIcon className="w-3.5 h-3.5 text-[#999]" />
+                        <PencilSimple size={14} className="text-[#999]" weight="bold" />
                       </button>
                     </div>
                   )}
@@ -228,7 +228,7 @@ export function PipelineSettingsModal({
                   onClick={onClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
                 >
-                  <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                  <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
 
@@ -315,14 +315,14 @@ export function PipelineSettingsModal({
                             disabled={index === 0}
                             className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
                           >
-                            <ArrowUpIcon className="w-3 h-3 text-[#999]" />
+                            <ArrowUp size={12} className="text-[#999]" weight="bold" />
                           </button>
                           <button
                             onClick={() => handleMove(index, "down")}
                             disabled={index === stages.length - 1}
                             className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
                           >
-                            <ArrowDownIcon className="w-3 h-3 text-[#999]" />
+                            <ArrowDown size={12} className="text-[#999]" weight="bold" />
                           </button>
                           {confirmDeleteStageId === stage.id ? (
                             <div className="flex items-center gap-1 ml-1">
@@ -345,7 +345,7 @@ export function PipelineSettingsModal({
                               onClick={() => setConfirmDeleteStageId(stage.id)}
                               className="p-0.5 rounded hover:bg-red-50"
                             >
-                              <TrashIcon className="w-3 h-3 text-red-400" />
+                              <Trash size={12} className="text-red-400" weight="bold" />
                             </button>
                           )}
                         </div>
@@ -386,7 +386,7 @@ export function PipelineSettingsModal({
                     disabled={adding || !newStageName.trim()}
                     className="flex items-center gap-1 px-3 py-2 bg-[#141414] text-white text-[12px] font-bold rounded-[8px] hover:bg-[#333] disabled:bg-[#CCC] disabled:cursor-not-allowed transition-colors"
                   >
-                    <PlusIcon className="w-3.5 h-3.5" />
+                    <Plus size={14} weight="bold" />
                     {adding ? "..." : "Qo'shish"}
                   </button>
                 </div>
@@ -432,7 +432,7 @@ export function PipelineSettingsModal({
                     onClick={() => setShowDeletePipeline(true)}
                     className="flex items-center gap-1.5 text-[12px] font-medium text-red-500 hover:text-red-600 transition-colors"
                   >
-                    <TrashIcon className="w-3.5 h-3.5" />
+                    <Trash size={14} weight="bold" />
                     Pipeline o'chirish
                   </button>
                 )}

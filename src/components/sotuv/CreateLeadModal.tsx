@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { XMarkIcon } from "@heroicons/react/24/solid"
+import { X } from "@phosphor-icons/react"
 import type { AmoPipelineInfo } from "@/lib/amocrm/pipelines"
 import type { CachedUser } from "@/lib/supabase/queries/amocrm"
 import { createLead } from "@/lib/amocrm/mutations"
@@ -128,7 +128,7 @@ export function CreateLeadModal({
                   onClick={handleClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                 >
-                  <XMarkIcon className="w-5 h-5 text-[#999999]" />
+                  <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
 

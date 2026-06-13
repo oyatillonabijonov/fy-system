@@ -1,5 +1,5 @@
 import { Draggable, type DroppableProvided } from "@hello-pangea/dnd"
-import { PlusIcon } from "@heroicons/react/24/solid"
+import { Plus } from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
 import { formatAmount, getTotalAmount } from "@/lib/mock-data/sotuv"
 import { KanbanCard } from "./KanbanCard"
@@ -85,7 +85,7 @@ export function PipelineColumn({
           {/* Add card button */}
           {showAddButton && (
             <button className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-[#D0D0D0] rounded-[10px] text-[12px] font-medium text-[#999] hover:border-[#999] hover:text-[#666] transition-colors shrink-0">
-              <PlusIcon className="w-3.5 h-3.5" />
+              <Plus size={14} weight="bold" />
               Lid qo'shish
             </button>
           )}
