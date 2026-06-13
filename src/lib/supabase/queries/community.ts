@@ -1,4 +1,8 @@
 import { supabase } from "../client"
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+// messages table is not yet in generated types — use untyped client for those queries
+const db = supabase as unknown as SupabaseClient
 
 export interface Channel {
   id: string
@@ -60,7 +64,7 @@ export async function deleteChannel(id: string): Promise<void> {
 // ─── Messages ────────────────────────────────────────────
 
 export async function getChannelMessages(channelId: string): Promise<Message[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("messages")
     .select(`
       id, channel_id, sender_id, recipient_id, content, image_url, created_at,
@@ -91,7 +95,7 @@ export async function getDmMessages(otherUserId: string): Promise<Message[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("messages")
     .select("id, channel_id, sender_id, recipient_id, content, image_url, created_at")
     .is("channel_id", null)
@@ -106,7 +110,7 @@ export async function sendChannelMessage(channelId: string, content: string, ima
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Tizimga kirilmagan")
 
-  const { error } = await supabase.from("messages").insert({
+  const { error } = await db.from("messages").insert({
     channel_id: channelId,
     sender_id: user.id,
     content: content.trim() || null,
@@ -119,7 +123,7 @@ export async function sendDmMessage(recipientId: string, content: string, imageU
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Tizimga kirilmagan")
 
-  const { error } = await supabase.from("messages").insert({
+  const { error } = await db.from("messages").insert({
     recipient_id: recipientId,
     sender_id: user.id,
     content: content.trim() || null,

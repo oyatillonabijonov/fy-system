@@ -1359,3 +1359,9 @@ export const Constants = {
   },
 } as const
 
+// ── Manual aliases ──
+export type LeadStage = Database["public"]["Enums"]["lead_stage"]
+export type LeadSource = Database["public"]["Enums"]["lead_source"]
+export type CallType = Database["public"]["Enums"]["call_type"]
+export type ClientStatus = "Faol" | "Nofaol"
+
