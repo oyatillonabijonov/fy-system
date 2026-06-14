@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + shadcn/ui (`base-nova`), framer-motion, Geist Variable font |
-| Database | Supabase Postgres (migrations `001`–`040`), pg_cron + pg_net |
+| Database | Supabase Postgres (migrations `001`–`041`), pg_cron + pg_net |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | AmoCRM REST v4 (via dev proxy `/api/amo`), Meta/Framer/Tilda lead webhooks |
@@ -51,7 +51,7 @@ Package manager: **bun** (not npm).
 │       ├── amocrm/           # AmoCRM client + token-manager (OAuth refresh, 401 retry)
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–040, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–041, sequential — NEVER edit existing ones
 │   └── functions/            # amocrm-sync, admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
@@ -113,6 +113,10 @@ bun run switch:local | switch:cloud
 
 # Deploy DB migrations to remote
 bun run supabase:migrate          # = supabase db push
+# After pushing migrations to self-hosted Supabase, PostgREST schema cache must be refreshed
+# or new columns will return HTTP 400. Run via SQL editor or SSH:
+#   NOTIFY pgrst, 'reload schema';          -- SQL editor approach
+#   docker restart supabase-rest-1          -- SSH approach (faster)
 # Edge functions: npx supabase functions deploy <name>
 
 # Regenerate types (updates both web and mobile)
@@ -132,6 +136,7 @@ Frontend is built via `Dockerfile` on the Oracle server. `VITE_*` env vars are e
 - **Routing:** all routes in `src/App.tsx`. `/login` is public; everything else nests in `<ProtectedRoute><AppShell/></ProtectedRoute>`, and each page wraps again with `module="…"` or `adminOnly` (Hodimlar, Bolimlar, Faollik). New route ⇒ add a `PAGE_META` entry (header title/desc) + Sidebar item + module permission if needed.
 - **Auth:** `useAuth()` → `{ user, isAdmin, hasAccess(module), canEdit(module) }`. Admins bypass module checks. Module IDs (`ModuleName` in `src/lib/supabase/queries/auth.ts`) must stay in sync with the `user_permissions` CHECK constraint (migration `018`) and `VALID_MODULES` in `supabase/functions/admin-create-user`.
 - **Data:** per-feature query modules in `src/lib/supabase/queries/` + hooks in `src/hooks/`. Each exports `*_KEY` constants — reuse for invalidation. Optimistic updates follow `onMutate` / `onError` rollback / `onSettled` invalidate (see `useUpdateClient`). Regenerate `types.ts` via `supabase gen types` after schema changes.
+- **Stale types workaround:** when a new column is added via migration but `types.ts` hasn't been regenerated yet, extend the Row type locally (`type ClientRow = Database[...]["Row"] & { newCol?: string | null }`) and cast the query result (`const { data, error } = result as unknown as { data: T[] | null; error: Error | null }`). Run `bun run gen:types` and remove the cast once types are regenerated.
 - **Query defaults** (`main.tsx`): `staleTime` 5 min, `gcTime` 30 min, `retry` 1, `refetchOnWindowFocus/onMount` **off** (prevents tab-return flicker) — opt in per-query for near-real-time screens.
 - **Theming:** `ThemeContext` sets `data-theme` (`neutral`, `black-orange`, `light-orange`); CSS vars per theme in `src/index.css`. Theme colors via **inline `style={{ color: 'var(--header-text)' }}`**, hover via `onMouseEnter/Leave` mutating style — never hardcoded hex or Tailwind color classes for themed surfaces.
 - **UI:** corner radii are always **8px** (`rounded-[8px]` or `apple-sq-10`/`apple-sq-12`); `.no-scrollbar` for hidden scrollbars; icons from `@phosphor-icons/react`; DnD `@hello-pangea/dnd`; charts `recharts`; tables `@tanstack/react-table`. All user-facing copy in Uzbek.
@@ -154,7 +159,7 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 
 ## 7. Important Notes
 
-- **Two CRMs coexist — not interchangeable.** (1) AmoCRM: external, read-mostly, `src/lib/amocrm/` through the `/api/amo` Vite proxy; consumed by `Sotuv` + analytics. (2) CRM-N: native full-CRUD, `queries/crm.ts` + `components/crm-n/`. Decide which one a feature belongs to first.
+- **Two CRMs coexist — not interchangeable.** (1) AmoCRM: external, read-mostly, `src/lib/amocrm/` through the `/api/amo` Vite proxy; route `/sotuv/amocrm` exists but is **not in the sidebar** (removed from navigation). (2) CRM-N (`/sotuv/crm-n`): native full-CRUD, `queries/crm.ts` + `components/crm-n/` — this is the primary sales view shown in the sidebar as "Sotuv bo'limi".
 - **AmoCRM tokens:** cached in `amocrm_tokens` table (single row `id=1`); `token-manager.ts` refreshes 5 min early, falls back to `VITE_AMO_ACCESS_TOKEN`, and `fetchFromAmo` retries once on 401 via `invalidateTokenCache()`. Don't bypass this flow.
 - **Never modify existing migration files** — always add a new numbered one.
 - **Cashback is trigger-driven** (migrations `017`, `023`): `auto_award_cashback` awards on any `paid` increase; spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is maintained by a trigger from `cashback_transactions` — never update the balance directly.
