@@ -111,12 +111,13 @@ bun run supabase:start | supabase:stop | supabase:reset
 # Env switching (overwrites .env.local)
 bun run switch:local | switch:cloud
 
-# Deploy DB migrations to remote
-bun run supabase:migrate          # = supabase db push
-# After pushing migrations to self-hosted Supabase, PostgREST schema cache must be refreshed
-# or new columns will return HTTP 400. Run via SQL editor or SSH:
-#   NOTIFY pgrst, 'reload schema';          -- SQL editor approach
-#   docker restart supabase-rest-1          -- SSH approach (faster)
+# Deploy DB migrations to PRODUCTION (Oracle self-hosted) — see
+# "Production deployment & database" below for the full manual SSH/psql flow.
+# ⚠️ Do NOT rely on `bun run supabase:migrate` (= supabase db push): it is linked
+#    to a DIFFERENT project (ulbdlkkftbzgafsrprnm.supabase.co), not Oracle.
+# After applying, refresh the PostgREST schema cache or new columns return HTTP 400:
+#   docker exec supabase-db-1 psql -U postgres -d postgres -c "NOTIFY pgrst, 'reload schema';"
+#   docker restart supabase-rest-1          # faster
 # Edge functions: npx supabase functions deploy <name>
 
 # Regenerate types (updates both web and mobile)
@@ -125,9 +126,51 @@ bun run gen:types
 
 No test runner is configured. `amocrm-sync` runs automatically via **pg_cron every 3 minutes** (see `004_cron_job.sql`).
 
-### Production deployment (Coolify)
+### Production deployment & database (⚠️ READ BEFORE DEPLOYING — keep current)
 
-Frontend is built via `Dockerfile` on the Oracle server. `VITE_*` env vars are embedded **at build time** — they must be set as build variables in Coolify before deploying (not just runtime env vars). The self-hosted Supabase stack (`docker-compose.yml` at `/home/ubuntu/supabase/`) runs outside Coolify and is accessed via Traefik reverse proxy.
+This is the single source of truth for "where things live and how to ship them." Update it whenever infra, the deploy flow, or the DB-apply process changes. **Never put secrets here** (CLAUDE.md is committed to git): no SSH keys, passwords, anon/service keys.
+
+**Infra map**
+
+| Thing | Where | Notes |
+|-------|-------|-------|
+| Oracle VM | `ubuntu@141.147.119.131` (Ubuntu 22.04, aarch64, 4 OCPU / 24 GB) | SSH key on the dev machine at `~/.ssh/heons_key` (not in repo) |
+| Frontend | `https://app.fikryetakchilari.uz` | Coolify → `Dockerfile` (bun build → nginx) |
+| Coolify dashboard | `http://141.147.119.131:8000` | manages the **frontend only** |
+| **Production DB / API** | `https://api.fikryetakchilari.uz` | self-hosted Supabase, **outside Coolify**, docker-compose at `/home/ubuntu/supabase/`, behind Traefik |
+| Postgres container | `supabase-db-1` | `docker exec supabase-db-1 psql -U postgres -d postgres` |
+| PostgREST container | `supabase-rest-1` | restart to refresh schema cache |
+| Backups | `~/backups/*.dump` on the VM | `pg_dump ... -Fc` (see below) |
+
+**Gateway: custom nginx, NOT Kong.** This is a **minimal** self-hosted Supabase stack — the standard Kong API gateway is replaced by `supabase-nginx-1` (`nginx:alpine`, custom `nginx.conf`) listening on `:8000`. It routes `/auth/v1/`→auth:9999, `/rest/v1/`→rest:3000, `/realtime/v1/`→realtime:4000, `/storage/v1/`→storage:5000; JWT/anon-key validation is done by PostgREST/GoTrue, not the gateway. Consequences: no Kong plugins (gateway-level rate-limiting, key management). Stack runs only **db, auth, rest, realtime, storage, nginx** — there is **no studio, analytics, imgproxy, or pg_meta** container, so DB admin is via SSH + `psql` (not Studio).
+
+**The active `.env.local` points at production** (`VITE_SUPABASE_URL=https://api.fikryetakchilari.uz`). ⚠️ Therefore `bun run dev` on localhost reads/writes the **live Oracle DB** — there is no local DB by default. (`.env.local.local` / `bun run dev:local` would use a local Supabase stack, but none is running for this project; port 54322 locally belongs to an unrelated project.)
+
+**Frontend deploy:** push to `main` on GitHub → Coolify auto-redeploys. `VITE_*` are embedded at **build time** → set them as Coolify *build* variables, not just runtime env.
+
+**Database deploy is MANUAL and separate.** ⚠️ Coolify does **NOT** apply migrations. Pushing migration files to GitHub changes nothing in the DB. `bun run supabase:migrate` (= `supabase db push`) is linked to a **different** project (`ulbdlkkftbzgafsrprnm.supabase.co`) — **do not use it for Oracle.** Apply migrations to production by hand:
+
+```bash
+# 0) Always back up first
+ssh -i ~/.ssh/heons_key ubuntu@141.147.119.131 \
+  'TS=$(date +%Y%m%d_%H%M%S); docker exec supabase-db-1 pg_dump -U postgres -d postgres -Fc -f /tmp/fy_$TS.dump \
+   && docker cp supabase-db-1:/tmp/fy_$TS.dump ~/backups/fy_$TS.dump && echo backed up $TS'
+
+# 1) Apply a migration file
+cat supabase/migrations/0XX_name.sql | ssh -i ~/.ssh/heons_key ubuntu@141.147.119.131 \
+  'cat > /tmp/m.sql && docker cp /tmp/m.sql supabase-db-1:/tmp/m.sql \
+   && docker exec supabase-db-1 psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/m.sql'
+
+# 2) Record it (history table; the CLI does not track this self-hosted DB)
+#    docker exec supabase-db-1 psql -U postgres -d postgres -c "insert into supabase_migrations.schema_migrations(version) values ('0XX') on conflict do nothing;"
+# 3) Refresh PostgREST schema cache (or new columns return HTTP 400 / PGRST relationship errors)
+#    docker exec supabase-db-1 psql -U postgres -d postgres -c "NOTIFY pgrst, 'reload schema';"
+#    docker restart supabase-rest-1     # faster / more reliable
+```
+
+Migration history note: the VM's `supabase_migrations.schema_migrations` may lag the repo (files were applied by direct SQL without always recording the row). The numbered files in `supabase/migrations/` are the real source of truth; record new versions as you apply them.
+
+**Types after a schema change:** `bun run gen:types` uses `--local`, which won't work without a local stack. Either run a local Supabase, point gen:types at the Oracle DB URL, or use the **Stale types workaround** (§6) until types can be regenerated.
 
 ---
 
