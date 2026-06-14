@@ -4,6 +4,7 @@ import { X } from "@phosphor-icons/react"
 import { useUpsertKpiTarget } from "@/hooks/useKpi"
 import type { KpiTarget } from "@/lib/supabase/queries/kpi"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
+import { formatNumber } from "@/lib/format"
 
 interface SetKpiTargetsModalProps {
   isOpen: boolean
@@ -30,16 +31,9 @@ const MONTHS = [
 const inputCls =
   "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
 
-function formatThousands(s: string): string {
-  // Strip non-digits, group by 3
-  const digits = s.replace(/\D/g, "")
-  if (!digits) return ""
-  return new Intl.NumberFormat("uz-UZ").format(Number(digits))
-}
-
 function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProps) {
   const [revenueTarget, setRevenueTarget] = useState<string>(
-    existingTarget ? formatThousands(String(existingTarget.revenue_target)) : "",
+    existingTarget ? formatNumber(existingTarget.revenue_target) : "",
   )
   const [leadsTarget, setLeadsTarget] = useState<string>(
     existingTarget ? String(existingTarget.leads_target) : "",
@@ -133,7 +127,10 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
                 type="text"
                 inputMode="numeric"
                 value={revenueTarget}
-                onChange={(e) => setRevenueTarget(formatThousands(e.target.value))}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "")
+                  setRevenueTarget(digits ? formatNumber(Number(digits)) : "")
+                }}
                 placeholder="10 000 000"
                 autoFocus
                 className={inputCls}

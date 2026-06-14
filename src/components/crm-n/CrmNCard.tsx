@@ -1,5 +1,6 @@
 import { Phone } from "@phosphor-icons/react"
 import type { CrmLeadWithContact } from "@/lib/supabase/queries/crm"
+import { formatNumber, formatDate } from "@/lib/format"
 
 interface CrmNCardProps {
   lead: CrmLeadWithContact
@@ -29,20 +30,6 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("uz-UZ")
-}
-
-function formatDateTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  const hours = String(d.getHours()).padStart(2, "0")
-  const mins = String(d.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year} ${hours}:${mins}`
-}
 
 export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
   const contact = lead.crm_contacts
@@ -101,7 +88,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
         </span>
         {lead.price > 0 && (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] ${isLost ? "line-through text-[#999]" : "text-[#666]"}`}>
-            {formatAmount(lead.price)} so'm
+            {formatNumber(lead.price)} so'm
           </span>
         )}
         {contact?.phone && (
@@ -115,7 +102,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
       {/* LINE 4: Date/time */}
       <div className="pl-9 mt-0.5">
         <span className="text-[11px] text-[#999] font-medium">
-          {formatDateTime(lead.created_at)}
+          {formatDate(lead.created_at)}
         </span>
       </div>
     </div>

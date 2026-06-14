@@ -5,11 +5,11 @@ import {
 } from "@hello-pangea/dnd"
 import {
   filterLeadsByStage,
-  formatAmount,
   getTotalAmount,
   type Lead,
   type StageConfig,
 } from "@/lib/mock-data/sotuv"
+import { formatNumber } from "@/lib/format"
 import { PipelineColumn } from "./PipelineColumn"
 
 interface PipelineBoardProps {
@@ -51,7 +51,7 @@ export function PipelineBoard({
           <span className="text-[#E0E0E0]">|</span>
           <span>
             <span className="font-bold text-[#141414]">
-              {formatAmount(totalAmount)}
+              {formatNumber(totalAmount)}
             </span>{" "}
             so'm
           </span>

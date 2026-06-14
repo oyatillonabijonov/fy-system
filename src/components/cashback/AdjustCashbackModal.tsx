@@ -2,6 +2,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Plus, Minus } from "@phosphor-icons/react"
 import { useAdjustCashback } from "@/hooks/useCashback"
+import { formatNumber } from "@/lib/format"
 
 interface AdjustCashbackModalProps {
   isOpen: boolean
@@ -66,7 +67,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
     }
   }
 
-  const formattedBalance = new Intl.NumberFormat("uz-UZ").format(currentBalance)
+  const formattedBalance = formatNumber(currentBalance)
 
   return (
     <>

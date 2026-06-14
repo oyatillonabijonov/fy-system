@@ -2,6 +2,7 @@
 
 import type { Lead, LeadSource } from "./mock-data/sotuv"
 import type { LeadStage } from "./supabase/types"
+import { formatDate } from "@/lib/format"
 
 /** AmoCRM API lead response structure */
 export interface AmoCrmLead {
@@ -115,7 +116,7 @@ export function transformAmoCrmLead(amoLead: AmoCrmLead): Omit<Lead, "id"> {
     amount: amoLead.price,
     lastCall: { time: "", type: "none" },
     source,
-    createdAt: new Date(amoLead.created_at * 1000).toLocaleDateString("uz-UZ"),
+    createdAt: formatDate(new Date(amoLead.created_at * 1000)),
     amoId: `AMO-${amoLead.id}`,
   }
 }

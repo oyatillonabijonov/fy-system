@@ -5,6 +5,7 @@ import {
   User,
   ChartLine,
 } from "@phosphor-icons/react"
+import { formatDate } from "@/lib/format"
 import { useActivityLogs, useActivityStats } from "@/hooks/useActivity"
 import { useUsers } from "@/hooks/useUsers"
 import type {
@@ -13,6 +14,8 @@ import type {
   ActivityAction,
   ActivityEntityType,
 } from "@/lib/supabase/queries/activity"
+import type { StatusVariant } from "@/lib/constants/theme"
+import { StatusBadge } from "@/components/ui/StatusBadge"
 
 const ENTITY_LABELS: Record<ActivityEntityType, string> = {
   client: "Mijoz",
@@ -40,10 +43,10 @@ const ACTION_LABELS: Record<ActivityAction, string> = {
   deleted: "o'chirdi",
 }
 
-const ACTION_COLORS: Record<ActivityAction, { bg: string; text: string }> = {
-  created: { bg: "bg-green-50", text: "text-green-700" },
-  updated: { bg: "bg-blue-50", text: "text-blue-700" },
-  deleted: { bg: "bg-red-50", text: "text-red-700" },
+const ACTION_VARIANTS: Record<ActivityAction, StatusVariant> = {
+  created: 'success',
+  updated: 'info',
+  deleted: 'danger',
 }
 
 const PAGE_LIMIT = 50
@@ -267,7 +270,6 @@ function ActivityRow({ log }: { log: ActivityLog }) {
     minute: "2-digit",
   })
 
-  const actionStyle = ACTION_COLORS[log.action]
   const entityColor = ENTITY_COLORS[log.entity_type] ?? "#999"
   const entityLabel = ENTITY_LABELS[log.entity_type] ?? log.entity_type
 
@@ -283,9 +285,7 @@ function ActivityRow({ log }: { log: ActivityLog }) {
             <span className="text-[13px] font-bold text-[#141414]">
               {log.actor_name ?? "Tizim"}
             </span>
-            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${actionStyle.bg} ${actionStyle.text}`}>
-              {ACTION_LABELS[log.action]}
-            </span>
+            <StatusBadge label={ACTION_LABELS[log.action]} variant={ACTION_VARIANTS[log.action]} />
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
               style={{ backgroundColor: entityColor + "15", color: entityColor }}
@@ -325,7 +325,7 @@ function groupByDate(logs: ActivityLog[]): { date: string; label: string; items:
     let label: string
     if (d.getTime() === today.getTime()) label = "Bugun"
     else if (d.getTime() === yesterday.getTime()) label = "Kecha"
-    else label = d.toLocaleDateString("uz-UZ", { day: "2-digit", month: "long", year: "numeric" })
+    else label = formatDate(d, 'long')
     return { date, label, items }
   })
 }

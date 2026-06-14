@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { formatNumber } from "@/lib/format"
 import type { DropResult } from "@hello-pangea/dnd"
 import {
   ArrowsClockwise,
@@ -135,7 +136,7 @@ export function CrmN() {
     { title: "Jami lidlar", value: String(totalLeads), sub: `${stages.length} bosqichda` },
     { title: "Yangi", value: String(newLeads), sub: "Birinchi bosqich" },
     { title: "Jarayonda", value: String(inProgress), sub: "O'rta bosqichlar" },
-    { title: "Umumiy summa", value: totalAmount.toLocaleString("uz-UZ"), sub: "Barcha lidlar", isMoney: true },
+    { title: "Umumiy summa", value: formatNumber(totalAmount), sub: "Barcha lidlar", isMoney: true },
   ]
 
   const [statsOpen, setStatsOpen] = useState(false)

@@ -1,5 +1,6 @@
 import { fetchFromAmo, type AmoResponse } from "./client"
 import type { Lead, LeadSource, CallType } from "@/lib/mock-data/sotuv"
+import { formatDate, formatNumber } from "@/lib/format"
 
 interface AmoContact {
   id: number
@@ -176,18 +177,14 @@ function parseCustomField(field: AmoCustomFieldRaw): CustomFieldRendered | null 
     case "date_time": {
       const ts = Number(values[0].value)
       if (!isNaN(ts)) {
-        displayValue = new Date(ts * 1000).toLocaleDateString("uz-UZ", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        displayValue = formatDate(new Date(ts * 1000))
       } else {
         displayValue = values[0].value
       }
       break
     }
     case "numeric":
-      displayValue = Number(values[0].value).toLocaleString("uz-UZ")
+      displayValue = formatNumber(Number(values[0].value))
       break
     case "multiselect":
       displayValue = values.map((v) => v.value).join(", ")
@@ -313,10 +310,7 @@ export async function getAmoLeadDetail(leadId: string): Promise<AmoLeadDetail> {
       notes.push({
         text,
         author: userMap.get(note.created_by) ?? "Noma'lum",
-        createdAt: new Date(note.created_at * 1000).toLocaleDateString(
-          "uz-UZ",
-          { day: "2-digit", month: "short", year: "numeric" }
-        ),
+        createdAt: formatDate(new Date(note.created_at * 1000)),
       })
     }
   } catch {
@@ -349,16 +343,8 @@ export async function getAmoLeadDetail(leadId: string): Promise<AmoLeadDetail> {
     statusId: lead.status_id,
     responsibleName:
       userMap.get(lead.responsible_user_id) ?? "Noma'lum",
-    createdAt: new Date(lead.created_at * 1000).toLocaleDateString("uz-UZ", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }),
-    updatedAt: new Date(lead.updated_at * 1000).toLocaleDateString("uz-UZ", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }),
+    createdAt: formatDate(new Date(lead.created_at * 1000)),
+    updatedAt: formatDate(new Date(lead.updated_at * 1000)),
     contacts,
     company: companyDetail,
     customFields,

@@ -1,7 +1,8 @@
 import { Draggable, type DroppableProvided } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
-import { formatAmount, getTotalAmount } from "@/lib/mock-data/sotuv"
+import { getTotalAmount } from "@/lib/mock-data/sotuv"
+import { formatNumber } from "@/lib/format"
 import { KanbanCard } from "./KanbanCard"
 
 interface PipelineColumnProps {
@@ -44,7 +45,7 @@ export function PipelineColumn({
         </div>
         {total > 0 && (
           <span className="text-[11px] text-[#999] font-medium pl-4">
-            {formatAmount(total)} so'm
+            {formatNumber(total)} so'm
           </span>
         )}
       </div>

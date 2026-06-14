@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { PhoneInput } from "@/components/ui/PhoneInput"
 import { motion, AnimatePresence } from "framer-motion"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
@@ -218,13 +219,7 @@ function ProfileTab({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-[#999]">Telefon</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+998 90 123 45 67"
-            className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
-          />
+          <PhoneInput value={phone} onChange={setPhone} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium text-[#999]">Rol</label>

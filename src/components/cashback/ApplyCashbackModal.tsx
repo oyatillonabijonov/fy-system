@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useSpendCashback } from "@/hooks/useCashback"
 import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import type { Participant } from "@/lib/supabase/queries/events"
+import { formatNumber } from "@/lib/format"
 
 interface ApplyCashbackModalProps {
   isOpen: boolean
@@ -20,8 +21,6 @@ interface InnerProps {
   balance: number
   onSuccess?: (msg: string) => void
 }
-
-const fmt = (n: number) => new Intl.NumberFormat("uz-UZ").format(n)
 
 function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
   const qc = useQueryClient()
@@ -62,7 +61,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
       })
 
       qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY })
-      onSuccess?.(`${fmt(amount)} so'm chegirma qo'llandi`)
+      onSuccess?.(`${formatNumber(amount)} so'm chegirma qo'llandi`)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Xatolik yuz berdi")
@@ -110,11 +109,11 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-50 border border-green-100 rounded-[8px] p-3">
                 <p className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1">Joriy balans</p>
-                <p className="text-[16px] font-bold text-green-700">{fmt(balance)} so'm</p>
+                <p className="text-[16px] font-bold text-green-700">{formatNumber(balance)} so'm</p>
               </div>
               <div className="bg-orange-50 border border-orange-100 rounded-[8px] p-3">
                 <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-1">Qarz</p>
-                <p className="text-[16px] font-bold text-orange-700">{fmt(debt)} so'm</p>
+                <p className="text-[16px] font-bold text-orange-700">{formatNumber(debt)} so'm</p>
               </div>
             </div>
 
@@ -140,7 +139,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
                 className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
               />
               <span className="text-[11px] text-[#999]">
-                Maksimum: <strong>{fmt(maxApplicable)} so'm</strong>
+                Maksimum: <strong>{formatNumber(maxApplicable)} so'm</strong>
                 {balance < debt && " (balans yetarli emas — qarzning bir qismi qoladi)"}
               </span>
             </div>

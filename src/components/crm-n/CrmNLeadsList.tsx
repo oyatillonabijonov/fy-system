@@ -16,6 +16,7 @@ import {
 import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase/queries/crm"
 import type { CachedUser } from "@/lib/supabase/queries/amocrm"
+import { formatNumber, formatDate } from "@/lib/format"
 
 interface CrmNLeadsListProps {
   leads: CrmLeadWithContact[]
@@ -25,18 +26,6 @@ interface CrmNLeadsListProps {
   onDataChanged: () => void
 }
 
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("uz-UZ")
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  return `${day}.${month}.${year}`
-}
 
 const columnHelper = createColumnHelper<CrmLeadWithContact>()
 
@@ -158,7 +147,7 @@ export function CrmNLeadsList({
       header: "SUMMA",
       cell: ({ row }) => (
         <span className="text-[13px] font-semibold text-[#141414]">
-          {row.original.price > 0 ? `${formatAmount(row.original.price)} so'm` : "—"}
+          {row.original.price > 0 ? `${formatNumber(row.original.price)} so'm` : "—"}
         </span>
       ),
       size: 130,

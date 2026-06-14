@@ -1,6 +1,7 @@
 import { Phone } from "@phosphor-icons/react"
 import type { Lead } from "@/lib/mock-data/sotuv"
-import { formatAmount } from "@/lib/mock-data/sotuv"
+import { formatNumber, formatDate } from "@/lib/format"
+import { StatusBadge } from '@/components/ui/StatusBadge'
 
 interface KanbanCardProps {
   lead: Lead
@@ -30,16 +31,6 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-function formatDateTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  const hours = String(d.getHours()).padStart(2, "0")
-  const mins = String(d.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year} ${hours}:${mins}`
-}
 
 export function KanbanCard({ lead, isLost, onClick }: KanbanCardProps) {
   const displayName = lead.contactName ?? lead.name
@@ -107,7 +98,7 @@ export function KanbanCard({ lead, isLost, onClick }: KanbanCardProps) {
         </span>
         {lead.amount > 0 && (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] ${isLost ? "line-through text-[#999]" : "text-[#666]"}`}>
-            {formatAmount(lead.amount)} so'm
+            {formatNumber(lead.amount)} so'm
           </span>
         )}
         {lead.phone && (
@@ -117,22 +108,17 @@ export function KanbanCard({ lead, isLost, onClick }: KanbanCardProps) {
           </span>
         )}
         {lead.lastCall.type === "answered" && (
-          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-600">
-            <Phone size={10} weight="bold" />
-            Javob
-          </span>
+          <StatusBadge label="Javob" variant="success" />
         )}
         {lead.lastCall.type === "missed" && (
-          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600">
-            O'tkazib yuborildi
-          </span>
+          <StatusBadge label="O'tkazib yuborildi" variant="danger" />
         )}
       </div>
 
       {/* LINE 5: Date/time */}
       <div className="pl-9 mt-0.5">
         <span className="text-[11px] text-[#999] font-medium">
-          {formatDateTime(lead.createdAt)}
+          {formatDate(lead.createdAt)}
         </span>
       </div>
     </div>

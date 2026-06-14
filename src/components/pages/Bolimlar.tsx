@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { formatDate, formatNumber } from "@/lib/format"
 import { motion, AnimatePresence } from "framer-motion"
 import { Buildings, Users as UsersIcon, Target, Crown, X } from "@phosphor-icons/react"
 import { useDepartmentStats } from "@/hooks/useUsers"
@@ -10,10 +11,6 @@ import type { DepartmentStats, UserProfile } from "@/lib/supabase/queries/auth"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
-}
-
-function fmtSom(n: number): string {
-  return new Intl.NumberFormat("uz-UZ").format(n)
 }
 
 function progressColor(p: number): string {
@@ -31,8 +28,7 @@ export function Bolimlar() {
   const now = new Date()
   const [period] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 })
 
-  const monthName = new Date(period.year, period.month - 1, 1)
-    .toLocaleDateString("uz-UZ", { month: "long", year: "numeric" })
+  const monthName = formatDate(new Date(period.year, period.month - 1, 1), 'month')
 
   const totalEmployees = stats.reduce((sum, s) => sum + s.total_employees, 0)
   const totalActive = stats.reduce((sum, s) => sum + s.active_employees, 0)
@@ -274,9 +270,9 @@ function KpiMiniCard({
     <div className="bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px] p-3">
       <p className="text-[10px] text-[#999] mb-1.5">{label}</p>
       <div className="mb-2">
-        <span className="text-[14px] font-bold text-[#141414]">{fmtSom(actual)}</span>
+        <span className="text-[14px] font-bold text-[#141414]">{formatNumber(actual)}</span>
         <span className="text-[10px] text-[#999] ml-1">
-          / {fmtSom(target)}{isCurrency ? " so'm" : ""}
+          / {formatNumber(target)}{isCurrency ? " so'm" : ""}
         </span>
       </div>
       <div className="h-1 bg-[#F0F0F0] rounded-full overflow-hidden">

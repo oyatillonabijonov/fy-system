@@ -8,12 +8,12 @@ import {
   CaretDown,
 } from "@phosphor-icons/react"
 import {
-  formatAmount,
   getTotalAmount,
   buildStageConfigs,
   type Lead,
   type StageConfig,
 } from "@/lib/mock-data/sotuv"
+import { formatNumber } from "@/lib/format"
 import { getAmoLeads } from "@/lib/amocrm/leads"
 import { type AmoPipelineInfo } from "@/lib/amocrm/pipelines"
 import {
@@ -398,7 +398,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
     },
     {
       title: "Umumiy summa",
-      value: formatAmount(totalAmount),
+      value: formatNumber(totalAmount),
       sub: "Barcha lidlar",
       isUp: null,
     },

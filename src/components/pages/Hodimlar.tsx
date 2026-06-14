@@ -3,13 +3,9 @@ import { useNavigate } from "react-router-dom"
 import { Plus, MagnifyingGlass } from "@phosphor-icons/react"
 import { useUsers } from "@/hooks/useUsers"
 import { CreateUserModal } from "@/components/sozlamalar/CreateUserModal"
-import { ROLE_LABELS, type UserProfile, type UserRole } from "@/lib/supabase/queries/auth"
-
-const ROLE_BADGE: Record<UserRole, string> = {
-  admin: "bg-purple-50 text-purple-700",
-  manager: "bg-blue-50 text-blue-700",
-  xodim: "bg-gray-50 text-gray-700",
-}
+import { ROLE_LABELS, ROLE_BADGE_VARIANT, type UserProfile } from "@/lib/supabase/queries/auth"
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { formatDate, formatPhone } from "@/lib/format"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -142,23 +138,19 @@ function UserRow({ user, onClick }: { user: UserProfile; onClick: () => void }) 
           )}
           <div>
             <p className="text-[13px] font-bold text-[#141414]">{user.full_name}</p>
-            {user.phone && <p className="text-[11px] text-[#999]">{user.phone}</p>}
+            {user.phone && <p className="text-[11px] text-[#999]">{formatPhone(user.phone)}</p>}
           </div>
         </div>
       </td>
       <td className="px-6 py-4 text-[13px] text-[#666]">{user.email}</td>
       <td className="px-6 py-4">
-        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${ROLE_BADGE[user.role]}`}>
-          {ROLE_LABELS[user.role]}
-        </span>
+        <StatusBadge label={ROLE_LABELS[user.role]} variant={ROLE_BADGE_VARIANT[user.role]} />
       </td>
       <td className="px-6 py-4">
-        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${user.is_active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-          {user.is_active ? "Faol" : "Faol emas"}
-        </span>
+        <StatusBadge label={user.is_active ? "Faol" : "Faol emas"} variant={user.is_active ? 'success' : 'danger'} />
       </td>
       <td className="px-6 py-4 text-right text-[12px] text-[#999]">
-        {new Date(user.created_at).toLocaleDateString("uz-UZ")}
+        {formatDate(user.created_at)}
       </td>
     </tr>
   )

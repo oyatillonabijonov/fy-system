@@ -89,10 +89,6 @@ export function getStageConfig(
   return configs[stage] ?? FALLBACK_STAGE
 }
 
-export function formatAmount(amount: number): string {
-  return amount.toLocaleString("uz-UZ")
-}
-
 export function filterLeadsByStage(leads: Lead[], stage: string): Lead[] {
   return leads.filter((lead) => lead.stage === stage)
 }

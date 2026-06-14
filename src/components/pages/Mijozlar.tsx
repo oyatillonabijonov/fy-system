@@ -23,6 +23,8 @@ import {
     DeviceMobile,
     ArrowRight,
 } from "@phosphor-icons/react"
+import type { StatusVariant } from "@/lib/constants/theme"
+import { StatusBadge } from "@/components/ui/StatusBadge"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useMemo, useEffect, useRef } from "react"
@@ -45,6 +47,8 @@ import {
     type SortingState,
 } from '@tanstack/react-table'
 import { useSetCommunityApproved } from "@/hooks/useCommunity"
+import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
+import { PhoneInput } from "@/components/ui/PhoneInput"
 
 function formatCashbackDate(dateStr: string): string {
     const d = new Date(dateStr)
@@ -63,12 +67,12 @@ function formatLastEventText(days: number | null): string {
     return `Oxirgi tadbir: ${Math.floor(days / 365)} yil oldin`
 }
 
-const CASHBACK_TYPE_META: Record<CashbackTransaction["type"], { label: string; sign: "+" | "-"; classes: string }> = {
-    earned:           { label: "Tadbir",        sign: "+", classes: "bg-green-50 text-green-700" },
-    used:             { label: "Ishlatildi",    sign: "-", classes: "bg-red-50 text-red-700" },
-    manual_add:       { label: "Qo'lda",        sign: "+", classes: "bg-blue-50 text-blue-700" },
-    manual_subtract:  { label: "Qo'lda",        sign: "-", classes: "bg-orange-50 text-orange-700" },
-    clawback:         { label: "Qaytarildi",    sign: "-", classes: "bg-gray-100 text-gray-600" },
+const CASHBACK_TYPE_META: Record<CashbackTransaction["type"], { label: string; sign: "+" | "-"; variant: StatusVariant }> = {
+    earned:           { label: "Tadbir",        sign: "+", variant: 'success' },
+    used:             { label: "Ishlatildi",    sign: "-", variant: 'danger'  },
+    manual_add:       { label: "Qo'lda",        sign: "+", variant: 'info'    },
+    manual_subtract:  { label: "Qo'lda",        sign: "-", variant: 'warning' },
+    clawback:         { label: "Qaytarildi",    sign: "-", variant: 'danger'  },
 }
 
 function CashbackHistoryList({ loading, items }: { loading: boolean; items: CashbackTransaction[] }) {
@@ -88,14 +92,12 @@ function CashbackHistoryList({ loading, items }: { loading: boolean; items: Cash
             <div className="divide-y divide-[#F5F5F5] max-h-[260px] overflow-y-auto no-scrollbar">
                 {items.map((tx) => {
                     const meta = CASHBACK_TYPE_META[tx.type]
-                    const formatted = `${meta.sign}${new Intl.NumberFormat("uz-UZ").format(tx.amount)}`
+                    const formatted = `${meta.sign}${formatNumber(tx.amount)}`
                     return (
                         <div key={tx.id} className="grid grid-cols-[60px_1fr_85px] gap-2 px-3 py-2 items-start">
                             <span className="text-[11px] text-[#999] whitespace-nowrap">{formatCashbackDate(tx.created_at)}</span>
                             <div className="flex flex-col gap-0.5 min-w-0">
-                                <span className={`inline-flex w-fit px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold ${meta.classes}`}>
-                                    {meta.label}
-                                </span>
+                                <StatusBadge label={meta.label} variant={meta.variant} />
                                 <span className="text-[11px] text-[#666] line-clamp-2">{tx.description ?? "—"}</span>
                             </div>
                             <span className={`text-[12px] font-bold text-right ${meta.sign === "+" ? "text-green-700" : "text-red-700"}`}>
@@ -157,7 +159,7 @@ export function Mijozlar() {
                 status: row.status,
                 joinDate: row.join_date ?? '',
                 image: row.image ?? '',
-                totalSpent: `${Number(row.total_spent).toLocaleString("uz-UZ")} UZS`,
+                totalSpent: formatMoney(Number(row.total_spent)),
                 cashbackBalance: Number(row.cashback_balance ?? 0),
                 authUserId: row.auth_user_id,
                 communityApproved: row.community_approved ?? false,
@@ -237,7 +239,7 @@ export function Mijozlar() {
         name: '',
         activity: '',
         role: '',
-        phone: '+998 ',
+        phone: '',
         email: '',
         joinDate: new Date().toISOString().split('T')[0],
         image: ''
@@ -248,35 +250,6 @@ export function Mijozlar() {
         setEditingField(null)
         setEditValue("")
     }, [selectedCustomer])
-
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
-        
-        // Always start with +998
-        if (!value.startsWith('+998 ')) {
-            value = '+998 ' + value.replace(/^\+998\s*/, '');
-        }
-
-        // Get only the numeric part after +998
-        const digits = value.slice(5).replace(/\D/g, '').slice(0, 9);
-        
-        // Format: +998 90 123 45 67
-        let formatted = '+998 ';
-        if (digits.length > 0) {
-            formatted += digits.substring(0, 2);
-            if (digits.length > 2) {
-                formatted += ' ' + digits.substring(2, 5);
-                if (digits.length > 5) {
-                    formatted += ' ' + digits.substring(5, 7);
-                    if (digits.length > 7) {
-                        formatted += ' ' + digits.substring(7, 9);
-                    }
-                }
-            }
-        }
-        
-        setNewCustomer(prev => ({ ...prev, phone: formatted }));
-    };
 
     const stats = useMemo(() => {
         const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
@@ -369,9 +342,7 @@ export function Mijozlar() {
         columnHelper.accessor('status', {
             header: 'Statusi',
             cell: info => (
-                <span className={`inline-flex px-2 py-0.5 rounded-[4px] text-[11px] font-bold ${info.getValue() === 'Faol' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {info.getValue()}
-                </span>
+                <StatusBadge label={info.getValue()} variant={info.getValue() === 'Faol' ? 'success' : 'danger'} />
             ),
         }),
         columnHelper.display({
@@ -383,12 +354,7 @@ export function Mijozlar() {
                     days_since_last_event: info.row.original.daysSinceLastEvent,
                 })
                 const m = ACTIVITY_STATUS_META[as]
-                return (
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-bold ${m.bg} ${m.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-                        {m.label}
-                    </span>
-                )
+                return <StatusBadge label={m.label} variant={m.variant} dot />
             },
         }),
         columnHelper.display({
@@ -557,7 +523,7 @@ export function Mijozlar() {
                 name: '',
                 activity: '',
                 role: '',
-                phone: '+998 ',
+                phone: '',
                 email: '',
                 joinDate: new Date().toISOString().split('T')[0],
                 image: ''
@@ -768,12 +734,7 @@ export function Mijozlar() {
                                         days_since_last_event: selectedCustomer.daysSinceLastEvent,
                                     })
                                     const m = ACTIVITY_STATUS_META[as]
-                                    return (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[10px] font-bold ${m.bg} ${m.text}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-                                            {m.label}
-                                        </span>
-                                    )
+                                    return <StatusBadge label={m.label} variant={m.variant} dot />
                                 })()}
                             </div>
                             <button
@@ -841,7 +802,7 @@ export function Mijozlar() {
                             <div className="px-5 pt-4 pb-3.5 border-b border-[#F0F0F0]">
                                 <h1 className="text-[20px] font-bold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
                                 <p className="text-[12px] text-[#999] mt-0.5 flex items-center gap-1 flex-wrap">
-                                    {selectedCustomer.phone && <><Phone size={11} weight="bold" /><span>{selectedCustomer.phone}</span></>}
+                                    {selectedCustomer.phone && <><Phone size={11} weight="bold" /><span>{formatPhone(selectedCustomer.phone)}</span></>}
                                     {selectedCustomer.activity && <><span className="text-[#E0E0E0]">·</span><span>{selectedCustomer.activity}</span></>}
                                 </p>
                                 <p className="text-[11px] text-[#B0B0B0] mt-1.5">
@@ -853,19 +814,18 @@ export function Mijozlar() {
                             <div className="grid grid-cols-2 gap-2.5 p-4 border-b border-[#F0F0F0]">
                                 {(() => {
                                     const t = journeyQuery.data?.totals
-                                    const fmt = (n: number) => new Intl.NumberFormat("uz-UZ").format(n)
                                     const cards = [
-                                        { label: "Jami to'lagan", value: t ? `${fmt(t.total_paid)} so'm` : "...", color: "text-[#141414]", Icon: Money },
+                                        { label: "Jami to'lagan", value: t ? formatMoney(t.total_paid) : "...", color: "text-[#141414]", Icon: Money },
                                         { label: "Tadbirlar", value: t ? `${t.attended_count}/${t.events_count}` : `—/${selectedCustomer.eventsCount}`, color: "text-[#141414]", Icon: Ticket },
                                         {
                                             label: "Cashback",
-                                            value: `${fmt(t?.cashback_balance ?? selectedCustomer.cashbackBalance)} so'm`,
+                                            value: formatMoney(t?.cashback_balance ?? selectedCustomer.cashbackBalance),
                                             color: (t?.cashback_balance ?? selectedCustomer.cashbackBalance) > 0 ? "text-green-600" : "text-[#999]",
                                             Icon: Star,
                                         },
                                         {
                                             label: "Qarz",
-                                            value: t ? (t.total_debt > 0 ? `${fmt(t.total_debt)} so'm` : "Yo'q") : "...",
+                                            value: t ? (t.total_debt > 0 ? formatMoney(t.total_debt) : "Yo'q") : "...",
                                             color: (t?.total_debt ?? 0) > 0 ? "text-red-600" : "text-[#999]",
                                             Icon: Money,
                                         },
@@ -918,10 +878,7 @@ export function Mijozlar() {
                                             <p className="text-[11px] text-[#CCC]">Tadbirga qo'shish uchun tadbir sahifasiga o'ting</p>
                                         </div>
                                     ) : journeyQuery.data!.events.map(ev => {
-                                        const d = ev.event_date ? new Date(ev.event_date) : null
-                                        const dateStr = d
-                                            ? `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`
-                                            : '—'
+                                        const dateStr = formatDate(ev.event_date)
                                         return (
                                             <div
                                                 key={ev.participant_id}
@@ -940,25 +897,21 @@ export function Mijozlar() {
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         <span className="text-[10px] text-[#999]">{dateStr}</span>
-                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] ${
-                                                            ev.attended ? 'bg-green-50 text-green-700' : 'bg-[#F5F5F5] text-[#999]'
-                                                        }`}>
-                                                            {ev.attended ? '✓ Qatnashgan' : '✗ Kelmagan'}
-                                                        </span>
+                                                        <StatusBadge label={ev.attended ? 'Qatnashgan' : 'Kelmagan'} variant={ev.attended ? 'success' : 'neutral'} />
                                                     </div>
                                                     <div className="flex items-center gap-2.5 mt-1">
                                                         {ev.debt > 0 ? (
                                                             <span className="text-[11px] font-bold text-red-600">
-                                                                Qarz: {new Intl.NumberFormat("uz-UZ").format(ev.debt)} so'm
+                                                                Qarz: {formatMoney(ev.debt)}
                                                             </span>
                                                         ) : (
                                                             <span className="text-[11px] font-semibold text-[#141414]">
-                                                                To'langan: {new Intl.NumberFormat("uz-UZ").format(ev.paid)} so'm
+                                                                To'langan: {formatMoney(ev.paid)}
                                                             </span>
                                                         )}
                                                         {ev.cashback_earned > 0 && (
                                                             <span className="text-[10px] font-bold text-green-600">
-                                                                +{new Intl.NumberFormat("uz-UZ").format(ev.cashback_earned)} CB
+                                                                +{formatNumber(ev.cashback_earned)} CB
                                                             </span>
                                                         )}
                                                     </div>
@@ -972,13 +925,11 @@ export function Mijozlar() {
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (
                                 <div className="p-4 flex flex-col gap-3">
-                                    <div className="flex items-center justify-between p-4 bg-gradient-to-br from-green-50 to-white border border-green-100 rounded-[10px]">
+                                    <div className="flex items-center justify-between p-4 bg-[#F0FAF4] border border-green-100 rounded-[10px]">
                                         <div>
                                             <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Joriy balans</span>
                                             <div className="text-[22px] font-bold text-green-700 mt-0.5">
-                                                {new Intl.NumberFormat("uz-UZ").format(
-                                                    journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance
-                                                )} so'm
+                                                {formatMoney(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
                                             </div>
                                         </div>
                                         <button
@@ -1178,9 +1129,8 @@ export function Mijozlar() {
                     clientName={selectedCustomer.name}
                     currentBalance={selectedCustomer.cashbackBalance}
                     onSuccess={(delta, type) => {
-                        const formatted = new Intl.NumberFormat("uz-UZ").format(delta)
                         showToast(
-                            type === "add" ? `+${formatted} so'm qo'shildi` : `-${formatted} so'm ayirildi`,
+                            type === "add" ? `+${formatNumber(delta)} so'm qo'shildi` : `-${formatNumber(delta)} so'm ayirildi`,
                             "success",
                         )
                         // Optimistically update sidebar header view
@@ -1312,14 +1262,7 @@ export function Mijozlar() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[12px] font-bold text-[#141414]">TELEFON RAQAMI *</label>
-                                            <input 
-                                                required
-                                                type="text" 
-                                                value={newCustomer.phone}
-                                                onChange={handlePhoneChange}
-                                                placeholder="+998 90 123 45 67" 
-                                                className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10 transition-all font-bold tracking-wide"
-                                            />
+                                            <PhoneInput value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
                                         <div className="flex flex-col gap-1.5">
                                             <label className="text-[12px] font-bold text-[#141414]">EMAIL (IXTIYORIY)</label>

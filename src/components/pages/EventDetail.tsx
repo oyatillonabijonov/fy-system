@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowLeft,
@@ -35,24 +36,11 @@ import { useParticipantPayments, useAddPayment, useDeletePayment } from "@/hooks
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { ApplyCashbackModal } from "@/components/cashback/ApplyCashbackModal"
 import { useQueryClient } from "@tanstack/react-query"
-
-const formatSom = (n: number) => `${new Intl.NumberFormat("uz-UZ").format(n)} so'm`
+import { formatDate, formatMoney } from "@/lib/format"
 
 interface EventDetailProps {
   eventId: string
   onBack: () => void
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—"
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  const hours = String(d.getHours()).padStart(2, "0")
-  const mins = String(d.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year} ${hours}:${mins}`
 }
 
 function getInitials(name: string): string {
@@ -255,12 +243,8 @@ function PaymentSection({ participantId }: { participantId: string }) {
             <div key={p.id} className="flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2 group/row">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`inline-flex px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold ${
-                    p.method === "naqd"  ? "bg-green-50 text-green-700" :
-                    p.method === "karta" ? "bg-blue-50 text-blue-700"   :
-                                          "bg-purple-50 text-purple-700"
-                  }`}>{METHOD_LABELS[p.method]}</span>
-                  <span className="text-[12px] font-semibold text-[#141414]">{formatSom(p.amount)}</span>
+                  <StatusBadge label={METHOD_LABELS[p.method]} variant="neutral" />
+                  <span className="text-[12px] font-semibold text-[#141414]">{formatMoney(p.amount)}</span>
                   <span className="text-[11px] text-[#999]">{formatDate(p.paid_at)}</span>
                   {p.recorder_name && <span className="text-[10px] text-[#B0B0B0] truncate max-w-[80px]" title={p.recorder_name}>{p.recorder_name}</span>}
                   {p.note && <span className="text-[11px] text-[#999] truncate max-w-[80px]" title={p.note}>{p.note}</span>}
@@ -328,7 +312,7 @@ function ParticipantCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FFE7D0 221.79%)" }}
+      style={{ background: "#FFF5EE" }}
       className="group border border-[#F0F0F0] rounded-[12px] w-full max-w-[685px] p-6 flex flex-col gap-0 hover:shadow-sm transition-all relative"
     >
       <div className="flex items-stretch gap-6 min-h-[170px]">
@@ -364,42 +348,26 @@ function ParticipantCard({
           {price > 0 && (
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="text-[12px] text-[#999]">
-                Narx: <strong className="text-[#141414]">{formatSom(price)}</strong>
+                Narx: <strong className="text-[#141414]">{formatMoney(price)}</strong>
               </span>
               <span className="text-[12px] text-[#999]">
-                To'langan: <strong className={paid >= price ? "text-green-600" : "text-[#141414]"}>{formatSom(paid)}</strong>
+                To'langan: <strong className={paid >= price ? "text-green-600" : "text-[#141414]"}>{formatMoney(paid)}</strong>
               </span>
-              {diff > 0 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-red-50 text-red-600">
-                  Qarz: {formatSom(diff)}
-                </span>
-              )}
-              {diff < 0 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-blue-50 text-blue-600">
-                  Ortiqcha: {formatSom(-diff)}
-                </span>
-              )}
-              {diff === 0 && price > 0 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-green-50 text-green-600">
-                  To'liq
-                </span>
-              )}
+              {diff > 0 && <StatusBadge label={`Qarz: ${formatMoney(diff)}`} variant="danger" />}
+              {diff < 0 && <StatusBadge label={`Ortiqcha: ${formatMoney(-diff)}`} variant="info" />}
+              {diff === 0 && price > 0 && <StatusBadge label="To'liq" variant="success" />}
             </div>
           )}
 
           {/* Cashback row + edit */}
           <div className="flex items-center gap-2 flex-wrap mt-2 relative">
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                isCustom ? "bg-orange-50 text-orange-700" : "bg-[#F5F5F5] text-[#666]"
-              }`}
-              title={isCustom ? "Maxsus foiz" : "Standart foiz"}
-            >
-              {effectivePercent}%
-            </span>
+            <StatusBadge
+              label={`${effectivePercent}%`}
+              variant={isCustom ? "warning" : "neutral"}
+            />
             {participant.cashback_earned > 0 && (
               <span className="text-[11px] text-[#666]">
-                Cashback: <strong className="text-green-600">{formatSom(participant.cashback_earned)}</strong>
+                Cashback: <strong className="text-green-600">{formatMoney(participant.cashback_earned)}</strong>
               </span>
             )}
             <ApplyCashbackButton participant={participant} />
@@ -554,12 +522,12 @@ function EventCashbackStats({
 
       <div className="border border-[#F0F0F0] rounded-[10px] p-4 flex flex-col gap-0.5 bg-white">
         <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Jami berildi</span>
-        <span className="text-[18px] font-bold text-green-600">{formatSom(totalEarned)}</span>
+        <span className="text-[18px] font-bold text-green-600">{formatMoney(totalEarned)}</span>
       </div>
 
       <div className="border border-[#F0F0F0] rounded-[10px] p-4 flex flex-col gap-0.5 bg-white">
         <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Jami ishlatildi</span>
-        <span className="text-[18px] font-bold text-orange-600">{formatSom(totalUsed)}</span>
+        <span className="text-[18px] font-bold text-orange-600">{formatMoney(totalUsed)}</span>
       </div>
     </div>
   )
@@ -856,7 +824,7 @@ function ApplyCashbackButton({ participant }: { participant: Participant }) {
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true) }}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
-        title={`Cashback balansi: ${new Intl.NumberFormat("uz-UZ").format(balance)} so'm`}
+        title={`Cashback balansi: ${formatMoney(balance)}`}
       >
         💰 Cashback ishlatish
       </button>

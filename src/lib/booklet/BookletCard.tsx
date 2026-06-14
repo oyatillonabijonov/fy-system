@@ -19,7 +19,7 @@ export function BookletCard({ participant, index }: BookletCardProps) {
       style={{
         width: "714px",
         height: "210px",
-        background: "linear-gradient(180deg, #FFFFFF 0%, #FFE7D0 221.79%)",
+        background: "#FFF5EE",
         border: "1px solid #F0F0F0",
         borderRadius: "12px",
         display: "flex",

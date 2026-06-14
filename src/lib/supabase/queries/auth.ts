@@ -1,6 +1,7 @@
 import { supabase } from "../client"
 import type { Database } from "../types"
 import type { Department } from "@/lib/constants/employee"
+import type { StatusVariant } from "@/lib/constants/theme"
 
 export type UserRole = "admin" | "manager" | "xodim"
 
@@ -27,6 +28,12 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
   manager: "Menejer",
   xodim: "Xodim",
+}
+
+export const ROLE_BADGE_VARIANT: Record<UserRole, StatusVariant> = {
+  admin:   'info',
+  manager: 'neutral',
+  xodim:   'neutral',
 }
 
 export interface UserProfile {

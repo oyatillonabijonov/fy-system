@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Newspaper,
@@ -17,14 +18,7 @@ import {
   useDeleteNewsPost,
 } from "@/hooks/useNews"
 import { uploadNewsImage, type NewsPost } from "@/lib/supabase/queries/news"
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  return `${day}.${month}.${d.getFullYear()}`
-}
+import { formatDate } from "@/lib/format"
 
 interface PostFormProps {
   editPost: NewsPost | null
@@ -301,13 +295,7 @@ export function Yangiliklar() {
               <div className="p-4 flex flex-col gap-2 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-[14px] font-bold text-[#141414] leading-snug">{post.title}</h3>
-                  <span
-                    className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded-[4px] text-[10px] font-bold ${
-                      post.is_published ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"
-                    }`}
-                  >
-                    {post.is_published ? "E'lon qilingan" : "Qoralama"}
-                  </span>
+                  <StatusBadge label={post.is_published ? "E'lon qilingan" : "Qoralama"} variant={post.is_published ? 'success' : 'warning'} />
                 </div>
                 {post.body && (
                   <p className="text-[12px] text-[#666] leading-snug line-clamp-3">{post.body}</p>

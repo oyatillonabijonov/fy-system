@@ -15,19 +15,10 @@ import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import { CreateEventModal } from "@/components/events/CreateEventModal"
 import { useEvents, useParticipantCounts, useDeleteEvent, EVENTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
 import { EventCardSkeleton } from "@/components/ui/Skeleton"
+import { formatDate } from "@/lib/format"
 
 interface EventsProps {
   onSelectEvent: (eventId: string) => void
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "Sana belgilanmagan"
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  return `${day}.${month}.${year}`
 }
 
 export function Events({ onSelectEvent }: EventsProps) {
@@ -125,7 +116,7 @@ export function Events({ onSelectEvent }: EventsProps) {
                   />
                 </div>
               ) : (
-                <div className="h-[100px] bg-gradient-to-br from-[#F5F5F5] to-[#EBEBEB] flex items-center justify-center">
+                <div className="h-[100px] bg-[#EBEBEB] flex items-center justify-center">
                   <CalendarBlank size={40} className="text-[#D0D0D0]" weight="bold" />
                 </div>
               )}

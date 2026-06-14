@@ -4,6 +4,7 @@ import { X, CaretDown, Camera } from "@phosphor-icons/react"
 import { useCreateUser } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
+import { PhoneInput } from "@/components/ui/PhoneInput"
 import {
   MODULES,
   ROLE_LABELS,
@@ -277,13 +278,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                   />
                 </Field>
                 <Field label="Telefon">
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+998 90 123 45 67"
-                    className={inputCls}
-                  />
+                  <PhoneInput value={phone} onChange={setPhone} />
                 </Field>
               </div>
             </Section>

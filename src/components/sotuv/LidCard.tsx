@@ -1,15 +1,7 @@
 import { Phone, PhoneSlash } from "@phosphor-icons/react"
 import type { Lead, StageConfig } from "@/lib/mock-data/sotuv"
-import { formatAmount, getStageConfig } from "@/lib/mock-data/sotuv"
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  return `${day}.${month}.${year}`
-}
+import { getStageConfig } from "@/lib/mock-data/sotuv"
+import { formatNumber, formatDate } from "@/lib/format"
 
 interface LidCardProps {
   lead: Lead
@@ -86,7 +78,7 @@ export function LidCard({ lead, isSelected, onSelect, stageConfigs, onClick }: L
         {lead.amount > 0 ? (
           <div className="flex flex-col">
             <span className="text-[13px] font-bold text-[#141414]">
-              {formatAmount(lead.amount)}
+              {formatNumber(lead.amount)}
             </span>
             <span className="text-[10px] text-[#999999]">so'm</span>
           </div>

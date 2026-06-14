@@ -39,28 +39,18 @@ import { useKpiSummary } from "@/hooks/useKpi"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
+  ROLE_BADGE_VARIANT,
   uploadUserAvatar,
   updateUserAvatar,
   deleteUserAvatar,
   type UserProfile,
 } from "@/lib/supabase/queries/auth"
 import { departmentLabel, departmentColor } from "@/lib/constants/employee"
-
-const ROLE_BADGE: Record<string, string> = {
-  admin: "bg-purple-50 text-purple-700",
-  manager: "bg-blue-50 text-blue-700",
-  xodim: "bg-gray-50 text-gray-700",
-}
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { formatDate, formatNumber, formatPhone } from "@/lib/format"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
-}
-
-function formatDate(dateStr: string | null): string | null {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString("uz-UZ")
 }
 
 export function HodimDetail() {
@@ -389,15 +379,8 @@ function ProfileHeader({
             <h1 className="text-[24px] font-bold text-[#141414]" style={{ letterSpacing: "-0.6px" }}>
               {user.full_name}
             </h1>
-            <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${ROLE_BADGE[user.role]}`}>
-              {ROLE_LABELS[user.role]}
-            </span>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              user.is_active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-green-500" : "bg-red-500"}`} />
-              {user.is_active ? "Faol" : "Faol emas"}
-            </span>
+            <StatusBadge label={ROLE_LABELS[user.role]} variant={ROLE_BADGE_VARIANT[user.role]} />
+            <StatusBadge label={user.is_active ? "Faol" : "Faol emas"} variant={user.is_active ? 'success' : 'danger'} dot />
           </div>
 
           {user.position && <p className="text-[14px] text-[#141414] mb-1">{user.position}</p>}
@@ -419,7 +402,7 @@ function ProfileHeader({
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] text-[#666]">
             <ContactItem icon={<Envelope size={14} weight="bold" />} value={user.email} />
-            {user.phone && <ContactItem icon={<Phone size={14} weight="bold" />} value={user.phone} />}
+            {user.phone && <ContactItem icon={<Phone size={14} weight="bold" />} value={formatPhone(user.phone)} />}
             {user.telegram && (
               <ContactItem
                 icon={<PaperPlaneRight size={14} weight="bold" />}
@@ -650,7 +633,7 @@ function KpiSection({
             actual={kpi.actual.revenue_actual}
             progress={kpi.revenue_progress}
             unit="so'm"
-            formatNumber={(n) => new Intl.NumberFormat("uz-UZ").format(n)}
+            formatNumber={formatNumber}
           />
           <KpiProgressCard
             icon={<Target size={18} weight="bold" />}

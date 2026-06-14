@@ -30,18 +30,7 @@ import {
   createLeadTask,
 } from "@/lib/amocrm/mutations"
 import type { CachedUser } from "@/lib/supabase/queries/amocrm"
-
-const formatDate = (dateStr: string | null | undefined): string => {
-  if (!dateStr) return "—"
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const year = d.getFullYear()
-  const hours = String(d.getHours()).padStart(2, "0")
-  const mins = String(d.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year} ${hours}:${mins}`
-}
+import { formatDate } from "@/lib/format"
 
 const formatFieldName = (name: string): string => {
   return name
@@ -207,7 +196,7 @@ function InlineEdit({
           }
         }}
         disabled={saving}
-        className={`border border-[#141414] rounded-[4px] px-1.5 py-0.5 focus:outline-none ${saving ? "opacity-50" : ""} ${inputClassName ?? ""}`}
+        className={`border border-[#E0E0E0] rounded-[4px] px-1.5 py-0.5 focus:outline-none focus:border-[#141414] ${saving ? "opacity-50" : ""} ${inputClassName ?? ""}`}
       />
     )
   }

@@ -5,6 +5,7 @@ import { useUpdateUserProfile } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { DEPARTMENTS, type Department } from "@/lib/constants/employee"
+import { PhoneInput } from "@/components/ui/PhoneInput"
 
 interface EditProfileModalProps {
   isOpen: boolean
@@ -134,13 +135,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                   />
                 </Field>
                 <Field label="Telefon">
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+998 90 123 45 67"
-                    className={inputCls}
-                  />
+                  <PhoneInput value={phone} onChange={setPhone} />
                 </Field>
               </div>
             </div>

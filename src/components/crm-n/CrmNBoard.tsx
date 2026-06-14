@@ -7,6 +7,7 @@ import {
 import { Plus } from "@phosphor-icons/react"
 import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { CrmNCard } from "./CrmNCard"
+import { formatNumber } from "@/lib/format"
 
 interface CrmNBoardProps {
   leads: CrmLeadWithContact[]
@@ -17,9 +18,6 @@ interface CrmNBoardProps {
   onAddLead?: () => void
 }
 
-function formatAmount(amount: number): string {
-  return amount.toLocaleString("uz-UZ")
-}
 
 export function CrmNBoard({
   leads,
@@ -51,7 +49,7 @@ export function CrmNBoard({
           <span className="text-[#E0E0E0]">|</span>
           <span>
             <span className="font-bold text-[#141414]">
-              {formatAmount(totalAmount)}
+              {formatNumber(totalAmount)}
             </span>{" "}
             so'm
           </span>
@@ -105,7 +103,7 @@ export function CrmNBoard({
                       </div>
                       {stageTotal > 0 && (
                         <span className="text-[11px] text-[#999] font-medium pl-4">
-                          {formatAmount(stageTotal)} so'm
+                          {formatNumber(stageTotal)} so'm
                         </span>
                       )}
                     </div>
