@@ -43,7 +43,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
   '/sotuv/amocrm':  { title: 'AmoCRM',          desc: 'AmoCRM orqali savdo jarayonlari va lidlar.' },
-  '/sotuv/crm-n':   { title: 'CRM-N',           desc: 'Ichki CRM tizimi — mustaqil savdo boshqaruvi.' },
+  '/sotuv/crm-n':   { title: "Sotuv bo'limi",    desc: 'Savdo jarayonlari va lidlar boshqaruvi.' },
   '/tadbirlar':     { title: 'Tadbirlar',       desc: "Klub doirasidagi barcha tadbirlar va uchrashuvlar." },
   '/pbx':           { title: 'IP Telefoniya',   desc: "Onlayn ATS integratsiyasi va qo'ng'iroqlar tarixi." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },

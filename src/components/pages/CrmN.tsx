@@ -147,7 +147,7 @@ export function CrmN() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-[22px] font-bold text-[#141414]">CRM-N</h1>
+          <h1 className="text-[22px] font-bold text-[#141414]">Sotuv bo'limi</h1>
 
           {/* Pipeline selector */}
           {pipelinesLoading ? (
@@ -199,7 +199,7 @@ export function CrmN() {
 
           <div className="flex items-center gap-1.5 text-[12px] text-[#999999] font-medium">
             <div className="w-2 h-2 rounded-full bg-[#141414]" />
-            CRM-N
+            Sotuv bo'limi
           </div>
         </div>
         <div className="flex items-center gap-2">
