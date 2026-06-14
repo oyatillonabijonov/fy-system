@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.4"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -728,6 +748,7 @@ export type Database = {
           skip_cashback_award: boolean | null
           sort_order: number | null
           status: string | null
+          tariff: string | null
         }
         Insert: {
           activity?: string | null
@@ -753,6 +774,7 @@ export type Database = {
           skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
+          tariff?: string | null
         }
         Update: {
           activity?: string | null
@@ -778,6 +800,7 @@ export type Database = {
           skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
+          tariff?: string | null
         }
         Relationships: [
           {
@@ -803,11 +826,15 @@ export type Database = {
           created_at: string | null
           date: string | null
           description: string | null
+          end_date: string | null
+          has_tariffs: boolean
           id: string
           is_active: boolean | null
           location: string | null
+          manager_id: string | null
           name: string
           price: number
+          total_value: number
           updated_at: string | null
         }
         Insert: {
@@ -816,11 +843,15 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
+          end_date?: string | null
+          has_tariffs?: boolean
           id?: string
           is_active?: boolean | null
           location?: string | null
+          manager_id?: string | null
           name: string
           price?: number
+          total_value?: number
           updated_at?: string | null
         }
         Update: {
@@ -829,14 +860,26 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
+          end_date?: string | null
+          has_tariffs?: boolean
           id?: string
           is_active?: boolean | null
           location?: string | null
+          manager_id?: string | null
           name?: string
           price?: number
+          total_value?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {
@@ -889,44 +932,6 @@ export type Database = {
         }
         Relationships: []
       }
-      messages: {
-        Row: {
-          channel_id: string | null
-          content: string | null
-          created_at: string
-          id: string
-          image_url: string | null
-          recipient_id: string | null
-          sender_id: string
-        }
-        Insert: {
-          channel_id?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          recipient_id?: string | null
-          sender_id: string
-        }
-        Update: {
-          channel_id?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          recipient_id?: string | null
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       news_posts: {
         Row: {
           body: string | null
@@ -967,6 +972,47 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          paid_at: string
+          participant_id: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: string
+          note?: string | null
+          paid_at?: string
+          participant_id: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_at?: string
+          participant_id?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "event_participants"
             referencedColumns: ["id"]
           },
         ]
@@ -1147,10 +1193,24 @@ export type Database = {
         Returns: undefined
       }
       my_client_id: { Args: never; Returns: string }
+      normalize_phone: { Args: { p: string }; Returns: string }
       register_for_event: { Args: { p_event_id: string }; Returns: string }
       setup_google_member: {
         Args: { p_company: string; p_full_name: string; p_phone: string }
         Returns: string
+      }
+      spend_cashback: {
+        Args: {
+          p_amount: number
+          p_client_id: string
+          p_event_id: string
+          p_participant_id: string
+        }
+        Returns: undefined
+      }
+      close_crm_lead_won: {
+        Args: { p_lead_id: string }
+        Returns: Json
       }
     }
     Enums: {
@@ -1295,6 +1355,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       call_type: ["answered", "missed", "none"],
@@ -1319,8 +1382,9 @@ export const Constants = {
   },
 } as const
 
-// ── Manual aliases (re-appended by gen:types from supabase/types-manual-exports.txt) ──
+// ── Manual aliases ──
 export type LeadStage = Database["public"]["Enums"]["lead_stage"]
 export type LeadSource = Database["public"]["Enums"]["lead_source"]
 export type CallType = Database["public"]["Enums"]["call_type"]
 export type ClientStatus = "Faol" | "Nofaol"
+

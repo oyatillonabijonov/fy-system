@@ -748,6 +748,7 @@ export type Database = {
           skip_cashback_award: boolean | null
           sort_order: number | null
           status: string | null
+          tariff: string | null
         }
         Insert: {
           activity?: string | null
@@ -773,6 +774,7 @@ export type Database = {
           skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
+          tariff?: string | null
         }
         Update: {
           activity?: string | null
@@ -798,6 +800,7 @@ export type Database = {
           skip_cashback_award?: boolean | null
           sort_order?: number | null
           status?: string | null
+          tariff?: string | null
         }
         Relationships: [
           {
@@ -823,11 +826,15 @@ export type Database = {
           created_at: string | null
           date: string | null
           description: string | null
+          end_date: string | null
+          has_tariffs: boolean
           id: string
           is_active: boolean | null
           location: string | null
+          manager_id: string | null
           name: string
           price: number
+          total_value: number
           updated_at: string | null
         }
         Insert: {
@@ -836,11 +843,15 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
+          end_date?: string | null
+          has_tariffs?: boolean
           id?: string
           is_active?: boolean | null
           location?: string | null
+          manager_id?: string | null
           name: string
           price?: number
+          total_value?: number
           updated_at?: string | null
         }
         Update: {
@@ -849,14 +860,26 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
+          end_date?: string | null
+          has_tariffs?: boolean
           id?: string
           is_active?: boolean | null
           location?: string | null
+          manager_id?: string | null
           name?: string
           price?: number
+          total_value?: number
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {
