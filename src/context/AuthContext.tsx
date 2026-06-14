@@ -4,17 +4,13 @@ import { supabase } from "../lib/supabase/client"
 import {
   getCurrentProfile,
   getCurrentPermissions,
-  getCurrentMemberClient,
   type UserProfile,
   type UserPermission,
   type ModuleName,
-  type MemberClient,
 } from "../lib/supabase/queries/auth"
 
 interface AuthContextType {
   user: UserProfile | null
-  memberClient: MemberClient | null
-  isMember: boolean
   permissions: UserPermission[]
   loading: boolean
   isAdmin: boolean
@@ -27,7 +23,6 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [memberClient, setMemberClient] = useState<MemberClient | null>(null)
   const [permissions, setPermissions] = useState<UserPermission[]>([])
   const [loading, setLoading] = useState(true)
   // Tracks the currently-loaded user id so we can ignore SIGNED_IN echoes
@@ -43,12 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profile) {
         const perms = await getCurrentPermissions()
         setPermissions(perms)
-        setMemberClient(null)
       } else {
         setPermissions([])
-        const mc = await getCurrentMemberClient()
-        setMemberClient(mc)
-        if (mc) currentUserIdRef.current = mc.auth_user_id
       }
     } finally {
       setLoading(false)
@@ -90,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser])
 
   const isAdmin = user?.role === "admin"
-  const isMember = memberClient !== null
 
   const hasAccess = useCallback(
     (module: ModuleName): boolean => {
@@ -114,8 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        memberClient,
-        isMember,
         permissions,
         loading,
         isAdmin,

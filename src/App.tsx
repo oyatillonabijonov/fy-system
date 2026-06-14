@@ -16,11 +16,6 @@ import { Yangiliklar } from "./components/pages/Yangiliklar"
 import { Pbx } from "./components/pages/Pbx"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
-import { MemberRoute } from "./components/auth/MemberRoute"
-import { MemberAuthCallback } from "./components/pages/MemberAuthCallback"
-import MemberEvents from "./components/pages/MemberEvents"
-import MemberProfile from "./components/pages/MemberProfile"
-import { MemberHamjamiyat } from "./components/pages/MemberHamjamiyat"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
 import { motion, AnimatePresence } from "framer-motion"
@@ -44,12 +39,6 @@ interface PageMeta {
   desc: string
 }
 
-const MEMBER_PAGE_META: Record<string, PageMeta> = {
-  '/member/events':    { title: 'Tadbirlar',    desc: "Klub tadbirlari va ro'yxatdan o'tish." },
-  '/member/profile':   { title: 'Mening profilim', desc: "Shaxsiy ma'lumotlaringiz." },
-  '/member/community': { title: 'Hamjamiyat',   desc: "A'zolar bilan muloqot va guruh kanallar." },
-}
-
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
@@ -70,9 +59,6 @@ function pageMetaFor(pathname: string): PageMeta {
   }
   if (/^\/hodimlar\/[^/]+/.test(pathname)) {
     return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
-  }
-  if (pathname.startsWith('/member/')) {
-    return MEMBER_PAGE_META[pathname] ?? { title: '', desc: '' }
   }
   return PAGE_META[pathname] ?? { title: '', desc: '' }
 }
@@ -331,7 +317,6 @@ function App() {
     <ThemeProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/auth/member-callback" element={<MemberAuthCallback />} />
 
         {/* All routes below sit inside ProtectedRoute → AppShell */}
         <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
@@ -385,15 +370,6 @@ function App() {
           } />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Route>
-
-        {/* Member portal routes */}
-        <Route element={<MemberRoute><AppShell /></MemberRoute>}>
-          <Route path="/member" element={<Navigate to="/member/events" replace />} />
-          <Route path="/member/events"    element={<MemberEvents />} />
-          <Route path="/member/profile"   element={<MemberProfile />} />
-          <Route path="/member/community" element={<MemberHamjamiyat />} />
-          <Route path="/member/*" element={<Navigate to="/member/events" replace />} />
         </Route>
       </Routes>
     </ThemeProvider>

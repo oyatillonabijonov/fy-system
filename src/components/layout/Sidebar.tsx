@@ -37,7 +37,6 @@ import { useTheme } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
-import { CalendarBlank as CalendarIcon, UserCircle, ChatTeardropDots as ChatIcon } from "@phosphor-icons/react"
 import { DASHBOARD_KEY } from "@/hooks/useDashboard"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
@@ -121,21 +120,10 @@ const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<un
     Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
-const memberNavigationSections: NavSection[] = [
-    {
-        title: "A'zo portali",
-        items: [
-            { name: "Tadbirlar",   icon: CalendarIcon,  path: "/member/events" },
-            { name: "Hamjamiyat", icon: ChatIcon,       path: "/member/community" },
-            { name: "Profil",      icon: UserCircle,    path: "/member/profile" },
-        ],
-    },
-]
-
 export function Sidebar() {
     const navigate = useNavigate()
     const location = useLocation()
-    const { user, memberClient, isMember, hasAccess } = useAuth()
+    const { user, hasAccess } = useAuth()
     const isAdminUser = user?.role === "admin"
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -183,13 +171,11 @@ export function Sidebar() {
         return item
     }
 
-    const activeSections = isMember ? memberNavigationSections : navigationSections
-
-    const visibleSections = activeSections
+    const visibleSections = navigationSections
         .map(section => ({
             ...section,
             items: section.items
-                .map(item => isMember ? item : filterItem(item))
+                .map(item => filterItem(item))
                 .filter((it): it is NavItem => it !== null)
                 .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase())),
         }))
@@ -211,9 +197,9 @@ export function Sidebar() {
         navigate("/login", { replace: true })
     }
 
-    const displayName = isMember ? memberClient?.full_name : user?.full_name
-    const displaySub  = isMember ? (memberClient?.company ?? "A'zo") : (user?.role === "admin" ? "Administrator" : user?.role === "manager" ? "Menejer" : "Xodim")
-    const displayAvatar = isMember ? memberClient?.image : user?.avatar_url
+    const displayName = user?.full_name
+    const displaySub  = user?.role === "admin" ? "Administrator" : user?.role === "manager" ? "Menejer" : "Xodim"
+    const displayAvatar = user?.avatar_url
 
     const userInitials = displayName
         ? displayName.split(" ").map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -238,7 +224,7 @@ export function Sidebar() {
                     {!isCollapsed ? (
                         <motion.img
                             key="logo"
-                            src={(themeId === 'black-orange' || isMember) ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
+                            src={themeId === 'black-orange' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
                             alt="Biznes Klub Logo"
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}

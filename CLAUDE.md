@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ---
 
 ## 1. Project Summary
@@ -15,9 +17,9 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + shadcn/ui (`base-nova`), framer-motion, Geist Variable font |
-| Database | Supabase Postgres (migrations `001`–`025`), pg_cron + pg_net |
+| Database | Supabase Postgres (migrations `001`–`040`), pg_cron + pg_net |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
-| Hosting | Supabase cloud (backend); frontend is a static Vite build — no deploy config in repo |
+| Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | AmoCRM REST v4 (via dev proxy `/api/amo`), Meta/Framer/Tilda lead webhooks |
 
 Package manager: **bun** (not npm).
@@ -49,8 +51,10 @@ Package manager: **bun** (not npm).
 │       ├── amocrm/           # AmoCRM client + token-manager (OAuth refresh, 401 retry)
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–025, sequential — NEVER edit existing ones
-│   └── functions/            # amocrm-sync, admin-create-user, framer/meta/tilda-webhook
+│   ├── migrations/           # 001–040, sequential — NEVER edit existing ones
+│   └── functions/            # amocrm-sync, admin-create-user, admin-create-member, framer/meta/tilda-webhook
+├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
+├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
 └── vite.config.ts            # Port 5001, @ alias, /api/amo → amocrm.ru proxy
 ```
 
@@ -110,9 +114,16 @@ bun run switch:local | switch:cloud
 # Deploy DB migrations to remote
 bun run supabase:migrate          # = supabase db push
 # Edge functions: npx supabase functions deploy <name>
+
+# Regenerate types (updates both web and mobile)
+bun run gen:types
 ```
 
 No test runner is configured. `amocrm-sync` runs automatically via **pg_cron every 3 minutes** (see `004_cron_job.sql`).
+
+### Production deployment (Coolify)
+
+Frontend is built via `Dockerfile` on the Oracle server. `VITE_*` env vars are embedded **at build time** — they must be set as build variables in Coolify before deploying (not just runtime env vars). The self-hosted Supabase stack (`docker-compose.yml` at `/home/ubuntu/supabase/`) runs outside Coolify and is accessed via Traefik reverse proxy.
 
 ---
 
@@ -148,9 +159,9 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **Never modify existing migration files** — always add a new numbered one.
 - **Cashback is trigger-driven** (migrations `017`, `023`): `auto_award_cashback` awards on any `paid` increase; spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is maintained by a trigger from `cashback_transactions` — never update the balance directly.
 - **AuthContext ignores `SIGNED_IN` echoes** Supabase fires on tab refocus (compares user id). Don't "simplify" that away — it prevents full reloads on every tab switch.
-- **User creation only via `admin-create-user` edge function** (service role) — never client-side signup.
+- **User creation only via edge functions** (service role) — `admin-create-user` for staff, `admin-create-member` for club members (Mijozlar page → DeviceMobile icon). Never client-side signup.
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.
-- Storage buckets: `event-covers` (`013/014`), `client-images` (`016`), `profile-avatars` (`021`); upsert policies fixed in `025`.
+- Storage buckets: `event-covers` (`013/014`), `client-images` (`016`), `profile-avatars` (`021`); upsert policies fixed in `025`. On self-hosted Supabase, files live at `/var/lib/storage/stub/<bucket>/` inside the storage container (TENANT_ID=`stub`).
 - `localStorage` keys: `fy_theme`, `fy_lang`.
 
 ---
