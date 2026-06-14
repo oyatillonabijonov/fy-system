@@ -7,11 +7,15 @@ export interface Event {
   name: string
   description: string | null
   date: string | null
+  end_date: string | null
   location: string | null
   cover_image: string | null
   is_active: boolean
   cashback_percent: number
   price: number
+  total_value: number
+  manager_id: string | null
+  has_tariffs: boolean
   created_at: string
   updated_at: string
 }
@@ -57,10 +61,14 @@ export interface CreateEventInput {
   name: string
   description?: string
   date?: string
+  end_date?: string | null
   location?: string
   cover_image?: string
   cashback_percent?: number
   price?: number
+  total_value?: number
+  manager_id?: string | null
+  has_tariffs?: boolean
 }
 
 export interface CreateParticipantInput {
@@ -82,7 +90,7 @@ export interface CreateParticipantInput {
 export async function getEvents(): Promise<Event[]> {
   const { data, error } = await supabase
     .from("events")
-    .select("id, name, description, date, location, cover_image, is_active, cashback_percent, price, created_at, updated_at")
+    .select("id, name, description, date, end_date, location, cover_image, is_active, cashback_percent, price, total_value, manager_id, has_tariffs, created_at, updated_at")
     .order("date", { ascending: false })
 
   if (error) throw error
@@ -107,10 +115,14 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       name: input.name,
       description: input.description ?? null,
       date: input.date ?? null,
+      end_date: input.end_date ?? null,
       location: input.location ?? null,
       cover_image: input.cover_image ?? null,
+      manager_id: input.manager_id ?? null,
       ...(input.cashback_percent !== undefined ? { cashback_percent: input.cashback_percent } : {}),
       ...(input.price !== undefined ? { price: input.price } : {}),
+      ...(input.total_value !== undefined ? { total_value: input.total_value } : {}),
+      ...(input.has_tariffs !== undefined ? { has_tariffs: input.has_tariffs } : {}),
     })
     .select()
     .single()
@@ -121,7 +133,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 
 export async function updateEvent(
   id: string,
-  updates: Partial<Pick<Event, "name" | "description" | "date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price">>
+  updates: Partial<Pick<Event, "name" | "description" | "date" | "end_date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price" | "total_value" | "manager_id" | "has_tariffs">>
 ): Promise<void> {
   const { error } = await supabase
     .from("events")

@@ -9,11 +9,18 @@ interface ImageCropModalProps {
   imageSrc: string
   onClose: () => void
   onCropped: (blob: Blob) => void
+  /** Crop aspect ratio (width/height). Default 1 (square). */
+  aspect?: number
+  /** Round crop overlay. Default true (avatars). Set false for banners. */
+  circular?: boolean
+  /** Output dimensions in px. Default 512×512. */
+  outputWidth?: number
+  outputHeight?: number
 }
 
-function centerAspectCrop(mediaWidth: number, mediaHeight: number) {
+function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number) {
   return centerCrop(
-    makeAspectCrop({ unit: "%", width: 80 }, 1, mediaWidth, mediaHeight),
+    makeAspectCrop({ unit: "%", width: 90 }, aspect, mediaWidth, mediaHeight),
     mediaWidth,
     mediaHeight
   )
@@ -24,16 +31,22 @@ export function ImageCropModal({
   imageSrc,
   onClose,
   onCropped,
+  aspect = 1,
+  circular = true,
+  outputWidth,
+  outputHeight,
 }: ImageCropModalProps) {
+  const outW = outputWidth ?? 512
+  const outH = outputHeight ?? 512
   const [crop, setCrop] = useState<Crop>()
   const imgRef = useRef<HTMLImageElement>(null)
 
   const onImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const { naturalWidth, naturalHeight } = e.currentTarget
-      setCrop(centerAspectCrop(naturalWidth, naturalHeight))
+      setCrop(centerAspectCrop(naturalWidth, naturalHeight, aspect))
     },
-    []
+    [aspect]
   )
 
   async function handleDone() {
@@ -51,9 +64,8 @@ export function ImageCropModal({
       height: (crop.height / 100) * image.height * scaleY,
     }
 
-    // Output 512×512 for good quality avatars
-    canvas.width = 512
-    canvas.height = 512
+    canvas.width = outW
+    canvas.height = outH
 
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -66,8 +78,8 @@ export function ImageCropModal({
       pixelCrop.height,
       0,
       0,
-      512,
-      512
+      outW,
+      outH
     )
 
     canvas.toBlob(
@@ -114,8 +126,8 @@ export function ImageCropModal({
               <ReactCrop
                 crop={crop}
                 onChange={(_, percentCrop) => setCrop(percentCrop)}
-                aspect={1}
-                circularCrop
+                aspect={aspect}
+                circularCrop={circular}
               >
                 <img
                   ref={imgRef}
