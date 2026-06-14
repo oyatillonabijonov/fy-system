@@ -38,7 +38,7 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ClientUpdate }) =>
+    mutationFn: ({ id, data }: { id: string; data: ClientUpdate & { location?: string | null } }) =>
       updateClient(id, data),
     onMutate: async ({ id, data }) => {
       await qc.cancelQueries({ queryKey: CLIENTS_KEY })

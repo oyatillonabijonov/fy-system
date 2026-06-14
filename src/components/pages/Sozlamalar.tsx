@@ -48,7 +48,7 @@ export function Sozlamalar() {
             exit={{ opacity: 0, y: -10 }}
             className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
               toast.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-200"
+                ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >

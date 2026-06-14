@@ -351,7 +351,7 @@ function ParticipantCard({
                 Narx: <strong className="text-[#141414]">{formatMoney(price)}</strong>
               </span>
               <span className="text-[12px] text-[#999]">
-                To'langan: <strong className={paid >= price ? "text-green-600" : "text-[#141414]"}>{formatMoney(paid)}</strong>
+                To'langan: <strong className={paid >= price ? "text-[#141414]" : "text-[#141414]"}>{formatMoney(paid)}</strong>
               </span>
               {diff > 0 && <StatusBadge label={`Qarz: ${formatMoney(diff)}`} variant="danger" />}
               {diff < 0 && <StatusBadge label={`Ortiqcha: ${formatMoney(-diff)}`} variant="info" />}
@@ -367,7 +367,7 @@ function ParticipantCard({
             />
             {participant.cashback_earned > 0 && (
               <span className="text-[11px] text-[#666]">
-                Cashback: <strong className="text-green-600">{formatMoney(participant.cashback_earned)}</strong>
+                Cashback: <strong className="text-[#141414]">{formatMoney(participant.cashback_earned)}</strong>
               </span>
             )}
             <ApplyCashbackButton participant={participant} />
@@ -465,9 +465,9 @@ function EventCashbackInlineEditor({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="p-0.5 rounded-[4px] hover:bg-green-50 transition-colors"
+        className="p-0.5 rounded-[4px] hover:bg-[#F5F5F5] transition-colors"
       >
-        <Check size={16} className="text-green-600" weight="bold" />
+        <Check size={16} className="text-[#141414]" weight="bold" />
       </button>
     </div>
   )
@@ -522,7 +522,7 @@ function EventCashbackStats({
 
       <div className="border border-[#F0F0F0] rounded-[10px] p-4 flex flex-col gap-0.5 bg-white">
         <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Jami berildi</span>
-        <span className="text-[18px] font-bold text-green-600">{formatMoney(totalEarned)}</span>
+        <span className="text-[18px] font-bold text-[#141414]">{formatMoney(totalEarned)}</span>
       </div>
 
       <div className="border border-[#F0F0F0] rounded-[10px] p-4 flex flex-col gap-0.5 bg-white">
@@ -541,7 +541,7 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
       exit={{ opacity: 0, y: -10 }}
       className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
         type === "success"
-          ? "bg-green-50 text-green-700 border border-green-200"
+          ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
           : "bg-red-50 text-red-700 border border-red-200"
       }`}
     >
@@ -823,7 +823,7 @@ function ApplyCashbackButton({ participant }: { participant: Participant }) {
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true) }}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#F5F5F5] text-[#141414] hover:bg-[#EBEBEB] transition-colors"
         title={`Cashback balansi: ${formatMoney(balance)}`}
       >
         💰 Cashback ishlatish

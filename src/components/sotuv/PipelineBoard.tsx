@@ -60,7 +60,7 @@ export function PipelineBoard({
         <div className="flex-1" />
 
         <div className="flex items-center gap-2 text-[12px] text-[#999] font-medium">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="w-2 h-2 rounded-full bg-[#141414]" />
           AmoCRM sinxron
         </div>
       </div>

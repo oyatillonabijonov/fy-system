@@ -5,37 +5,25 @@ import {
     Funnel,
     UploadSimple,
     Plus,
-    Minus,
     PencilSimple,
     Trash,
     DownloadSimple,
     Eye,
     X,
-    Envelope,
-    Phone,
-    Briefcase,
-    Calendar,
-    Money,
     Image as ImageIcon,
     Camera,
-    Star,
     Check,
     DeviceMobile,
-    ArrowRight,
 } from "@phosphor-icons/react"
-import type { StatusVariant } from "@/lib/constants/theme"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useMemo, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { useClients, useDeleteClient, useDeleteClients, useUpdateClient, CLIENTS_KEY, useClientJourney, useClientsLastEventDates } from "@/hooks/useClients"
 import { CashbackBadge } from "@/components/cashback/CashbackBadge"
-import { AdjustCashbackModal } from "@/components/cashback/AdjustCashbackModal"
 import { CreateMemberAccountModal } from "@/components/mijozlar/CreateMemberAccountModal"
-import type { CashbackTransaction } from "@/lib/supabase/queries/cashback"
 import { getClientActivityStatus, ACTIVITY_STATUS_META } from "@/lib/constants/clientStatus"
 import {
     createColumnHelper,
@@ -50,66 +38,8 @@ import { useSetCommunityApproved } from "@/hooks/useCommunity"
 import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 
-function formatCashbackDate(dateStr: string): string {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return dateStr
-    const day = String(d.getDate()).padStart(2, "0")
-    const month = String(d.getMonth() + 1).padStart(2, "0")
-    return `${day}.${month}.${d.getFullYear()}`
-}
 
-function formatLastEventText(days: number | null): string {
-    if (days === null) return "Hali tadbirda qatnashmagan"
-    if (days === 0) return "Oxirgi tadbir: bugun"
-    if (days < 7) return `Oxirgi tadbir: ${days} kun oldin`
-    if (days < 30) return `Oxirgi tadbir: ${Math.floor(days / 7)} hafta oldin`
-    if (days < 365) return `Oxirgi tadbir: ${Math.floor(days / 30)} oy oldin`
-    return `Oxirgi tadbir: ${Math.floor(days / 365)} yil oldin`
-}
 
-const CASHBACK_TYPE_META: Record<CashbackTransaction["type"], { label: string; sign: "+" | "-"; variant: StatusVariant }> = {
-    earned:           { label: "Tadbir",        sign: "+", variant: 'success' },
-    used:             { label: "Ishlatildi",    sign: "-", variant: 'danger'  },
-    manual_add:       { label: "Qo'lda",        sign: "+", variant: 'info'    },
-    manual_subtract:  { label: "Qo'lda",        sign: "-", variant: 'warning' },
-    clawback:         { label: "Qaytarildi",    sign: "-", variant: 'danger'  },
-}
-
-function CashbackHistoryList({ loading, items }: { loading: boolean; items: CashbackTransaction[] }) {
-    if (loading) {
-        return <div className="text-[12px] text-[#999] italic py-2">Yuklanmoqda...</div>
-    }
-    if (items.length === 0) {
-        return <div className="text-[12px] text-[#999] italic py-2">Hozircha tarix yo'q</div>
-    }
-    return (
-        <div className="border border-[#F0F0F0] rounded-[8px] overflow-hidden">
-            <div className="grid grid-cols-[60px_1fr_85px] gap-2 px-3 py-2 bg-[#FBFBFB] text-[10px] font-bold text-[#999] uppercase tracking-wider">
-                <span>Sana</span>
-                <span>Turi · Tavsif</span>
-                <span className="text-right">Summa</span>
-            </div>
-            <div className="divide-y divide-[#F5F5F5] max-h-[260px] overflow-y-auto no-scrollbar">
-                {items.map((tx) => {
-                    const meta = CASHBACK_TYPE_META[tx.type]
-                    const formatted = `${meta.sign}${formatNumber(tx.amount)}`
-                    return (
-                        <div key={tx.id} className="grid grid-cols-[60px_1fr_85px] gap-2 px-3 py-2 items-start">
-                            <span className="text-[11px] text-[#999] whitespace-nowrap">{formatCashbackDate(tx.created_at)}</span>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                                <StatusBadge label={meta.label} variant={meta.variant} />
-                                <span className="text-[11px] text-[#666] line-clamp-2">{tx.description ?? "—"}</span>
-                            </div>
-                            <span className={`text-[12px] font-bold text-right ${meta.sign === "+" ? "text-green-700" : "text-red-700"}`}>
-                                {formatted}
-                            </span>
-                        </div>
-                    )
-                })}
-            </div>
-        </div>
-    )
-}
 
 interface Customer {
     id: string;
@@ -117,6 +47,7 @@ interface Customer {
     email: string;
     phone: string;
     activity: string;
+    location: string;
     eventsCount: number;
     daysSinceLastEvent: number | null;
     status: string;
@@ -154,6 +85,7 @@ export function Mijozlar() {
                 email: row.email ?? '',
                 phone: row.phone ?? '',
                 activity: row.activity ?? '',
+                location: (row as unknown as { location: string | null }).location ?? '',
                 eventsCount: row.events_count,
                 daysSinceLastEvent: days,
                 status: row.status,
@@ -174,7 +106,7 @@ export function Mijozlar() {
     const [sorting, setSorting] = useState<SortingState>([])
     const [globalFilter, setGlobalFilter] = useState('')
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-    const [drawerTab, setDrawerTab] = useState<'tadbirlar' | 'cashback' | 'malumotlar'>('tadbirlar')
+    const [drawerTab, setDrawerTab] = useState<'cashback' | 'malumotlar'>('malumotlar')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
     const [memberAccountCustomer, setMemberAccountCustomer] = useState<Customer | null>(null)
@@ -189,7 +121,6 @@ export function Mijozlar() {
     const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
 
     // Cashback adjust modal + toast
-    const [adjustOpen, setAdjustOpen] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     function showToast(message: string, type: "success" | "error") {
@@ -201,12 +132,16 @@ export function Mijozlar() {
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     }, [])
 
-    const navigate = useNavigate()
+
     const journeyQuery = useClientJourney(selectedCustomer?.id ?? null)
 
     // Inline edit state for sidebar
     const [editingField, setEditingField] = useState<"name" | "activity" | "phone" | "email" | null>(null)
     const [editValue, setEditValue] = useState("")
+
+    // Bulk edit mode
+    const [editAllMode, setEditAllMode] = useState(false)
+    const [editAllValues, setEditAllValues] = useState({ name: '', phone: '', email: '', activity: '', location: '' })
 
     function startEdit(field: "name" | "activity" | "phone" | "email") {
         if (!selectedCustomer) return
@@ -234,6 +169,48 @@ export function Mijozlar() {
         setEditValue("")
     }
 
+    function startEditAll() {
+        if (!selectedCustomer) return
+        setEditAllValues({
+            name: selectedCustomer.name || '',
+            phone: selectedCustomer.phone || '',
+            email: selectedCustomer.email || '',
+            activity: selectedCustomer.activity || '',
+            location: selectedCustomer.location || '',
+        })
+        setEditAllMode(true)
+        setEditingField(null)
+    }
+
+    function cancelEditAll() {
+        setEditAllMode(false)
+    }
+
+    function saveEditAll() {
+        if (!selectedCustomer) return
+        updateClientMutation.mutate(
+            { id: selectedCustomer.id, data: {
+                full_name: editAllValues.name.trim() || undefined,
+                phone: editAllValues.phone.trim() || undefined,
+                email: editAllValues.email.trim() || undefined,
+                activity: editAllValues.activity.trim() || undefined,
+                location: editAllValues.location.trim() || undefined,
+            }},
+            {
+                onSuccess: () => {
+                    setSelectedCustomer({ ...selectedCustomer,
+                        name: editAllValues.name.trim(),
+                        phone: editAllValues.phone.trim(),
+                        email: editAllValues.email.trim(),
+                        activity: editAllValues.activity.trim(),
+                        location: editAllValues.location.trim(),
+                    })
+                    setEditAllMode(false)
+                },
+            }
+        )
+    }
+
     // New Customer Form State
     const [newCustomer, setNewCustomer] = useState({
         name: '',
@@ -246,9 +223,10 @@ export function Mijozlar() {
     });
 
     useEffect(() => {
-        setDrawerTab('tadbirlar')
+        setDrawerTab('malumotlar')
         setEditingField(null)
         setEditValue("")
+        setEditAllMode(false)
     }, [selectedCustomer])
 
     const stats = useMemo(() => {
@@ -312,21 +290,18 @@ export function Mijozlar() {
             header: 'Mijoz',
             cell: info => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-[6px] bg-[#F5F5F5] border border-[#E0E0E0] overflow-hidden flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-[#F0F0F0] flex items-center justify-center">
                         {info.row.original.image ? (
-                            <img src={info.row.original.image} alt="" className="w-full h-full object-cover" />
+                            <img src={info.row.original.image} alt="" className="w-full h-full object-cover object-top" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#F0F0F0] text-[#999999]">
-                                <Users size={20} weight="bold" />
-                            </div>
+                            <span className="text-[13px] font-semibold text-[#BBBBBB]">
+                                {info.row.original.name.split(" ").map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
+                            </span>
                         )}
                     </div>
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[14px] font-bold text-[#141414]">{info.getValue()}</span>
-                            <CashbackBadge balance={info.row.original.cashbackBalance} size="sm" />
-                        </div>
-                        <span className="text-[11px] text-[#999999] font-medium">{info.row.original.email || 'Email kiritilmagan'}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold text-[#141414]">{info.getValue()}</span>
+                        <CashbackBadge balance={info.row.original.cashbackBalance} size="sm" />
                     </div>
                 </div>
             ),
@@ -338,12 +313,6 @@ export function Mijozlar() {
         columnHelper.accessor('activity', {
             header: 'Faoliyati',
             cell: info => <div className="text-[13px] text-[#141414] font-medium leading-tight line-clamp-1">{info.getValue()}</div>,
-        }),
-        columnHelper.accessor('status', {
-            header: 'Statusi',
-            cell: info => (
-                <StatusBadge label={info.getValue()} variant={info.getValue() === 'Faol' ? 'success' : 'danger'} />
-            ),
         }),
         columnHelper.display({
             id: 'holat',
@@ -363,7 +332,7 @@ export function Mijozlar() {
             cell: (info) => (
                 <div className="flex items-center justify-end gap-1 pr-2">
                     {info.row.original.authUserId ? (
-                        <span className="p-1.5 text-green-600" title="Mobil akkaunt mavjud">
+                        <span className="p-1.5 text-[#141414]" title="Mobil akkaunt mavjud">
                             <DeviceMobile size={20} weight="bold" />
                         </span>
                     ) : (
@@ -701,153 +670,90 @@ export function Mijozlar() {
                 </div>
             </div>
 
-            {/* Sidebar Overlay */}
-            <AnimatePresence>
-                {selectedCustomer && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setSelectedCustomer(null)}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40"
-                    />
-                )}
-            </AnimatePresence>
-
-            {/* Details Sidebar */}
+            {/* Details Modal */}
             <AnimatePresence>
                 {selectedCustomer && (
                     <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed top-0 right-0 w-[480px] h-full bg-white z-50 flex flex-col border-l border-[#E0E0E0] shadow-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/40 backdrop-blur-[3px]"
+                        onClick={() => { setSelectedCustomer(null); cancelEdit() }}
                     >
-                        {/* HEADER */}
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F0F0F0] bg-white sticky top-0 z-10 flex-shrink-0">
-                            <div className="flex items-center gap-2.5">
-                                <h2 className="text-[15px] font-bold text-[#141414]">Mijoz profili</h2>
-                                {(() => {
-                                    const as = getClientActivityStatus({
-                                        events_count: selectedCustomer.eventsCount,
-                                        days_since_last_event: selectedCustomer.daysSinceLastEvent,
-                                    })
-                                    const m = ACTIVITY_STATUS_META[as]
-                                    return <StatusBadge label={m.label} variant={m.variant} dot />
-                                })()}
-                            </div>
-                            <button
-                                onClick={() => { setSelectedCustomer(null); cancelEdit() }}
-                                className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999]"
-                            >
-                                <X size={20} weight="bold" />
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto no-scrollbar">
-                            {/* AVATAR */}
-                            <div className="relative h-44 w-full group flex-shrink-0">
-                                {selectedCustomer.image ? (
-                                    <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full bg-[#F0F0F0] flex items-center justify-center">
-                                        <span className="text-[40px] font-bold text-[#CCCCCC]">
-                                            {selectedCustomer.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all" />
-                                <div className="absolute bottom-3 left-5 right-5 flex items-center justify-between">
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => document.getElementById('sidebar-image-upload')?.click()}
-                                            className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[11px] font-bold hover:bg-white/20 transition-all flex items-center gap-1"
-                                        >
-                                            <ImageIcon size={12} weight="bold" />
-                                            Yangilash
-                                        </button>
-                                        {selectedCustomer.image && (
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const res = await fetch(selectedCustomer.image)
-                                                        const blob = await res.blob()
-                                                        const url = URL.createObjectURL(blob)
-                                                        const a = document.createElement("a")
-                                                        a.href = url
-                                                        a.download = `${selectedCustomer.name.replace(/\s+/g, "_")}.jpg`
-                                                        a.click()
-                                                        setTimeout(() => URL.revokeObjectURL(url), 1000)
-                                                    } catch { /* ignore */ }
-                                                }}
-                                                className="px-2.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-[6px] text-white text-[11px] font-bold hover:bg-white/20 transition-all flex items-center gap-1"
-                                            >
-                                                <DownloadSimple size={12} weight="bold" />
-                                                Saqlash
-                                            </button>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                        onClick={e => e.stopPropagation()}
+                        className="w-[520px] max-h-[92vh] bg-white rounded-[16px] shadow-2xl flex flex-col overflow-hidden"
+                    >
+                        <div className="flex flex-col">
+                            {/* AVATAR + INFO */}
+                            <div className="relative flex flex-col items-center pt-6 pb-6 px-8 border-b border-[#F0F0F0] gap-3">
+                                {/* Close button overlaid top-right */}
+                                <button
+                                    onClick={() => { setSelectedCustomer(null); cancelEdit() }}
+                                    className="absolute top-3 right-3 p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999]"
+                                >
+                                    <X size={20} weight="bold" />
+                                </button>
+                                {/* Circle avatar */}
+                                <div className="relative group flex-shrink-0">
+                                    <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-[#F0F0F0] flex items-center justify-center">
+                                        {selectedCustomer.image ? (
+                                            <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover object-top" />
+                                        ) : (
+                                            <span className="text-[34px] font-semibold text-[#CCCCCC]">
+                                                {selectedCustomer.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
+                                            </span>
                                         )}
                                     </div>
-                                    <span className={`px-2 py-1 rounded-[4px] text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${
-                                        selectedCustomer.status === 'Faol'
-                                            ? 'bg-green-500/20 text-green-100 border-green-500/30'
-                                            : 'bg-red-500/20 text-red-100 border-red-500/30'
-                                    }`}>
-                                        {selectedCustomer.status}
-                                    </span>
+                                    {/* Upload button on hover */}
+                                    <button
+                                        onClick={() => document.getElementById('sidebar-image-upload')?.click()}
+                                        className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    >
+                                        <ImageIcon size={18} className="text-white" weight="bold" />
+                                    </button>
                                 </div>
-                            </div>
 
-                            {/* INFO */}
-                            <div className="px-5 pt-4 pb-3.5 border-b border-[#F0F0F0]">
-                                <h1 className="text-[20px] font-bold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
-                                <p className="text-[12px] text-[#999] mt-0.5 flex items-center gap-1 flex-wrap">
-                                    {selectedCustomer.phone && <><Phone size={11} weight="bold" /><span>{formatPhone(selectedCustomer.phone)}</span></>}
-                                    {selectedCustomer.activity && <><span className="text-[#E0E0E0]">·</span><span>{selectedCustomer.activity}</span></>}
-                                </p>
-                                <p className="text-[11px] text-[#B0B0B0] mt-1.5">
-                                    {formatLastEventText(selectedCustomer.daysSinceLastEvent)}
-                                </p>
-                            </div>
+                                {/* Name + phone */}
+                                <div className="flex flex-col items-center gap-1 text-center">
+                                    <h1 className="text-[20px] font-semibold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
+                                    {selectedCustomer.phone && (
+                                        <span className="text-[13px] text-[#999]">{formatPhone(selectedCustomer.phone)}</span>
+                                    )}
+                                </div>
 
-                            {/* STATS */}
-                            <div className="grid grid-cols-2 gap-2.5 p-4 border-b border-[#F0F0F0]">
-                                {(() => {
-                                    const t = journeyQuery.data?.totals
-                                    const cards = [
-                                        { label: "Jami to'lagan", value: t ? formatMoney(t.total_paid) : "...", color: "text-[#141414]", Icon: Money },
-                                        { label: "Tadbirlar", value: t ? `${t.attended_count}/${t.events_count}` : `—/${selectedCustomer.eventsCount}`, color: "text-[#141414]", Icon: Ticket },
-                                        {
-                                            label: "Cashback",
-                                            value: formatMoney(t?.cashback_balance ?? selectedCustomer.cashbackBalance),
-                                            color: (t?.cashback_balance ?? selectedCustomer.cashbackBalance) > 0 ? "text-green-600" : "text-[#999]",
-                                            Icon: Star,
-                                        },
-                                        {
-                                            label: "Qarz",
-                                            value: t ? (t.total_debt > 0 ? formatMoney(t.total_debt) : "Yo'q") : "...",
-                                            color: (t?.total_debt ?? 0) > 0 ? "text-red-600" : "text-[#999]",
-                                            Icon: Money,
-                                        },
-                                    ] as const
-                                    return cards.map(c => (
-                                        <div key={c.label} className="p-3 bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px]">
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <c.Icon size={11} className="text-[#BBB]" weight="bold" />
-                                                <span className="text-[9px] text-[#BBB] font-bold uppercase tracking-wider">{c.label}</span>
-                                            </div>
-                                            <span className={`text-[13px] font-bold ${c.color}`}>{c.value}</span>
-                                        </div>
-                                    ))
-                                })()}
+                                {/* Download button (visible only if image exists) */}
+                                {selectedCustomer.image && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const res = await fetch(selectedCustomer.image)
+                                                const blob = await res.blob()
+                                                const url = URL.createObjectURL(blob)
+                                                const a = document.createElement("a")
+                                                a.href = url
+                                                a.download = `${selectedCustomer.name.replace(/\s+/g, "_")}.jpg`
+                                                a.click()
+                                                setTimeout(() => URL.revokeObjectURL(url), 1000)
+                                            } catch { /* ignore */ }
+                                        }}
+                                        className="flex items-center gap-1.5 text-[11px] text-[#999] hover:text-[#141414] transition-colors"
+                                    >
+                                        <DownloadSimple size={12} weight="bold" />
+                                        Rasmni saqlash
+                                    </button>
+                                )}
                             </div>
 
                             {/* TABS */}
-                            <div className="flex border-b border-[#F0F0F0] bg-white sticky top-[57px] z-[5]">
+                            <div className="flex border-b border-[#F0F0F0] bg-white sticky top-0 z-[5] pl-4">
                                 {([
-                                    { id: 'tadbirlar' as const, label: 'Tadbirlar' },
-                                    { id: 'cashback' as const, label: 'Cashback' },
                                     { id: 'malumotlar' as const, label: "Ma'lumotlar" },
+                                    { id: 'cashback' as const, label: 'Cashback' },
                                 ]).map(tab => (
                                     <button
                                         key={tab.id}
@@ -863,218 +769,196 @@ export function Mijozlar() {
                                 ))}
                             </div>
 
-                            {/* TAB: Tadbirlar */}
-                            {drawerTab === 'tadbirlar' && (
-                                <div className="p-4 flex flex-col gap-2">
-                                    {journeyQuery.isLoading ? (
-                                        <div className="flex items-center gap-2 py-6 justify-center">
-                                            <div className="w-4 h-4 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
-                                            <span className="text-[12px] text-[#999]">Yuklanmoqda...</span>
-                                        </div>
-                                    ) : (journeyQuery.data?.events.length ?? 0) === 0 ? (
-                                        <div className="flex flex-col items-center gap-2 py-10 text-center">
-                                            <Ticket size={32} className="text-[#E0E0E0]" weight="bold" />
-                                            <p className="text-[13px] font-semibold text-[#999]">Hali tadbirda qatnashmagan</p>
-                                            <p className="text-[11px] text-[#CCC]">Tadbirga qo'shish uchun tadbir sahifasiga o'ting</p>
-                                        </div>
-                                    ) : journeyQuery.data!.events.map(ev => {
-                                        const dateStr = formatDate(ev.event_date)
-                                        return (
-                                            <div
-                                                key={ev.participant_id}
-                                                onClick={() => navigate(`/tadbirlar/${ev.event_id}`)}
-                                                className="flex gap-3 p-3 rounded-[8px] border border-[#F0F0F0] hover:border-[#E0E0E0] hover:bg-[#FAFAFA] cursor-pointer transition-colors"
-                                            >
-                                                <div className="w-10 h-10 rounded-[6px] bg-[#F0F0F0] flex-shrink-0 overflow-hidden">
-                                                    {ev.event_cover
-                                                        ? <img src={ev.event_cover} alt="" className="w-full h-full object-cover" />
-                                                        : <div className="w-full h-full flex items-center justify-center"><Calendar size={16} className="text-[#CCC]" /></div>}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-1">
-                                                        <span className="text-[13px] font-bold text-[#141414] leading-tight line-clamp-1">{ev.event_name}</span>
-                                                        <ArrowRight size={12} className="text-[#CCC] flex-shrink-0 mt-0.5" weight="bold" />
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className="text-[10px] text-[#999]">{dateStr}</span>
-                                                        <StatusBadge label={ev.attended ? 'Qatnashgan' : 'Kelmagan'} variant={ev.attended ? 'success' : 'neutral'} />
-                                                    </div>
-                                                    <div className="flex items-center gap-2.5 mt-1">
-                                                        {ev.debt > 0 ? (
-                                                            <span className="text-[11px] font-bold text-red-600">
-                                                                Qarz: {formatMoney(ev.debt)}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[11px] font-semibold text-[#141414]">
-                                                                To'langan: {formatMoney(ev.paid)}
-                                                            </span>
-                                                        )}
-                                                        {ev.cashback_earned > 0 && (
-                                                            <span className="text-[10px] font-bold text-green-600">
-                                                                +{formatNumber(ev.cashback_earned)} CB
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (
-                                <div className="p-4 flex flex-col gap-3">
-                                    <div className="flex items-center justify-between p-4 bg-[#F0FAF4] border border-green-100 rounded-[10px]">
+                                <div className="px-8 py-6 flex flex-col gap-4">
+                                    {/* Balance row */}
+                                    <div className="flex items-center justify-between py-2">
                                         <div>
-                                            <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Joriy balans</span>
-                                            <div className="text-[22px] font-bold text-green-700 mt-0.5">
+                                            <span className="text-[11px] text-[#999]">Joriy balans</span>
+                                            <div className="text-[20px] font-semibold text-[#141414] mt-0.5">
                                                 {formatMoney(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => setAdjustOpen(true)}
-                                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-[6px] text-[11px] font-bold text-green-700 bg-green-100 hover:bg-green-200 transition-colors"
-                                        >
-                                            <Plus size={12} weight="bold" />
-                                            <span>/</span>
-                                            <Minus size={12} weight="bold" />
-                                        </button>
                                     </div>
-                                    <CashbackHistoryList
-                                        loading={journeyQuery.isLoading}
-                                        items={journeyQuery.data?.cashback_history ?? []}
-                                    />
+
+                                    {/* Per-event cashback log */}
+                                    {journeyQuery.isLoading ? (
+                                        <div className="flex items-center gap-2 py-4 justify-center">
+                                            <div className="w-4 h-4 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+                                        </div>
+                                    ) : (() => {
+                                        const earned = journeyQuery.data?.events.filter(ev => ev.cashback_earned > 0) ?? []
+                                        if (earned.length === 0) return (
+                                            <p className="text-[12px] text-[#999] py-4 text-center">Hali cashback olinmagan</p>
+                                        )
+                                        return (
+                                            <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                                                {earned.map(ev => {
+                                                    const pct = ev.paid > 0 ? Math.round(ev.cashback_earned / ev.paid * 100) : 0
+                                                    return (
+                                                        <div key={ev.participant_id} className="flex items-center justify-between py-2.5">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[13px] text-[#141414]">{ev.event_name}</span>
+                                                                <span className="text-[11px] text-[#999]">{formatDate(ev.event_date)}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                                <span className="text-[11px] text-[#999]">{pct}%</span>
+                                                                <span className="text-[13px] font-semibold text-[#141414]">{formatNumber(ev.cashback_earned)} UZS</span>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )
+                                    })()}
                                 </div>
                             )}
 
                             {/* TAB: Ma'lumotlar */}
                             {drawerTab === 'malumotlar' && (
-                                <div className="p-5 flex flex-col gap-4">
+                                <div className="px-8 py-6 flex flex-col gap-5">
                                     {/* Name */}
-                                    <div className="flex flex-col gap-1.5 group">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-[#999] uppercase">Ism</span>
-                                            {editingField !== "name" && (
-                                                <PencilSimple size={12} onClick={() => startEdit("name")}
-                                                    className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
-                                            )}
-                                        </div>
-                                        {editingField === "name" ? (
-                                            <div className="flex items-center gap-2">
-                                                <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
-                                                    className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] font-semibold outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
-                                                <button onClick={saveEdit} className="p-1.5 hover:bg-green-50 rounded-[6px]">
-                                                    <Check size={14} className="text-green-600" weight="bold" />
-                                                </button>
-                                                <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]">
-                                                    <X size={14} className="text-[#999]" weight="bold" />
-                                                </button>
+                                    {editAllMode ? (
+                                        <>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Ism</span>
+                                                <input autoFocus value={editAllValues.name}
+                                                    onChange={e => setEditAllValues(v => ({ ...v, name: e.target.value }))}
+                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
                                             </div>
-                                        ) : (
-                                            <span className="text-[14px] font-semibold text-[#141414]">{selectedCustomer.name}</span>
-                                        )}
-                                    </div>
-                                    {/* Phone */}
-                                    <div className="flex flex-col gap-1.5 group">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-[#999] uppercase">Telefon</span>
-                                            {editingField !== "phone" && (
-                                                <PencilSimple size={12} onClick={() => startEdit("phone")}
-                                                    className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
-                                            )}
-                                        </div>
-                                        {editingField === "phone" ? (
-                                            <div className="flex items-center gap-2">
-                                                <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
-                                                    className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] font-semibold outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
-                                                    placeholder="+998 90 123 45 67" />
-                                                <button onClick={saveEdit} className="p-1.5 hover:bg-green-50 rounded-[6px]">
-                                                    <Check size={14} className="text-green-600" weight="bold" />
-                                                </button>
-                                                <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]">
-                                                    <X size={14} className="text-[#999]" weight="bold" />
-                                                </button>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Telefon</span>
+                                                <input value={editAllValues.phone}
+                                                    onChange={e => setEditAllValues(v => ({ ...v, phone: e.target.value }))}
+                                                    placeholder="+998 90 123 45 67"
+                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
                                             </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <Phone size={13} className="text-[#141414]" weight="bold" />
-                                                <span className="text-[14px] font-semibold text-[#141414]">{selectedCustomer.phone || '—'}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Email</span>
+                                                <input value={editAllValues.email}
+                                                    onChange={e => setEditAllValues(v => ({ ...v, email: e.target.value }))}
+                                                    placeholder="email@example.com"
+                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
                                             </div>
-                                        )}
-                                    </div>
-                                    {/* Email */}
-                                    <div className="flex flex-col gap-1.5 group">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-[#999] uppercase">Email</span>
-                                            {editingField !== "email" && (
-                                                <PencilSimple size={12} onClick={() => startEdit("email")}
-                                                    className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
-                                            )}
-                                        </div>
-                                        {editingField === "email" ? (
-                                            <div className="flex items-center gap-2">
-                                                <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
-                                                    className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] font-semibold outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
-                                                    placeholder="email@example.com" />
-                                                <button onClick={saveEdit} className="p-1.5 hover:bg-green-50 rounded-[6px]">
-                                                    <Check size={14} className="text-green-600" weight="bold" />
-                                                </button>
-                                                <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]">
-                                                    <X size={14} className="text-[#999]" weight="bold" />
-                                                </button>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Faoliyat</span>
+                                                <input value={editAllValues.activity}
+                                                    onChange={e => setEditAllValues(v => ({ ...v, activity: e.target.value }))}
+                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
                                             </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <Envelope size={13} className="text-[#141414]" weight="bold" />
-                                                <span className="text-[13px] font-semibold text-[#141414] truncate">{selectedCustomer.email || '—'}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Lokatsiya</span>
+                                                <input value={editAllValues.location}
+                                                    onChange={e => setEditAllValues(v => ({ ...v, location: e.target.value }))}
+                                                    placeholder="Shahar, tuman"
+                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
                                             </div>
-                                        )}
-                                    </div>
-                                    {/* Activity */}
-                                    <div className="flex flex-col gap-1.5 group">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-[#999] uppercase">Faoliyat</span>
-                                            {editingField !== "activity" && (
-                                                <PencilSimple size={12} onClick={() => startEdit("activity")}
-                                                    className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
-                                            )}
-                                        </div>
-                                        {editingField === "activity" ? (
-                                            <div className="flex items-center gap-2">
-                                                <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
-                                                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
-                                                    className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] font-semibold outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
-                                                <button onClick={saveEdit} className="p-1.5 hover:bg-green-50 rounded-[6px]">
-                                                    <Check size={14} className="text-green-600" weight="bold" />
-                                                </button>
-                                                <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]">
-                                                    <X size={14} className="text-[#999]" weight="bold" />
-                                                </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex flex-col gap-1 group">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[12px] text-[#999]">Ism</span>
+                                                    {editingField !== "name" && (
+                                                        <PencilSimple size={12} onClick={() => startEdit("name")}
+                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
+                                                    )}
+                                                </div>
+                                                {editingField === "name" ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                        <button onClick={saveEdit} className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.name}</span>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <Briefcase size={13} className="text-[#141414]" weight="bold" />
-                                                <span className="text-[13px] font-semibold text-[#141414]">{selectedCustomer.activity || '—'}</span>
+                                            {/* Phone */}
+                                            <div className="flex flex-col gap-1 group">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[12px] text-[#999]">Telefon</span>
+                                                    {editingField !== "phone" && (
+                                                        <PencilSimple size={12} onClick={() => startEdit("phone")}
+                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
+                                                    )}
+                                                </div>
+                                                {editingField === "phone" ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                            placeholder="+998 90 123 45 67" />
+                                                        <button onClick={saveEdit} className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.phone || '—'}</span>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
+                                            {/* Email */}
+                                            <div className="flex flex-col gap-1 group">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[12px] text-[#999]">Email</span>
+                                                    {editingField !== "email" && (
+                                                        <PencilSimple size={12} onClick={() => startEdit("email")}
+                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
+                                                    )}
+                                                </div>
+                                                {editingField === "email" ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                            placeholder="email@example.com" />
+                                                        <button onClick={saveEdit} className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[14px] text-[#141414] truncate">{selectedCustomer.email || '—'}</span>
+                                                )}
+                                            </div>
+                                            {/* Activity */}
+                                            <div className="flex flex-col gap-1 group">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[12px] text-[#999]">Faoliyat</span>
+                                                    {editingField !== "activity" && (
+                                                        <PencilSimple size={12} onClick={() => startEdit("activity")}
+                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer" weight="bold" />
+                                                    )}
+                                                </div>
+                                                {editingField === "activity" ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit() }}
+                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                        <button onClick={saveEdit} className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.activity || '—'}</span>
+                                                )}
+                                            </div>
+                                            {/* Lokatsiya */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[12px] text-[#999]">Lokatsiya</span>
+                                                <span className="text-[14px] text-[#141414]">{selectedCustomer.location || '—'}</span>
+                                            </div>
+                                        </>
+                                    )}
                                     {/* Join date */}
-                                    <div className="p-3.5 bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px]">
-                                        <span className="text-[10px] font-bold text-[#999] uppercase">Qo'shilgan sana</span>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Calendar size={13} className="text-[#141414]" weight="bold" />
-                                            <span className="text-[13px] font-bold text-[#141414]">{selectedCustomer.joinDate || '—'}</span>
-                                        </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[12px] text-[#999]">Qo'shilgan sana</span>
+                                        <span className="text-[14px] text-[#141414]">{selectedCustomer.joinDate || '—'}</span>
                                     </div>
                                     {/* Community toggle */}
                                     {selectedCustomer.authUserId && (
-                                        <div className="flex items-center justify-between p-3.5 border border-[#F0F0F0] rounded-[8px]">
+                                        <div className="flex items-center justify-between py-2 border-t border-[#F0F0F0]">
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="text-[13px] font-bold text-[#141414]">Hamjamiyat</span>
+                                                <span className="text-[13px] text-[#141414]">Hamjamiyat</span>
                                                 <span className="text-[11px] text-[#999]">
                                                     {selectedCustomer.communityApproved ? "Tasdiqlangan — chat ochiq" : "Kutilmoqda — chat yopiq"}
                                                 </span>
@@ -1093,17 +977,46 @@ export function Mijozlar() {
                                             </button>
                                         </div>
                                     )}
-                                    {/* Delete */}
-                                    <button
-                                        onClick={() => setCustomerToDelete(selectedCustomer)}
-                                        className="mt-2 flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors self-start"
-                                    >
-                                        <Trash size={13} weight="bold" />
-                                        Mijozni o'chirish
-                                    </button>
+                                    {/* Action buttons */}
+                                    {editAllMode ? (
+                                        <div className="flex gap-3 mt-6 mb-6">
+                                            <button
+                                                onClick={saveEditAll}
+                                                disabled={updateClientMutation.isPending}
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold bg-[#141414] text-white hover:bg-[#333] transition-colors disabled:opacity-50"
+                                            >
+                                                <Check size={13} weight="bold" />
+                                                Saqlash
+                                            </button>
+                                            <button
+                                                onClick={cancelEditAll}
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold text-[#666] bg-[#F5F5F5] hover:bg-[#EBEBEB] transition-colors"
+                                            >
+                                                Bekor qilish
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-3 mt-6 mb-6">
+                                            <button
+                                                onClick={startEditAll}
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold bg-[#141414] text-white hover:bg-[#333] transition-colors"
+                                            >
+                                                <PencilSimple size={13} weight="bold" />
+                                                O'zgartirish
+                                            </button>
+                                            <button
+                                                onClick={() => setCustomerToDelete(selectedCustomer)}
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold text-[#D13328] bg-[rgba(209,51,40,0.07)] hover:bg-[rgba(209,51,40,0.12)] transition-colors"
+                                            >
+                                                <Trash size={13} weight="bold" />
+                                                O'chirish
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
+                    </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -1120,28 +1033,6 @@ export function Mijozlar() {
                 />
             )}
 
-            {/* Cashback adjust modal */}
-            {selectedCustomer && (
-                <AdjustCashbackModal
-                    isOpen={adjustOpen}
-                    onClose={() => setAdjustOpen(false)}
-                    clientId={selectedCustomer.id}
-                    clientName={selectedCustomer.name}
-                    currentBalance={selectedCustomer.cashbackBalance}
-                    onSuccess={(delta, type) => {
-                        showToast(
-                            type === "add" ? `+${formatNumber(delta)} so'm qo'shildi` : `-${formatNumber(delta)} so'm ayirildi`,
-                            "success",
-                        )
-                        // Optimistically update sidebar header view
-                        setSelectedCustomer((prev) =>
-                            prev
-                                ? { ...prev, cashbackBalance: prev.cashbackBalance + (type === "add" ? delta : -delta) }
-                                : prev,
-                        )
-                    }}
-                />
-            )}
 
             {/* Toast */}
             <AnimatePresence>
@@ -1152,7 +1043,7 @@ export function Mijozlar() {
                         exit={{ opacity: 0, y: -10 }}
                         className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
                             toast.type === "success"
-                                ? "bg-green-50 text-green-700 border border-green-200"
+                                ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
                                 : "bg-red-50 text-red-700 border border-red-200"
                         }`}
                     >

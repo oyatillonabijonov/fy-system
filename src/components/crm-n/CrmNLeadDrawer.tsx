@@ -61,7 +61,7 @@ function ActionToast({ message, type }: { message: string; type: "success" | "er
       exit={{ opacity: 0, y: -10 }}
       className={`px-3 py-2 rounded-[8px] text-[12px] font-medium ${
         type === "success"
-          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+          ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
           : "bg-red-50 text-red-700 border border-red-200"
       }`}
     >
@@ -486,8 +486,8 @@ export function CrmNLeadDrawer({
                       <InfoRow label="Yaratilgan">{formatDate(lead.created_at)}</InfoRow>
                       <InfoRow label="Yangilangan">{formatDate(lead.updated_at)}</InfoRow>
                       <InfoRow label="Manba">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-emerald-50 text-emerald-600">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
                           CRM-N
                         </span>
                       </InfoRow>
@@ -680,7 +680,7 @@ export function CrmNLeadDrawer({
                             >
                               <CheckCircle
                                 size={16}
-                                className={task.is_done ? "text-emerald-500" : "text-[#D0D0D0]"}
+                                className={task.is_done ? "text-[#141414]" : "text-[#D0D0D0]"}
                                 weight="bold"
                               />
                             </button>
@@ -718,7 +718,7 @@ export function CrmNLeadDrawer({
                               onClick={() => handleCloseLead(showCloseConfirm)}
                               disabled={closingSaving}
                               className={`px-4 py-1.5 rounded-[6px] text-[12px] font-bold text-white transition-colors disabled:opacity-50 ${
-                                showCloseConfirm === "won" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"
+                                showCloseConfirm === "won" ? "bg-[#141414] hover:bg-[#141414]" : "bg-red-500 hover:bg-red-600"
                               }`}
                             >
                               {closingSaving ? "..." : "Tasdiqlash"}
@@ -735,7 +735,7 @@ export function CrmNLeadDrawer({
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setShowCloseConfirm("won")}
-                            className="flex-1 py-2 rounded-[8px] text-[12px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                            className="flex-1 py-2 rounded-[8px] text-[12px] font-bold text-[#141414] bg-[#F5F5F5] hover:bg-[#EBEBEB] border border-[#E0E0E0] transition-colors"
                           >
                             Yutildi
                           </button>
@@ -752,9 +752,9 @@ export function CrmNLeadDrawer({
 
                   {/* AmoCRM link placeholder */}
                   {lead.is_won && (
-                    <div className="flex items-center gap-2 bg-emerald-50 rounded-[8px] p-3">
-                      <Calendar size={16} className="text-emerald-500" weight="bold" />
-                      <span className="text-[12px] font-medium text-emerald-700">Bu lead yutilgan</span>
+                    <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-[8px] p-3">
+                      <Calendar size={16} className="text-[#141414]" weight="bold" />
+                      <span className="text-[12px] font-medium text-[#141414]">Bu lead yutilgan</span>
                     </div>
                   )}
                   {lead.is_lost && (

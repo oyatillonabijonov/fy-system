@@ -26,7 +26,7 @@ export function BookletCard({ participant, index }: BookletCardProps) {
         alignItems: "stretch",
         padding: "20px",
         gap: "20px",
-        fontFamily: "'Geist Variable', 'Geist', -apple-system, sans-serif",
+        fontFamily: "'Geist Variable', system-ui, sans-serif",
         boxSizing: "border-box",
         position: "relative",
         flexShrink: 0,

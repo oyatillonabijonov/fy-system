@@ -22,7 +22,7 @@ export function PipelineColumn({
 }: PipelineColumnProps) {
   const total = getTotalAmount(leads)
   const isLost = config.color === "text-red-600"
-  const isWon = config.color === "text-emerald-700"
+  const isWon = config.color === "text-[#141414]"
   const showAddButton = !isLost && !isWon
 
   return (

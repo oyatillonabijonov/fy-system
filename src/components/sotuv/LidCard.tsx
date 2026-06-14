@@ -94,7 +94,7 @@ export function LidCard({ lead, isSelected, onSelect, stageConfigs, onClick }: L
         ) : (
           <div className="flex items-center gap-1.5">
             {lead.lastCall.type === "answered" ? (
-              <Phone size={14} className="text-green-500" weight="bold" />
+              <Phone size={14} className="text-[#141414]" weight="bold" />
             ) : (
               <PhoneSlash size={14} className="text-red-500" weight="bold" />
             )}
@@ -110,7 +110,7 @@ export function LidCard({ lead, isSelected, onSelect, stageConfigs, onClick }: L
       {/* Source */}
       <td className="px-4 py-3">
         {lead.source === "amocrm" ? (
-          <span className="inline-flex px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-indigo-50 text-indigo-600">
+          <span className="inline-flex px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F0F0F0] text-[#141414]">
             AmoCRM
           </span>
         ) : (

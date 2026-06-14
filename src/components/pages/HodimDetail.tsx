@@ -249,7 +249,7 @@ export function HodimDetail() {
 
       {/* Admin notes — visible to admins, not to self */}
       {user.notes && adminUser && !isSelf && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-[12px] p-6">
+        <div className="bg-[#F5F5F5] border border-[#E0E0E0] rounded-[12px] p-6">
           <h2 className="text-[14px] font-bold text-yellow-900 mb-3">Admin yozuvlari</h2>
           <p className="text-[13px] text-yellow-900 leading-relaxed whitespace-pre-wrap">{user.notes}</p>
         </div>
@@ -298,7 +298,7 @@ export function HodimDetail() {
             exit={{ opacity: 0, y: -10 }}
             className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
               toast.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-200"
+                ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
                 : "bg-red-50 text-red-700 border border-red-200"
             }`}
           >
@@ -531,7 +531,7 @@ function DangerZone({
               onClick={handleToggle}
               disabled={busy}
               className={`flex items-center gap-2 px-4 py-2 rounded-[8px] text-[12px] font-bold text-white transition-colors ${
-                busy ? "bg-[#CCC] cursor-not-allowed" : user.is_active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                busy ? "bg-[#CCC] cursor-not-allowed" : user.is_active ? "bg-red-600 hover:bg-red-700" : "bg-[#141414] hover:bg-[#141414]"
               }`}
             >
               <Power size={14} weight="bold" />
@@ -544,7 +544,7 @@ function DangerZone({
             className={`flex items-center gap-2 px-4 py-2 rounded-[8px] text-[12px] font-bold transition-colors ${
               user.is_active
                 ? "border border-red-200 text-red-700 hover:bg-red-50"
-                : "border border-green-200 text-green-700 hover:bg-green-50"
+                : "border border-[#E0E0E0] text-[#141414] hover:bg-[#F5F5F5]"
             }`}
           >
             <Power size={14} weight="bold" />
@@ -712,7 +712,7 @@ function KpiProgressCard({
           {progress}%
         </span>
         {progress >= 100 && (
-          <span className="text-[10px] font-bold text-green-600">
+          <span className="text-[10px] font-bold text-[#141414]">
             ✓ Maqsad bajarildi
           </span>
         )}

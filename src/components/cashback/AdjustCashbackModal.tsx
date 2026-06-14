@@ -119,7 +119,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 onClick={() => setType("add")}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[13px] font-bold transition-colors border ${
                   type === "add"
-                    ? "bg-green-50 text-green-700 border-green-200"
+                    ? "bg-[#F5F5F5] text-[#141414] border-[#E0E0E0]"
                     : "bg-white text-[#999] border-[#E0E0E0] hover:bg-[#F9F9F9]"
                 }`}
               >

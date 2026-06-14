@@ -252,7 +252,7 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
                 <button
                   onClick={handleActivate}
                   disabled={saving}
-                  className="text-[12px] font-bold text-green-600 hover:text-green-700 transition-colors"
+                  className="text-[12px] font-bold text-[#141414] hover:text-[#141414] transition-colors"
                 >
                   Qayta faollashtirish
                 </button>

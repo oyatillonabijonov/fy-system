@@ -107,9 +107,9 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
           <div className="p-5 flex flex-col gap-4">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-green-50 border border-green-100 rounded-[8px] p-3">
-                <p className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1">Joriy balans</p>
-                <p className="text-[16px] font-bold text-green-700">{formatNumber(balance)} so'm</p>
+              <div className="bg-[#F5F5F5] border border-[#E8E8E8] rounded-[8px] p-3">
+                <p className="text-[10px] font-bold text-[#141414] uppercase tracking-wider mb-1">Joriy balans</p>
+                <p className="text-[16px] font-bold text-[#141414]">{formatNumber(balance)} so'm</p>
               </div>
               <div className="bg-orange-50 border border-orange-100 rounded-[8px] p-3">
                 <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-1">Qarz</p>

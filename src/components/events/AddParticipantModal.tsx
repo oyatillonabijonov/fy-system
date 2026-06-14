@@ -64,7 +64,7 @@ function ClientRow({
         </p>
       </div>
       {disabled ? (
-        <span className="text-[11px] font-bold text-green-600 flex-shrink-0 flex items-center gap-1">
+        <span className="text-[11px] font-bold text-[#141414] flex-shrink-0 flex items-center gap-1">
           <Check size={12} weight="bold" /> qo'shilgan
         </span>
       ) : (
@@ -322,7 +322,7 @@ export function AddParticipantModal({
                       {queue.map((c) => (
                         <div
                           key={c.id}
-                          className="flex items-center gap-2.5 p-2 bg-green-50 border border-green-100 rounded-[8px]"
+                          className="flex items-center gap-2.5 p-2 bg-[#F5F5F5] border border-[#E8E8E8] rounded-[8px]"
                         >
                           {c.image ? (
                             <img

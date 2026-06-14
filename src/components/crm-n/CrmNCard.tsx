@@ -79,8 +79,8 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
 
       {/* LINE 3: Tags */}
       <div className="flex items-center gap-1.5 flex-wrap pl-9 mt-1">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5F5F5] text-[#141414]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
           CRM-N
         </span>
         <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] text-[#666]">

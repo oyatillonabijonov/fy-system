@@ -410,7 +410,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
             {/* ── Section 4 — Modullar va ruxsatlar ── */}
             <Section title="Modullar va ruxsatlar">
               {isAdminRole && (
-                <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-purple-50 text-purple-700 border border-purple-200 mb-3">
+                <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-[#F0F0F0] text-[#141414] border border-[#E0E0E0] mb-3">
                   Admin barcha modullarga avtomatik kirish huquqiga ega
                 </div>
               )}

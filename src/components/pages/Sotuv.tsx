@@ -441,7 +441,7 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
           ) : null}
 
           <div className="flex items-center gap-1.5 text-[12px] text-[#999999] font-medium">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <div className="w-2 h-2 rounded-full bg-[#141414]" />
             AmoCRM sinxron
           </div>
         </div>
@@ -545,10 +545,10 @@ export function Sotuv({ defaultTab = "lidlar" }: SotuvProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       {stat.isUp !== null && (
-                        <ArrowUpRight size={12} className="text-green-600" weight="bold" />
+                        <ArrowUpRight size={12} className="text-[#141414]" weight="bold" />
                       )}
                       <span
-                        className={`text-[11px] font-bold ${stat.isUp !== null ? "text-green-600" : "text-[#999999]"}`}
+                        className={`text-[11px] font-bold ${stat.isUp !== null ? "text-[#141414]" : "text-[#999999]"}`}
                       >
                         {stat.sub}
                       </span>

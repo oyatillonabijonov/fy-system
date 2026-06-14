@@ -3,7 +3,7 @@ import type { Database } from "../types"
 import { normalizePhone } from "@/lib/utils"
 import type { CashbackTransaction } from "./cashback"
 
-type ClientRow = Database["public"]["Tables"]["clients"]["Row"]
+type ClientRow = Database["public"]["Tables"]["clients"]["Row"] & { location?: string | null }
 type ClientInsert = Database["public"]["Tables"]["clients"]["Insert"]
 type ClientUpdate = Database["public"]["Tables"]["clients"]["Update"]
 
@@ -17,6 +17,7 @@ export interface Client {
   role: string | null
   status: string
   image: string | null
+  location: string | null
   total_spent: number
   events_count: number
   cashback_balance: number
@@ -28,13 +29,13 @@ export interface Client {
 }
 
 export async function getClients(): Promise<ClientRow[]> {
-  const { data, error } = await supabase
+  const result = await supabase
     .from("clients")
-    .select("id, full_name, phone, email, company, activity, role, status, image, total_spent, events_count, cashback_balance, join_date, created_at, updated_at, industry, revenue, auth_user_id, community_approved")
+    .select("id, full_name, phone, email, company, activity, role, status, image, location, total_spent, events_count, cashback_balance, join_date, created_at, updated_at, industry, revenue, auth_user_id, community_approved")
     .order("created_at", { ascending: false })
-
+  const { data, error } = result as unknown as { data: ClientRow[] | null; error: Error | null }
   if (error) throw error
-  return data
+  return data!
 }
 
 export interface ClientEventHistory {
@@ -80,9 +81,11 @@ export async function createClient(client: ClientInsert): Promise<ClientRow> {
   return data
 }
 
+type ClientUpdateExtended = ClientUpdate & { location?: string | null }
+
 export async function updateClient(
   id: string,
-  updates: ClientUpdate
+  updates: ClientUpdateExtended
 ): Promise<ClientRow> {
   const { data, error } = await supabase
     .from("clients")

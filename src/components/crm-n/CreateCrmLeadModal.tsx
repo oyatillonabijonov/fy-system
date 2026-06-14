@@ -111,8 +111,8 @@ export function CreateCrmLeadModal({
                   <h2 className="text-[16px] font-bold text-[#141414]">
                     Yangi lid yaratish
                   </h2>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-emerald-50 text-emerald-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
                     CRM-N
                   </span>
                 </div>

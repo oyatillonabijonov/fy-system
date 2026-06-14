@@ -44,8 +44,8 @@ export function LeadToastContainer() {
             className="pointer-events-auto bg-white border border-[#E0E0E0] rounded-[8px] px-4 py-3 shadow-lg flex items-center gap-3 min-w-[280px]"
           >
             <div className="relative flex-shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#141414]" />
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-[#141414] animate-ping" />
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[13px] font-bold text-[#141414]">

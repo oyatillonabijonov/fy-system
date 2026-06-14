@@ -157,8 +157,8 @@ export function CrmNLeadsList({
       cell: ({ row }) => {
         const label = row.original.source === "telegram" ? "Telegram" : row.original.source === "manual" ? "Qo'lda" : row.original.source
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5F5F5] text-[#141414]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
             {label}
           </span>
         )

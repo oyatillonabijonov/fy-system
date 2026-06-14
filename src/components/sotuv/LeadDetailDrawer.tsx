@@ -103,7 +103,7 @@ function CustomFieldsList({ fields }: { fields: CustomFieldRendered[] }) {
               href={field.value}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 text-[#141414] hover:underline"
             >
               <LinkIcon size={12} className="shrink-0" weight="bold" />
               <span className="truncate">
@@ -127,7 +127,7 @@ function ActionToast({ message, type }: { message: string; type: "success" | "er
       exit={{ opacity: 0, y: -10 }}
       className={`px-3 py-2 rounded-[8px] text-[12px] font-medium ${
         type === "success"
-          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+          ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
           : "bg-red-50 text-red-700 border border-red-200"
       }`}
     >
@@ -567,7 +567,7 @@ export function LeadDetailDrawer({
                       )}
                       <InfoRow label="Manba">
                         {lead.source === "amocrm" ? (
-                          <span className="inline-flex px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-indigo-50 text-indigo-600">
+                          <span className="inline-flex px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F0F0F0] text-[#141414]">
                             AmoCRM
                           </span>
                         ) : (
@@ -860,7 +860,7 @@ export function LeadDetailDrawer({
                             className="bg-[#FBFBFB] rounded-[8px] p-3 flex items-start gap-2.5"
                           >
                             {task.isCompleted ? (
-                              <CheckCircle size={16} className="text-emerald-500 shrink-0 mt-0.5" weight="bold" />
+                              <CheckCircle size={16} className="text-[#141414] shrink-0 mt-0.5" weight="bold" />
                             ) : (
                               <Clock size={16} className="text-orange-500 shrink-0 mt-0.5" weight="bold" />
                             )}
@@ -977,7 +977,7 @@ export function LeadDetailDrawer({
                                 closingSaving
                                   ? "bg-[#CCCCCC] cursor-not-allowed"
                                   : showCloseConfirm === "won"
-                                    ? "bg-emerald-600 hover:bg-emerald-700"
+                                    ? "bg-[#141414] hover:bg-[#141414]"
                                     : "bg-red-600 hover:bg-red-700"
                               }`}
                             >
@@ -1001,7 +1001,7 @@ export function LeadDetailDrawer({
                         >
                           <button
                             onClick={() => setShowCloseConfirm("won")}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-[12px] font-bold text-[#141414] bg-[#F5F5F5] border border-[#E0E0E0] hover:bg-[#EBEBEB] transition-colors"
                           >
                             <CheckCircle size={14} weight="bold" />
                             Yutildi

@@ -35,17 +35,17 @@ export interface StageConfig {
 
 /** Color palette for dynamic stage assignment */
 const STAGE_PALETTE: { color: string; bg: string; dot: string }[] = [
-  { color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-500" },
+  { color: "text-[#141414]", bg: "bg-[#F0F0F0]", dot: "bg-blue-500" },
   { color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500" },
   { color: "text-orange-600", bg: "bg-orange-50", dot: "bg-orange-500" },
-  { color: "text-purple-600", bg: "bg-purple-50", dot: "bg-purple-500" },
+  { color: "text-purple-600", bg: "bg-[#F0F0F0]", dot: "bg-purple-500" },
   { color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
   { color: "text-pink-600", bg: "bg-pink-50", dot: "bg-pink-500" },
-  { color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500" },
+  { color: "text-[#141414]", bg: "bg-[#F0F0F0]", dot: "bg-indigo-500" },
   { color: "text-teal-600", bg: "bg-teal-50", dot: "bg-teal-500" },
 ]
 
-const WON_STYLE = { color: "text-emerald-700", bg: "bg-emerald-50", dot: "bg-emerald-600" }
+const WON_STYLE = { color: "text-[#141414]", bg: "bg-[#F5F5F5]", dot: "bg-[#141414]" }
 const LOST_STYLE = { color: "text-red-600", bg: "bg-red-50", dot: "bg-red-500" }
 
 const FALLBACK_STAGE: StageConfig = {

@@ -16,7 +16,7 @@ export function CashbackBadge({ balance, size = "md" }: CashbackBadgeProps) {
 
   return (
     <div
-      className={`inline-flex items-center rounded-full bg-green-50 text-green-700 font-bold ${sizeClasses[size]}`}
+      className={`inline-flex items-center rounded-full bg-[#F5F5F5] text-[#141414] font-bold ${sizeClasses[size]}`}
       title={`Cashback balansi: ${formatNumber(balance)} so'm`}
     >
       <span>💰</span>

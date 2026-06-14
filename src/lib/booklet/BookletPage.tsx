@@ -22,7 +22,7 @@ export function BookletPage({
         backgroundColor: "#ffffff",
         padding: "48px 40px",
         boxSizing: "border-box",
-        fontFamily: "'Geist Variable', 'Geist', -apple-system, sans-serif",
+        fontFamily: "'Geist Variable', system-ui, sans-serif",
         display: "flex",
         flexDirection: "column",
         gap: "0",

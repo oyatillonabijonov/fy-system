@@ -209,7 +209,7 @@ export function PipelineSettingsModal({
                         disabled={pipelineNameSaving}
                         className="p-1 rounded-[4px] hover:bg-[#F5F5F5] disabled:opacity-50"
                       >
-                        <Check size={16} className="text-emerald-500" weight="bold" />
+                        <Check size={16} className="text-[#141414]" weight="bold" />
                       </button>
                     </div>
                   ) : (
@@ -300,7 +300,7 @@ export function PipelineSettingsModal({
                           {stage.name}
                         </span>
                         {stage.is_won && (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-bold text-[#141414] bg-[#F5F5F5] px-1.5 py-0.5 rounded">
                             Yutildi
                           </span>
                         )}
