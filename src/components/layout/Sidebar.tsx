@@ -16,7 +16,6 @@ import {
     CaretLeft,
     CaretRight,
     CaretDown,
-    ChartBar,
     PaperPlaneRight,
     ChatTeardropDots,
     Envelope,
@@ -61,14 +60,7 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard", module: "dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
-            {
-                name: "Sotuv bo'limi",
-                icon: CreditCard,
-                subItems: [
-                    { name: "AmoCRM", icon: ChartBar, path: "/sotuv/amocrm", module: "sotuv-amocrm" },
-                    { name: "CRM-N", icon: SquaresFour, path: "/sotuv/crm-n", module: "sotuv-crmn" },
-                ],
-            },
+            { name: "Sotuv bo'limi", icon: CreditCard, path: "/sotuv/crm-n", module: "sotuv-crmn" },
             { name: "IP Telefoniya", icon: Phone, path: "/pbx", module: "pbx" },
             { name: "Tadbirlar", icon: CalendarBlank, path: "/tadbirlar", module: "tadbirlar" },
             { name: "Vazifalar", icon: CheckCircle },
@@ -145,7 +137,7 @@ export function Sidebar() {
     }
 
     const [searchQuery, setSearchQuery] = useState("")
-    const [expandedItems, setExpandedItems] = useState<string[]>(["Sotuv bo'limi"])
+    const [expandedItems, setExpandedItems] = useState<string[]>([])
 
     const toggleExpand = (name: string) => {
         setExpandedItems(prev =>
