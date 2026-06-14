@@ -31,7 +31,7 @@ export interface Client {
 export async function getClients(): Promise<ClientRow[]> {
   const result = await supabase
     .from("clients")
-    .select("id, full_name, phone, email, company, activity, role, status, image, location, total_spent, events_count, cashback_balance, join_date, created_at, updated_at, industry, revenue, auth_user_id, community_approved")
+    .select("*")
     .order("created_at", { ascending: false })
   const { data, error } = result as unknown as { data: ClientRow[] | null; error: Error | null }
   if (error) throw error
