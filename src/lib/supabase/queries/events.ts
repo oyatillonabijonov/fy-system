@@ -343,8 +343,9 @@ export async function searchContacts(query: string): Promise<ClientContact[]> {
 
 export async function addExistingContactToEvent(
   eventId: string,
-  contact: ClientContact
-): Promise<void> {
+  contact: ClientContact,
+  price = 0
+): Promise<string> {
   // Check if already added
   const { data: existing } = await supabase
     .from("event_participants")
@@ -357,7 +358,7 @@ export async function addExistingContactToEvent(
     throw new Error("Bu mijoz allaqachon ushbu tadbirga qo'shilgan")
   }
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from("event_participants")
     .insert({
       event_id: eventId,
@@ -368,10 +369,12 @@ export async function addExistingContactToEvent(
       company: contact.company,
       role: contact.role,
       photo_url: contact.image,
-      price: 0,
+      price,
       paid: 0,
       attended: false,
     })
+    .select("id")
+    .single()
 
   if (error) throw error
 
@@ -383,6 +386,8 @@ export async function addExistingContactToEvent(
       updated_at: new Date().toISOString(),
     })
     .eq("id", contact.id)
+
+  return inserted.id as string
 }
 
 // Create a new client in the clients table AND add as participant

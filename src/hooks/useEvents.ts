@@ -8,10 +8,14 @@ import {
   deleteEvent,
   deleteParticipant,
   reorderParticipants,
+  updateParticipant,
+  addExistingContactToEvent,
   type Event,
   type Participant,
   type CreateEventInput,
+  type ClientContact,
 } from "@/lib/supabase/queries/events"
+import { addPayment, type PaymentMethod } from "@/lib/supabase/queries/payments"
 
 export const EVENTS_KEY = ["events"] as const
 export const EVENT_COUNTS_KEY = ["event-participant-counts"] as const
@@ -80,6 +84,59 @@ export function useDeleteEvent() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: EVENTS_KEY })
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+    },
+  })
+}
+
+// Enroll an existing client into an event with an agreed price + optional first
+// payment. The payment (if any) flows through the Sprint A chain (paid + cashback).
+export function useEnrollParticipant(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (vars: {
+      client: ClientContact
+      price: number
+      initialAmount: number
+      method: PaymentMethod
+      note?: string
+    }) => {
+      const participantId = await addExistingContactToEvent(eventId, vars.client, vars.price)
+      if (vars.initialAmount > 0) {
+        await addPayment({
+          participantId,
+          amount: vars.initialAmount,
+          method: vars.method,
+          paidAt: new Date().toISOString(),
+          note: vars.note,
+        })
+      }
+      return participantId
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
+      qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+      qc.invalidateQueries({ queryKey: EVENTS_KEY })
+      qc.invalidateQueries({ queryKey: ["clients"] })
+      qc.invalidateQueries({ queryKey: ["client-journey"] })
+      qc.invalidateQueries({ queryKey: ["recent-payments"] })
+      qc.invalidateQueries({ queryKey: ["event-payments"] })
+    },
+  })
+}
+
+// Update a participant (e.g. inline-edit the agreed price). Debt = price - paid
+// is derived, so the log/table refresh on price change too.
+export function useUpdateParticipant(eventId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { id: string; updates: Parameters<typeof updateParticipant>[1] }) =>
+      updateParticipant(vars.id, vars.updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
+      qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+      qc.invalidateQueries({ queryKey: ["clients"] })
+      qc.invalidateQueries({ queryKey: ["recent-payments"] })
+      qc.invalidateQueries({ queryKey: ["event-payments"] })
     },
   })
 }

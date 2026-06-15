@@ -92,6 +92,9 @@ export interface EventPayment {
   client_phone: string | null
   recorded_by_name: string | null
   event_name: string | null
+  // Participant context (current state, not a historical snapshot).
+  price: number          // kelishilgan umumiy summa
+  debt: number           // qolgan qarzdorlik = price - paid (current)
 }
 
 interface PaymentJoinRow {
@@ -106,6 +109,8 @@ interface PaymentJoinRow {
   recorder: { full_name: string } | null
   participant: {
     full_name: string
+    price: number
+    paid: number
     event_id: string | null
     contact_id: string | null
     event: { name: string } | null
@@ -116,10 +121,12 @@ interface PaymentJoinRow {
 const PAYMENT_JOIN_SELECT =
   "id, participant_id, amount, method, paid_at, created_at, recorded_by, note, " +
   "recorder:recorded_by(full_name), " +
-  "participant:participant_id!inner(full_name, event_id, contact_id, " +
+  "participant:participant_id!inner(full_name, price, paid, event_id, contact_id, " +
   "event:event_id(name), client:contact_id(full_name, phone))"
 
 function mapEventPayment(row: PaymentJoinRow): EventPayment {
+  const price = row.participant?.price ?? 0
+  const paid = row.participant?.paid ?? 0
   return {
     id: row.id,
     participant_id: row.participant_id,
@@ -136,6 +143,8 @@ function mapEventPayment(row: PaymentJoinRow): EventPayment {
     client_phone: row.participant?.client?.phone ?? null,
     recorded_by_name: row.recorder?.full_name ?? null,
     event_name: row.participant?.event?.name ?? null,
+    price,
+    debt: price - paid,
   }
 }
 
@@ -161,4 +170,36 @@ export async function getRecentPayments(limit = 50, offset = 0): Promise<EventPa
 
   if (error) throw error
   return ((data ?? []) as unknown as PaymentJoinRow[]).map(mapEventPayment)
+}
+
+// ─── Client → event participations (Add-payment modal event picker) ────────────
+export interface ClientParticipation {
+  participant_id: string
+  event_id: string
+  event_name: string
+  event_date: string | null
+  price: number
+  paid: number
+}
+
+export async function getClientParticipations(clientId: string): Promise<ClientParticipation[]> {
+  const { data, error } = await supabase
+    .from("event_participants")
+    .select("id, event_id, price, paid, events(name, date)")
+    .eq("contact_id", clientId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+
+  return ((data ?? []) as unknown as Array<{
+    id: string; event_id: string; price: number; paid: number
+    events: { name: string; date: string | null } | null
+  }>).map((row) => ({
+    participant_id: row.id,
+    event_id: row.event_id,
+    event_name: row.events?.name ?? "Nomaʼlum tadbir",
+    event_date: row.events?.date ?? null,
+    price: row.price,
+    paid: row.paid,
+  }))
 }

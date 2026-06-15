@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react"
-import { Routes, Route, Navigate, Outlet, useLocation, useParams, useNavigate } from "react-router-dom"
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
 import { Sotuv } from "./components/pages/Sotuv"
 import { CrmN } from "./components/pages/CrmN"
 import { Events } from "./components/pages/Events"
-import { EventDetail } from "./components/pages/EventDetail"
 import { Sozlamalar } from "./components/pages/Sozlamalar"
 import { Hodimlar } from "./components/pages/Hodimlar"
 import { HodimDetail } from "./components/pages/HodimDetail"
@@ -54,9 +53,6 @@ const PAGE_META: Record<string, PageMeta> = {
 }
 
 function pageMetaFor(pathname: string): PageMeta {
-  if (/^\/tadbirlar\/[^/]+/.test(pathname)) {
-    return { title: 'Tadbir tafsilotlari', desc: "Ishtirokchilar va tadbir holati." }
-  }
   if (/^\/hodimlar\/[^/]+/.test(pathname)) {
     return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
   }
@@ -64,18 +60,6 @@ function pageMetaFor(pathname: string): PageMeta {
 }
 
 // ─── Route adapters that turn callback-based pages into router-aware ones ──
-
-function EventsRoute() {
-  const navigate = useNavigate()
-  return <Events onSelectEvent={(id) => navigate(`/tadbirlar/${id}`)} />
-}
-
-function EventDetailRoute() {
-  const { eventId } = useParams<{ eventId: string }>()
-  const navigate = useNavigate()
-  if (!eventId) return <Navigate to="/tadbirlar" replace />
-  return <EventDetail eventId={eventId} onBack={() => navigate("/tadbirlar")} />
-}
 
 // ─── Shell layout (sidebar + header + outlet) ───────────────────────────
 
@@ -339,10 +323,7 @@ function App() {
           } />
 
           <Route path="/tadbirlar" element={
-            <ProtectedRoute module="tadbirlar"><EventsRoute /></ProtectedRoute>
-          } />
-          <Route path="/tadbirlar/:eventId" element={
-            <ProtectedRoute module="tadbirlar"><EventDetailRoute /></ProtectedRoute>
+            <ProtectedRoute module="tadbirlar"><Events /></ProtectedRoute>
           } />
 
           <Route path="/pbx" element={

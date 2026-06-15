@@ -3,6 +3,7 @@ import {
   getParticipantPayments,
   getEventPayments,
   getRecentPayments,
+  getClientParticipations,
   addPayment,
   deletePayment,
 } from "@/lib/supabase/queries/payments"
@@ -46,6 +47,17 @@ export function useRecentPayments(limit = 50) {
   return useQuery({
     queryKey: [...RECENT_PAYMENTS_KEY, limit] as const,
     queryFn:  () => getRecentPayments(limit),
+  })
+}
+
+export const CLIENT_PARTICIPATIONS_KEY = (clientId: string) =>
+  ["client-participations", clientId] as const
+
+export function useClientParticipations(clientId: string) {
+  return useQuery({
+    queryKey: CLIENT_PARTICIPATIONS_KEY(clientId),
+    queryFn:  () => getClientParticipations(clientId),
+    enabled:  Boolean(clientId),
   })
 }
 

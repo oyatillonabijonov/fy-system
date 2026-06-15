@@ -1,17 +1,17 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { Plus, CalendarBlank, BookmarkSimple } from "@phosphor-icons/react"
+import { Plus, CalendarBlank, BookmarkSimple, SquaresFour } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { CreateEventDrawer } from "@/components/events/CreateEventDrawer"
 import { EventOverview } from "@/components/events/EventOverview"
+import { PaymentsLog } from "@/components/events/PaymentsLog"
 import { eventTint } from "@/lib/eventTint"
 import { useEvents, useDeleteEvent, EVENTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
 import { EventCardSkeleton } from "@/components/ui/Skeleton"
 import { formatDate } from "@/lib/format"
 
-interface EventsProps {
-  onSelectEvent: (eventId: string) => void
-}
+// Sentinel for the always-first "Umumiy" (general) tab that holds the payments log.
+const UMUMIY = "__umumiy__"
 
 function startOfToday(): number {
   const d = new Date()
@@ -25,12 +25,12 @@ function isActiveEvent(e: Event, today: number): boolean {
   return new Date(ref).getTime() >= today
 }
 
-export function Events({ onSelectEvent }: EventsProps) {
+export function Events() {
   const qc = useQueryClient()
   const { data: events = [], isLoading: loading } = useEvents()
   const deleteEventMutation = useDeleteEvent()
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string>(UMUMIY)
   const [showCreate, setShowCreate] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
@@ -57,12 +57,10 @@ export function Events({ onSelectEvent }: EventsProps) {
     return () => document.removeEventListener("mousedown", onDoc)
   }, [archiveOpen])
 
-  // Effective selection computed during render (no effect): keep the user's pick
-  // while it's valid, otherwise fall back to the nearest upcoming / latest event.
-  const effectiveId =
-    selectedId && events.some((e) => e.id === selectedId)
-      ? selectedId
-      : (active[0] ?? archive[0])?.id ?? null
+  // Effective selection computed during render (no effect): "Umumiy" by default,
+  // or the picked event while it's still valid (else fall back to Umumiy).
+  const eventValid = selectedId !== UMUMIY && events.some((e) => e.id === selectedId)
+  const effectiveId = eventValid ? selectedId : UMUMIY
   const selected = events.find((e) => e.id === effectiveId) ?? null
 
   // Tabs = active events; if an archive event is selected, surface it as a tab too.
@@ -76,7 +74,7 @@ export function Events({ onSelectEvent }: EventsProps) {
     if (!window.confirm("Tadbirni o'chirishni tasdiqlaysizmi? Barcha ishtirokchilar ham o'chadi.")) return
     deleteEventMutation.mutate(id, {
       onSettled: () => {
-        if (selectedId === id) setSelectedId(null)
+        if (selectedId === id) setSelectedId(UMUMIY)
       },
     })
   }
@@ -112,6 +110,20 @@ export function Events({ onSelectEvent }: EventsProps) {
           {/* Browser-style tab bar */}
           <div className="flex items-end gap-1 border-b border-[#E8E8E8]">
             <div className="flex items-end gap-1 overflow-x-auto no-scrollbar flex-1 pt-1.5">
+              {/* Always-first dark "Umumiy" tab (holds the payments log) */}
+              <button
+                onClick={() => setSelectedId(UMUMIY)}
+                title="Umumiy"
+                className={`relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px shrink-0 whitespace-nowrap bg-[#141414] transition-colors ${
+                  effectiveId === UMUMIY
+                    ? "text-white border border-[#141414] shadow-[0_-1px_3px_rgba(0,0,0,0.18)]"
+                    : "text-white/55 border border-transparent hover:text-white"
+                }`}
+              >
+                <SquaresFour size={15} weight="bold" />
+                <span className="text-[12.5px] font-semibold">Umumiy</span>
+              </button>
+
               {tabEvents.map((e) => {
                 const isSel = e.id === effectiveId
                 return (
@@ -193,12 +205,13 @@ export function Events({ onSelectEvent }: EventsProps) {
             </div>
           </div>
 
-          {/* Selected event view */}
-          {selected ? (
+          {/* Content: Umumiy → payments log; event tab → overview */}
+          {effectiveId === UMUMIY ? (
+            <PaymentsLog />
+          ) : selected ? (
             <EventOverview
               key={selected.id}
               event={selected}
-              onOpenFull={() => onSelectEvent(selected.id)}
               onEdit={() => setEditingEvent(selected)}
               onDelete={() => handleDelete(selected.id)}
             />
