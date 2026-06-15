@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:local": "VITE_SUPABASE_URL=http://127.0.0.1:54321 vite",
+    "dev:local": "doppler run -c dev -- vite",
+    "dev:cloud": "doppler run -c stg -- vite",
+    "dev:prod": "doppler run -c prd -- vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,9 +15,7 @@
     "supabase:stop": "npx supabase stop",
     "supabase:reset": "npx supabase db reset",
     "supabase:migrate": "npx supabase db push",
-    "gen:types": "npx supabase gen types typescript --local > src/lib/supabase/types.ts && cat supabase/types-manual-exports.txt >> src/lib/supabase/types.ts && cp src/lib/supabase/types.ts mobile/src/lib/supabase/types.ts",
-    "switch:local": "cp .env.local.local .env.local && echo 'Switched to LOCAL'",
-    "switch:cloud": "cp .env.cloud.backup .env.local && echo 'Switched to CLOUD'"
+    "gen:types": "npx supabase gen types typescript --local > src/lib/supabase/types.ts && cat supabase/types-manual-exports.txt >> src/lib/supabase/types.ts && cp src/lib/supabase/types.ts mobile/src/lib/supabase/types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

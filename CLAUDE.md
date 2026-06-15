@@ -97,8 +97,11 @@ Never create `.env*` files with real values.
 bun install
 
 # Development (port 5001, auto-opens; proxies /api/amo → AmoCRM)
-bun run dev
-bun run dev:local        # same, but forces local Supabase (127.0.0.1:54321)
+bun run dev              # uses local .env.local (production backend)
+# Env-switched dev via Doppler (envs injected, no .env file needed):
+bun run dev:local        # Doppler config dev → local Supabase (127.0.0.1:54321)
+bun run dev:cloud        # Doppler config stg → cloud (ulbdlkkftbzgafsrprnm.supabase.co)
+bun run dev:prod         # Doppler config prd → production (api.fikryetakchilari.uz)
 
 # Build / lint (build fails on type errors: tsc -b && vite build)
 bun run build
@@ -108,8 +111,9 @@ bun run preview
 # Local Supabase stack (Postgres 54322, API 54321, Studio 54323)
 bun run supabase:start | supabase:stop | supabase:reset
 
-# Env switching (overwrites .env.local)
-bun run switch:local | switch:cloud
+# Secrets live in Doppler — see the Doppler block under "Production deployment &
+# database". The old switch:local/switch:cloud scripts are gone; use dev:local /
+# dev:cloud / dev:prod (Doppler configs dev / stg / prd) instead.
 
 # Deploy DB migrations to PRODUCTION (Oracle self-hosted) — see
 # "Production deployment & database" below for the full manual SSH/psql flow.
@@ -129,6 +133,18 @@ No test runner is configured. `amocrm-sync` runs automatically via **pg_cron eve
 ### Production deployment & database (⚠️ READ BEFORE DEPLOYING — keep current)
 
 This is the single source of truth for "where things live and how to ship them." Update it whenever infra, the deploy flow, or the DB-apply process changes. **Never put secrets here** (CLAUDE.md is committed to git): no SSH keys, passwords, anon/service keys.
+
+**Secrets live in Doppler (the vault — fetch from here, don't hardcode).** All credentials are stored in [Doppler](https://dashboard.doppler.com); the CLI is installed and logged in on the dev machine (token is global, works from any dir). Two projects, both config `prd`:
+- **`infra`** — `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (heons_key), `POSTGRES_PASSWORD`, `SUPABASE_API_URL`, `COOLIFY_URL`, `APP_URL`, `GITHUB_REPO`, `OCI_*`, etc.
+- **`fy-system`** — app env (`VITE_SUPABASE_*`, `VITE_AMO_*`) across 3 configs (the old env files): `prd` = production (api.fikryetakchilari.uz), `stg` = cloud (ulbdlkkftbzgafsrprnm.supabase.co), `dev` = local stack (127.0.0.1:54321). Repo dir linked via `doppler.yaml` to fy-system/prd; switch with `bun run dev:local|dev:cloud|dev:prod`.
+
+```bash
+doppler secrets get POSTGRES_PASSWORD -p infra -c prd --plain   # fetch one value
+doppler secrets get SSH_PRIVATE_KEY  -p infra -c prd --plain > ~/.ssh/heons_key && chmod 600 ~/.ssh/heons_key  # recover SSH key
+doppler run -- bun run dev                                       # inject fy-system env (in repo dir)
+doppler secrets -p infra -c prd --only-names                    # list names only
+```
+After changing any secret, update Doppler — local `.env.local` is a convenience copy, not the source of truth.
 
 **Infra map**
 
