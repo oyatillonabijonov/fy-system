@@ -269,7 +269,12 @@ export function CrmNLeadDrawer({
   async function handlePriceSave(newPrice: string) {
     if (!lead) return
     const price = Number(newPrice)
-    if (isNaN(price)) return
+    // isNaN alone let a negative through: the card hides the chip when price <= 0,
+    // so it silently subtracted from every board and stat total.
+    if (!Number.isFinite(price) || price < 0) {
+      showToast("Summa manfiy bo'lishi mumkin emas", "error")
+      throw new Error("invalid price")
+    }
     try {
       await updateCrmLead(lead.id, { price })
       showToast("Summa o'zgartirildi", "success")

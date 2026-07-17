@@ -67,6 +67,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
   }, [onClose])
 
   const amountNum = amount ? Number(amount) : 0
+  const selectedDebt = selectedPart ? Math.max(selectedPart.price - selectedPart.paid, 0) : 0
   const noParticipations = !!client && !loadingParts && participations.length === 0
   const canSubmit = !!client && !!selectedPart && amountNum > 0 && !addMutation.isPending
 
@@ -75,6 +76,16 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
     if (participations.length === 0) { setError("Bu mijoz hech qaysi tadbirda ishtirokchi emas"); return }
     if (!selectedPart) { setError("Tadbirni tanlang"); return }
     if (amountNum <= 0) { setError("To'lov summasi 0 dan katta bo'lishi kerak"); return }
+    // Paying past the debt drives it negative and awards cashback on money that
+    // was never owed — the trigger chain has no way to tell it was a typo.
+    if (selectedDebt <= 0) {
+      setError("Bu tadbirda qarz yo'q. Avval kelishilgan narxni belgilang")
+      return
+    }
+    if (amountNum > selectedDebt) {
+      setError(`To'lov qarzdan ko'p. Qolgan qarz: ${formatMoney(selectedDebt)}`)
+      return
+    }
     setError(null)
     addMutation.mutate(
       {

@@ -207,20 +207,23 @@ export interface ClientJourney {
 }
 
 export async function getClientJourney(clientId: string): Promise<ClientJourney> {
+  // debt is not a column — it is price - paid (see CLAUDE.md). events stores the
+  // cover as cover_image. Selecting the old names made PostgREST reject the whole
+  // query, so the journey silently rendered as "no events, no cashback".
   type ParticipantRow = {
     id: string
     event_id: string
+    price: number | null
     paid: number
-    debt: number | null
     cashback_earned: number | null
     attended: boolean | null
-    events: { name: string; date: string | null; cover_url: string | null } | null
+    events: { name: string; date: string | null; cover_image: string | null } | null
   }
 
   const [participantsResult, cashbackResult, clientResult] = await Promise.all([
     supabase
       .from("event_participants")
-      .select("id, event_id, paid, debt, cashback_earned, attended, events(name, date, cover_url)")
+      .select("id, event_id, price, paid, cashback_earned, attended, events(name, date, cover_image)")
       .eq("contact_id", clientId)
       .order("created_at", { ascending: false }),
     supabase
@@ -246,9 +249,9 @@ export async function getClientJourney(clientId: string): Promise<ClientJourney>
     event_id: row.event_id,
     event_name: row.events?.name ?? "Nomaʿlum tadbir",
     event_date: row.events?.date ?? null,
-    event_cover: row.events?.cover_url ?? null,
+    event_cover: row.events?.cover_image ?? null,
     paid: row.paid,
-    debt: row.debt ?? 0,
+    debt: Math.max(Number(row.price ?? 0) - Number(row.paid ?? 0), 0),
     cashback_earned: Number(row.cashback_earned ?? 0),
     attended: row.attended ?? false,
   }))

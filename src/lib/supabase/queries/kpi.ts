@@ -109,7 +109,9 @@ export async function getKpiSummary(
     getKpiActual(userId, year, month),
   ])
 
-  const calc = (a: number, t: number) => (t > 0 ? Math.round((a / t) * 100) : 0)
+  // floor, not round: the UI shows "✓ Maqsad bajarildi" at >= 100, and rounding
+  // turned 99.5% into a reached goal while the money was still short.
+  const calc = (a: number, t: number) => (t > 0 ? Math.floor((a / t) * 100) : 0)
 
   return {
     target,
@@ -205,21 +207,24 @@ export async function getDepartmentKpi(
   let total_leads_closed = 0
   let members_with_targets = 0
 
+  // Actuals and targets must cover the SAME people: the card renders them side by
+  // side as "Tushum <actual> / <target> (<progress>%)". Counting every member's
+  // revenue against only the targeted members' goals let one untargeted employee
+  // push a department to 100% while the tracked one sat at 20%.
   for (const s of summaries) {
-    if (s.target) {
-      members_with_targets += 1
-      total_revenue_target += Number(s.target.revenue_target)
-      total_leads_target += s.target.leads_target
-    }
+    if (!s.target) continue
+    members_with_targets += 1
+    total_revenue_target += Number(s.target.revenue_target)
+    total_leads_target += s.target.leads_target
     total_revenue_actual += Number(s.actual.revenue_actual)
     total_leads_closed += s.actual.leads_closed
   }
 
   const revenue_progress = total_revenue_target > 0
-    ? Math.round((total_revenue_actual / total_revenue_target) * 100)
+    ? Math.floor((total_revenue_actual / total_revenue_target) * 100)
     : 0
   const leads_progress = total_leads_target > 0
-    ? Math.round((total_leads_closed / total_leads_target) * 100)
+    ? Math.floor((total_leads_closed / total_leads_target) * 100)
     : 0
 
   return {

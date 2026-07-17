@@ -71,7 +71,14 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
 
   function handleSubmit() {
     if (!client) { setError("Mijozni tanlang"); return }
-    if (initNum > priceNum && priceNum > 0) {
+    // `priceNum > 0` used to guard this check, which disabled it exactly when the
+    // price was left blank — a payment against a 0 price awards cashback on a
+    // participation that is nominally free.
+    if (initNum > 0 && priceNum <= 0) {
+      setError("Boshlang'ich to'lov uchun avval kelishilgan summani kiriting")
+      return
+    }
+    if (initNum > priceNum) {
       setError("Boshlang'ich to'lov kelishilgan summadan oshib ketdi")
       return
     }

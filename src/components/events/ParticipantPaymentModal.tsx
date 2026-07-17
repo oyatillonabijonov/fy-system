@@ -45,6 +45,16 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
   function handleSubmit() {
     if (!participant) return
     if (amountNum <= 0) { setError("To'lov summasi 0 dan katta bo'lishi kerak"); return }
+    // Paying past the debt drives it negative and awards cashback on money that
+    // was never owed — the trigger chain has no way to tell it was a typo.
+    if (debt <= 0) {
+      setError("Bu ishtirokchida qarz yo'q. Avval kelishilgan narxni belgilang")
+      return
+    }
+    if (amountNum > debt) {
+      setError(`To'lov qarzdan ko'p. Qolgan qarz: ${formatMoney(debt)}`)
+      return
+    }
     setError(null)
     addMutation.mutate(
       { participantId: participant.id, amount: amountNum, method, paidAt: new Date().toISOString(), note: note.trim() || undefined },

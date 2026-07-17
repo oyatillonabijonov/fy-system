@@ -23,6 +23,7 @@ function invalidatePaymentViews(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY })
   qc.invalidateQueries({ queryKey: CLIENTS_KEY })          // cashback balances / total_spent
   qc.invalidateQueries({ queryKey: ["client-journey"] })
+  qc.invalidateQueries({ queryKey: ["client-participations"] })  // AddPaymentModal's price/paid/debt
   qc.invalidateQueries({ queryKey: EVENTS_KEY })
   qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
 }

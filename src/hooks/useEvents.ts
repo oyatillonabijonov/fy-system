@@ -118,6 +118,7 @@ export function useEnrollParticipant(eventId: string) {
       qc.invalidateQueries({ queryKey: EVENTS_KEY })
       qc.invalidateQueries({ queryKey: ["clients"] })
       qc.invalidateQueries({ queryKey: ["client-journey"] })
+      qc.invalidateQueries({ queryKey: ["client-participations"] })
       qc.invalidateQueries({ queryKey: ["recent-payments"] })
       qc.invalidateQueries({ queryKey: ["event-payments"] })
     },

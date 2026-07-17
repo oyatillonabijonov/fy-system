@@ -247,15 +247,32 @@ export async function reorderStages(
 
 // ─── Leads ───────────────────────────────────────────────
 
-export async function getCrmLeads(pipelineId: string): Promise<CrmLeadWithContact[]> {
-  const { data, error } = await supabase
-    .from("crm_leads")
-    .select("id, name, pipeline_id, stage_id, contact_id, responsible_user_id, price, source, tags, is_won, is_lost, loss_reason, created_at, updated_at, crm_contacts(id, name, phone, email, company, notes, created_at, updated_at)")
-    .eq("pipeline_id", pipelineId)
-    .order("updated_at", { ascending: false })
+const CRM_LEADS_SELECT =
+  "id, name, pipeline_id, stage_id, contact_id, responsible_user_id, price, source, tags, is_won, is_lost, loss_reason, created_at, updated_at, crm_contacts(id, name, phone, email, company, notes, created_at, updated_at)"
 
-  if (error) throw error
-  return data as CrmLeadWithContact[]
+/** Page size stays under PostgREST's max_rows (config.toml: 1000). An unbounded
+ *  select is silently truncated at that limit, which would drop the stalest
+ *  leads out of the board and "Umumiy summa" without any error. */
+const CRM_LEADS_PAGE = 500
+
+export async function getCrmLeads(pipelineId: string): Promise<CrmLeadWithContact[]> {
+  const all: CrmLeadWithContact[] = []
+
+  for (let page = 0; ; page++) {
+    const { data, error } = await supabase
+      .from("crm_leads")
+      .select(CRM_LEADS_SELECT)
+      .eq("pipeline_id", pipelineId)
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: false })  // tiebreak: equal updated_at must not shuffle across pages
+      .range(page * CRM_LEADS_PAGE, (page + 1) * CRM_LEADS_PAGE - 1)
+
+    if (error) throw error
+
+    const batch = (data ?? []) as unknown as CrmLeadWithContact[]
+    all.push(...batch)
+    if (batch.length < CRM_LEADS_PAGE) return all
+  }
 }
 
 export async function createCrmLead(input: CreateCrmLeadInput): Promise<CrmLead> {
