@@ -13,6 +13,7 @@ const VALID_MODULES = new Set([
   "sotuv-crmn",
   "mijozlar",
   "tadbirlar",
+  "tadbirlar-moliya",
   "sozlamalar",
 ])
 

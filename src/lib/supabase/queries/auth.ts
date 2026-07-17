@@ -10,14 +10,16 @@ export type ModuleName =
   | "sotuv-crmn"
   | "mijozlar"
   | "tadbirlar"
+  | "tadbirlar-moliya"
   | "sozlamalar"
 
 export const MODULES: { id: ModuleName; label: string }[] = [
-  { id: "dashboard",    label: "Dashboard" },
-  { id: "sotuv-crmn",   label: "Sotuv (CRM-N)" },
-  { id: "mijozlar",     label: "Mijozlar" },
-  { id: "tadbirlar",    label: "Tadbirlar" },
-  { id: "sozlamalar",   label: "Sozlamalar" },
+  { id: "dashboard",        label: "Dashboard" },
+  { id: "sotuv-crmn",       label: "Sotuv (CRM-N)" },
+  { id: "mijozlar",         label: "Mijozlar" },
+  { id: "tadbirlar",        label: "Tadbirlar (Boshqaruv)" },
+  { id: "tadbirlar-moliya", label: "Tadbirlar (Moliya)" },
+  { id: "sozlamalar",       label: "Sozlamalar" },
 ]
 
 export const ROLE_LABELS: Record<UserRole, string> = {
