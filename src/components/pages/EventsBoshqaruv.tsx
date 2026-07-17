@@ -1,16 +1,15 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { CalendarBlank } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { CreateEventDrawer } from "@/components/events/CreateEventDrawer"
 import { EventOverview } from "@/components/events/EventOverview"
-import { EventTabs } from "@/components/events/EventTabs"
-import { PaymentsLog } from "@/components/events/PaymentsLog"
+import { EventTabs, startOfToday, isActiveEvent } from "@/components/events/EventTabs"
 import { useEventTab, UMUMIY } from "@/hooks/useEventTab"
 import { useEvents, useDeleteEvent, EVENTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
 import { EventCardSkeleton } from "@/components/ui/Skeleton"
 
-export function Events() {
+export function EventsBoshqaruv() {
   const qc = useQueryClient()
   const { data: events = [], isLoading: loading } = useEvents()
   const deleteEventMutation = useDeleteEvent()
@@ -19,11 +18,19 @@ export function Events() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
 
-  // Effective selection computed during render: "Umumiy" by default, or the
-  // picked event while it's still valid (else fall back to Umumiy).
-  const eventValid = selectedId !== UMUMIY && events.some((e) => e.id === selectedId)
-  const effectiveId = eventValid ? selectedId : UMUMIY
-  const selected = events.find((e) => e.id === effectiveId) ?? null
+  // There is no "Umumiy" tab here: when the shared tab holds the sentinel (or a
+  // deleted event), fall back to the nearest upcoming event.
+  const firstActive = useMemo(() => {
+    const today = startOfToday()
+    const active = events.filter((e) => isActiveEvent(e, today))
+    active.sort((x, y) => new Date(x.date ?? 0).getTime() - new Date(y.date ?? 0).getTime())
+    return active[0] ?? events[0] ?? null
+  }, [events])
+
+  // `stored` is null whenever selectedId is UMUMIY (no event id equals the sentinel),
+  // so this also covers the "shared tab is Umumiy" case without a special branch.
+  const stored = events.find((e) => e.id === selectedId) ?? null
+  const selected = stored ?? firstActive
 
   function handleDelete(id: string) {
     if (!window.confirm("Tadbirni o'chirishni tasdiqlaysizmi? Barcha ishtirokchilar ham o'chadi.")) return
@@ -64,15 +71,13 @@ export function Events() {
         <>
           <EventTabs
             events={events}
-            selectedId={effectiveId}
+            selectedId={selected?.id ?? ""}
             onSelect={setSelectedId}
-            showUmumiy
+            showUmumiy={false}
             onCreate={() => setShowCreate(true)}
           />
 
-          {effectiveId === UMUMIY ? (
-            <PaymentsLog />
-          ) : selected ? (
+          {selected ? (
             <EventOverview
               key={selected.id}
               event={selected}

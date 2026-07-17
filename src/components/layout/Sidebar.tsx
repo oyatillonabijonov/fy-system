@@ -61,7 +61,7 @@ const navigationSections: NavSection[] = [
                 icon: CalendarBlank,
                 path: "/tadbirlar",
                 subItems: [
-                    { name: "Boshqaruv", icon: SquaresFour, path: "/tadbirlar", module: "tadbirlar" },
+                    { name: "Boshqaruv", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
                     { name: "Moliya", icon: Coins, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
                 ],
             },

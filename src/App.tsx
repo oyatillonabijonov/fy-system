@@ -4,7 +4,7 @@ import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
 import { CrmN } from "./components/pages/CrmN"
-import { Events } from "./components/pages/Events"
+import { EventsBoshqaruv } from "./components/pages/EventsBoshqaruv"
 import { EventsMoliya } from "./components/pages/EventsMoliya"
 import { Sozlamalar } from "./components/pages/Sozlamalar"
 import { Hodimlar } from "./components/pages/Hodimlar"
@@ -41,8 +41,8 @@ const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
   '/sotuv/crm-n':   { title: "Sotuv bo'limi",    desc: 'Savdo jarayonlari va lidlar boshqaruvi.' },
-  '/tadbirlar':     { title: 'Tadbirlar',       desc: "Klub doirasidagi barcha tadbirlar va uchrashuvlar." },
-  '/tadbirlar/moliya': { title: 'Tadbirlar — Moliya', desc: "To'lovlar, qarzdorlik va keshbek." },
+  '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
+  '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
   '/bolimlar':      { title: "Bo'limlar",       desc: "Tizim bo'limlari va hodimlar boshqaruvi." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
@@ -316,8 +316,10 @@ function App() {
             <ProtectedRoute module="mijozlar"><Mijozlar /></ProtectedRoute>
           } />
 
-          <Route path="/tadbirlar" element={
-            <ProtectedRoute module="tadbirlar"><Events /></ProtectedRoute>
+          <Route path="/tadbirlar" element={<Navigate to="/tadbirlar/boshqaruv" replace />} />
+
+          <Route path="/tadbirlar/boshqaruv" element={
+            <ProtectedRoute module="tadbirlar"><EventsBoshqaruv /></ProtectedRoute>
           } />
 
           <Route path="/tadbirlar/moliya" element={
