@@ -107,7 +107,7 @@ const navigationSections: NavSection[] = [
 ]
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
-    Dashboard: { key: [...DASHBOARD_KEY], fn: () => import("@/lib/amocrm/analytics").then(m => m.getDashboardAnalytics()) },
+    Dashboard: { key: [...DASHBOARD_KEY], fn: () => import("@/lib/supabase/queries/dashboard").then(m => m.getDashboardAnalytics()) },
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
     Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }

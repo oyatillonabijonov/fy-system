@@ -27,7 +27,7 @@ import {
   addCrmTask,
   toggleCrmTask,
 } from "@/lib/supabase/queries/crm"
-import type { CachedUser } from "@/lib/supabase/queries/amocrm"
+import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatDate } from "@/lib/format"
 
 // ─── Utility Components ─────────────────────────────────
@@ -150,7 +150,7 @@ interface CrmNLeadDrawerProps {
   onClose: () => void
   stages: CrmStage[]
   pipelineName: string
-  users?: CachedUser[]
+  users?: CrmUser[]
   onLeadUpdated?: () => void
 }
 
@@ -280,7 +280,7 @@ export function CrmNLeadDrawer({
     }
   }
 
-  async function handleResponsibleChange(userId: number) {
+  async function handleResponsibleChange(userId: string) {
     if (!lead) return
     setResponsibleSaving(true)
     try {
@@ -461,7 +461,7 @@ export function CrmNLeadDrawer({
                             <select
                               value={lead.responsible_user_id ?? ""}
                               onChange={(e) => {
-                                if (e.target.value) handleResponsibleChange(Number(e.target.value))
+                                if (e.target.value) handleResponsibleChange(e.target.value)
                               }}
                               disabled={responsibleSaving}
                               className={`appearance-none bg-transparent text-[13px] font-medium text-[#141414] pr-5 cursor-pointer focus:outline-none ${
@@ -750,7 +750,6 @@ export function CrmNLeadDrawer({
                     </div>
                   )}
 
-                  {/* AmoCRM link placeholder */}
                   {lead.is_won && (
                     <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-[8px] p-3">
                       <Calendar size={16} className="text-[#141414]" weight="bold" />

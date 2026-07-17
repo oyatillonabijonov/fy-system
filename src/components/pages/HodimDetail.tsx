@@ -12,7 +12,6 @@ import {
   Briefcase,
   Buildings,
   ChartBar,
-  Users as UsersIcon,
   Ticket,
   PaperPlaneRight,
   Gear,
@@ -186,11 +185,6 @@ export function HodimDetail() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={<UsersIcon size={20} weight="bold" />}
-          label="AmoCRM lidlar"
-          value={stats?.amocrm_leads_handled.toString() ?? "—"}
-        />
         <StatCard
           icon={<ChartBar size={20} weight="bold" />}
           label="CRM-N lidlar"

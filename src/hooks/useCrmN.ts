@@ -4,11 +4,12 @@ import {
   getCrmStages,
   getCrmLeads,
   updateCrmLeadStage,
+  getCrmUsers,
   type CrmPipeline,
   type CrmStage,
   type CrmLeadWithContact,
+  type CrmUser,
 } from "@/lib/supabase/queries/crm"
-import { getCachedUsers, type CachedUser } from "@/lib/supabase/queries/amocrm"
 
 export const CRM_PIPELINES_KEY = ["crm-pipelines"] as const
 export const CRM_STAGES_KEY = ["crm-stages"] as const
@@ -24,9 +25,9 @@ export function useCrmPipelines() {
 }
 
 export function useCrmUsers() {
-  return useQuery<CachedUser[]>({
+  return useQuery<CrmUser[]>({
     queryKey: CRM_USERS_KEY,
-    queryFn: getCachedUsers,
+    queryFn: getCrmUsers,
     staleTime: 1000 * 60 * 10,
   })
 }

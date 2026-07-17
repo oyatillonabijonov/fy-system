@@ -93,153 +93,6 @@ export type Database = {
           },
         ]
       }
-      amocrm_leads: {
-        Row: {
-          company_name: string | null
-          contact_name: string | null
-          contact_phone: string | null
-          created_at: number | null
-          custom_fields: Json | null
-          id: number
-          name: string | null
-          pipeline_id: number | null
-          price: number | null
-          raw: Json | null
-          responsible_user_id: number | null
-          responsible_user_name: string | null
-          status_id: number | null
-          synced_at: string | null
-          tags: Json | null
-          updated_at: number | null
-        }
-        Insert: {
-          company_name?: string | null
-          contact_name?: string | null
-          contact_phone?: string | null
-          created_at?: number | null
-          custom_fields?: Json | null
-          id: number
-          name?: string | null
-          pipeline_id?: number | null
-          price?: number | null
-          raw?: Json | null
-          responsible_user_id?: number | null
-          responsible_user_name?: string | null
-          status_id?: number | null
-          synced_at?: string | null
-          tags?: Json | null
-          updated_at?: number | null
-        }
-        Update: {
-          company_name?: string | null
-          contact_name?: string | null
-          contact_phone?: string | null
-          created_at?: number | null
-          custom_fields?: Json | null
-          id?: number
-          name?: string | null
-          pipeline_id?: number | null
-          price?: number | null
-          raw?: Json | null
-          responsible_user_id?: number | null
-          responsible_user_name?: string | null
-          status_id?: number | null
-          synced_at?: string | null
-          tags?: Json | null
-          updated_at?: number | null
-        }
-        Relationships: []
-      }
-      amocrm_pipelines: {
-        Row: {
-          id: number
-          name: string | null
-          statuses: Json | null
-          synced_at: string | null
-        }
-        Insert: {
-          id: number
-          name?: string | null
-          statuses?: Json | null
-          synced_at?: string | null
-        }
-        Update: {
-          id?: number
-          name?: string | null
-          statuses?: Json | null
-          synced_at?: string | null
-        }
-        Relationships: []
-      }
-      amocrm_sync_log: {
-        Row: {
-          error: string | null
-          id: string
-          leads_count: number | null
-          pipelines_count: number | null
-          synced_at: string | null
-        }
-        Insert: {
-          error?: string | null
-          id?: string
-          leads_count?: number | null
-          pipelines_count?: number | null
-          synced_at?: string | null
-        }
-        Update: {
-          error?: string | null
-          id?: string
-          leads_count?: number | null
-          pipelines_count?: number | null
-          synced_at?: string | null
-        }
-        Relationships: []
-      }
-      amocrm_tokens: {
-        Row: {
-          access_token: string
-          expires_at: string
-          id: number
-          refresh_token: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          access_token: string
-          expires_at: string
-          id?: number
-          refresh_token?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          access_token?: string
-          expires_at?: string
-          id?: number
-          refresh_token?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      amocrm_users: {
-        Row: {
-          email: string | null
-          id: number
-          name: string | null
-          synced_at: string | null
-        }
-        Insert: {
-          email?: string | null
-          id: number
-          name?: string | null
-          synced_at?: string | null
-        }
-        Update: {
-          email?: string | null
-          id?: number
-          name?: string | null
-          synced_at?: string | null
-        }
-        Relationships: []
-      }
       cashback_transactions: {
         Row: {
           amount: number
@@ -440,7 +293,7 @@ export type Database = {
           name: string
           pipeline_id: string | null
           price: number | null
-          responsible_user_id: number | null
+          responsible_user_id: string | null
           source: string | null
           stage_id: string | null
           tags: Json | null
@@ -456,7 +309,7 @@ export type Database = {
           name: string
           pipeline_id?: string | null
           price?: number | null
-          responsible_user_id?: number | null
+          responsible_user_id?: string | null
           source?: string | null
           stage_id?: string | null
           tags?: Json | null
@@ -472,7 +325,7 @@ export type Database = {
           name?: string
           pipeline_id?: string | null
           price?: number | null
-          responsible_user_id?: number | null
+          responsible_user_id?: string | null
           source?: string | null
           stage_id?: string | null
           tags?: Json | null
@@ -497,7 +350,7 @@ export type Database = {
             foreignKeyName: "crm_leads_responsible_user_id_fkey"
             columns: ["responsible_user_id"]
             isOneToOne: false
-            referencedRelation: "amocrm_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

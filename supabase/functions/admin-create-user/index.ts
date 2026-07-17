@@ -10,7 +10,6 @@ type UserRole = "admin" | "manager" | "xodim"
 
 const VALID_MODULES = new Set([
   "dashboard",
-  "sotuv-amocrm",
   "sotuv-crmn",
   "mijozlar",
   "tadbirlar",

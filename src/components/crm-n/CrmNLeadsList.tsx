@@ -15,13 +15,13 @@ import {
 } from "@phosphor-icons/react"
 import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase/queries/crm"
-import type { CachedUser } from "@/lib/supabase/queries/amocrm"
+import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatNumber, formatDate } from "@/lib/format"
 
 interface CrmNLeadsListProps {
   leads: CrmLeadWithContact[]
   stages: CrmStage[]
-  users: CachedUser[]
+  users: CrmUser[]
   onLeadClick: (lead: CrmLeadWithContact) => void
   onDataChanged: () => void
 }
@@ -39,7 +39,7 @@ export function CrmNLeadsList({
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("")
-  const [responsibleFilter, setResponsibleFilter] = useState<number>(0)
+  const [responsibleFilter, setResponsibleFilter] = useState<string>("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkAction, setBulkAction] = useState<string>("")
   const [bulkActionValue, setBulkActionValue] = useState<string>("")
@@ -208,7 +208,7 @@ export function CrmNLeadsList({
         if (bulkAction === "delete") return () => deleteCrmLead(id)
         if (bulkAction === "stage" && bulkActionValue) return () => updateCrmLeadStage(id, bulkActionValue)
         if (bulkAction === "responsible" && bulkActionValue) {
-          return () => updateCrmLead(id, { responsible_user_id: Number(bulkActionValue) })
+          return () => updateCrmLead(id, { responsible_user_id: bulkActionValue })
         }
         return async () => undefined
       })
@@ -278,10 +278,10 @@ export function CrmNLeadsList({
         <div className="relative">
           <select
             value={responsibleFilter}
-            onChange={(e) => setResponsibleFilter(Number(e.target.value))}
+            onChange={(e) => setResponsibleFilter(e.target.value)}
             className="appearance-none border border-[#E0E0E0] rounded-[8px] py-2 pl-3 pr-8 text-[12px] font-medium text-[#141414] focus:outline-none focus:border-[#141414] cursor-pointer"
           >
-            <option value={0}>Barcha mas'ullar</option>
+            <option value="">Barcha mas'ullar</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}

@@ -7,7 +7,6 @@ export type UserRole = "admin" | "manager" | "xodim"
 
 export type ModuleName =
   | "dashboard"
-  | "sotuv-amocrm"
   | "sotuv-crmn"
   | "mijozlar"
   | "tadbirlar"
@@ -16,7 +15,6 @@ export type ModuleName =
 
 export const MODULES: { id: ModuleName; label: string }[] = [
   { id: "dashboard",    label: "Dashboard" },
-  { id: "sotuv-amocrm", label: "Sotuv (AmoCRM)" },
   { id: "sotuv-crmn",   label: "Sotuv (CRM-N)" },
   { id: "mijozlar",     label: "Mijozlar" },
   { id: "tadbirlar",    label: "Tadbirlar" },
@@ -218,48 +216,23 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
 
 export interface UserStats {
   leads_handled: number
-  amocrm_leads_handled: number
   events_organized: number
   clients_added: number
 }
 
 export async function getUserStats(userId: string): Promise<UserStats> {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", userId)
-    .single()
+  // crm_leads.responsible_user_id is the staff profile id directly — it used to
+  // hop through amocrm_users by email, which never resolved (those emails were
+  // always empty), so this counter always read 0.
+  const { count, error } = await supabase
+    .from("crm_leads")
+    .select("id", { count: "exact", head: true })
+    .eq("responsible_user_id", userId)
 
-  const email = profile?.email
-  if (!email) {
-    return { leads_handled: 0, amocrm_leads_handled: 0, events_organized: 0, clients_added: 0 }
-  }
-
-  const { data: amoUser } = await supabase
-    .from("amocrm_users")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle()
-
-  const amoUserId = amoUser?.id ?? null
-
-  const amocrmCountQuery = amoUserId !== null
-    ? await supabase
-        .from("amocrm_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("responsible_user_id", amoUserId)
-    : { count: 0 as number | null }
-
-  const crmnCountQuery = amoUserId !== null
-    ? await supabase
-        .from("crm_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("responsible_user_id", amoUserId)
-    : { count: 0 as number | null }
+  if (error) throw error
 
   return {
-    leads_handled: crmnCountQuery.count ?? 0,
-    amocrm_leads_handled: amocrmCountQuery.count ?? 0,
+    leads_handled: count ?? 0,
     events_organized: 0,
     clients_added: 0,
   }

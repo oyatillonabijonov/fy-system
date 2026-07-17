@@ -6,14 +6,14 @@ import {
   createCrmContact,
   createCrmLead,
 } from "@/lib/supabase/queries/crm"
-import type { CachedUser } from "@/lib/supabase/queries/amocrm"
+import type { CrmUser } from "@/lib/supabase/queries/crm"
 
 interface CreateCrmLeadModalProps {
   isOpen: boolean
   onClose: () => void
   stages: CrmStage[]
   pipelineId: string
-  users: CachedUser[]
+  users: CrmUser[]
   onLeadCreated: () => void
 }
 
@@ -30,7 +30,7 @@ export function CreateCrmLeadModal({
   const [leadName, setLeadName] = useState("")
   const [stageId, setStageId] = useState<string>(stages[0]?.id ?? "")
   const [price, setPrice] = useState("")
-  const [responsibleUserId, setResponsibleUserId] = useState<number>(0)
+  const [responsibleUserId, setResponsibleUserId] = useState<string>("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -75,7 +75,7 @@ export function CreateCrmLeadModal({
     setContactPhone("")
     setLeadName("")
     setPrice("")
-    setResponsibleUserId(0)
+    setResponsibleUserId("")
     setError(null)
     onClose()
   }
@@ -202,10 +202,10 @@ export function CreateCrmLeadModal({
                   <label className="text-[12px] font-medium text-[#999999]">Mas'ul</label>
                   <select
                     value={responsibleUserId}
-                    onChange={(e) => setResponsibleUserId(Number(e.target.value))}
+                    onChange={(e) => setResponsibleUserId(e.target.value)}
                     className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
                   >
-                    <option value={0}>Tanlanmagan</option>
+                    <option value="">Tanlanmagan</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>{u.name}</option>
                     ))}

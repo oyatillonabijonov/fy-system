@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   getDashboardAnalytics,
   type DashboardAnalytics,
-} from "@/lib/amocrm/analytics"
+} from "@/lib/supabase/queries/dashboard"
 
 export const DASHBOARD_KEY = ["dashboard-analytics"] as const
 

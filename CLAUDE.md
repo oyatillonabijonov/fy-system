@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 1. Project Summary
 
-FY-System is an internal business management dashboard for the "Fikr Yetakchilari" club. It combines two CRM pipelines (external AmoCRM sync + a native CRM), client management, events with participant finance & cashback, employee/HR management with KPIs and per-module permissions, and an activity audit log. Single-page React app backed entirely by Supabase; all UI copy is in Uzbek.
+FY-System is an internal business management dashboard for the "Fikr Yetakchilari" club. It combines a native CRM pipeline, client management, events with participant finance & cashback, employee/HR management with KPIs and per-module permissions, and an activity audit log. Single-page React app backed entirely by Supabase; all UI copy is in Uzbek.
 
 ---
 
@@ -20,7 +20,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Database | Supabase Postgres (migrations `001`–`042`), pg_cron + pg_net |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
-| External APIs | AmoCRM REST v4 (via dev proxy `/api/amo`), Meta/Framer/Tilda lead webhooks |
+| External APIs | Meta/Framer/Tilda lead webhooks |
 
 Package manager: **bun** (not npm).
 
@@ -34,11 +34,10 @@ Package manager: **bun** (not npm).
 │   ├── App.tsx               # All routes, ProtectedRoute wrapping, AppShell (header/sidebar), PAGE_META
 │   ├── main.tsx              # QueryClient defaults, BrowserRouter, AuthProvider
 │   ├── components/
-│   │   ├── pages/            # One component per route (Dashboard, Mijozlar, Sotuv, CrmN, Events, Hodimlar…)
+│   │   ├── pages/            # One component per route (Dashboard, Mijozlar, CrmN, Events, Hodimlar…)
 │   │   ├── layout/           # Sidebar (filters items via hasAccess)
 │   │   ├── auth/             # ProtectedRoute
 │   │   ├── crm-n/            # Native CRM board/cards/modals
-│   │   ├── sotuv/            # AmoCRM-facing kanban/tables
 │   │   ├── events/           # Event + participant modals
 │   │   ├── cashback/         # Cashback badges/modals
 │   │   ├── hodimlar/         # Employee profile & KPI modals
@@ -48,14 +47,13 @@ Package manager: **bun** (not npm).
 │   ├── hooks/                # React Query hooks per feature (useClients, useCrmN, useKpi…)
 │   └── lib/
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
-│       ├── amocrm/           # AmoCRM client + token-manager (OAuth refresh, 401 retry)
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–042, sequential — NEVER edit existing ones
-│   └── functions/            # amocrm-sync, admin-create-user, admin-create-member, framer/meta/tilda-webhook
+│   ├── migrations/           # 001–044, sequential — NEVER edit existing ones
+│   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
-└── vite.config.ts            # Port 5001, @ alias, /api/amo → amocrm.ru proxy
+└── vite.config.ts            # Port 5001, @ alias
 ```
 
 ---
@@ -68,12 +66,6 @@ Frontend (`.env.local`; switch files: `.env.local.local` = local stack, `.env.cl
 # Required
 VITE_SUPABASE_URL=         # Supabase project URL
 VITE_SUPABASE_ANON_KEY=    # Supabase anon key
-
-# Optional (AmoCRM integration)
-VITE_AMO_SUBDOMAIN=        # e.g. fikryetakchilari
-VITE_AMO_CLIENT_ID=        # OAuth client id
-VITE_AMO_CLIENT_SECRET=    # OAuth client secret
-VITE_AMO_ACCESS_TOKEN=     # long-lived token fallback when amocrm_tokens table is empty
 ```
 
 Edge functions (Supabase secrets; `SUPABASE_*` are auto-provided):
@@ -96,7 +88,7 @@ Never create `.env*` files with real values.
 # Install
 bun install
 
-# Development (port 5001, auto-opens; proxies /api/amo → AmoCRM)
+# Development (port 5001, auto-opens)
 bun run dev              # uses local .env.local (production backend)
 # Env-switched dev via Doppler (envs injected, no .env file needed):
 bun run dev:local        # Doppler config dev → local Supabase (127.0.0.1:54321)
@@ -128,7 +120,7 @@ bun run supabase:start | supabase:stop | supabase:reset
 bun run gen:types
 ```
 
-No test runner is configured. `amocrm-sync` runs automatically via **pg_cron every 3 minutes** (see `004_cron_job.sql`).
+No JS test runner is configured. DB-level behaviour is covered by SQL scripts in `supabase/tests/` — run them against a throwaway Postgres, never production (each file's header has the recipe).
 
 ### Production deployment & database (⚠️ READ BEFORE DEPLOYING — keep current)
 
@@ -136,7 +128,7 @@ This is the single source of truth for "where things live and how to ship them."
 
 **Secrets live in Doppler (the vault — fetch from here, don't hardcode).** All credentials are stored in [Doppler](https://dashboard.doppler.com); the CLI is installed and logged in on the dev machine (token is global, works from any dir). Two projects, both config `prd`:
 - **`infra`** — `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (heons_key), `POSTGRES_PASSWORD`, `SUPABASE_API_URL`, `COOLIFY_URL`, `APP_URL`, `GITHUB_REPO`, `OCI_*`, etc.
-- **`fy-system`** — app env (`VITE_SUPABASE_*`, `VITE_AMO_*`) across 3 configs (the old env files): `prd` = production (api.fikryetakchilari.uz), `stg` = cloud (ulbdlkkftbzgafsrprnm.supabase.co), `dev` = local stack (127.0.0.1:54321). Repo dir linked via `doppler.yaml` to fy-system/prd; switch with `bun run dev:local|dev:cloud|dev:prod`.
+- **`fy-system`** — app env (`VITE_SUPABASE_*`) across 3 configs (the old env files): `prd` = production (api.fikryetakchilari.uz), `stg` = cloud (ulbdlkkftbzgafsrprnm.supabase.co), `dev` = local stack (127.0.0.1:54321). Repo dir linked via `doppler.yaml` to fy-system/prd; switch with `bun run dev:local|dev:cloud|dev:prod`.
 
 ```bash
 doppler secrets get POSTGRES_PASSWORD -p infra -c prd --plain   # fetch one value
@@ -218,12 +210,12 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 
 ## 7. Important Notes
 
-- **Two CRMs coexist — not interchangeable.** (1) AmoCRM: external, read-mostly, `src/lib/amocrm/` through the `/api/amo` Vite proxy; route `/sotuv/amocrm` exists but is **not in the sidebar** (removed from navigation). (2) CRM-N (`/sotuv/crm-n`): native full-CRUD, `queries/crm.ts` + `components/crm-n/` — this is the primary sales view shown in the sidebar as "Sotuv bo'limi".
-- **AmoCRM tokens:** cached in `amocrm_tokens` table (single row `id=1`); `token-manager.ts` refreshes 5 min early, falls back to `VITE_AMO_ACCESS_TOKEN`, and `fetchFromAmo` retries once on 401 via `invalidateTokenCache()`. Don't bypass this flow.
+- **CRM-N is the only sales pipeline** (`/sotuv/crm-n`): native full-CRUD, `queries/crm.ts` + `components/crm-n/`, shown in the sidebar as "Sotuv bo'limi". The AmoCRM integration was removed in migration `044` — don't reintroduce `src/lib/amocrm/`, the `/api/amo` proxy, or the `amocrm_*` cache tables. `crm_leads.responsible_user_id` is a `profiles.id` (it used to be an AmoCRM user id).
+- **Dashboard reads CRM-N** (`queries/dashboard.ts`): server-side counts over `crm_leads`, not row fetches — an unbounded select is capped by PostgREST `max_rows` and would silently undercount.
 - **Never modify existing migration files** — always add a new numbered one.
 - **Payments are the source of truth for event money** (migration `035`): the `payments` table holds each installment; `event_participants.paid` is a DERIVED total kept in sync by the `sync_participant_paid` trigger (`paid = SUM(payments.amount) + cashback_used`). Never write `paid` directly — insert a `payments` row (via `queries/payments.ts` / `usePayments`). That UPDATE then fires `auto_award_cashback`, so the whole chain (paid → cashback award/clawback → balance) flows from one insert. Debt shown anywhere = `price - paid`.
 - **Events UI is one tab-based page** (`components/pages/Events.tsx`, no separate detail route): a dark always-first **"Umumiy"** tab holds the global payments log + "To'lov qo'shish" modal; each event tab renders `EventOverview` (collapsible banner, stat cards, participants table with inline price/cashback edit, enroll + per-row payment, booklet export, cashback ops). The legacy `EventDetail` page was removed — don't reintroduce a `/tadbirlar/:id` route.
-- **Cashback is trigger-driven** (migrations `017`, `023`): `auto_award_cashback` awards on any `paid` increase; spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is maintained by a trigger from `cashback_transactions` — never update the balance directly.
+- **Cashback is trigger-driven** (migrations `017`, `023`, `038`, `043`): `auto_award_cashback` awards on any `paid` increase and claws back on any decrease (capped by that participant's `cashback_earned`); spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is **recomputed from the `cashback_transactions` ledger** by a trigger on every insert/update/delete — the ledger is the source of truth; never write the balance directly. `spend_cashback` is staff-only and rejects amounts ≤ 0 or above the participant's debt (`043`).
 - **AuthContext ignores `SIGNED_IN` echoes** Supabase fires on tab refocus (compares user id). Don't "simplify" that away — it prevents full reloads on every tab switch.
 - **User creation only via edge functions** (service role) — `admin-create-user` for staff, `admin-create-member` for club members (Mijozlar page → DeviceMobile icon). Never client-side signup.
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.

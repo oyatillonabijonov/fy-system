@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
-import { Sotuv } from "./components/pages/Sotuv"
 import { CrmN } from "./components/pages/CrmN"
 import { Events } from "./components/pages/Events"
 import { Sozlamalar } from "./components/pages/Sozlamalar"
@@ -41,7 +40,6 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
-  '/sotuv/amocrm':  { title: 'AmoCRM',          desc: 'AmoCRM orqali savdo jarayonlari va lidlar.' },
   '/sotuv/crm-n':   { title: "Sotuv bo'limi",    desc: 'Savdo jarayonlari va lidlar boshqaruvi.' },
   '/tadbirlar':     { title: 'Tadbirlar',       desc: "Klub doirasidagi barcha tadbirlar va uchrashuvlar." },
   '/pbx':           { title: 'IP Telefoniya',   desc: "Onlayn ATS integratsiyasi va qo'ng'iroqlar tarixi." },
@@ -308,10 +306,6 @@ function App() {
 
           <Route path="/dashboard" element={
             <ProtectedRoute module="dashboard"><Dashboard /></ProtectedRoute>
-          } />
-
-          <Route path="/sotuv/amocrm" element={
-            <ProtectedRoute module="sotuv-amocrm"><Sotuv defaultTab="pipeline" /></ProtectedRoute>
           } />
 
           <Route path="/sotuv/crm-n" element={

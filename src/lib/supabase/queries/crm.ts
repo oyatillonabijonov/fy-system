@@ -40,7 +40,7 @@ export interface CrmLead {
   pipeline_id: string
   stage_id: string
   contact_id: string | null
-  responsible_user_id: number | null
+  responsible_user_id: string | null
   price: number
   source: string
   tags: string[]
@@ -79,8 +79,26 @@ export interface CreateCrmLeadInput {
   stage_id: string
   contact_id?: string
   price?: number
-  responsible_user_id?: number
+  responsible_user_id?: string
   source?: string
+}
+
+/** A staff member who can own a CRM lead. Sourced from profiles — the AmoCRM
+ *  user cache this used to read is gone. */
+export interface CrmUser {
+  id: string
+  name: string
+}
+
+export async function getCrmUsers(): Promise<CrmUser[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .eq("is_active", true)
+    .order("full_name")
+
+  if (error) throw error
+  return (data ?? []).map((p) => ({ id: p.id, name: p.full_name }))
 }
 
 export interface CreateCrmContactInput {
