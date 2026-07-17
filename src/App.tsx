@@ -11,7 +11,6 @@ import { HodimDetail } from "./components/pages/HodimDetail"
 import { Bolimlar } from "./components/pages/Bolimlar"
 import { Faollik } from "./components/pages/Faollik"
 import { Yangiliklar } from "./components/pages/Yangiliklar"
-import { Pbx } from "./components/pages/Pbx"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider } from "./context/ThemeContext"
@@ -42,7 +41,6 @@ const PAGE_META: Record<string, PageMeta> = {
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
   '/sotuv/crm-n':   { title: "Sotuv bo'limi",    desc: 'Savdo jarayonlari va lidlar boshqaruvi.' },
   '/tadbirlar':     { title: 'Tadbirlar',       desc: "Klub doirasidagi barcha tadbirlar va uchrashuvlar." },
-  '/pbx':           { title: 'IP Telefoniya',   desc: "Onlayn ATS integratsiyasi va qo'ng'iroqlar tarixi." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
   '/bolimlar':      { title: "Bo'limlar",       desc: "Tizim bo'limlari va hodimlar boshqaruvi." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
@@ -318,10 +316,6 @@ function App() {
 
           <Route path="/tadbirlar" element={
             <ProtectedRoute module="tadbirlar"><Events /></ProtectedRoute>
-          } />
-
-          <Route path="/pbx" element={
-            <ProtectedRoute module="pbx"><Pbx /></ProtectedRoute>
           } />
 
           <Route path="/hodimlar" element={

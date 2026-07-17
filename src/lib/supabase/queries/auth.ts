@@ -10,7 +10,6 @@ export type ModuleName =
   | "sotuv-crmn"
   | "mijozlar"
   | "tadbirlar"
-  | "pbx"
   | "sozlamalar"
 
 export const MODULES: { id: ModuleName; label: string }[] = [
@@ -18,7 +17,6 @@ export const MODULES: { id: ModuleName; label: string }[] = [
   { id: "sotuv-crmn",   label: "Sotuv (CRM-N)" },
   { id: "mijozlar",     label: "Mijozlar" },
   { id: "tadbirlar",    label: "Tadbirlar" },
-  { id: "pbx",          label: "PBX" },
   { id: "sozlamalar",   label: "Sozlamalar" },
 ]
 
