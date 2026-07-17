@@ -87,6 +87,9 @@ export function useDeleteEvent() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: EVENTS_KEY })
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+      // Deleting an event cascade-deletes its participants + payments (035),
+      // so income and debt both move — keep the Moliya KPIs fresh.
+      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
     },
   })
 }
