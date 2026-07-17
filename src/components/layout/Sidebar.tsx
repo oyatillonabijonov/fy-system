@@ -16,6 +16,7 @@ import {
     Envelope,
     DeviceMobile,
     SquaresFour,
+    Coins,
     Terminal,
     Buildings,
     ClockCounterClockwise,
@@ -55,7 +56,15 @@ const navigationSections: NavSection[] = [
             { name: "Dashboard", icon: House, path: "/dashboard", module: "dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
             { name: "Sotuv bo'limi", icon: CreditCard, path: "/sotuv/crm-n", module: "sotuv-crmn" },
-            { name: "Tadbirlar", icon: CalendarBlank, path: "/tadbirlar", module: "tadbirlar" },
+            {
+                name: "Tadbirlar",
+                icon: CalendarBlank,
+                path: "/tadbirlar",
+                subItems: [
+                    { name: "Boshqaruv", icon: SquaresFour, path: "/tadbirlar", module: "tadbirlar" },
+                    { name: "Moliya", icon: Coins, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
+                ],
+            },
             {
                 name: "Bildirishnomalar",
                 icon: Bell,

@@ -4,10 +4,11 @@ import {
   getEventPayments,
   getRecentPayments,
   getClientParticipations,
+  getFinanceTotals,
   addPayment,
   deletePayment,
 } from "@/lib/supabase/queries/payments"
-import { PARTICIPANTS_KEY, EVENTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
+import { PARTICIPANTS_KEY, EVENTS_KEY, EVENT_COUNTS_KEY, FINANCE_TOTALS_KEY } from "@/hooks/useEvents"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 
 export const PAYMENTS_KEY = (participantId: string) =>
@@ -26,6 +27,7 @@ function invalidatePaymentViews(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["client-participations"] })  // AddPaymentModal's price/paid/debt
   qc.invalidateQueries({ queryKey: EVENTS_KEY })
   qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+  qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
 }
 
 export function useParticipantPayments(participantId: string) {
@@ -59,6 +61,13 @@ export function useClientParticipations(clientId: string) {
     queryKey: CLIENT_PARTICIPATIONS_KEY(clientId),
     queryFn:  () => getClientParticipations(clientId),
     enabled:  Boolean(clientId),
+  })
+}
+
+export function useFinanceTotals() {
+  return useQuery({
+    queryKey: FINANCE_TOTALS_KEY,
+    queryFn:  getFinanceTotals,
   })
 }
 

@@ -203,3 +203,29 @@ export async function getClientParticipations(clientId: string): Promise<ClientP
     paid: row.paid,
   }))
 }
+
+// ─── Finance KPI totals (Moliya → Umumiy) ─────────────────────────────────────
+// Server-side aggregate via RPC (migration 047). Never sum in the browser: an
+// unbounded select is capped by PostgREST max_rows and would silently undercount.
+export interface FinanceTotals {
+  total_income: number           // SUM(payments.amount) — real cash, cashback excluded
+  total_debt: number             // SUM(GREATEST(price - paid, 0))
+  total_cashback_balance: number // SUM(clients.cashback_balance)
+}
+
+export async function getFinanceTotals(): Promise<FinanceTotals> {
+  // Stale types workaround (CLAUDE.md): types.ts doesn't know this RPC yet
+  // (needs a local Supabase stand to regenerate). Cast until gen:types runs.
+  const { data, error } = await (supabase.rpc as unknown as
+    (fn: string) => Promise<{ data: FinanceTotals[] | null; error: Error | null }>
+  )("event_finance_totals")
+  if (error) throw error
+
+  // The RPC returns TABLE(...) → supabase-js gives an array of one row.
+  const row = (data as unknown as FinanceTotals[] | null)?.[0]
+  return {
+    total_income:           Number(row?.total_income ?? 0),
+    total_debt:             Number(row?.total_debt ?? 0),
+    total_cashback_balance: Number(row?.total_cashback_balance ?? 0),
+  }
+}
