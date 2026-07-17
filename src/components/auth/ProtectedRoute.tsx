@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { LoadingLogo } from "@/components/ui/LoadingLogo"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
 
 interface ProtectedRouteProps {
@@ -28,7 +29,7 @@ export function ProtectedRoute({ children, module, adminOnly }: ProtectedRoutePr
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-[14px] text-[#999]">Yuklanmoqda...</div>
+        <LoadingLogo size={80} />
       </div>
     )
   }

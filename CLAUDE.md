@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + shadcn/ui (`base-nova`), framer-motion, Geist Variable font |
-| Database | Supabase Postgres (migrations `001`–`041`), pg_cron + pg_net |
+| Database | Supabase Postgres (migrations `001`–`042`), pg_cron + pg_net |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | AmoCRM REST v4 (via dev proxy `/api/amo`), Meta/Framer/Tilda lead webhooks |
@@ -51,7 +51,7 @@ Package manager: **bun** (not npm).
 │       ├── amocrm/           # AmoCRM client + token-manager (OAuth refresh, 401 retry)
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–041, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–042, sequential — NEVER edit existing ones
 │   └── functions/            # amocrm-sync, admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
@@ -221,6 +221,8 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **Two CRMs coexist — not interchangeable.** (1) AmoCRM: external, read-mostly, `src/lib/amocrm/` through the `/api/amo` Vite proxy; route `/sotuv/amocrm` exists but is **not in the sidebar** (removed from navigation). (2) CRM-N (`/sotuv/crm-n`): native full-CRUD, `queries/crm.ts` + `components/crm-n/` — this is the primary sales view shown in the sidebar as "Sotuv bo'limi".
 - **AmoCRM tokens:** cached in `amocrm_tokens` table (single row `id=1`); `token-manager.ts` refreshes 5 min early, falls back to `VITE_AMO_ACCESS_TOKEN`, and `fetchFromAmo` retries once on 401 via `invalidateTokenCache()`. Don't bypass this flow.
 - **Never modify existing migration files** — always add a new numbered one.
+- **Payments are the source of truth for event money** (migration `035`): the `payments` table holds each installment; `event_participants.paid` is a DERIVED total kept in sync by the `sync_participant_paid` trigger (`paid = SUM(payments.amount) + cashback_used`). Never write `paid` directly — insert a `payments` row (via `queries/payments.ts` / `usePayments`). That UPDATE then fires `auto_award_cashback`, so the whole chain (paid → cashback award/clawback → balance) flows from one insert. Debt shown anywhere = `price - paid`.
+- **Events UI is one tab-based page** (`components/pages/Events.tsx`, no separate detail route): a dark always-first **"Umumiy"** tab holds the global payments log + "To'lov qo'shish" modal; each event tab renders `EventOverview` (collapsible banner, stat cards, participants table with inline price/cashback edit, enroll + per-row payment, booklet export, cashback ops). The legacy `EventDetail` page was removed — don't reintroduce a `/tadbirlar/:id` route.
 - **Cashback is trigger-driven** (migrations `017`, `023`): `auto_award_cashback` awards on any `paid` increase; spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is maintained by a trigger from `cashback_transactions` — never update the balance directly.
 - **AuthContext ignores `SIGNED_IN` echoes** Supabase fires on tab refocus (compares user id). Don't "simplify" that away — it prevents full reloads on every tab switch.
 - **User creation only via edge functions** (service role) — `admin-create-user` for staff, `admin-create-member` for club members (Mijozlar page → DeviceMobile icon). Never client-side signup.
@@ -248,30 +250,9 @@ When making **independent** changes across multiple files, launch all Agent tool
 
 ---
 
-## Model & Impact Routing
+## Model Routing
 
-Before executing, declare in **one line** at the top of your reply:
-> 🤖 `<haiku|sonnet|opus>` · 🎯 `<🟢low | 🟡med | 🔴high>` · ⚙️ `<one-line reason>`
-
-**Model selection (cheapest tier that fits):**
-
-| Use | For |
-|-----|-----|
-| **haiku** | Reads, greps, status checks, deploys, git workflows, env edits, find/replace, "continue"/"go" signals |
-| **sonnet** | Code generation, debugging, multi-file features, refactors, plan decomposition |
-| **opus** | Cross-system architecture, novel design, security-critical tradeoffs (rare) |
-
-Rule: when unsure, use the cheaper tier. Escalate only if it struggles.
-
-**Impact level (state blast radius for 🔴):**
-
-| Tag | Means | Examples |
-|-----|-------|----------|
-| 🟢 low | Read-only / trivially undone | Read, Grep, status, Q&A |
-| 🟡 med | Single-file / local config | Bug fix, doc edit, env var |
-| 🔴 high | Multi-file / prod / irreversible | Deploy, merge to main, delete, secret rotation, 3+ files |
-
-For 🔴 tasks: **list affected files/services before acting.**
+- Use **haiku** for: reads, greps, status checks, deploys, git workflows, env edits, find/replace, "continue"/"go" signals
 
 ---
 

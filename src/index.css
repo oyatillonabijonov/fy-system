@@ -694,3 +694,22 @@
 .animate-blob {
   animation: blob 18s ease-in-out infinite;
 }
+
+/* Self-drawing brand-mark loader (tracer) */
+@keyframes tracerDraw {
+  0%   { stroke-dashoffset: 1; opacity: 1; }
+  55%  { stroke-dashoffset: 0; opacity: 1; }
+  78%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+.tracer-logo rect,
+.tracer-logo path {
+  fill: none;
+  stroke: var(--tracer-color, #FD5426);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: tracerDraw 1.8s ease-in-out infinite;
+}
