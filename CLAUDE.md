@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + shadcn/ui (`base-nova`), framer-motion, Geist Variable font |
-| Database | Supabase Postgres (migrations `001`–`042`), pg_cron + pg_net |
+| Database | Supabase Postgres (migrations `001`–`047`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | Meta/Framer/Tilda lead webhooks |
@@ -49,7 +49,8 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–044, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–047, sequential — NEVER edit existing ones
+│   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
@@ -120,7 +121,41 @@ bun run supabase:start | supabase:stop | supabase:reset
 bun run gen:types
 ```
 
-No JS test runner is configured. DB-level behaviour is covered by SQL scripts in `supabase/tests/` — run them against a throwaway Postgres, never production (each file's header has the recipe).
+### Tests
+
+No JS test runner is configured. DB behaviour (money triggers, RLS, KPI periods) is covered by SQL scripts in `supabase/tests/`, one per migration. Each block `RAISE`s on failure, so `ON_ERROR_STOP=1` + exit code is the pass/fail signal.
+
+**Never run them against production** — they insert fixtures. Build a throwaway stand:
+
+```bash
+docker run -d --name fy-test -e POSTGRES_PASSWORD=postgres public.ecr.aws/supabase/postgres:17.6.1.106
+
+# GoTrue isn't in this image, but migrations FK to auth.users and handle_new_user
+# triggers off it — stub the parts the migrations touch:
+docker exec -i fy-test psql -U postgres -d postgres <<'SQL'
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb, created_at timestamptz DEFAULT now());
+CREATE SCHEMA IF NOT EXISTS supabase_migrations;
+CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version text PRIMARY KEY);
+SQL
+
+# Replay the schema. `docker cp` + `-f` (not stdin) so psql reports the failing file.
+for f in supabase/migrations/*.sql; do
+  docker cp "$f" fy-test:/tmp/m.sql
+  docker exec fy-test psql -U postgres -d postgres -q -v ON_ERROR_STOP=1 -f /tmp/m.sql
+done
+# Expected failures on this stand: the storage.* migrations (013/014/016/019/021/025/029)
+# — no storage schema in the image — and 042 (constraint already present). Ignore those.
+
+# Run one test file:
+docker cp supabase/tests/043_money_guards_test.sql fy-test:/tmp/t.sql
+docker exec fy-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/t.sql
+
+docker rm -f fy-test
+```
+
+A test is only evidence if it **fails on the old code** — revert the function under test (re-apply the earlier migration) and confirm it goes red before trusting a green run. Both the migration-045 timezone bug and a false-passing test were caught exactly this way.
 
 ### Production deployment & database (⚠️ READ BEFORE DEPLOYING — keep current)
 
@@ -184,8 +219,8 @@ Migration history note: the VM's `supabase_migrations.schema_migrations` may lag
 
 ## 6. Conventions & Patterns
 
-- **Routing:** all routes in `src/App.tsx`. `/login` is public; everything else nests in `<ProtectedRoute><AppShell/></ProtectedRoute>`, and each page wraps again with `module="…"` or `adminOnly` (Hodimlar, Bolimlar, Faollik). New route ⇒ add a `PAGE_META` entry (header title/desc) + Sidebar item + module permission if needed.
-- **Auth:** `useAuth()` → `{ user, isAdmin, hasAccess(module), canEdit(module) }`. Admins bypass module checks. Module IDs (`ModuleName` in `src/lib/supabase/queries/auth.ts`) must stay in sync with the `user_permissions` CHECK constraint (migration `018`) and `VALID_MODULES` in `supabase/functions/admin-create-user`.
+- **Routing:** all routes in `src/App.tsx`. `/login` is public; everything else nests in `<ProtectedRoute><AppShell/></ProtectedRoute>`, and each page wraps again with `module="…"` or `adminOnly` (Hodimlar, Bolimlar, Faollik, Yangiliklar). New route ⇒ add a `PAGE_META` entry (header title/desc) + Sidebar item + module permission if needed.
+- **Auth:** `useAuth()` → `{ user, isAdmin, hasAccess(module), canEdit(module) }`. Admins bypass module checks. **Module IDs live in three places that must move together**: `ModuleName` + `MODULES` (`src/lib/supabase/queries/auth.ts`), `VALID_MODULES` (`supabase/functions/admin-create-user`), and the `user_permissions` CHECK constraint (last rewritten in migration `047`). Adding or dropping a module without a migration silently breaks user creation. The Events area is split across **two** modules: `tadbirlar` (Boshqaruv) and `tadbirlar-moliya` (Moliya) — see the Events note below.
 - **Data:** per-feature query modules in `src/lib/supabase/queries/` + hooks in `src/hooks/`. Each exports `*_KEY` constants — reuse for invalidation. Optimistic updates follow `onMutate` / `onError` rollback / `onSettled` invalidate (see `useUpdateClient`). Regenerate `types.ts` via `supabase gen types` after schema changes.
 - **Stale types workaround:** when a new column is added via migration but `types.ts` hasn't been regenerated yet, extend the Row type locally (`type ClientRow = Database[...]["Row"] & { newCol?: string | null }`) and cast the query result (`const { data, error } = result as unknown as { data: T[] | null; error: Error | null }`). Run `bun run gen:types` and remove the cast once types are regenerated.
 - **Query defaults** (`main.tsx`): `staleTime` 5 min, `gcTime` 30 min, `retry` 1, `refetchOnWindowFocus/onMount` **off** (prevents tab-return flicker) — opt in per-query for near-real-time screens.
@@ -214,13 +249,18 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **Dashboard reads CRM-N** (`queries/dashboard.ts`): server-side counts over `crm_leads`, not row fetches — an unbounded select is capped by PostgREST `max_rows` and would silently undercount.
 - **Never modify existing migration files** — always add a new numbered one.
 - **Payments are the source of truth for event money** (migration `035`): the `payments` table holds each installment; `event_participants.paid` is a DERIVED total kept in sync by the `sync_participant_paid` trigger (`paid = SUM(payments.amount) + cashback_used`). Never write `paid` directly — insert a `payments` row (via `queries/payments.ts` / `usePayments`). That UPDATE then fires `auto_award_cashback`, so the whole chain (paid → cashback award/clawback → balance) flows from one insert. Debt shown anywhere = `price - paid`.
-- **Events UI is one tab-based page** (`components/pages/Events.tsx`, no separate detail route): a dark always-first **"Umumiy"** tab holds the global payments log + "To'lov qo'shish" modal; each event tab renders `EventOverview` (collapsible banner, stat cards, participants table with inline price/cashback edit, enroll + per-row payment, booklet export, cashback ops). The legacy `EventDetail` page was removed — don't reintroduce a `/tadbirlar/:id` route.
+- **Events UI is two sibling tab-based pages** (migration `047`, split from the old single `Events.tsx`, which is gone — no separate detail route): both live under the sidebar's "Tadbirlar" submenu and share the selected-event tab via `useEventTab` (localStorage `fy_last_event_tab`), so picking an event on one page lands on it on the other. The tab bar itself is the shared `EventTabs` component.
+  - **Boshqaruv** (`/tadbirlar/boshqaruv`, module `tadbirlar`, `components/pages/EventsBoshqaruv.tsx`): event create/edit/delete, `EventOverview` (collapsible banner, registration chart, participants table = photo/name/phone only, enroll, booklet export). **No money here.** No "Umumiy" tab; `+` create button present. `/tadbirlar` redirects here.
+  - **Moliya** (`/tadbirlar/moliya`, module `tadbirlar-moliya`, `components/pages/EventsMoliya.tsx`): all money. A dark always-first **"Umumiy"** tab renders `FinanceOverview` — 3 KPI cards (income / debt / cashback balance) from the `event_finance_totals()` RPC via `useFinanceTotals` + the global payments log ("To'lov qo'shish" modal). Each event tab renders `EventFinance` (value-progress card, finance table with inline price/cashback edit, per-row payment, cashback spend). No `+` button (creating events belongs to Boshqaruv).
+  - **Finance KPIs come from the DB, never summed in the browser:** `event_finance_totals()` (`047`, `SECURITY INVOKER` so RLS applies) returns `total_income = SUM(payments.amount)` (cashback excluded), `total_debt = SUM(GREATEST(price-paid,0))`, `total_cashback_balance = SUM(clients.cashback_balance)`. `FINANCE_TOTALS_KEY` is declared in `hooks/useEvents.ts` (not `usePayments.ts`, which imports from it — avoids a cycle); **every** money-moving mutation must invalidate it (add/delete payment, spend/adjust cashback, edit participant price, enroll participant, **delete event** — the last two are easy to miss).
+  - Don't reintroduce a `/tadbirlar/:id` route or the removed `EventDetail`/`Events.tsx`.
 - **Cashback is trigger-driven** (migrations `017`, `023`, `038`, `043`): `auto_award_cashback` awards on any `paid` increase and claws back on any decrease (capped by that participant's `cashback_earned`); spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is **recomputed from the `cashback_transactions` ledger** by a trigger on every insert/update/delete — the ledger is the source of truth; never write the balance directly. `spend_cashback` is staff-only and rejects amounts ≤ 0 or above the participant's debt (`043`).
 - **AuthContext ignores `SIGNED_IN` echoes** Supabase fires on tab refocus (compares user id). Don't "simplify" that away — it prevents full reloads on every tab switch.
 - **User creation only via edge functions** (service role) — `admin-create-user` for staff, `admin-create-member` for club members (Mijozlar page → DeviceMobile icon). Never client-side signup.
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.
 - Storage buckets: `event-covers` (`013/014`), `client-images` (`016`), `profile-avatars` (`021`); upsert policies fixed in `025`. On self-hosted Supabase, files live at `/var/lib/storage/stub/<bucket>/` inside the storage container (TENANT_ID=`stub`).
-- `localStorage` keys: `fy_theme`, `fy_lang`.
+- `localStorage` keys: `fy_theme`, `fy_lang`, `fy_sidebar_collapsed`, `fy_last_crm_pipeline_id`.
+- **No scheduled jobs run.** `004` created a pg_cron entry for the AmoCRM sync; `044` unscheduled it and production has zero `cron.job` rows. Nothing else uses pg_cron/pg_net.
 
 ---
 
