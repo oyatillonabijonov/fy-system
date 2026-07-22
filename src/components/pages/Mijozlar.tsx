@@ -437,8 +437,10 @@ export function Mijozlar() {
                 await updateClient(selectedCustomer.id, { image: imageUrl })
                 setSelectedCustomer(prev => prev ? { ...prev, image: imageUrl } : null)
                 qc.invalidateQueries({ queryKey: CLIENTS_KEY })
+                showToast("Rasm muvaffaqiyatli qo'shildi", "success")
             } catch (err) {
                 console.error("Rasm yuklashda xatolik:", err)
+                showToast("Rasm yuklab bo'lmadi", "error")
             }
             return
         }
@@ -500,8 +502,9 @@ export function Mijozlar() {
             setIsAddModalOpen(false)
 
             if (imageUploadFailed) {
-                // Show non-blocking warning after modal closes (just console for now)
-                console.warn("Mijoz saqlandi, lekin rasm yuklanmadi")
+                showToast("Mijoz saqlandi, lekin rasm yuklanmadi", "error")
+            } else if (pendingImageFile) {
+                showToast("Rasm muvaffaqiyatli qo'shildi", "success")
             }
         } catch (err) {
             setAddError(err instanceof Error ? err.message : 'Mijoz yaratishda xatolik')
