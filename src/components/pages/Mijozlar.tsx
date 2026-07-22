@@ -507,7 +507,12 @@ export function Mijozlar() {
                 showToast("Rasm muvaffaqiyatli qo'shildi", "success")
             }
         } catch (err) {
-            setAddError(err instanceof Error ? err.message : 'Mijoz yaratishda xatolik')
+            const code = (err as { code?: string }).code
+            setAddError(
+                code === '23505'
+                    ? "Bu telefon raqami allaqachon ro'yxatdan o'tgan"
+                    : err instanceof Error ? err.message : 'Mijoz yaratishda xatolik'
+            )
         } finally {
             setSavingNewCustomer(false)
         }
