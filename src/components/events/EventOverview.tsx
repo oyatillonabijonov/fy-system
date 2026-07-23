@@ -20,7 +20,7 @@ import {
   Export,
 } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
-import { useParticipants } from "@/hooks/useEvents"
+import { useParticipants, useDeleteParticipant } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { EventBanner } from "@/components/events/EventBanner"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
@@ -44,6 +44,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const [exporting, setExporting] = useState(false)
 
   const { data: participants = [], isLoading } = useParticipants(event.id)
+  const deleteParticipant = useDeleteParticipant(event.id)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const { data: users = [] } = useUsers()
   const manager = users.find((u) => u.id === event.manager_id) ?? null
 
@@ -189,6 +191,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                   <th className="px-4 py-2.5 font-bold">Rasmi</th>
                   <th className="px-4 py-2.5 font-bold">Mijoz ismi</th>
                   <th className="px-4 py-2.5 font-bold">Telefon</th>
+                  <th className="px-4 py-2.5 font-bold text-right">Amal</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,6 +208,36 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                     </td>
                     <td className="px-4 py-2.5 text-[13px] font-medium text-[#141414] whitespace-nowrap">{p.full_name}</td>
                     <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{formatPhone(p.phone)}</td>
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      {confirmingId === p.id ? (
+                        <span className="inline-flex items-center gap-2">
+                          {p.paid > 0 && (
+                            <span className="text-[10px] font-bold text-red-500">To'lovlar ham o'chadi!</span>
+                          )}
+                          <button
+                            onClick={() => { deleteParticipant.mutate(p.id); setConfirmingId(null) }}
+                            disabled={deleteParticipant.isPending}
+                            className="text-[11px] font-bold text-red-600 hover:text-red-700 disabled:opacity-50"
+                          >
+                            O'chirish
+                          </button>
+                          <button
+                            onClick={() => setConfirmingId(null)}
+                            className="text-[11px] font-medium text-[#999] hover:text-[#666]"
+                          >
+                            Bekor
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingId(p.id)}
+                          title="O'chirish"
+                          className="text-[#CCC] hover:text-red-600 transition-colors"
+                        >
+                          <Trash size={15} weight="bold" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

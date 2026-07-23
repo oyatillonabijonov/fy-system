@@ -168,6 +168,7 @@ export function useDeleteParticipant(eventId: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
     },
   })
 }
