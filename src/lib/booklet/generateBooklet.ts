@@ -21,10 +21,43 @@ export async function generateBooklet(
     format: "a4",
   })
 
-  const totalPages = Math.ceil(participants.length / CARDS_PER_PAGE)
+  // Pre-fetch photos as data URLs. Storage responses lack `Vary: Origin`, so an
+  // <img> loaded without CORS elsewhere on the page (participants table) gets
+  // cached without CORS headers; the booklet's crossOrigin="anonymous" <img>
+  // then reuses that cached response and html2canvas taints/drops it. Data URLs
+  // are same-origin — this also covers photos on a different Supabase host.
+  const photoData = new Map<string, string>()
+  await Promise.all(
+    participants
+      .filter((p) => p.photo_url)
+      .map(async (p) => {
+        try {
+          const res = await fetch(p.photo_url!, { mode: "cors", cache: "no-store" })
+          if (!res.ok) return
+          const blob = await res.blob()
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = () => reject(new Error("read failed"))
+            reader.readAsDataURL(blob)
+          })
+          photoData.set(p.photo_url!, dataUrl)
+        } catch {
+          // leave unmapped → card renders the initials placeholder
+        }
+      })
+  )
+
+  const resolved = participants.map((p) =>
+    p.photo_url && photoData.has(p.photo_url)
+      ? { ...p, photo_url: photoData.get(p.photo_url)! }
+      : p
+  )
+
+  const totalPages = Math.ceil(resolved.length / CARDS_PER_PAGE)
 
   for (let page = 0; page < totalPages; page++) {
-    const pageParticipants = participants.slice(
+    const pageParticipants = resolved.slice(
       page * CARDS_PER_PAGE,
       (page + 1) * CARDS_PER_PAGE
     )
