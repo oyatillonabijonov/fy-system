@@ -174,6 +174,7 @@ export function CrmN() {
                   onClick={() => setShowSettings(true)}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
                   title="Sozlamalar"
+                  aria-label="Sozlamalar"
                 >
                   <Gear size={16} className="text-[#999]" weight="bold" />
                 </button>

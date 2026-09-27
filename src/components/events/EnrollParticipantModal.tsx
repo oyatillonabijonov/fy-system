@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useId, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, MagnifyingGlass, CaretLeft } from "@phosphor-icons/react"
 import { searchContacts, type ClientContact } from "@/lib/supabase/queries/events"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { useEnrollParticipant } from "@/hooks/useEvents"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
 
 interface EnrollParticipantModalProps {
@@ -31,6 +32,11 @@ const INPUT =
 export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded }: EnrollParticipantModalProps) {
   const { user } = useAuth()
   const enroll = useEnrollParticipant(eventId)
+  const titleId = useId()
+  const clientSearchId = useId()
+  const priceId = useId()
+  const initialAmountId = useId()
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientContact[]>([])
@@ -56,14 +62,6 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
       if (searchTimeout.current) clearTimeout(searchTimeout.current)
     }
   }, [query, client])
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
 
   const priceNum = price ? Number(price) : 0
   const initNum = initialAmount ? Number(initialAmount) : 0
@@ -101,12 +99,17 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
             onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
             className="bg-white rounded-[12px] shadow-2xl w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
           >
             <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-[#141414]">Ishtirokchi qo'shish</h3>
-              <button onClick={onClose} className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
+              <h3 id={titleId} className="text-[16px] font-bold text-[#141414]">Ishtirokchi qo'shish</h3>
+              <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
                 <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
@@ -121,10 +124,11 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               {/* 1. Client */}
               {!client ? (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
+                  <label htmlFor={clientSearchId} className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
                   <div className="relative">
                     <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
                     <input
+                      id={clientSearchId}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Ism yoki telefon bo'yicha qidirish..."
@@ -193,9 +197,10 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 <>
                   {/* 2. Agreed amount */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-medium text-[#999999]">Kelishilgan summa</label>
+                    <label htmlFor={priceId} className="text-[12px] font-medium text-[#999999]">Kelishilgan summa</label>
                     <div className="relative">
                       <input
+                        id={priceId}
                         inputMode="numeric"
                         value={price ? formatNumber(Number(price)) : ""}
                         onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))}
@@ -210,9 +215,10 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
 
                   {/* 3. Optional first payment */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-medium text-[#999999]">Boshlang'ich to'lov (ixtiyoriy)</label>
+                    <label htmlFor={initialAmountId} className="text-[12px] font-medium text-[#999999]">Boshlang'ich to'lov (ixtiyoriy)</label>
                     <div className="relative">
                       <input
+                        id={initialAmountId}
                         inputMode="numeric"
                         value={initialAmount ? formatNumber(Number(initialAmount)) : ""}
                         onChange={(e) => setInitialAmount(e.target.value.replace(/\D/g, ""))}
@@ -231,6 +237,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                           <button
                             key={m.value}
                             onClick={() => setMethod(m.value)}
+                            aria-pressed={method === m.value}
                             className={`flex-1 py-2 rounded-[8px] text-[12px] font-semibold border transition-colors ${
                               method === m.value ? "bg-[#141414] text-white border-[#141414]" : "bg-white text-[#666] border-[#E0E0E0] hover:bg-[#F5F5F5]"
                             }`}

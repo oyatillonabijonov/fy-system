@@ -329,8 +329,11 @@ function ProfileHeader({
       <div className="flex items-start gap-6 flex-wrap">
         {/* Avatar */}
         <div className="flex-shrink-0 flex flex-col items-center gap-2">
-          <div
+          <button
+            type="button"
             onClick={canEditAvatar ? onAvatarClick : undefined}
+            disabled={!canEditAvatar}
+            aria-label="Rasmni o'zgartirish"
             className={`relative w-24 h-24 rounded-full overflow-hidden ${
               canEditAvatar ? "cursor-pointer group" : ""
             }`}
@@ -342,21 +345,21 @@ function ProfileHeader({
                 className="w-full h-full object-cover border border-[#F0F0F0] rounded-full"
               />
             ) : (
-              <div className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center text-[28px] font-bold text-white">
+              <span className="w-full h-full rounded-full bg-[#141414] flex items-center justify-center text-[28px] font-bold text-white">
                 {initials}
-              </div>
+              </span>
             )}
             {canEditAvatar && (
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+              <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
                 <Camera size={20} weight="bold" className="text-white" />
-              </div>
+              </span>
             )}
             {uploading && (
-              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
+              <span className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
                 <ThinkingOrb state="shaping" size={20} theme="light" />
-              </div>
+              </span>
             )}
-          </div>
+          </button>
           {user.avatar_url && canEditAvatar && (
             <button
               onClick={onAvatarDelete}
@@ -738,6 +741,7 @@ function PeriodSelector({
         onClick={prev}
         className="px-2 py-1.5 hover:bg-[#F9F9F8] transition-colors"
         title="Oldingi oy"
+        aria-label="Oldingi oy"
       >
         <CaretLeft size={12} weight="bold" className="text-[#666]" />
       </button>
@@ -748,6 +752,7 @@ function PeriodSelector({
         onClick={next}
         className="px-2 py-1.5 hover:bg-[#F9F9F8] transition-colors"
         title="Keyingi oy"
+        aria-label="Keyingi oy"
       >
         <CaretRight size={12} weight="bold" className="text-[#666]" />
       </button>

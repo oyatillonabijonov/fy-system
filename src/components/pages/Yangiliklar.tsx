@@ -1,6 +1,7 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useId } from "react"
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { motion, AnimatePresence } from "framer-motion"
+import { useDialog } from "@/hooks/useDialog"
 import {
   Newspaper,
   Plus,
@@ -39,6 +40,9 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
   const updateMutation = useUpdateNewsPost()
 
   const isEdit = Boolean(editPost)
+  const uid = useId()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -109,15 +113,21 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
-            <h2 className="text-[16px] font-bold text-[#141414]">
+            <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
               {isEdit ? "Yangilikni tahrirlash" : "Yangi post"}
             </h2>
             <button
               onClick={() => !saving && onClose()}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -132,8 +142,9 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Sarlavha *</label>
+              <label htmlFor={`${uid}-title`} className="text-[12px] font-medium text-[#999]">Sarlavha *</label>
               <input
+                id={`${uid}-title`}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -144,8 +155,9 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Matn</label>
+              <label htmlFor={`${uid}-body`} className="text-[12px] font-medium text-[#999]">Matn</label>
               <textarea
+                id={`${uid}-body`}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Yangilik matni..."
@@ -156,20 +168,22 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
 
             {/* Image upload */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Rasm</label>
-              <div
+              <label htmlFor={`${uid}-image`} className="text-[12px] font-medium text-[#999]">Rasm</label>
+              <button
+                id={`${uid}-image`}
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="border border-dashed border-[#E0E0E0] rounded-[8px] p-5 cursor-pointer hover:bg-[#F9F9F8] transition-colors"
+                className="w-full border border-dashed border-[#E0E0E0] rounded-[8px] p-5 cursor-pointer hover:bg-[#F9F9F8] transition-colors"
               >
                 {preview ? (
                   <img src={preview} alt="Rasm" className="w-full h-32 object-cover rounded-[8px]" />
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-[#999]">
+                  <span className="flex flex-col items-center gap-2 text-[#999]">
                     <UploadSimple size={22} weight="bold" />
                     <span className="text-[12px]">Rasm yuklash uchun bosing</span>
-                  </div>
+                  </span>
                 )}
-              </div>
+              </button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -227,6 +241,8 @@ export function Yangiliklar() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editPost, setEditPost] = useState<NewsPost | null>(null)
   const [postToDelete, setPostToDelete] = useState<NewsPost | null>(null)
+  const deleteTitleId = useId()
+  const deletePanelRef = useDialog<HTMLDivElement>(() => setPostToDelete(null), Boolean(postToDelete))
 
   function openCreate() {
     setEditPost(null)
@@ -307,6 +323,8 @@ export function Yangiliklar() {
                       onClick={() => void togglePublish(post)}
                       className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999] hover:text-[#141414]"
                       title={post.is_published ? "Yashirish" : "E'lon qilish"}
+                      aria-label={post.is_published ? "Yashirish" : "E'lon qilish"}
+                      aria-pressed={post.is_published}
                     >
                       {post.is_published ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
                     </button>
@@ -314,6 +332,7 @@ export function Yangiliklar() {
                       onClick={() => openEdit(post)}
                       className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999] hover:text-[#141414]"
                       title="Tahrirlash"
+                      aria-label="Tahrirlash"
                     >
                       <PencilSimple size={16} weight="bold" />
                     </button>
@@ -321,6 +340,7 @@ export function Yangiliklar() {
                       onClick={() => setPostToDelete(post)}
                       className="p-1.5 hover:bg-red-50 rounded-[6px] transition-colors text-[#999] hover:text-red-600"
                       title="O'chirish"
+                      aria-label="O'chirish"
                     >
                       <Trash size={16} weight="bold" />
                     </button>
@@ -363,10 +383,15 @@ export function Yangiliklar() {
               className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none"
             >
               <div
+                ref={deletePanelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={deleteTitleId}
+                tabIndex={-1}
                 className="bg-white rounded-[12px] w-full max-w-sm shadow-2xl pointer-events-auto p-5 flex flex-col gap-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h3 className="text-[15px] font-bold text-[#141414]">Postni o'chirish</h3>
+                <h3 id={deleteTitleId} className="text-[15px] font-bold text-[#141414]">Postni o'chirish</h3>
                 <p className="text-[13px] text-[#666]">
                   "{postToDelete.title}" o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.
                 </p>

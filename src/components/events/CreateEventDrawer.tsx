@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, UploadSimple, CaretDown, MagnifyingGlass, Check, Image as ImageIcon } from "@phosphor-icons/react"
 import {
@@ -11,6 +11,7 @@ import { useUsers } from "@/hooks/useUsers"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { EventBanner } from "@/components/events/EventBanner"
+import { useDialog } from "@/hooks/useDialog"
 import { formatNumber, formatDate } from "@/lib/format"
 
 interface CreateEventDrawerProps {
@@ -35,11 +36,13 @@ function toDateInput(value: string | null): string {
 
 // ─── Manager combobox ──────────────────────────────────────────────────────────
 function ManagerSelect({
+  id,
   value,
   onChange,
   managers,
   invalid,
 }: {
+  id?: string
   value: string | null
   onChange: (id: string) => void
   managers: UserProfile[]
@@ -65,8 +68,10 @@ function ManagerSelect({
   return (
     <div className="relative" ref={ref}>
       <button
+        id={id}
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
         className={`w-full flex items-center justify-between gap-2 border rounded-[8px] px-3 py-2 text-[13px] transition-colors ${
           invalid ? "border-[#D13328]" : "border-[#E0E0E0] focus:border-[#141414]"
         }`}
@@ -145,6 +150,13 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const isEdit = !!editEvent
   const { data: users = [] } = useUsers()
   const managers = users.filter((u) => u.is_active)
+  const titleId = useId()
+  const nameId = useId()
+  const startDateId = useId()
+  const cashbackId = useId()
+  const locationId = useId()
+  const totalValueId = useId()
+  const managerFieldId = useId()
 
   const [name, setName] = useState("")
   const [startDate, setStartDate] = useState("")
@@ -158,6 +170,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [bannerBlob, setBannerBlob] = useState<Blob | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const panelRef = useDialog<HTMLDivElement>(() => { if (!cropSrc) onClose() }, isOpen)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [saving, setSaving] = useState(false)
@@ -191,15 +204,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
     setError(null)
     setTouched(false)
   }, [editEvent, isOpen])
-
-  useEffect(() => {
-    if (!isOpen) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !cropSrc) onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [isOpen, onClose, cropSrc])
 
   function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -299,6 +303,11 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               onClick={onClose}
             />
             <motion.div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              tabIndex={-1}
               initial={{ x: 460 }}
               animate={{ x: 0 }}
               exit={{ x: 460 }}
@@ -307,10 +316,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
             >
               {/* Header */}
               <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0]">
-                <h2 className="text-[16px] font-bold text-[#141414]">
+                <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
                   {isEdit ? "Tadbirni tahrirlash" : "Yangi tadbir"}
                 </h2>
-                <button onClick={onClose} className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
+                <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
                   <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
               </div>
@@ -324,22 +333,23 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 )}
 
                 {/* 1. Banner */}
-                <div
+                <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="relative h-[140px] rounded-[8px] overflow-hidden cursor-pointer border border-[#E0E0E0] group"
+                  className="relative w-full h-[140px] rounded-[8px] overflow-hidden cursor-pointer border border-[#E0E0E0] group"
                 >
                   {bannerPreview ? (
                     <img src={bannerPreview} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <EventBanner name={name} coverImage={null} className="absolute inset-0" />
                   )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white/90 text-[12px] font-bold text-[#141414] opacity-0 group-hover:opacity-100 transition-opacity">
                       {bannerPreview ? <ImageIcon size={14} weight="bold" /> : <UploadSimple size={14} weight="bold" />}
                       {bannerPreview ? "Rasmni o'zgartirish" : "Banner yuklash"}
                     </span>
-                  </div>
-                </div>
+                  </span>
+                </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePickFile} />
                 {!bannerPreview && (
                   <span className="text-[11px] text-[#999] -mt-2">
@@ -348,8 +358,9 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 )}
 
                 {/* 2. Name */}
-                <Field label="Tadbir nomi" required>
+                <Field label="Tadbir nomi" required htmlFor={nameId}>
                   <input
+                    id={nameId}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Masalan: Biznes Nonushta #5"
@@ -358,9 +369,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 3. Date range */}
-                <Field label="O'tkazilish sanasi" required>
+                <Field label="O'tkazilish sanasi" required htmlFor={startDateId}>
                   <div className="flex items-center gap-2">
                     <input
+                      id={startDateId}
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -369,6 +381,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     <span className="text-[#999] text-[12px]">—</span>
                     <input
                       type="date"
+                      aria-label="Tugash sanasi"
                       value={endDate}
                       min={startDate || undefined}
                       onChange={(e) => setEndDate(e.target.value)}
@@ -385,9 +398,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 4. Cashback */}
-                <Field label="Umumiy keshbek" required>
+                <Field label="Umumiy keshbek" required htmlFor={cashbackId}>
                   <div className="relative">
                     <input
+                      id={cashbackId}
                       type="number"
                       min={0}
                       max={100}
@@ -402,8 +416,9 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 5. Location */}
-                <Field label="Tadbir lokatsiyasi">
+                <Field label="Tadbir lokatsiyasi" htmlFor={locationId}>
                   <input
+                    id={locationId}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Masalan: Toshkent, Hilton Hotel"
@@ -412,9 +427,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 6. Total value */}
-                <Field label="Tadbir qiymati">
+                <Field label="Tadbir qiymati" htmlFor={totalValueId}>
                   <div className="relative">
                     <input
+                      id={totalValueId}
                       inputMode="numeric"
                       value={totalValue ? formatNumber(Number(totalValue)) : ""}
                       onChange={(e) => setTotalValue(e.target.value.replace(/\D/g, ""))}
@@ -426,8 +442,9 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 7. Manager */}
-                <Field label="Loyiha menejeri" required>
+                <Field label="Loyiha menejeri" required htmlFor={managerFieldId}>
                   <ManagerSelect
+                    id={managerFieldId}
                     value={managerId}
                     onChange={setManagerId}
                     managers={managers}
@@ -439,6 +456,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 <button
                   type="button"
                   onClick={() => setHasTariffs((v) => !v)}
+                  aria-pressed={hasTariffs}
                   className="flex items-center gap-2.5 text-left"
                 >
                   <span
@@ -495,10 +513,20 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   )
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  htmlFor,
+  children,
+}: {
+  label: string
+  required?: boolean
+  htmlFor?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className={LABEL}>
+      <label htmlFor={htmlFor} className={LABEL}>
         {label} {required && <span className="text-[#D13328]">*</span>}
       </label>
       {children}

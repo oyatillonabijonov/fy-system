@@ -73,6 +73,16 @@ function AppShell() {
     try { localStorage.setItem(LANG_KEY, currentLang) } catch { /* private browsing */ }
   }, [currentLang])
 
+  // Escape closes the header popovers (notifications, language)
+  useEffect(() => {
+    if (!isNotifOpen && !isLangOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") { setIsNotifOpen(false); setIsLangOpen(false) }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [isNotifOpen, isLangOpen])
+
   const notifications = [
     { id: 1, title: "Yangi tadbir",       desc: "Biznes nonushta tadbiri yakunlandi.",   time: "2 daqiqa oldin", type: "event",   unread: true },
     { id: 2, title: "To'lov tasdiqlandi", desc: "Mijoz #4412 tomonidan to'lov amalga oshirildi.", time: "1 soat oldin",   type: "payment", unread: true },
@@ -124,7 +134,8 @@ function AppShell() {
                   <input
                     type="text"
                     placeholder="Tizim bo'ylab qidirish..."
-                    className="w-full border-none rounded-[8px] py-[10px] pl-[40px] pr-[16px] text-sm focus:ring-0 outline-none transition-colors"
+                    aria-label="Tizim bo'ylab qidirish"
+                    className="w-full border border-transparent focus:border-[var(--header-text)] rounded-[8px] py-[10px] pl-[40px] pr-[16px] text-sm focus:ring-0 outline-none transition-colors"
                     style={{
                       background: 'var(--header-input-bg)',
                       color: 'var(--header-text)',
@@ -135,7 +146,11 @@ function AppShell() {
                 {/* Notifications */}
                 <div className="relative">
                   <button
+                    type="button"
                     onClick={() => setIsNotifOpen(!isNotifOpen)}
+                    aria-label="Bildirishnomalar"
+                    aria-haspopup="true"
+                    aria-expanded={isNotifOpen}
                     className="relative p-2 rounded-[8px] transition-colors"
                     style={{ background: isNotifOpen ? 'var(--header-hover)' : 'transparent' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
@@ -209,7 +224,11 @@ function AppShell() {
                 {/* Language */}
                 <div className="relative">
                   <button
+                    type="button"
                     onClick={() => setIsLangOpen(!isLangOpen)}
+                    aria-label="Tilni tanlash"
+                    aria-haspopup="true"
+                    aria-expanded={isLangOpen}
                     className="flex items-center gap-[6px] px-3 py-2 rounded-[8px] cursor-pointer transition-colors"
                     style={{ background: 'var(--header-input-bg)', color: 'var(--header-text)' }}
                   >
@@ -232,8 +251,10 @@ function AppShell() {
                       >
                         {['uz', 'ru', 'en'].map((lang) => (
                           <button
+                            type="button"
                             key={lang}
                             onClick={() => { setCurrentLang(lang); setIsLangOpen(false) }}
+                            aria-pressed={currentLang === lang}
                             className="w-full px-4 py-2 text-sm font-medium transition-colors text-left uppercase"
                             style={{
                               color: currentLang === lang ? 'var(--accent)' : 'var(--dropdown-text)',
@@ -259,6 +280,8 @@ function AppShell() {
 
                 {/* Settings */}
                 <button
+                  type="button"
+                  aria-label="Sozlamalar"
                   className="p-2 rounded-[8px] transition-colors"
                   style={{ color: 'var(--header-icon)' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}

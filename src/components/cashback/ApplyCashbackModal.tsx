@@ -1,10 +1,11 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSpendCashback } from "@/hooks/useCashback"
 import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import type { Participant } from "@/lib/supabase/queries/events"
+import { useDialog } from "@/hooks/useDialog"
 import { formatNumber } from "@/lib/format"
 
 interface ApplyCashbackModalProps {
@@ -32,6 +33,10 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
   const [amount, setAmount] = useState<number>(maxApplicable)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const titleId = useId()
+  const amountId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => { if (!busy) onClose() })
 
   async function handleApply() {
     setError(null)
@@ -87,17 +92,23 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Cashback bilan to'lash</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Cashback bilan to'lash</h2>
               <span className="text-[11px] text-[#999]">{participant.full_name}</span>
             </div>
             <button
               onClick={onClose}
               disabled={busy}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -124,8 +135,9 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Qo'llanadigan summa (so'm)</label>
+              <label htmlFor={amountId} className="text-[12px] font-medium text-[#999]">Qo'llanadigan summa (so'm)</label>
               <input
+                id={amountId}
                 type="number"
                 min={0}
                 max={maxApplicable}

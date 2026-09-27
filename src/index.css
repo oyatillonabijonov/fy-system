@@ -695,3 +695,16 @@
   animation: blob 18s ease-in-out infinite;
 }
 
+/* Keyboard focus ring for controls (text fields show focus through their border colour instead).
+   Unlayered on purpose so it wins over the `outline-none` utility. */
+:where(button, a, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--sidebar-indicator);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-in {
+    animation: none;
+  }
+}

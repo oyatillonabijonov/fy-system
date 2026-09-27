@@ -5,6 +5,7 @@ interface PhoneInputProps {
   onChange: (full: string) => void
   placeholder?: string
   className?: string
+  id?: string
 }
 
 export function PhoneInput({
@@ -12,6 +13,7 @@ export function PhoneInput({
   onChange,
   placeholder = '90 123 45 67',
   className,
+  id,
 }: PhoneInputProps) {
   const digits = value.replace(/^\+998/, '').replace(/\D/g, '').slice(0, 9)
 
@@ -38,8 +40,10 @@ export function PhoneInput({
         +998
       </span>
       <input
-        type="text"
+        id={id}
+        type="tel"
         inputMode="numeric"
+        autoComplete="tel-national"
         value={digits}
         onChange={handleChange}
         onPaste={handlePaste}

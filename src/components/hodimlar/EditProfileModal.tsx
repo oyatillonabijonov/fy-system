@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import { useUpdateUserProfile } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { DEPARTMENTS, type Department } from "@/lib/constants/employee"
 import { PhoneInput } from "@/components/ui/PhoneInput"
@@ -23,10 +24,10 @@ interface InnerProps {
 const inputCls =
   "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
 
-function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
+function Field({ label, full, htmlFor, children }: { label: string; full?: boolean; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "md:col-span-2" : ""}`}>
-      <label className="text-[12px] font-medium text-[#999]">{label}</label>
+      <label htmlFor={htmlFor} className="text-[12px] font-medium text-[#999]">{label}</label>
       {children}
     </div>
   )
@@ -36,6 +37,9 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
   const { isAdmin } = useAuth()
   const updateMutation = useUpdateUserProfile()
   const saving = updateMutation.isPending
+  const uid = useId()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
 
   const [fullName, setFullName] = useState(user.full_name)
   const [phone, setPhone] = useState(user.phone ?? "")
@@ -98,17 +102,23 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-2xl shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0F0F0] sticky top-0 bg-white z-10">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Profilni tahrirlash</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Profilni tahrirlash</h2>
               <span className="text-[11px] text-[#999]">{user.full_name} · {user.email}</span>
             </div>
             <button
               onClick={onClose}
               disabled={saving}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -125,8 +135,9 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             <div className="flex flex-col gap-3">
               <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Asosiy</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Ism Familiya *">
+                <Field label="Ism Familiya *" htmlFor={`${uid}-full-name`}>
                   <input
+                    id={`${uid}-full-name`}
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -134,8 +145,8 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Telefon">
-                  <PhoneInput value={phone} onChange={setPhone} />
+                <Field label="Telefon" htmlFor={`${uid}-phone`}>
+                  <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
                 </Field>
               </div>
             </div>
@@ -143,8 +154,9 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             <div className="flex flex-col gap-3">
               <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Ish</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Bo'lim">
+                <Field label="Bo'lim" htmlFor={`${uid}-department`}>
                   <select
+                    id={`${uid}-department`}
                     value={department}
                     onChange={(e) => setDepartment(e.target.value as Department | "")}
                     className={inputCls}
@@ -155,16 +167,18 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Lavozim">
+                <Field label="Lavozim" htmlFor={`${uid}-position`}>
                   <input
+                    id={`${uid}-position`}
                     type="text"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Ish boshlangan sana">
+                <Field label="Ish boshlangan sana" htmlFor={`${uid}-hire-date`}>
                   <input
+                    id={`${uid}-hire-date`}
                     type="date"
                     value={hireDate}
                     onChange={(e) => setHireDate(e.target.value)}
@@ -177,16 +191,18 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             <div className="flex flex-col gap-3">
               <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Shaxsiy</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Tug'ilgan sana">
+                <Field label="Tug'ilgan sana" htmlFor={`${uid}-birth-date`}>
                   <input
+                    id={`${uid}-birth-date`}
                     type="date"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Telegram username">
+                <Field label="Telegram username" htmlFor={`${uid}-telegram`}>
                   <input
+                    id={`${uid}-telegram`}
                     type="text"
                     value={telegram}
                     onChange={(e) => setTelegram(e.target.value)}
@@ -194,16 +210,18 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Manzil" full>
+                <Field label="Manzil" full htmlFor={`${uid}-address`}>
                   <input
+                    id={`${uid}-address`}
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Favqulodda kontakt" full>
+                <Field label="Favqulodda kontakt" full htmlFor={`${uid}-emergency-contact`}>
                   <input
+                    id={`${uid}-emergency-contact`}
                     type="text"
                     value={emergencyContact}
                     onChange={(e) => setEmergencyContact(e.target.value)}
@@ -211,8 +229,9 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Haqida (bio)" full>
+                <Field label="Haqida (bio)" full htmlFor={`${uid}-bio`}>
                   <textarea
+                    id={`${uid}-bio`}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={3}
@@ -220,8 +239,9 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
                   />
                 </Field>
                 {isAdmin && (
-                  <Field label="Yozuvlar (faqat admin)" full>
+                  <Field label="Yozuvlar (faqat admin)" full htmlFor={`${uid}-notes`}>
                     <textarea
+                      id={`${uid}-notes`}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={2}

@@ -1,10 +1,11 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Check } from "@phosphor-icons/react"
 import {
   createCrmPipeline,
   batchCreateCrmStages,
 } from "@/lib/supabase/queries/crm"
+import { useDialog } from "@/hooks/useDialog"
 
 interface CreatePipelineModalProps {
   isOpen: boolean
@@ -47,6 +48,10 @@ export function CreatePipelineModal({
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const titleId = useId()
+  const nameFieldId = useId()
+  const panelRef = useDialog<HTMLDivElement>(handleClose, isOpen)
 
   function toggleStage(index: number) {
     setStages((prev) =>
@@ -115,13 +120,18 @@ export function CreatePipelineModal({
             className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
           >
             <div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              tabIndex={-1}
               className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0]">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[16px] font-bold text-[#141414]">
+                  <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
                     Yangi voronka yaratish
                   </h2>
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
@@ -132,6 +142,7 @@ export function CreatePipelineModal({
                 <button
                   onClick={handleClose}
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+                  aria-label="Yopish"
                 >
                   <X size={20} className="text-[#999999]" weight="bold" />
                 </button>
@@ -147,8 +158,9 @@ export function CreatePipelineModal({
 
                 {/* Nomi */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Voronka nomi *</label>
+                  <label htmlFor={nameFieldId} className="text-[12px] font-medium text-[#999999]">Voronka nomi *</label>
                   <input
+                    id={nameFieldId}
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -166,6 +178,8 @@ export function CreatePipelineModal({
                       <button
                         key={c}
                         onClick={() => setColor(c)}
+                        aria-label={`Rang: ${c}`}
+                        aria-pressed={color === c}
                         className={`w-7 h-7 rounded-full transition-all ${color === c ? "ring-2 ring-offset-2 ring-[#141414] scale-110" : "hover:scale-110"}`}
                         style={{ backgroundColor: c }}
                       />
@@ -184,6 +198,8 @@ export function CreatePipelineModal({
                       >
                         <button
                           onClick={() => toggleStage(index)}
+                          aria-pressed={stage.checked}
+                          aria-label={stage.name}
                           className={`w-4.5 h-4.5 rounded-[4px] flex items-center justify-center shrink-0 transition-colors ${
                             stage.checked
                               ? "bg-[#141414]"

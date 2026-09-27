@@ -125,6 +125,9 @@ function UserRow({ user, onClick }: { user: UserProfile; onClick: () => void }) 
   return (
     <tr
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick() } }}
       className="hover:bg-[#F9F9F8] cursor-pointer transition-colors"
     >
       <td className="px-6 py-4">

@@ -220,7 +220,10 @@ export function Sidebar() {
                     )}
                 </AnimatePresence>
                 <button
+                    type="button"
                     onClick={() => setIsCollapsed(!isCollapsed)}
+                    aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
+                    aria-expanded={!isCollapsed}
                     className="p-2 rounded-[8px] transition-colors flex items-center justify-center flex-shrink-0"
                     style={{ color: 'var(--sidebar-muted)' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--sidebar-collapse-hover)'}
@@ -242,12 +245,12 @@ export function Sidebar() {
                         <input
                             type="text"
                             placeholder="Qidiruv..."
+                            aria-label="Menyudan qidirish"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-[52px] apple-sq-12 pl-4 pr-12 text-[16px] outline-none transition-colors"
+                            className="w-full h-[52px] apple-sq-12 pl-4 pr-12 text-[16px] outline-none transition-colors border border-[var(--sidebar-search-border)] focus:border-[var(--sidebar-fg)]"
                             style={{
                                 background: 'var(--sidebar-search-bg)',
-                                border: '1px solid var(--sidebar-search-border)',
                                 color: 'var(--sidebar-fg)',
                             }}
                         />
@@ -288,7 +291,8 @@ export function Sidebar() {
 
                                         return (
                                             <div key={item.name} className="flex flex-col">
-                                                <motion.div
+                                                <motion.button
+                                                    type="button"
                                                     onClick={() => {
                                                         if (hasSubItems && !isCollapsed) {
                                                             toggleExpand(item.name)
@@ -296,8 +300,12 @@ export function Sidebar() {
                                                             handleNavigate(item)
                                                         }
                                                     }}
+                                                    onFocus={() => handlePrefetch(item.name)}
+                                                    aria-current={active && !hasSubItems ? "page" : undefined}
+                                                    aria-expanded={hasSubItems && !isCollapsed ? isExpanded : undefined}
+                                                    aria-label={isCollapsed ? item.name : undefined}
                                                     layout
-                                                    className={`flex items-center apple-sq-12 cursor-pointer transition-all duration-200 group relative overflow-hidden ${isCollapsed ? "w-11 h-11" : "px-4 py-2 w-full"}`}
+                                                    className={`flex items-center text-left apple-sq-12 cursor-pointer transition-all duration-200 group relative overflow-hidden ${isCollapsed ? "w-11 h-11" : "px-4 py-2 w-full"}`}
                                                     style={{
                                                         background: active ? 'var(--sidebar-active-bg)' : 'transparent',
                                                         border: active ? '1px solid var(--sidebar-active-border)' : '1px solid transparent',
@@ -312,12 +320,12 @@ export function Sidebar() {
                                                     }}
                                                     title={isCollapsed ? item.name : ""}
                                                 >
-                                                    <div className={`flex-shrink-0 flex items-center justify-center ${isCollapsed ? "w-11 h-11" : "w-5 h-5 mr-3"}`}>
+                                                    <span className={`flex-shrink-0 flex items-center justify-center ${isCollapsed ? "w-11 h-11" : "w-5 h-5 mr-3"}`}>
                                                         <item.icon size={20} className="transition-all" weight="bold" />
-                                                    </div>
+                                                    </span>
                                                     <AnimatePresence>
                                                         {!isCollapsed && (
-                                                            <motion.div
+                                                            <motion.span
                                                                 initial={{ opacity: 0, x: -5 }}
                                                                 animate={{ opacity: 1, x: 0 }}
                                                                 exit={{ opacity: 0, x: -5 }}
@@ -327,24 +335,24 @@ export function Sidebar() {
                                                                     {item.name}
                                                                 </span>
                                                                 {hasSubItems && (
-                                                                    <motion.div
+                                                                    <motion.span
                                                                         animate={{ rotate: isExpanded ? 180 : 0 }}
                                                                         transition={{ duration: 0.2 }}
                                                                     >
                                                                         <CaretDown size={16} weight="bold" style={{ color: 'var(--sidebar-muted)' }} />
-                                                                    </motion.div>
+                                                                    </motion.span>
                                                                 )}
-                                                            </motion.div>
+                                                            </motion.span>
                                                         )}
                                                     </AnimatePresence>
                                                     {active && !isCollapsed && (
-                                                        <motion.div
+                                                        <motion.span
                                                             layoutId="active-indicator"
                                                             className="absolute left-0 w-1 h-6 rounded-r-full"
                                                             style={{ background: 'var(--sidebar-indicator)' }}
                                                         />
                                                     )}
-                                                </motion.div>
+                                                </motion.button>
 
                                                 <AnimatePresence>
                                                     {hasSubItems && isExpanded && !isCollapsed && (
@@ -357,10 +365,12 @@ export function Sidebar() {
                                                             {item.subItems?.map((subItem) => {
                                                                 const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
                                                                 return (
-                                                                    <motion.div
+                                                                    <motion.button
+                                                                        type="button"
                                                                         key={subItem.name}
                                                                         onClick={() => handleNavigate(subItem)}
-                                                                        className="flex items-center pl-12 pr-4 py-2 cursor-pointer transition-all duration-200 apple-sq-10 group"
+                                                                        aria-current={isSubActive ? "page" : undefined}
+                                                                        className="flex items-center text-left pl-12 pr-4 py-2 cursor-pointer transition-all duration-200 apple-sq-10 group"
                                                                         style={{
                                                                             color: isSubActive ? 'var(--sidebar-fg)' : 'var(--sidebar-muted)',
                                                                             fontWeight: isSubActive ? 500 : 400,
@@ -374,7 +384,7 @@ export function Sidebar() {
                                                                     >
                                                                         <subItem.icon size={16} className="mr-3 transition-colors" weight="bold" />
                                                                         <span className="flex-1 truncate">{subItem.name}</span>
-                                                                    </motion.div>
+                                                                    </motion.button>
                                                                 )
                                                             })}
                                                         </motion.div>
@@ -447,7 +457,9 @@ export function Sidebar() {
                 </AnimatePresence>
                 {!isCollapsed && (
                     <button
+                        type="button"
                         onClick={handleSignOut}
+                        aria-label="Chiqish"
                         className="ml-auto p-1 rounded-[6px] transition-colors flex-shrink-0"
                         style={{ color: 'var(--sidebar-muted)' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-fg)' }}

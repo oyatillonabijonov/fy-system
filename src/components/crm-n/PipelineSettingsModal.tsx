@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useId, useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   X,
@@ -18,6 +18,7 @@ import {
   updateCrmPipeline,
   deleteCrmPipeline,
 } from "@/lib/supabase/queries/crm"
+import { useDialog } from "@/hooks/useDialog"
 
 interface PipelineSettingsModalProps {
   isOpen: boolean
@@ -71,6 +72,9 @@ export function PipelineSettingsModal({
   // Pipeline delete
   const [showDeletePipeline, setShowDeletePipeline] = useState(false)
   const [deletingPipeline, setDeletingPipeline] = useState(false)
+
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   async function handleSavePipelineName() {
     if (!pipelineNameValue.trim() || pipelineNameValue === pipelineName) {
@@ -183,13 +187,18 @@ export function PipelineSettingsModal({
             className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
           >
             <div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              tabIndex={-1}
               className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with pipeline name */}
               <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0] shrink-0">
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Pipeline sozlamalari</span>
+                  <span id={titleId} className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Pipeline sozlamalari</span>
                   {editingPipelineName ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -199,7 +208,7 @@ export function PipelineSettingsModal({
                         onChange={(e) => setPipelineNameValue(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleSavePipelineName()
-                          if (e.key === "Escape") { setEditingPipelineName(false); setPipelineNameValue(pipelineName) }
+                          if (e.key === "Escape") { e.preventDefault(); setEditingPipelineName(false); setPipelineNameValue(pipelineName) }
                         }}
                         disabled={pipelineNameSaving}
                         className="text-[16px] font-bold text-[#141414] border border-[#E0E0E0] rounded-[6px] px-2 py-0.5 focus:outline-none focus:border-[#141414] flex-1"
@@ -207,6 +216,7 @@ export function PipelineSettingsModal({
                       <button
                         onClick={handleSavePipelineName}
                         disabled={pipelineNameSaving}
+                        aria-label="Saqlash"
                         className="p-1 rounded-[4px] hover:bg-[#F5F5F5] disabled:opacity-50"
                       >
                         <Check size={16} className="text-[#141414]" weight="bold" />
@@ -217,6 +227,7 @@ export function PipelineSettingsModal({
                       <h2 className="text-[16px] font-bold text-[#141414] truncate">{pipelineName}</h2>
                       <button
                         onClick={() => setEditingPipelineName(true)}
+                        aria-label="Nomni tahrirlash"
                         className="p-1 rounded-[4px] hover:bg-[#F5F5F5] shrink-0"
                       >
                         <PencilSimple size={14} className="text-[#999]" weight="bold" />
@@ -226,6 +237,7 @@ export function PipelineSettingsModal({
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Yopish"
                   className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
                 >
                   <X size={20} className="text-[#999999]" weight="bold" />
@@ -258,7 +270,7 @@ export function PipelineSettingsModal({
                               onChange={(e) => setEditName(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") handleSaveEdit(stage.id)
-                                if (e.key === "Escape") setEditingId(null)
+                                if (e.key === "Escape") { e.preventDefault(); setEditingId(null) }
                               }}
                               autoFocus
                               className="flex-1 border border-[#E0E0E0] rounded-[6px] px-2 py-1 text-[13px] focus:outline-none focus:border-[#141414]"
@@ -276,6 +288,8 @@ export function PipelineSettingsModal({
                               <button
                                 key={c}
                                 onClick={() => setEditColor(c)}
+                                aria-label={`Rang: ${c}`}
+                                aria-pressed={editColor === c}
                                 className={`w-5 h-5 rounded-full transition-all ${editColor === c ? "ring-2 ring-offset-1 ring-[#141414] scale-110" : "hover:scale-110"}`}
                                 style={{ backgroundColor: c }}
                               />
@@ -289,8 +303,9 @@ export function PipelineSettingsModal({
                           className="w-4 h-4 rounded-full shrink-0"
                           style={{ backgroundColor: stage.color }}
                         />
-                        <span
-                          className="flex-1 text-[13px] font-medium text-[#141414] cursor-pointer hover:text-[#666] transition-colors"
+                        <button
+                          type="button"
+                          className="flex-1 text-left text-[13px] font-medium text-[#141414] cursor-pointer hover:text-[#666] transition-colors"
                           onClick={() => {
                             setEditingId(stage.id)
                             setEditName(stage.name)
@@ -298,7 +313,7 @@ export function PipelineSettingsModal({
                           }}
                         >
                           {stage.name}
-                        </span>
+                        </button>
                         {stage.is_won && (
                           <span className="text-[10px] font-bold text-[#141414] bg-[#F5F5F5] px-1.5 py-0.5 rounded">
                             Yutildi
@@ -313,6 +328,7 @@ export function PipelineSettingsModal({
                           <button
                             onClick={() => handleMove(index, "up")}
                             disabled={index === 0}
+                            aria-label="Yuqoriga siljitish"
                             className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
                           >
                             <ArrowUp size={12} className="text-[#999]" weight="bold" />
@@ -320,6 +336,7 @@ export function PipelineSettingsModal({
                           <button
                             onClick={() => handleMove(index, "down")}
                             disabled={index === stages.length - 1}
+                            aria-label="Pastga siljitish"
                             className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
                           >
                             <ArrowDown size={12} className="text-[#999]" weight="bold" />
@@ -343,6 +360,7 @@ export function PipelineSettingsModal({
                           ) : (
                             <button
                               onClick={() => setConfirmDeleteStageId(stage.id)}
+                              aria-label="O'chirish"
                               className="p-0.5 rounded hover:bg-red-50"
                             >
                               <Trash size={12} className="text-red-400" weight="bold" />
@@ -364,7 +382,8 @@ export function PipelineSettingsModal({
               {/* Add new stage */}
               <div className="px-5 py-3 border-t border-[#F0F0F0] shrink-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <div
+                  <button
+                    type="button"
                     className="w-5 h-5 rounded-full shrink-0 cursor-pointer border border-[#E0E0E0]"
                     style={{ backgroundColor: newStageColor }}
                     onClick={() => {
@@ -372,6 +391,7 @@ export function PipelineSettingsModal({
                       setNewStageColor(STAGE_COLORS[(idx + 1) % STAGE_COLORS.length])
                     }}
                     title="Rang tanlash"
+                    aria-label="Rang tanlash"
                   />
                   <input
                     type="text"
@@ -397,6 +417,8 @@ export function PipelineSettingsModal({
                     <button
                       key={c}
                       onClick={() => setNewStageColor(c)}
+                      aria-label={`Rang: ${c}`}
+                      aria-pressed={newStageColor === c}
                       className={`w-4 h-4 rounded-full transition-all ${newStageColor === c ? "ring-2 ring-offset-1 ring-[#141414] scale-110" : "hover:scale-110"}`}
                       style={{ backgroundColor: c }}
                     />

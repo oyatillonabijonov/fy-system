@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useId } from "react"
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
+import { useDialog } from "@/hooks/useDialog"
 
 interface ImageCropModalProps {
   isOpen: boolean
@@ -40,6 +41,8 @@ export function ImageCropModal({
   const outH = outputHeight ?? 512
   const [crop, setCrop] = useState<Crop>()
   const imgRef = useRef<HTMLImageElement>(null)
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   const onImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -103,6 +106,11 @@ export function ImageCropModal({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -110,11 +118,12 @@ export function ImageCropModal({
           >
             {/* Header */}
             <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-[#141414]">
+              <h3 id={titleId} className="text-[16px] font-bold text-[#141414]">
                 Rasmni kesish
               </h3>
               <button
                 onClick={onClose}
+                aria-label="Yopish"
                 className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all"
               >
                 <X size={20} className="text-[#999999]" weight="bold" />

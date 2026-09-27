@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react"
+import { useState, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import type { Participant } from "@/lib/supabase/queries/events"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { useAddPayment } from "@/hooks/usePayments"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatNumber } from "@/lib/format"
 
 interface ParticipantPaymentModalProps {
@@ -25,19 +26,15 @@ const INPUT =
 
 export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }: ParticipantPaymentModalProps) {
   const { user } = useAuth()
+  const titleId = useId()
+  const amountLabelId = useId()
+  const noteLabelId = useId()
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen && !!participant)
   const [amount, setAmount] = useState("")
   const [method, setMethod] = useState<PaymentMethod>("naqd")
   const [note, setNote] = useState("")
   const [error, setError] = useState<string | null>(null)
   const addMutation = useAddPayment(participant?.id ?? "")
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
 
   const amountNum = amount ? Number(amount) : 0
   const debt = participant ? Math.max(participant.price - participant.paid, 0) : 0
@@ -74,15 +71,20 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
             onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
             className="bg-white rounded-[12px] shadow-2xl w-full max-w-sm relative overflow-hidden flex flex-col"
           >
             <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
               <div className="flex flex-col min-w-0">
-                <h3 className="text-[15px] font-bold text-[#141414] truncate">{participant.full_name}</h3>
+                <h3 id={titleId} className="text-[15px] font-bold text-[#141414] truncate">{participant.full_name}</h3>
                 <span className="text-[11px] text-[#999]">To'lov qo'shish</span>
               </div>
-              <button onClick={onClose} className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
+              <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
                 <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
@@ -100,9 +102,10 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#999999]">To'lov summasi *</label>
+                <label htmlFor={amountLabelId} className="text-[12px] font-medium text-[#999999]">To'lov summasi *</label>
                 <div className="relative">
                   <input
+                    id={amountLabelId}
                     inputMode="numeric"
                     value={amount ? formatNumber(Number(amount)) : ""}
                     onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
@@ -121,6 +124,7 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
                     <button
                       key={m.value}
                       onClick={() => setMethod(m.value)}
+                      aria-pressed={method === m.value}
                       className={`flex-1 py-2 rounded-[8px] text-[12px] font-semibold border transition-colors ${
                         method === m.value ? "bg-[#141414] text-white border-[#141414]" : "bg-white text-[#666] border-[#E0E0E0] hover:bg-[#F5F5F5]"
                       }`}
@@ -132,8 +136,9 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#999999]">Izoh</label>
+                <label htmlFor={noteLabelId} className="text-[12px] font-medium text-[#999999]">Izoh</label>
                 <textarea
+                  id={noteLabelId}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}

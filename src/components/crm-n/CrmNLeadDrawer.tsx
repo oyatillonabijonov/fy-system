@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useId, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   X,
@@ -30,6 +30,7 @@ import {
 import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatDate } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
+import { useDialog } from "@/hooks/useDialog"
 
 // ─── Utility Components ─────────────────────────────────
 
@@ -77,12 +78,14 @@ function InlineEdit({
   className,
   inputClassName,
   type = "text",
+  id,
 }: {
   value: string
   onSave: (val: string) => Promise<void>
   className?: string
   inputClassName?: string
   type?: "text" | "number"
+  id?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
@@ -117,6 +120,7 @@ function InlineEdit({
   if (editing) {
     return (
       <input
+        id={id}
         ref={inputRef}
         type={type}
         value={editValue}
@@ -124,7 +128,7 @@ function InlineEdit({
         onBlur={handleSave}
         onKeyDown={(e) => {
           if (e.key === "Enter") handleSave()
-          if (e.key === "Escape") { setEditValue(value); setEditing(false) }
+          if (e.key === "Escape") { e.preventDefault(); setEditValue(value); setEditing(false) }
         }}
         disabled={saving}
         className={`border border-[#141414] rounded-[4px] px-1.5 py-0.5 focus:outline-none ${saving ? "opacity-50" : ""} ${inputClassName ?? ""}`}
@@ -133,13 +137,15 @@ function InlineEdit({
   }
 
   return (
-    <span
+    <button
+      type="button"
+      id={id}
       onClick={() => setEditing(true)}
-      className={`cursor-pointer hover:bg-[#F0F0F0] rounded-[4px] px-1 -mx-1 transition-colors ${className ?? ""}`}
+      className={`text-left cursor-pointer hover:bg-[#F0F0F0] rounded-[4px] px-1 -mx-1 transition-colors ${className ?? ""}`}
       title="Bosib tahrirlang"
     >
       {value}
-    </span>
+    </button>
   )
 }
 
@@ -195,6 +201,15 @@ export function CrmNLeadDrawer({
   // Toast
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
 
+  const titleId = useId()
+
+  function handleDrawerClose() {
+    if (showCloseConfirm) setShowCloseConfirm(null)
+    else onClose()
+  }
+
+  const panelRef = useDialog<HTMLDivElement>(handleDrawerClose, isOpen)
+
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
@@ -236,19 +251,6 @@ export function CrmNLeadDrawer({
     // We intentionally depend on lead.id (not the whole lead object) to only refetch when the lead changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead?.id, isOpen])
-
-  // Escape key
-  useEffect(() => {
-    if (!isOpen) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        if (showCloseConfirm) setShowCloseConfirm(null)
-        else onClose()
-      }
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [isOpen, onClose, showCloseConfirm])
 
   const stage = lead ? stages.find((s) => s.id === lead.stage_id) : null
   const contact = lead?.crm_contacts
@@ -394,6 +396,11 @@ export function CrmNLeadDrawer({
 
           {/* Drawer */}
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ x: 420 }}
             animate={{ x: 0 }}
             exit={{ x: 420 }}
@@ -404,6 +411,7 @@ export function CrmNLeadDrawer({
             <div className="flex items-start justify-between p-5 pb-4 border-b border-[#F0F0F0]">
               <div className="flex flex-col gap-2 flex-1 min-w-0">
                 <InlineEdit
+                  id={titleId}
                   value={lead.name}
                   onSave={handleNameSave}
                   className="text-[18px] font-bold text-[#141414] leading-tight truncate"
@@ -423,6 +431,7 @@ export function CrmNLeadDrawer({
               </div>
               <button
                 onClick={onClose}
+                aria-label="Yopish"
                 className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
               >
                 <X size={20} className="text-[#999999]" weight="bold" />
@@ -517,6 +526,7 @@ export function CrmNLeadDrawer({
                                   setContactEditName(contact.name)
                                   setContactEditPhone(contact.phone ?? "")
                                 }}
+                                aria-label="Kontaktni tahrirlash"
                                 className="p-1 rounded-[4px] hover:bg-[#EBEBEB] transition-colors"
                               >
                                 <PencilSimple size={12} className="text-[#999]" weight="bold" />
@@ -633,6 +643,7 @@ export function CrmNLeadDrawer({
                       <SectionHeader>Vazifalar</SectionHeader>
                       <button
                         onClick={() => setShowTaskForm(true)}
+                        aria-expanded={showTaskForm}
                         className="flex items-center gap-1 text-[11px] font-medium text-[#999] hover:text-[#666] transition-colors"
                       >
                         <Plus size={12} weight="bold" />
@@ -682,6 +693,8 @@ export function CrmNLeadDrawer({
                           >
                             <button
                               onClick={() => handleToggleTask(task.id, !task.is_done)}
+                              aria-pressed={task.is_done}
+                              aria-label="Bajarilgan deb belgilash"
                               className="mt-0.5 shrink-0"
                             >
                               <CheckCircle

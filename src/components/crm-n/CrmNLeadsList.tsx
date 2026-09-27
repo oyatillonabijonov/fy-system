@@ -376,9 +376,10 @@ export function CrmNLeadsList({
                         className="text-left px-4 py-3 text-[11px] font-bold text-[#999] uppercase tracking-wider whitespace-nowrap"
                         style={{ width: header.getSize() }}
                       >
-                        {header.isPlaceholder ? null : (
-                          <div
-                            className={`flex items-center gap-1 ${header.column.getCanSort() ? "cursor-pointer select-none hover:text-[#666]" : ""}`}
+                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 select-none hover:text-[#666]"
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -388,6 +389,10 @@ export function CrmNLeadsList({
                             {header.column.getIsSorted() === "desc" && (
                               <CaretDown size={12} weight="bold" />
                             )}
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
                           </div>
                         )}
                       </th>
@@ -400,6 +405,15 @@ export function CrmNLeadsList({
                   <tr
                     key={row.id}
                     onClick={() => onLeadClick(row.original)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        onLeadClick(row.original)
+                      }
+                    }}
                     className="border-b border-[#F0F0F0] hover:bg-[#FBFBFB] cursor-pointer transition-colors"
                   >
                     {row.getVisibleCells().map((cell) => (

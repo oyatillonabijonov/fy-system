@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useId, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, MagnifyingGlass, CaretLeft, Check, Warning } from "@phosphor-icons/react"
 import { searchContacts, type ClientContact } from "@/lib/supabase/queries/events"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { useClientParticipations, useAddPayment } from "@/hooks/usePayments"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 
@@ -28,6 +29,11 @@ function initials(name: string): string {
 // every open starts fresh — no reset effect needed.
 export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalProps) {
   const { user } = useAuth()
+  const titleId = useId()
+  const clientSearchId = useId()
+  const amountLabelId = useId()
+  const noteLabelId = useId()
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientContact[]>([])
@@ -58,14 +64,6 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
       if (searchTimeout.current) clearTimeout(searchTimeout.current)
     }
   }, [query, client])
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
 
   const amountNum = amount ? Number(amount) : 0
   const selectedDebt = selectedPart ? Math.max(selectedPart.price - selectedPart.paid, 0) : 0
@@ -115,6 +113,11 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           />
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -122,8 +125,8 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
           >
             {/* Header */}
             <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-[#141414]">To'lov qo'shish</h3>
-              <button onClick={onClose} className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
+              <h3 id={titleId} className="text-[16px] font-bold text-[#141414]">To'lov qo'shish</h3>
+              <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
                 <X size={20} className="text-[#999999]" weight="bold" />
               </button>
             </div>
@@ -139,10 +142,11 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
               {/* 1. Client */}
               {!client ? (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
+                  <label htmlFor={clientSearchId} className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
                   <div className="relative">
                     <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
                     <input
+                      id={clientSearchId}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Ism yoki telefon bo'yicha qidirish..."
@@ -223,6 +227,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                           <button
                             key={p.participant_id}
                             onClick={() => { setParticipationId(p.participant_id); setError(null) }}
+                            aria-pressed={sel}
                             className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-[8px] border text-left transition-colors ${
                               sel ? "border-[#141414] bg-[#FBFBFB]" : "border-[#E0E0E0] hover:bg-[#F9F9F8]"
                             }`}
@@ -256,9 +261,10 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
               {selectedPart && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-medium text-[#999999]">To'lov summasi *</label>
+                    <label htmlFor={amountLabelId} className="text-[12px] font-medium text-[#999999]">To'lov summasi *</label>
                     <div className="relative">
                       <input
+                        id={amountLabelId}
                         inputMode="numeric"
                         value={amount ? formatNumber(Number(amount)) : ""}
                         onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
@@ -278,6 +284,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                         <button
                           key={m.value}
                           onClick={() => setMethod(m.value)}
+                          aria-pressed={method === m.value}
                           className={`flex-1 py-2 rounded-[8px] text-[12px] font-semibold border transition-colors ${
                             method === m.value
                               ? "bg-[#141414] text-white border-[#141414]"
@@ -292,8 +299,9 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
 
                   {/* 5. Note */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-medium text-[#999999]">Izoh</label>
+                    <label htmlFor={noteLabelId} className="text-[12px] font-medium text-[#999999]">Izoh</label>
                     <textarea
+                      id={noteLabelId}
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       rows={2}

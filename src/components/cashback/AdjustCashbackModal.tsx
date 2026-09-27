@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Plus, Minus } from "@phosphor-icons/react"
 import { useAdjustCashback } from "@/hooks/useCashback"
+import { useDialog } from "@/hooks/useDialog"
 import { formatNumber } from "@/lib/format"
 
 interface AdjustCashbackModalProps {
@@ -36,6 +37,11 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
     if (saving) return
     onClose()
   }
+
+  const titleId = useId()
+  const amountId = useId()
+  const descriptionId = useId()
+  const panelRef = useDialog<HTMLDivElement>(handleClose)
 
   async function handleSubmit() {
     setError(null)
@@ -86,18 +92,24 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Cashbackni o'zgartirish</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Cashbackni o'zgartirish</h2>
               <span className="text-[11px] text-[#999]">{clientName} · joriy: {formattedBalance} so'm</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -117,6 +129,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
               <button
                 type="button"
                 onClick={() => setType("add")}
+                aria-pressed={type === "add"}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[13px] font-bold transition-colors border ${
                   type === "add"
                     ? "bg-[#F5F5F5] text-[#141414] border-[#E0E0E0]"
@@ -129,6 +142,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
               <button
                 type="button"
                 onClick={() => setType("subtract")}
+                aria-pressed={type === "subtract"}
                 className={`flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[13px] font-bold transition-colors border ${
                   type === "subtract"
                     ? "bg-orange-50 text-orange-700 border-orange-200"
@@ -142,8 +156,9 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
 
             {/* Amount */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Summa (so'm) *</label>
+              <label htmlFor={amountId} className="text-[12px] font-medium text-[#999]">Summa (so'm) *</label>
               <input
+                id={amountId}
                 type="number"
                 min={0}
                 step={500}
@@ -157,8 +172,9 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Tavsif *</label>
+              <label htmlFor={descriptionId} className="text-[12px] font-medium text-[#999]">Tavsif *</label>
               <textarea
+                id={descriptionId}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Masalan: bayram bonusi"

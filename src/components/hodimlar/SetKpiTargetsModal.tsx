@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import { useUpsertKpiTarget } from "@/hooks/useKpi"
+import { useDialog } from "@/hooks/useDialog"
 import type { KpiTarget } from "@/lib/supabase/queries/kpi"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { formatNumber } from "@/lib/format"
@@ -46,6 +47,9 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
 
   const upsertMutation = useUpsertKpiTarget()
   const saving = upsertMutation.isPending
+  const uid = useId()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
 
   async function handleSubmit() {
     setError(null)
@@ -93,13 +97,18 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">KPI maqsadlari</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">KPI maqsadlari</h2>
               <span className="text-[11px] text-[#999]">
                 {user.full_name} · {MONTHS[period.month - 1]} {period.year}
               </span>
@@ -107,6 +116,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
             <button
               onClick={onClose}
               disabled={saving}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -122,8 +132,9 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Tushum maqsadi (so'm)</label>
+              <label htmlFor={`${uid}-revenue`} className="text-[12px] font-medium text-[#999]">Tushum maqsadi (so'm)</label>
               <input
+                id={`${uid}-revenue`}
                 type="text"
                 inputMode="numeric"
                 value={revenueTarget}
@@ -139,8 +150,9 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#999]">Yopilishi kerak lidlar</label>
+                <label htmlFor={`${uid}-leads`} className="text-[12px] font-medium text-[#999]">Yopilishi kerak lidlar</label>
                 <input
+                  id={`${uid}-leads`}
                   type="number"
                   min={0}
                   value={leadsTarget}
@@ -150,8 +162,9 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium text-[#999]">Tadbirlar maqsadi</label>
+                <label htmlFor={`${uid}-events`} className="text-[12px] font-medium text-[#999]">Tadbirlar maqsadi</label>
                 <input
+                  id={`${uid}-events`}
                   type="number"
                   min={0}
                   value={eventsTarget}
@@ -163,8 +176,9 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Izoh (ixtiyoriy)</label>
+              <label htmlFor={`${uid}-notes`} className="text-[12px] font-medium text-[#999]">Izoh (ixtiyoriy)</label>
               <textarea
+                id={`${uid}-notes`}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}

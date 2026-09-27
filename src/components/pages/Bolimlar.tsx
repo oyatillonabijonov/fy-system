@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { formatDate, formatNumber } from "@/lib/format"
 import { motion, AnimatePresence } from "framer-motion"
@@ -6,6 +6,7 @@ import { Buildings, Users as UsersIcon, Target, Crown, X } from "@phosphor-icons
 import { useDepartmentStats } from "@/hooks/useUsers"
 import { useDepartmentKpi, useSetDepartmentHead } from "@/hooks/useKpi"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import { DEPARTMENTS, departmentLabel, departmentColor, type Department } from "@/lib/constants/employee"
 import type { DepartmentStats, UserProfile } from "@/lib/supabase/queries/auth"
 
@@ -373,6 +374,9 @@ function AssignHeadForm({
   const [error, setError] = useState<string | null>(null)
   const setHead = useSetDepartmentHead()
   const saving = setHead.isPending
+  const selectId = useId()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
 
   async function handleSave() {
     setError(null)
@@ -415,15 +419,20 @@ function AssignHeadForm({
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Bo'lim boshlig'i</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Bo'lim boshlig'i</h2>
               <span className="text-[11px] text-[#999]">{departmentLabel(department)} bo'limi</span>
             </div>
-            <button onClick={onClose} disabled={saving} className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
+            <button onClick={onClose} disabled={saving} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
               <X size={20} className="text-[#999]" weight="bold" />
             </button>
           </div>
@@ -436,8 +445,9 @@ function AssignHeadForm({
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Hodim</label>
+              <label htmlFor={selectId} className="text-[12px] font-medium text-[#999]">Hodim</label>
               <select
+                id={selectId}
                 value={selected}
                 onChange={(e) => setSelected(e.target.value)}
                 disabled={saving}

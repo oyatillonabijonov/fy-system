@@ -94,7 +94,7 @@ export function Dashboard() {
                             <h3 className="text-[16px] font-bold text-[#141414]">Lidlar statistikasi</h3>
                             <p className="text-[12px] text-[#999999]">Oxirgi 7 oylik ko'rsatkichlar</p>
                         </div>
-                        <button className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors">
+                        <button className="p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors" aria-label="Qo'shimcha amallar">
                             <DotsThree size={20} className="text-[#999999]" weight="bold" />
                         </button>
                     </div>

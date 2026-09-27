@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Eye, EyeSlash, ArrowRight } from "@phosphor-icons/react"
 import { signIn } from "@/lib/supabase/queries/auth"
@@ -53,6 +53,8 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const emailId = useId()
+  const passwordId = useId()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -72,8 +74,9 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Email</label>
+        <label htmlFor={emailId} className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Email</label>
         <input
+          id={emailId}
           type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           required autoFocus placeholder="email@example.com"
           className="w-full px-4 py-3 bg-white border border-[#E5E5E5] rounded-[10px] text-[14px] text-[#141414] placeholder:text-[#CCCCCC] focus:border-[#141414] focus:ring-2 focus:ring-[#141414]/5 outline-none transition-all"
@@ -81,14 +84,16 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
 
       <div>
-        <label className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Parol</label>
+        <label htmlFor={passwordId} className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Parol</label>
         <div className="relative">
           <input
+            id={passwordId}
             type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
             required placeholder="••••••••"
             className="w-full px-4 py-3 pr-12 bg-white border border-[#E5E5E5] rounded-[10px] text-[14px] text-[#141414] placeholder:text-[#CCCCCC] focus:border-[#141414] focus:ring-2 focus:ring-[#141414]/5 outline-none transition-all"
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-[#999999] hover:text-[#141414] transition-colors" tabIndex={-1}>
             {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
           </button>

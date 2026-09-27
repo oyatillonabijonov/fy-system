@@ -93,7 +93,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
               <div className="flex items-center gap-1.5 shrink-0">
                 <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></IconBtn>
                 <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></IconBtn>
-                <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish"><CaretUp size={15} weight="bold" /></IconBtn>
+                <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish" expanded={bannerOpen}><CaretUp size={15} weight="bold" /></IconBtn>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -126,7 +126,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
           <div className="flex items-center gap-1 shrink-0">
             <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></CompactBtn>
             <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></CompactBtn>
-            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish"><CaretDown size={15} weight="bold" /></CompactBtn>
+            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={15} weight="bold" /></CompactBtn>
           </div>
         </div>
       )}
@@ -233,6 +233,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                         <button
                           onClick={() => setConfirmingId(p.id)}
                           title="O'chirish"
+                          aria-label="O'chirish"
                           className="text-[#CCC] hover:text-red-600 transition-colors"
                         >
                           <Trash size={15} weight="bold" />
@@ -261,17 +262,53 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
 
 // ── Banner buttons / chips ──────────────────────────────────────────────────────
 
-function IconBtn({ children, onClick, title, danger }: { children: React.ReactNode; onClick: () => void; title: string; danger?: boolean }) {
+function IconBtn({
+  children,
+  onClick,
+  title,
+  danger,
+  expanded,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  title: string
+  danger?: boolean
+  expanded?: boolean
+}) {
   return (
-    <button onClick={onClick} title={title} className={`p-1.5 rounded-[6px] bg-white/90 hover:bg-white transition-colors ${danger ? "text-[#D13328]" : "text-[#141414]"}`}>
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-expanded={expanded}
+      className={`p-1.5 rounded-[6px] bg-white/90 hover:bg-white transition-colors ${danger ? "text-[#D13328]" : "text-[#141414]"}`}
+    >
       {children}
     </button>
   )
 }
 
-function CompactBtn({ children, onClick, title, danger }: { children: React.ReactNode; onClick: () => void; title: string; danger?: boolean }) {
+function CompactBtn({
+  children,
+  onClick,
+  title,
+  danger,
+  expanded,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  title: string
+  danger?: boolean
+  expanded?: boolean
+}) {
   return (
-    <button onClick={onClick} title={title} className={`p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors ${danger ? "text-[#D13328]" : "text-[#666]"}`}>
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-expanded={expanded}
+      className={`p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors ${danger ? "text-[#D13328]" : "text-[#666]"}`}
+    >
       {children}
     </button>
   )

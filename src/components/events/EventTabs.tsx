@@ -65,6 +65,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
           <button
             onClick={() => onSelect(UMUMIY)}
             title="Umumiy"
+            aria-current={selectedId === UMUMIY ? "true" : undefined}
             className={`relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px shrink-0 whitespace-nowrap bg-[#141414] transition-colors ${
               selectedId === UMUMIY
                 ? "text-white border border-[#141414] shadow-[0_-1px_3px_rgba(0,0,0,0.18)]"
@@ -83,6 +84,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
               key={e.id}
               onClick={() => onSelect(e.id)}
               title={e.name}
+              aria-current={isSel ? "true" : undefined}
               className={`group relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px max-w-[210px] whitespace-nowrap transition-colors ${
                 isSel
                   ? "bg-white border border-[#E8E8E8] border-b-white text-[#141414] shadow-[0_-1px_3px_rgba(0,0,0,0.03)]"
@@ -102,6 +104,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
           <button
             onClick={onCreate}
             title="Yangi tadbir"
+            aria-label="Yangi tadbir"
             className="flex items-center justify-center w-8 h-8 mb-[3px] ml-0.5 shrink-0 rounded-full text-[#9A9A9A] hover:bg-[#ECECEC] hover:text-[#141414] transition-colors"
           >
             <Plus size={16} weight="bold" />
@@ -114,6 +117,8 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
         <button
           onClick={() => setArchiveOpen((o) => !o)}
           title="O'tgan tadbirlar"
+          aria-label="O'tgan tadbirlar"
+          aria-expanded={archiveOpen}
           className={`relative flex items-center justify-center w-8 h-8 rounded-[8px] transition-colors ${
             archiveOpen ? "bg-[#ECECEC] text-[#141414]" : "text-[#9A9A9A] hover:bg-[#ECECEC] hover:text-[#141414]"
           }`}

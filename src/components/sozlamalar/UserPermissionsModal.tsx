@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import {
@@ -8,6 +8,7 @@ import {
   useDeactivateUser,
   useActivateUser,
 } from "@/hooks/useUsers"
+import { useDialog } from "@/hooks/useDialog"
 import { MODULES, ROLE_LABELS, type ModuleName, type UserRole, type UserProfile } from "@/lib/supabase/queries/auth"
 
 interface UserPermissionsModalProps {
@@ -54,6 +55,8 @@ function PermissionsShell({
   children: React.ReactNode
 }) {
   const initials = user.full_name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !loading && onClose())
   return (
     <>
       <motion.div
@@ -71,12 +74,17 @@ function PermissionsShell({
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-lg shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
-            <h2 className="text-[16px] font-bold text-[#141414]">Foydalanuvchi sozlamalari</h2>
-            <button onClick={onClose} className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
+            <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Foydalanuvchi sozlamalari</h2>
+            <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
               <X size={20} className="text-[#999]" weight="bold" />
             </button>
           </div>
@@ -117,6 +125,7 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
   const [modules, setModules] = useState<Set<ModuleName>>(() => new Set(initialModules))
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const roleId = useId()
 
   const saving = updatePerms.isPending || updateRole.isPending || deactivate.isPending || activate.isPending
 
@@ -178,8 +187,9 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
 
             {/* Role */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Rol</label>
+              <label htmlFor={roleId} className="text-[12px] font-medium text-[#999]">Rol</label>
               <select
+                id={roleId}
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={saving}
@@ -193,7 +203,7 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
 
             {/* Modules */}
             <div className="flex flex-col gap-2">
-              <label className="text-[12px] font-medium text-[#999]">Modullar</label>
+              <span className="text-[12px] font-medium text-[#999]">Modullar</span>
               <div className="grid grid-cols-2 gap-2">
                 {MODULES.map((m) => (
                   <label

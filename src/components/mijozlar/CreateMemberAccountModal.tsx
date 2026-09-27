@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, DeviceMobile } from "@phosphor-icons/react"
 import { useCreateMemberAccount } from "@/hooks/useClients"
+import { useDialog } from "@/hooks/useDialog"
 
 interface CreateMemberAccountModalProps {
   isOpen: boolean
@@ -29,11 +30,15 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
 
   const createMutation = useCreateMemberAccount()
   const saving = createMutation.isPending
+  const titleId = useId()
+  const formId = useId()
 
   function handleClose() {
     if (saving) return
     onClose()
   }
+
+  const panelRef = useDialog<HTMLDivElement>(handleClose)
 
   async function handleSubmit() {
     setError(null)
@@ -77,18 +82,24 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Mobil ilova akkaunti</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Mobil ilova akkaunti</h2>
               <span className="text-[11px] text-[#999]">{clientName}</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -112,8 +123,9 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Email *</label>
+              <label htmlFor={`${formId}-email`} className="text-[12px] font-medium text-[#999]">Email *</label>
               <input
+                id={`${formId}-email`}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -125,8 +137,9 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium text-[#999]">Parol * (kamida 6 belgi)</label>
+              <label htmlFor={`${formId}-password`} className="text-[12px] font-medium text-[#999]">Parol * (kamida 6 belgi)</label>
               <input
+                id={`${formId}-password`}
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

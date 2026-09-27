@@ -27,8 +27,12 @@ export function ThemeSwitcher() {
     return (
         <div ref={ref} className="relative">
             <button
+                type="button"
                 onClick={() => setIsOpen(v => !v)}
                 title="Mavzuni o'zgartirish"
+                aria-label="Mavzuni o'zgartirish"
+                aria-haspopup="true"
+                aria-expanded={isOpen}
                 className={`p-2 rounded-[8px] transition-colors group ${isOpen ? 'bg-[var(--header-hover)]' : 'hover:bg-[var(--header-hover)]'}`}
             >
                 <Swatches size={24} className="text-[var(--header-icon)]" weight="bold" />
@@ -63,7 +67,9 @@ export function ThemeSwitcher() {
                                 const isActive = themeId === theme.id
                                 return (
                                     <button
+                                        type="button"
                                         key={theme.id}
+                                        aria-pressed={isActive}
                                         onClick={() => {
                                             setThemeId(theme.id)
                                             setIsOpen(false)

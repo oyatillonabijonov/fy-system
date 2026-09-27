@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, CaretDown, Camera } from "@phosphor-icons/react"
 import { useCreateUser } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
+import { useDialog } from "@/hooks/useDialog"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import {
@@ -66,6 +67,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
   const createMutation = useCreateUser()
   const saving = createMutation.isPending
   const isAdminRole = role === "admin"
+  const uid = useId()
+  const titleId = useId()
+  const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
 
   // Revoke object URL on preview swap / unmount
   useEffect(() => {
@@ -182,18 +186,24 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
         className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className="bg-white rounded-[12px] w-full max-w-2xl shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0F0F0] sticky top-0 bg-white z-10">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[16px] font-bold text-[#141414]">Yangi xodim qo'shish</h2>
+              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Yangi xodim qo'shish</h2>
               <span className="text-[11px] text-[#999]">Tizimga yangi foydalanuvchi qo'shing va modullarini sozlang</span>
             </div>
             <button
               onClick={onClose}
               disabled={saving}
+              aria-label="Yopish"
               className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
             >
               <X size={20} className="text-[#999]" weight="bold" />
@@ -209,24 +219,26 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
 
             {/* Avatar */}
             <div className="flex flex-col items-center gap-3 pb-6 border-b border-[#F0F0F0]">
-              <div
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
+                aria-label="Rasm yuklash"
                 className="relative w-24 h-24 rounded-full bg-[#F5F5F5] border-2 border-dashed border-[#E5E5E5] flex items-center justify-center cursor-pointer hover:border-[#141414] transition-all overflow-hidden group"
               >
                 {avatarPreview ? (
                   <>
                     <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <span className="text-white text-[11px] font-bold">O'zgartirish</span>
-                    </div>
+                    </span>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-1 text-[#999]">
+                  <span className="flex flex-col items-center gap-1 text-[#999]">
                     <Camera size={20} weight="bold" />
                     <span className="text-[10px]">Rasm yuklash</span>
-                  </div>
+                  </span>
                 )}
-              </div>
+              </button>
               {avatarPreview && (
                 <button
                   type="button"
@@ -249,8 +261,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
             {/* ── Section 1 — Asosiy ma'lumotlar ── */}
             <Section title="Asosiy ma'lumotlar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Ism Familiya *">
+                <Field label="Ism Familiya *" htmlFor={`${uid}-full-name`}>
                   <input
+                    id={`${uid}-full-name`}
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -259,8 +272,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Email *">
+                <Field label="Email *" htmlFor={`${uid}-email`}>
                   <input
+                    id={`${uid}-email`}
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -268,8 +282,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Parol * (kamida 6 belgi)">
+                <Field label="Parol * (kamida 6 belgi)" htmlFor={`${uid}-password`}>
                   <input
+                    id={`${uid}-password`}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -277,8 +292,8 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Telefon">
-                  <PhoneInput value={phone} onChange={setPhone} />
+                <Field label="Telefon" htmlFor={`${uid}-phone`}>
+                  <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
                 </Field>
               </div>
             </Section>
@@ -286,8 +301,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
             {/* ── Section 2 — Ish ma'lumotlari ── */}
             <Section title="Ish ma'lumotlari">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Bo'lim">
+                <Field label="Bo'lim" htmlFor={`${uid}-department`}>
                   <select
+                    id={`${uid}-department`}
                     value={department}
                     onChange={(e) => setDepartment(e.target.value as Department | "")}
                     className={inputCls}
@@ -298,8 +314,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Lavozim">
+                <Field label="Lavozim" htmlFor={`${uid}-position`}>
                   <input
+                    id={`${uid}-position`}
                     type="text"
                     value={position}
                     onChange={(e) => setPosition(e.target.value)}
@@ -307,8 +324,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Rol *">
+                <Field label="Rol *" htmlFor={`${uid}-role`}>
                   <select
+                    id={`${uid}-role`}
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
                     className={inputCls}
@@ -318,8 +336,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Ish boshlangan sana">
+                <Field label="Ish boshlangan sana" htmlFor={`${uid}-hire-date`}>
                   <input
+                    id={`${uid}-hire-date`}
                     type="date"
                     value={hireDate}
                     onChange={(e) => setHireDate(e.target.value)}
@@ -334,6 +353,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
               <button
                 type="button"
                 onClick={() => setExtraOpen((v) => !v)}
+                aria-expanded={extraOpen}
                 className="flex items-center gap-2 text-left -mx-1 px-1 py-1 rounded-[6px] hover:bg-[#F9F9F9] transition-colors"
               >
                 <CaretDown
@@ -348,16 +368,18 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
               </button>
               {extraOpen && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-5">
-                  <Field label="Tug'ilgan sana">
+                  <Field label="Tug'ilgan sana" htmlFor={`${uid}-birth-date`}>
                     <input
+                      id={`${uid}-birth-date`}
                       type="date"
                       value={birthDate}
                       onChange={(e) => setBirthDate(e.target.value)}
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="Telegram username">
+                  <Field label="Telegram username" htmlFor={`${uid}-telegram`}>
                     <input
+                      id={`${uid}-telegram`}
                       type="text"
                       value={telegram}
                       onChange={(e) => setTelegram(e.target.value)}
@@ -365,8 +387,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="Manzil" full>
+                  <Field label="Manzil" full htmlFor={`${uid}-address`}>
                     <input
+                      id={`${uid}-address`}
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
@@ -374,8 +397,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="Favqulodda kontakt" full>
+                  <Field label="Favqulodda kontakt" full htmlFor={`${uid}-emergency-contact`}>
                     <input
+                      id={`${uid}-emergency-contact`}
                       type="text"
                       value={emergencyContact}
                       onChange={(e) => setEmergencyContact(e.target.value)}
@@ -383,8 +407,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="Haqida (bio)" full>
+                  <Field label="Haqida (bio)" full htmlFor={`${uid}-bio`}>
                     <textarea
+                      id={`${uid}-bio`}
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Qisqacha ma'lumot..."
@@ -393,8 +418,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                     />
                   </Field>
                   {isAdmin && (
-                    <Field label="Yozuvlar (faqat admin uchun)" full>
+                    <Field label="Yozuvlar (faqat admin uchun)" full htmlFor={`${uid}-notes`}>
                       <textarea
+                        id={`${uid}-notes`}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Ichki yozuvlar..."
@@ -485,10 +511,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
+function Field({ label, full, htmlFor, children }: { label: string; full?: boolean; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "md:col-span-2" : ""}`}>
-      <label className="text-[12px] font-medium text-[#999]">{label}</label>
+      <label htmlFor={htmlFor} className="text-[12px] font-medium text-[#999]">{label}</label>
       {children}
     </div>
   )

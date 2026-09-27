@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useId } from "react"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { motion, AnimatePresence } from "framer-motion"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
@@ -70,6 +70,7 @@ function ProfileTab({
   showToast: (msg: string, type?: "success" | "error") => void
 }) {
   const { refreshProfile } = useAuth()
+  const uid = useId()
   const [fullName, setFullName] = useState(user.full_name)
   const [phone, setPhone] = useState(user.phone ?? "")
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
@@ -164,8 +165,10 @@ function ProfileTab({
     <div className="flex flex-col gap-6 max-w-[640px]">
       {/* Avatar */}
       <div className="flex items-center gap-4">
-        <div
+        <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
+          aria-label="Rasmni o'zgartirish"
           className="relative w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center overflow-hidden cursor-pointer group"
         >
           {avatarUrl ? (
@@ -173,10 +176,10 @@ function ProfileTab({
           ) : (
             <UserIcon size={32} weight="bold" className="text-white" />
           )}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+          <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <Camera size={20} weight="bold" className="text-white" />
-          </div>
-        </div>
+          </span>
+        </button>
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-bold text-[#141414]">{user.full_name}</span>
           <span className="text-[12px] text-[#999]">{ROLE_LABELS[user.role]}</span>
@@ -200,8 +203,9 @@ function ProfileTab({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium text-[#999]">Ism Familiya</label>
+          <label htmlFor={`${uid}-full-name`} className="text-[12px] font-medium text-[#999]">Ism Familiya</label>
           <input
+            id={`${uid}-full-name`}
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -209,8 +213,9 @@ function ProfileTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium text-[#999]">Email</label>
+          <label htmlFor={`${uid}-email`} className="text-[12px] font-medium text-[#999]">Email</label>
           <input
+            id={`${uid}-email`}
             type="email"
             value={user.email}
             disabled
@@ -218,12 +223,13 @@ function ProfileTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium text-[#999]">Telefon</label>
-          <PhoneInput value={phone} onChange={setPhone} />
+          <label htmlFor={`${uid}-phone`} className="text-[12px] font-medium text-[#999]">Telefon</label>
+          <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium text-[#999]">Rol</label>
+          <label htmlFor={`${uid}-role`} className="text-[12px] font-medium text-[#999]">Rol</label>
           <input
+            id={`${uid}-role`}
             type="text"
             value={ROLE_LABELS[user.role]}
             disabled
