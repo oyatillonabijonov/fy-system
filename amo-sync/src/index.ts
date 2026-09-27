@@ -78,7 +78,8 @@ interface AmoLead {
   id: number; name: string | null; price: number | null; pipeline_id: number; status_id: number
   responsible_user_id: number | null; created_at: number; updated_at: number; closed_at: number | null
   loss_reason_id: number | null
-  custom_fields_values: { field_id: number; values: { value: unknown }[] }[] | null
+  custom_fields_values: { field_id: number; field_name: string; values: { value: unknown }[] }[] | null
+  _embedded?: { tags?: { name: string }[] }
 }
 interface AmoEvent {
   id: string; entity_id: number; created_at: number
@@ -86,6 +87,28 @@ interface AmoEvent {
   value_after: { lead_status?: { id: number; pipeline_id: number } }[]
 }
 interface AmoTask { id: number; entity_id: number | null; entity_type: string; responsible_user_id: number | null; complete_till: number; text: string | null }
+
+// Lead source: the "Manba" field when a manager set it (rare), else utm_source,
+// else the tags integrations stamp on the lead. Ad/site tags beat telephony tags,
+// which get added to any lead once it's called.
+// ponytail: tag regexes measured on the live account (2026-09); new tag styles land in "Noma'lum" until added here.
+const TAG_SOURCES: [RegExp, string][] = [
+  [/^fb\d|facebook|target/, "Facebook"],
+  [/^tilda$/, "Tilda"],
+  [/framer|^sayt/, "Sayt"],
+  [/tgform|telegram/, "Telegram"],
+  [/import|импорт|baza|sheet/, "Baza (import)"],
+  [/входящий|пропущенный/, "Kiruvchi qo'ng'iroq"],
+  [/исходящий/, "Chiquvchi qo'ng'iroq"],
+]
+function leadSource(l: AmoLead, manba: string | null): string | null {
+  if (manba) return manba
+  const utm = String(l.custom_fields_values?.find((f) => f.field_name === "utm_source")?.values?.[0]?.value ?? "").toLowerCase()
+  if (utm === "ig" || utm === "instagram") return "Instagram"
+  if (utm === "fb" || utm === "facebook") return "Facebook"
+  const tags = (l._embedded?.tags ?? []).map((t) => t.name.trim().toLowerCase())
+  return TAG_SOURCES.find(([re]) => tags.some((t) => re.test(t)))?.[1] ?? null
+}
 
 // ─── Sync state ──────────────────────────────────────────────────────────────
 
@@ -145,7 +168,7 @@ async function syncLeads(full: boolean): Promise<number> {
     id: l.id, name: l.name, price: l.price ?? 0, pipeline_id: l.pipeline_id, status_id: l.status_id,
     responsible_user_id: l.responsible_user_id, created_at: ts(l.created_at)!, updated_at: ts(l.updated_at)!,
     closed_at: ts(l.closed_at), loss_reason: l.loss_reason_id ? (reasons.get(l.loss_reason_id) ?? null) : null,
-    objection: cf(l, objectionField), source: cf(l, sourceField),
+    objection: cf(l, objectionField), source: leadSource(l, cf(l, sourceField)),
   }))
 
   for (let i = 0; i < rows.length; i += 500) {
