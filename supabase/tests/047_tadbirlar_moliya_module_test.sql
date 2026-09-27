@@ -1,4 +1,6 @@
 -- Behavioural tests for migration 047 (tadbirlar-moliya module + finance totals RPC).
+-- event_finance_totals() was dropped in migration 054, so run this file on a stand
+-- replayed only through 053 (e.g. stop the replay loop before 054_expenses.sql).
 -- No test runner in this project — run against a THROWAWAY database, never prod:
 --
 --   docker run -d --name fy-test -e POSTGRES_PASSWORD=postgres \

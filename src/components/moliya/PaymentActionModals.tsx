@@ -7,9 +7,9 @@ import { useRefundPayment, useVoidPayment } from "@/hooks/useFinance"
 import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatNumber } from "@/lib/format"
 
-const INPUT =
+export const INPUT =
   "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
-const LABEL = "text-sm font-medium text-ink-muted"
+export const LABEL = "text-sm font-medium text-ink-muted"
 const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "naqd", label: "Naqd" },
   { value: "karta", label: "Karta" },
@@ -17,7 +17,7 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
 ]
 
 // Both modals are mounted only while open, so their state starts fresh.
-function ModalShell({
+export function ModalShell({
   title,
   error,
   submitLabel,

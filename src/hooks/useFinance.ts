@@ -8,12 +8,19 @@ import {
   voidPayment,
   refundPayment,
   updateParticipantFinance,
+  listExpenses,
+  countExpenses,
+  addExpense,
+  voidExpense,
+  listEventProfit,
   type FinanceFilters,
   type FinanceSummary,
   type PaymentRow,
   type DebtorRow,
   type DebtStatus,
   type ParticipantFinancePatch,
+  type ExpenseRow,
+  type EventProfitRow,
 } from "@/lib/supabase/queries/finance"
 import { FINANCE_KEY, PARTICIPANTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
 import { CLIENTS_KEY } from "@/hooks/useClients"
@@ -72,6 +79,31 @@ export function useDebtors(f: FinanceFilters, status: DebtStatus) {
   })
 }
 
+export function useExpensesList(f: FinanceFilters, page: number) {
+  return useQuery<ExpenseRow[]>({
+    queryKey: [...FINANCE_KEY, "expenses", f, page],
+    queryFn: () => listExpenses(f, page),
+    placeholderData: (prev) => prev,
+    refetchOnMount: true,
+  })
+}
+
+export function useExpensesCount(f: FinanceFilters) {
+  return useQuery<number>({
+    queryKey: [...FINANCE_KEY, "expenses-count", f],
+    queryFn: () => countExpenses(f),
+    refetchOnMount: true,
+  })
+}
+
+export function useEventProfit(f: FinanceFilters) {
+  return useQuery<EventProfitRow[]>({
+    queryKey: [...FINANCE_KEY, "event-profit", f],
+    queryFn: () => listEventProfit(f),
+    refetchOnMount: true,
+  })
+}
+
 function useMoneyMutation<V>(fn: (vars: V) => Promise<unknown>) {
   const qc = useQueryClient()
   return useMutation({ mutationFn: fn, onSuccess: () => invalidateMoney(qc) })
@@ -83,3 +115,7 @@ export const useVoidPayment = () =>
 export const useRefundPayment = () => useMoneyMutation(refundPayment)
 export const useUpdateParticipantFinance = () =>
   useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch))
+
+export const useAddExpense = () => useMoneyMutation(addExpense)
+export const useVoidExpense = () =>
+  useMoneyMutation((v: { id: string; reason: string }) => voidExpense(v.id, v.reason))

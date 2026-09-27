@@ -112,7 +112,7 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
   )
 }
 
-function RowAction({ onClick, label, icon, danger }: { onClick: () => void; label: string; icon: React.ReactNode; danger?: boolean }) {
+export function RowAction({ onClick, label, icon, danger }: { onClick: () => void; label: string; icon: React.ReactNode; danger?: boolean }) {
   return (
     <button
       onClick={onClick}

@@ -37,7 +37,8 @@ const FINANCE_ERRORS: Record<string, string> = {
   invalid_price: "Kelishuv summasi manfiy bo'lishi mumkin emas",
   enroll_required: "Mijoz bu tadbirda yo'q — tarif va sotuvchini tanlang",
   reason_required: "Bekor qilish sababini yozing",
-  already_voided: "Bu to'lov allaqachon bekor qilingan",
+  already_voided: "Bu yozuv allaqachon bekor qilingan",
+  expense_not_found: "Xarajat topilmadi",
   payment_not_found: "To'lov topilmadi",
   participant_not_found: "Ishtirokchi topilmadi",
   void_would_overpay: "Bu qaytarishni bekor qilsak, to'langan summa kelishuvdan oshib ketadi",
@@ -53,6 +54,7 @@ function financeError(e: { message: string; code?: string }): Error {
   const cash = /^refund_exceeds_paid \(paid=([\d.]+)\)$/.exec(e.message)
   if (cash) return new Error(`Qaytarish to'langan puldan ko'p. Ko'pi bilan: ${formatMoney(Number(cash[1]))}`)
   if (e.code === "23505") return new Error("Bu telefon raqam boshqa mijozda band")
+  if (e.code === "22003") return new Error("Summa juda katta")
   return new Error(FINANCE_ERRORS[e.message] ?? e.message)
 }
 
@@ -60,6 +62,8 @@ function financeError(e: { message: string; code?: string }): Error {
 
 export interface FinanceSummary {
   income: number            // active payments − refunds (cashback excluded)
+  expense: number           // active expenses; ignores seller / method filters
+  net: number               // income − expense
   debt: number
   overdue_debt: number
   agreed: number            // SUM(price)
@@ -73,6 +77,8 @@ export async function getFinanceSummary(f: FinanceFilters): Promise<FinanceSumma
   const row = ((data ?? []) as Array<Record<keyof FinanceSummary, number | string | null>>)[0]
   return {
     income: Number(row?.income ?? 0),
+    expense: Number(row?.expense ?? 0),
+    net: Number(row?.net ?? 0),
     debt: Number(row?.debt ?? 0),
     overdue_debt: Number(row?.overdue_debt ?? 0),
     agreed: Number(row?.agreed ?? 0),
@@ -286,4 +292,123 @@ export interface ParticipantFinancePatch {
 export async function updateParticipantFinance(id: string, patch: ParticipantFinancePatch): Promise<void> {
   const { error } = await db.from("event_participants").update(patch).eq("id", id)
   if (error) throw financeError(error)
+}
+
+// ─── Expenses (RPC writes only — expenses has no write policy) ───────────────
+
+export type ExpenseCategory = "zal" | "spiker" | "kofe_brek" | "reklama" | "maosh" | "ofis" | "boshqa"
+
+export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
+  zal: "Zal",
+  spiker: "Spiker",
+  kofe_brek: "Kofe-brek",
+  reklama: "Reklama",
+  maosh: "Maosh",
+  ofis: "Ofis",
+  boshqa: "Boshqa",
+}
+
+export interface ExpenseRow {
+  id: string
+  event_id: string | null         // null = general expense
+  event_name: string | null
+  category: ExpenseCategory
+  amount: number
+  spent_at: string                // YYYY-MM-DD
+  note: string | null
+  voided_at: string | null
+  void_reason: string | null
+  recorder_name: string | null
+}
+
+interface ExpenseJoin extends Omit<ExpenseRow, "amount" | "event_name" | "recorder_name"> {
+  amount: number | string
+  event: { name: string } | null
+  recorder: { full_name: string } | null
+}
+
+// Expenses have no seller or payment method: only the period and event filters apply.
+export async function listExpenses(f: FinanceFilters, page: number): Promise<ExpenseRow[]> {
+  let q = db
+    .from("expenses")
+    .select("id, event_id, category, amount, spent_at, note, voided_at, void_reason, event:event_id(name), recorder:recorded_by(full_name)")
+    .order("spent_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+  if (f.from) q = q.gte("spent_at", f.from)
+  if (f.to) q = q.lte("spent_at", f.to)
+  if (f.eventId) q = q.eq("event_id", f.eventId)
+
+  const { data, error } = await q
+  if (error) throw financeError(error)
+  return ((data ?? []) as unknown as ExpenseJoin[]).map(({ event, recorder, ...r }) => ({
+    ...r,
+    amount: Number(r.amount),
+    event_name: event?.name ?? null,
+    recorder_name: recorder?.full_name ?? null,
+  }))
+}
+
+export async function countExpenses(f: FinanceFilters): Promise<number> {
+  let q = db.from("expenses").select("id", { count: "exact", head: true })
+  if (f.from) q = q.gte("spent_at", f.from)
+  if (f.to) q = q.lte("spent_at", f.to)
+  if (f.eventId) q = q.eq("event_id", f.eventId)
+
+  const { count, error } = await q
+  if (error) throw financeError(error)
+  return count ?? 0
+}
+
+export interface AddExpenseInput {
+  category: ExpenseCategory
+  amount: number
+  spentAt: string                 // YYYY-MM-DD
+  eventId: string | null
+  note: string
+}
+
+export async function addExpense(i: AddExpenseInput): Promise<string> {
+  const { data, error } = await db.rpc("add_expense", {
+    p_category: i.category,
+    p_amount: i.amount,
+    p_spent_at: i.spentAt,
+    p_event_id: i.eventId,
+    p_note: i.note || null,
+  })
+  if (error) throw financeError(error)
+  return data as string
+}
+
+export async function voidExpense(id: string, reason: string): Promise<void> {
+  const { error } = await db.rpc("void_expense", { p_expense_id: id, p_reason: reason })
+  if (error) throw financeError(error)
+}
+
+// ─── Per-event profit (Tadbirlar tab) ────────────────────────────────────────
+
+export interface EventProfitRow {
+  event_id: string | null         // null = general (no-event) expenses
+  event_name: string | null
+  event_date: string | null
+  total_value: number             // plan (events.total_value); 0 = not set
+  agreed: number
+  collected: number               // cash: payments − refunds
+  debt: number
+  expense: number
+  profit: number                  // collected − expense
+}
+
+export async function listEventProfit(f: FinanceFilters): Promise<EventProfitRow[]> {
+  const { data, error } = await db.rpc("event_profit", { p_from: f.from, p_to: f.to, p_event_id: f.eventId })
+  if (error) throw financeError(error)
+  return ((data ?? []) as Array<EventProfitRow & Record<string, unknown>>).map((r) => ({
+    ...r,
+    total_value: Number(r.total_value),
+    agreed: Number(r.agreed),
+    collected: Number(r.collected),
+    debt: Number(r.debt),
+    expense: Number(r.expense),
+    profit: Number(r.profit),
+  }))
 }

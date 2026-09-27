@@ -6,19 +6,24 @@ import { FinanceFilterBar } from "@/components/moliya/FinanceFilterBar"
 import { FinanceKpis } from "@/components/moliya/FinanceKpis"
 import { PaymentsTab } from "@/components/moliya/PaymentsTab"
 import { DebtorsTab } from "@/components/moliya/DebtorsTab"
+import { ExpensesTab } from "@/components/moliya/ExpensesTab"
+import { EventProfitTab } from "@/components/moliya/EventProfitTab"
 import { RecordPaymentModal, type RecordPaymentPreset } from "@/components/moliya/RecordPaymentModal"
 
 const TABS = [
   { id: "payments", label: "To'lovlar" },
   { id: "debtors", label: "Qarzdorlar" },
+  { id: "expenses", label: "Xarajatlar" },
+  { id: "events", label: "Tadbirlar" },
 ] as const
+type TabId = (typeof TABS)[number]["id"]
 
 // Global finance: one page over all events; an event is just a filter.
 export function EventsMoliya() {
   const { canEdit } = useAuth()
   const editable = canEdit("tadbirlar-moliya")
   const { filters, get, set } = useFinanceFilters()
-  const tab = get("tab") === "debtors" ? "debtors" : "payments"
+  const tab: TabId = TABS.find((t) => t.id === get("tab"))?.id ?? "payments"
   // undefined = closed; null = open blank; a preset = open for that client/event
   const [recording, setRecording] = useState<RecordPaymentPreset | null | undefined>(undefined)
 
@@ -54,9 +59,8 @@ export function EventsMoliya() {
         ))}
       </div>
 
-      {tab === "payments" ? (
-        <PaymentsTab filters={filters} canEdit={editable} />
-      ) : (
+      {tab === "payments" && <PaymentsTab filters={filters} canEdit={editable} />}
+      {tab === "debtors" && (
         <DebtorsTab
           filters={filters}
           canEdit={editable}
@@ -66,6 +70,8 @@ export function EventsMoliya() {
           }
         />
       )}
+      {tab === "expenses" && <ExpensesTab filters={filters} canEdit={editable} />}
+      {tab === "events" && <EventProfitTab filters={filters} />}
 
       {recording !== undefined && <RecordPaymentModal preset={recording ?? undefined} onClose={() => setRecording(undefined)} />}
     </div>
