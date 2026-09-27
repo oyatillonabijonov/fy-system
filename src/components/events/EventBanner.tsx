@@ -1,30 +1,12 @@
-import type { ReactNode } from "react"
-import { eventTint, hashStr } from "@/lib/eventTint"
+import { useId, type ReactNode } from "react"
+import { eventPalette, hashStr } from "@/lib/eventTint"
 
-// Deterministic subtle geometric pattern (dots / grid / diagonal) from the name.
-function PatternFill({ name }: { name: string }) {
-  const h = hashStr(name || "tadbir")
-  const variant = h % 3
-  const id = `evtpat-${h}`
-  const line = "rgba(255,255,255,0.07)"
-
-  return (
-    <svg className="absolute inset-0 w-full h-full" aria-hidden>
-      <defs>
-        <pattern id={id} width="24" height="24" patternUnits="userSpaceOnUse">
-          {variant === 0 && <circle cx="3" cy="3" r="1.5" fill={line} />}
-          {variant === 1 && (
-            <path d="M0 0H24M0 0V24" stroke={line} strokeWidth="1" fill="none" />
-          )}
-          {variant === 2 && (
-            <path d="M0 24L24 0" stroke={line} strokeWidth="1.5" fill="none" />
-          )}
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} />
-    </svg>
-  )
-}
+// Where the two glows sit — picked from the name so banners don't all look alike.
+const GLOWS = [
+  ["0% 0%", "100% 100%"],
+  ["100% 0%", "0% 100%"],
+  ["30% 0%", "100% 80%"],
+] as const
 
 interface EventBannerProps {
   name: string
@@ -34,6 +16,8 @@ interface EventBannerProps {
 }
 
 export function EventBanner({ name, coverImage, className = "", children }: EventBannerProps) {
+  const noiseId = useId()
+
   if (coverImage) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
@@ -43,13 +27,23 @@ export function EventBanner({ name, coverImage, className = "", children }: Even
     )
   }
 
-  const tint = eventTint(name)
+  // Generated cover: dark ground + two soft glows from the event's palette + fine grain.
+  const p = eventPalette(name)
+  const [g1, g2] = GLOWS[hashStr(name || "tadbir") % GLOWS.length]
   return (
     <div
       className={`relative overflow-hidden ${className}`}
-      style={{ backgroundColor: tint }}
+      style={{
+        backgroundColor: p.base,
+        backgroundImage: `radial-gradient(90% 130% at ${g1}, ${p.a} 0%, transparent 60%), radial-gradient(70% 110% at ${g2}, ${p.b}59 0%, transparent 55%)`,
+      }}
     >
-      <PatternFill name={name} />
+      <svg className="absolute inset-0 w-full h-full opacity-[0.22] mix-blend-overlay pointer-events-none" aria-hidden>
+        <filter id={noiseId}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#${noiseId})`} />
+      </svg>
       {children}
     </div>
   )
