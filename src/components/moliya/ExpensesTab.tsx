@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { Plus, Prohibit } from "@phosphor-icons/react"
+import { Prohibit } from "@phosphor-icons/react"
 import { useExpensesList, useExpensesCount } from "@/hooks/useFinance"
 import { EXPENSE_CATEGORY_LABEL, type ExpenseRow, type FinanceFilters } from "@/lib/supabase/queries/finance"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { RowAction } from "@/components/moliya/PaymentsTab"
-import { AddExpenseModal, VoidExpenseModal } from "@/components/moliya/ExpenseModals"
+import { VoidExpenseModal } from "@/components/moliya/ExpenseModals"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 import { formatDate, formatMoney } from "@/lib/format"
@@ -23,25 +23,12 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
   const { data: rows = [], isLoading } = useExpensesList(filters, page)
   const { data: total = 0 } = useExpensesCount(filters)
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const [adding, setAdding] = useState(false)
   const [voiding, setVoiding] = useState<ExpenseRow | null>(null)
   const ignoredFilters = !!filters.seller || !!filters.method
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-ink-muted">
-          {ignoredFilters && "Sotuvchi va usul filtrlari xarajatlarga taalluqli emas"}
-        </span>
-        {canEdit && (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-3 h-control-md rounded-control text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
-          >
-            <Plus size={16} /> Xarajat qo'shish
-          </button>
-        )}
-      </div>
+      {ignoredFilters && <span className="text-sm text-ink-muted">Sotuvchi va usul filtrlari xarajatlarga taalluqli emas</span>}
 
       {isLoading ? (
         <div className="py-10 flex items-center justify-center">
@@ -100,7 +87,6 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
         </>
       )}
 
-      {adding && <AddExpenseModal defaultEventId={filters.eventId} onClose={() => setAdding(false)} />}
       {voiding && <VoidExpenseModal expense={voiding} onClose={() => setVoiding(null)} />}
     </div>
   )
