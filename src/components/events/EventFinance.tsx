@@ -56,7 +56,7 @@ export function EventFinance({ event }: { event: Event }) {
       {/* Value progress */}
       <div className="bg-surface border border-line rounded-surface p-4 flex flex-col gap-3">
         <span className="flex items-center gap-2 text-sm font-semibold text-ink-muted">
-          <TrendUp size={15} /> Qiymat bajarilishi
+          <TrendUp size={16} /> Qiymat bajarilishi
         </span>
         {valuePct === null ? (
           <div className="flex flex-col gap-2">
@@ -143,7 +143,7 @@ export function EventFinance({ event }: { event: Event }) {
                             title="To'lov qo'shish"
                             className="inline-flex items-center gap-1 px-2.5 h-control-sm rounded-control-sm text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
                           >
-                            <Coins size={13} /> To'lov
+                            <Coins size={16} /> To'lov
                           </button>
                         </div>
                       </td>
@@ -181,7 +181,7 @@ function PriceCell({ value, onSave }: { value: number; onSave: (v: number) => vo
         title="Narxni tahrirlash"
       >
         {formatMoney(value)}
-        <PencilSimple size={12} className="text-ink-faint opacity-0 group-hover/price:opacity-100 transition-opacity" />
+        <PencilSimple size={12} weight="bold" className="text-ink-faint opacity-0 group-hover/price:opacity-100 transition-opacity" />
       </button>
     )
   }
@@ -314,7 +314,7 @@ function DefaultCashbackEditor({
         title="Standart keshbekni tahrirlash"
       >
         Standart keshbek: <strong className="text-ink">{percent}%</strong>
-        <PencilSimple size={11} className="text-ink-faint opacity-0 group-hover/cb:opacity-100 transition-opacity" />
+        <PencilSimple size={11} weight="bold" className="text-ink-faint opacity-0 group-hover/cb:opacity-100 transition-opacity" />
       </button>
     )
   }

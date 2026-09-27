@@ -357,7 +357,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                 className="flex items-center gap-2 text-left -mx-1 px-1 py-1 rounded-item hover:bg-mute-ghost-hover transition-colors"
               >
                 <CaretDown
-                  size={14}
+                  size={16}
                  
                   className={`text-ink-muted transition-transform ${extraOpen ? "" : "-rotate-90"}`}
                 />

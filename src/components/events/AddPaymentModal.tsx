@@ -200,7 +200,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                       onClick={() => { setClient(null); setParticipationId(null) }}
                       className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
                     >
-                      <CaretLeft size={12} /> O'zgartirish
+                      <CaretLeft size={12} weight="bold" /> O'zgartirish
                     </button>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                     </div>
                   ) : noParticipations ? (
                     <div className="flex items-start gap-2 px-3 py-2.5 rounded-control bg-warning-soft text-sm text-warning-dark">
-                      <Warning size={15} className="shrink-0 mt-0.5" />
+                      <Warning size={16} className="shrink-0 mt-0.5" />
                       Bu mijoz hech qaysi tadbirda ishtirokchi emas. Avval tadbirga qo'shing.
                     </div>
                   ) : (
@@ -238,7 +238,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                                 Narx: {formatMoney(p.price)} · To'langan: {formatMoney(p.paid)}
                               </span>
                             </span>
-                            {sel && <Check size={15} className="text-ink shrink-0" />}
+                            {sel && <Check size={16} className="text-ink shrink-0" />}
                           </button>
                         )
                       })}

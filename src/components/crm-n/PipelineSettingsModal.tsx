@@ -230,7 +230,7 @@ export function PipelineSettingsModal({
                         aria-label="Nomni tahrirlash"
                         className="p-1 rounded-item hover:bg-mute-ghost-hover shrink-0"
                       >
-                        <PencilSimple size={14} className="text-ink-muted" />
+                        <PencilSimple size={16} className="text-ink-muted" />
                       </button>
                     </div>
                   )}
@@ -331,7 +331,7 @@ export function PipelineSettingsModal({
                             aria-label="Yuqoriga siljitish"
                             className="p-0.5 rounded-item hover:bg-mute-ghost-hover disabled:opacity-30"
                           >
-                            <ArrowUp size={12} className="text-ink-muted" />
+                            <ArrowUp size={12} weight="bold" className="text-ink-muted" />
                           </button>
                           <button
                             onClick={() => handleMove(index, "down")}
@@ -339,7 +339,7 @@ export function PipelineSettingsModal({
                             aria-label="Pastga siljitish"
                             className="p-0.5 rounded-item hover:bg-mute-ghost-hover disabled:opacity-30"
                           >
-                            <ArrowDown size={12} className="text-ink-muted" />
+                            <ArrowDown size={12} weight="bold" className="text-ink-muted" />
                           </button>
                           {confirmDeleteStageId === stage.id ? (
                             <div className="flex items-center gap-1 ml-1">
@@ -363,7 +363,7 @@ export function PipelineSettingsModal({
                               aria-label="O'chirish"
                               className="p-0.5 rounded-item hover:bg-danger-soft"
                             >
-                              <Trash size={12} className="text-danger-text" />
+                              <Trash size={12} weight="bold" className="text-danger-text" />
                             </button>
                           )}
                         </div>
@@ -406,7 +406,7 @@ export function PipelineSettingsModal({
                     disabled={adding || !newStageName.trim()}
                     className="flex items-center gap-1 px-3 py-2 bg-accent text-ink-on-accent text-sm font-bold rounded-control hover:bg-accent-hover disabled:bg-mute-soft disabled:text-ink-faint disabled:cursor-not-allowed transition-colors"
                   >
-                    <Plus size={14} />
+                    <Plus size={16} />
                     {adding ? "..." : "Qo'shish"}
                   </button>
                 </div>
@@ -454,7 +454,7 @@ export function PipelineSettingsModal({
                     onClick={() => setShowDeletePipeline(true)}
                     className="flex items-center gap-1.5 text-sm font-medium text-danger-text hover:text-danger-dark transition-colors"
                   >
-                    <Trash size={14} />
+                    <Trash size={16} />
                     Pipeline o'chirish
                   </button>
                 )}

@@ -108,58 +108,6 @@ export async function deleteClients(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-/**
- * Create a mobile-app login for a club member via the `admin-create-member`
- * Edge Function. Service role work happens server-side; admin is re-verified
- * inside the function.
- */
-export async function createMemberAccount(input: {
-  client_id: string
-  email: string
-  password: string
-}): Promise<{ user_id: string }> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error("Tizimga kirilmagan")
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-  const functionUrl = `${supabaseUrl}/functions/v1/admin-create-member`
-
-  let response: Response
-  try {
-    response = await fetch(functionUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(input),
-    })
-  } catch (err) {
-    throw new Error(
-      err instanceof Error
-        ? `Edge Function'ga ulanishda xatolik: ${err.message}`
-        : "Edge Function'ga ulanishda xatolik",
-    )
-  }
-
-  let payload: { ok?: boolean; user_id?: string; error?: string } = {}
-  try {
-    payload = await response.json() as { ok?: boolean; user_id?: string; error?: string }
-  } catch {
-    /* non-JSON response */
-  }
-
-  if (!response.ok) {
-    throw new Error(payload.error ?? `Xatolik (HTTP ${response.status})`)
-  }
-
-  if (!payload.user_id) {
-    throw new Error("Edge Function user_id qaytarmadi")
-  }
-
-  return { user_id: payload.user_id }
-}
-
 export async function uploadClientImage(
   file: Blob,
   clientId: string

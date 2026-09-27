@@ -207,7 +207,7 @@ export function CreatePipelineModal({
                           }`}
                           style={{ width: 18, height: 18 }}
                         >
-                          {stage.checked && <Check size={12} className="text-ink-on-accent" />}
+                          {stage.checked && <Check size={12} weight="bold" className="text-ink-on-accent" />}
                         </button>
                         <div
                           className="w-3 h-3 rounded-full shrink-0"

@@ -165,7 +165,7 @@ export function CrmN() {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+                <CaretDown size={16} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
               </div>
 
               {/* Settings button */}
@@ -185,7 +185,7 @@ export function CrmN() {
                 onClick={() => setShowCreatePipeline(true)}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-control text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
               >
-                <Plus size={14} />
+                <Plus size={16} />
                 Voronka
               </button>
             </div>
@@ -194,7 +194,7 @@ export function CrmN() {
               onClick={() => setShowCreatePipeline(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold text-ink border border-line hover:bg-mute-ghost-hover transition-colors"
             >
-              <Plus size={14} />
+              <Plus size={16} />
               Voronka yaratish
             </button>
           )}
@@ -206,11 +206,11 @@ export function CrmN() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => invalidateAll()}>
-            <ArrowsClockwise size={14} className={loading ? "animate-spin" : ""} />
+            <ArrowsClockwise size={16} className={loading ? "animate-spin" : ""} />
             Yangilash
           </Button>
           <Button size="sm" onClick={() => setShowCreateModal(true)} disabled={!selectedPipelineId}>
-            <Plus size={14} />
+            <Plus size={16} />
             Yangi lid
           </Button>
         </div>
@@ -256,7 +256,7 @@ export function CrmN() {
         >
           <span className="text-sm font-semibold text-ink-muted uppercase">Statistika</span>
           <motion.div animate={{ rotate: statsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <CaretDown size={14} className="text-ink-muted" />
+            <CaretDown size={16} className="text-ink-muted" />
           </motion.div>
         </button>
 

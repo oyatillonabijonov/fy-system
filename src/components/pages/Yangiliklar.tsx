@@ -179,7 +179,7 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
                   <img src={preview} alt="Rasm" className="w-full h-32 object-cover rounded-control" />
                 ) : (
                   <span className="flex flex-col items-center gap-2 text-ink-faint">
-                    <UploadSimple size={22} />
+                    <UploadSimple size={22} weight="light" />
                     <span className="text-sm">Rasm yuklash uchun bosing</span>
                   </span>
                 )}
@@ -291,7 +291,7 @@ export function Yangiliklar() {
         <div className="text-base text-ink-faint italic py-8 text-center">Yuklanmoqda...</div>
       ) : posts.length === 0 ? (
         <div className="bg-surface border border-line rounded-surface py-16 flex flex-col items-center gap-3 text-ink-faint">
-          <Newspaper size={32} />
+          <Newspaper size={32} weight="thin" />
           <span className="text-base">Hozircha yangiliklar yo'q</span>
         </div>
       ) : (

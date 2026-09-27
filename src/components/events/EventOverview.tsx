@@ -120,9 +120,9 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <span className="text-sm text-ink-muted whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} /></CompactBtn>
-            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} /></CompactBtn>
-            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={15} /></CompactBtn>
+            <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={16} /></CompactBtn>
+            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={16} /></CompactBtn>
+            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={16} /></CompactBtn>
           </div>
         </div>
       )}
@@ -144,14 +144,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
               disabled={exporting || participants.length === 0}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-semibold border border-line text-ink-muted hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Export size={14} />
+              <Export size={16} />
               {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
             </button>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
             >
-              <Plus size={14} />
+              <Plus size={16} />
               Ishtirokchi qo'shish
             </button>
           </div>
@@ -215,7 +215,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                           aria-label="O'chirish"
                           className="text-ink-faint hover:text-danger-text transition-colors"
                         >
-                          <Trash size={15} />
+                          <Trash size={16} />
                         </button>
                       )}
                     </td>

@@ -107,7 +107,7 @@ export function Faollik() {
       <div className="bg-surface border border-line rounded-surface p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
           <MagnifyingGlass
-            size={14}
+            size={16}
            
             className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
           />
@@ -186,7 +186,7 @@ export function Faollik() {
           <div className="p-12 text-center text-base text-ink-faint">Yuklanmoqda...</div>
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
-            <ClockCounterClockwise size={32} className="mx-auto text-ink-faint mb-3" />
+            <ClockCounterClockwise size={32} weight="thin" className="mx-auto text-ink-faint mb-3" />
             <p className="text-md font-bold text-ink mb-1">Hech narsa topilmadi</p>
             <p className="text-sm text-ink-faint">
               Filtrni o'zgartiring yoki keyinroq qaytib keling
