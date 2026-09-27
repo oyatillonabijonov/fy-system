@@ -7,6 +7,8 @@ import {
     Bell,
     Gear,
     SignOut,
+    CaretUpDown,
+    Moon,
     User,
     SidebarSimple,
     CaretDown,
@@ -32,6 +34,8 @@ import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
+
+const accountItem = "w-full flex items-center gap-2.5 h-control-md px-2.5 rounded-item text-base font-medium text-ink transition-colors hover:bg-mute-ghost-hover"
 
 interface NavItem {
     name: string
@@ -116,7 +120,14 @@ export function Sidebar() {
         try { localStorage.setItem('fy_sidebar_collapsed', String(isCollapsed)) } catch { /* private browsing */ }
     }, [isCollapsed])
 
-    const { themeId } = useTheme()
+    const { themeId, setThemeId } = useTheme()
+    const [isAccountOpen, setIsAccountOpen] = useState(false)
+    useEffect(() => {
+        if (!isAccountOpen) return
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsAccountOpen(false) }
+        window.addEventListener("keydown", onKey)
+        return () => window.removeEventListener("keydown", onKey)
+    }, [isAccountOpen])
     const queryClient = useQueryClient()
     const handlePrefetch = (name: string) => {
         const entry = prefetchMap[name]
@@ -308,40 +319,70 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Profile / Logout */}
-            {!isCollapsed && <h3 className="text-sm text-ink-muted px-3 pb-2">Akkaunt</h3>}
-            <div className={`flex items-center ${isCollapsed ? "flex-col" : "gap-3 px-1"}`}>
-                <div
-                    className="size-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent text-ink-on-accent"
-                    title={displayName ?? ""}
+            {/* Account menu: the whole row opens Profilim / theme / Chiqish */}
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsAccountOpen((o) => !o)}
+                    aria-haspopup="menu"
+                    aria-expanded={isAccountOpen}
+                    aria-label={isCollapsed ? "Akkaunt menyusi" : undefined}
+                    title={isCollapsed ? (displayName ?? "") : undefined}
+                    className={`flex items-center rounded-full transition-colors ${isCollapsed ? "self-center p-0.5 mx-auto" : "w-full gap-3 p-1.5 pr-3"} ${isAccountOpen ? "bg-surface" : "hover:bg-mute-ghost-hover"}`}
                 >
-                    {displayAvatar ? (
-                        <img src={displayAvatar} alt={displayName ?? ""} className="w-full h-full object-cover" />
-                    ) : displayName ? (
-                        <span className="text-sm font-semibold">{userInitials}</span>
-                    ) : (
-                        <User size={18} />
+                    <span className="size-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent text-ink-on-accent">
+                        {displayAvatar ? (
+                            <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                        ) : displayName ? (
+                            <span className="text-sm font-semibold">{userInitials}</span>
+                        ) : (
+                            <User size={18} />
+                        )}
+                    </span>
+                    {!isCollapsed && (
+                        <>
+                            <span className="flex flex-col min-w-0 flex-1 text-left">
+                                <span className="text-base font-medium text-ink truncate">{displayName ?? "Mehmon"}</span>
+                                <span className="text-sm text-ink-muted truncate">{roleLabel}</span>
+                            </span>
+                            <CaretUpDown size={16} className="text-ink-faint flex-shrink-0" />
+                        </>
                     )}
-                </div>
-                {!isCollapsed && (
+                </button>
+
+                {isAccountOpen && (
                     <>
-                        <div className="flex flex-col min-w-0 flex-1">
-                            <span className="text-base font-medium text-ink truncate">
-                                {displayName ?? "Mehmon"}
-                            </span>
-                            <span className="text-sm text-ink-muted truncate">
-                                {roleLabel}
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleSignOut}
-                            aria-label="Chiqish"
-                            title="Chiqish"
-                            className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink-muted transition-colors hover:bg-mute-ghost-hover hover:text-ink"
+                        {/* click-away layer */}
+                        <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setIsAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                        <div
+                            role="menu"
+                            className={`fixed bottom-20 z-50 w-[232px] p-1 rounded-menu bg-surface-raised border border-line ${isCollapsed ? "left-3" : "left-4"}`}
                         >
-                            <SignOut size={18} />
-                        </button>
+                            {hasAccess("sozlamalar") && (
+                                <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }} className={accountItem}>
+                                    <User size={18} className="text-ink-muted" />
+                                    Profilim
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                role="menuitemcheckbox"
+                                aria-checked={themeId === "dark"}
+                                onClick={() => setThemeId(themeId === "dark" ? "light" : "dark")}
+                                className={accountItem}
+                            >
+                                <Moon size={18} className="text-ink-muted" />
+                                <span className="flex-1 text-left">Tungi rejim</span>
+                                <span className={`relative h-4 w-7 rounded-full transition-colors ${themeId === "dark" ? "bg-accent" : "bg-mute-soft"}`}>
+                                    <span className={`absolute top-0.5 size-3 rounded-full bg-surface transition-[left] ${themeId === "dark" ? "left-3.5" : "left-0.5"}`} />
+                                </span>
+                            </button>
+                            <div className="h-px bg-line my-1 mx-2" />
+                            <button type="button" role="menuitem" onClick={handleSignOut} className={`${accountItem} text-danger-text`}>
+                                <SignOut size={18} />
+                                Chiqish
+                            </button>
+                        </div>
                     </>
                 )}
             </div>
