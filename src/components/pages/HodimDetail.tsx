@@ -217,18 +217,18 @@ export function HodimDetail() {
         <div className="bg-surface border border-line rounded-surface p-6">
           <h2 className="text-base font-bold text-ink mb-4">Ish ma'lumotlari</h2>
           <div className="flex flex-col gap-3">
-            <InfoRow icon={<Buildings size={14} />} label="Bo'lim" value={departmentLabel(user.department)} />
-            <InfoRow icon={<Briefcase size={14} />} label="Lavozim" value={user.position} />
-            <InfoRow icon={<Calendar size={14} />} label="Ish boshlangan" value={formatDate(user.hire_date)} />
+            <InfoRow icon={<Buildings size={16} />} label="Bo'lim" value={departmentLabel(user.department)} />
+            <InfoRow icon={<Briefcase size={16} />} label="Lavozim" value={user.position} />
+            <InfoRow icon={<Calendar size={16} />} label="Ish boshlangan" value={formatDate(user.hire_date)} />
           </div>
         </div>
 
         <div className="bg-surface border border-line rounded-surface p-6">
           <h2 className="text-base font-bold text-ink mb-4">Shaxsiy ma'lumotlar</h2>
           <div className="flex flex-col gap-3">
-            <InfoRow icon={<Calendar size={14} />} label="Tug'ilgan sana" value={formatDate(user.birth_date)} />
-            <InfoRow icon={<MapPin size={14} />} label="Manzil" value={user.address} />
-            <InfoRow icon={<Phone size={14} />} label="Favqulodda kontakt" value={user.emergency_contact} />
+            <InfoRow icon={<Calendar size={16} />} label="Tug'ilgan sana" value={formatDate(user.birth_date)} />
+            <InfoRow icon={<MapPin size={16} />} label="Manzil" value={user.address} />
+            <InfoRow icon={<Phone size={16} />} label="Favqulodda kontakt" value={user.emergency_contact} />
           </div>
         </div>
       </div>
@@ -398,11 +398,11 @@ function ProfileHeader({
           )}
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
-            <ContactItem icon={<Envelope size={14} />} value={user.email} />
-            {user.phone && <ContactItem icon={<Phone size={14} />} value={formatPhone(user.phone)} />}
+            <ContactItem icon={<Envelope size={16} />} value={user.email} />
+            {user.phone && <ContactItem icon={<Phone size={16} />} value={formatPhone(user.phone)} />}
             {user.telegram && (
               <ContactItem
-                icon={<PaperPlaneRight size={14} />}
+                icon={<PaperPlaneRight size={16} />}
                 value={user.telegram.startsWith("@") ? user.telegram : `@${user.telegram}`}
               />
             )}
@@ -415,14 +415,14 @@ function ProfileHeader({
             onClick={onEdit}
             className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
           >
-            <PencilSimple size={14} />
+            <PencilSimple size={16} />
             Tahrirlash
           </button>
           <button
             onClick={onPermissions}
             className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
           >
-            <Gear size={14} />
+            <Gear size={16} />
             Ruxsatlar
           </button>
         </div>
@@ -531,7 +531,7 @@ function DangerZone({
                 busy ? "bg-mute-soft text-ink-faint cursor-not-allowed" : user.is_active ? "bg-danger text-white" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
-              <Power size={14} />
+              <Power size={16} />
               {busy ? "..." : user.is_active ? "Ha, faolsizlantir" : "Ha, faollashtir"}
             </button>
           </>
@@ -544,7 +544,7 @@ function DangerZone({
                 : "border border-line text-ink hover:bg-surface-sunken"
             }`}
           >
-            <Power size={14} />
+            <Power size={16} />
             {user.is_active ? "Faolsizlantirish" : "Qayta faollashtirish"}
           </button>
         )}
@@ -598,7 +598,7 @@ function KpiSection({
               onClick={onEdit}
               className="flex items-center gap-1.5 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
             >
-              <PencilSimple size={12} />
+              <PencilSimple size={12} weight="bold" />
               {kpi?.target ? "Maqsadlarni tahrirlash" : "Maqsad belgilash"}
             </button>
           )}
@@ -611,7 +611,7 @@ function KpiSection({
 
       {!loading && !kpi?.target && (
         <div className="py-8 text-center">
-          <Target size={32} className="mx-auto text-ink-faint mb-3" />
+          <Target size={32} weight="thin" className="mx-auto text-ink-faint mb-3" />
           <p className="text-base font-bold text-ink mb-1">Maqsadlar belgilanmagan</p>
           <p className="text-sm text-ink-muted">
             {canEdit
@@ -743,7 +743,7 @@ function PeriodSelector({
         title="Oldingi oy"
         aria-label="Oldingi oy"
       >
-        <CaretLeft size={12} className="text-ink-muted" />
+        <CaretLeft size={12} weight="bold" className="text-ink-muted" />
       </button>
       <span className="px-2 text-sm font-bold text-ink min-w-[110px] text-center">
         {MONTH_NAMES[period.month - 1]} {period.year}
@@ -754,7 +754,7 @@ function PeriodSelector({
         title="Keyingi oy"
         aria-label="Keyingi oy"
       >
-        <CaretRight size={12} className="text-ink-muted" />
+        <CaretRight size={12} weight="bold" className="text-ink-muted" />
       </button>
     </div>
   )

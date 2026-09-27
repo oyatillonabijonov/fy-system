@@ -174,7 +174,7 @@ function ProfileTab({
           {avatarUrl ? (
             <img src={avatarUrl} alt={user.full_name} className="w-full h-full object-cover" />
           ) : (
-            <UserIcon size={32} className="text-ink-on-accent" />
+            <UserIcon size={32} weight="thin" className="text-ink-on-accent" />
           )}
           <span className="absolute inset-0 bg-surface-overlay opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <Camera size={20} className="text-ink-on-accent" />

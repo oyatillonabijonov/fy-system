@@ -275,7 +275,7 @@ export function Sidebar() {
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">{item.name}</span>
                                                 {hasSubItems && (
                                                     <CaretDown
-                                                        size={14}
+                                                        size={16}
                                                        
                                                         className={`text-ink-faint transition-transform ${isExpanded ? "rotate-180" : ""}`}
                                                     />

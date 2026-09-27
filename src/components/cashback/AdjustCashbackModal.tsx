@@ -136,7 +136,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                     : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
-                <Plus size={14} />
+                <Plus size={16} />
                 Qo'shish
               </button>
               <button
@@ -149,7 +149,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                     : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
-                <Minus size={14} />
+                <Minus size={16} />
                 Ayirish
               </button>
             </div>

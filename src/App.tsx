@@ -179,7 +179,7 @@ function AppShell() {
               >
                 <span className="text-base font-medium uppercase">{currentLang}</span>
                 <CaretDown
-                  size={14}
+                  size={16}
                  
                   className={`text-ink-muted transition-transform ${isLangOpen ? 'rotate-180' : ''}`}
                 />

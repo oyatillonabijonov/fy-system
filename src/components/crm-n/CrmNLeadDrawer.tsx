@@ -529,7 +529,7 @@ export function CrmNLeadDrawer({
                                 aria-label="Kontaktni tahrirlash"
                                 className="p-1 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
                               >
-                                <PencilSimple size={12} className="text-ink-muted" />
+                                <PencilSimple size={12} weight="bold" className="text-ink-muted" />
                               </button>
                             )}
                           </div>
@@ -570,7 +570,7 @@ export function CrmNLeadDrawer({
                             <>
                               {contact.phone && (
                                 <div className="flex items-center gap-2">
-                                  <Phone size={14} className="text-ink-muted" />
+                                  <Phone size={16} className="text-ink-muted" />
                                   <a href={`tel:${contact.phone}`} className="text-sm text-ink hover:underline">
                                     {contact.phone}
                                   </a>
@@ -578,7 +578,7 @@ export function CrmNLeadDrawer({
                               )}
                               {contact.email && (
                                 <div className="flex items-center gap-2">
-                                  <Envelope size={14} className="text-ink-muted" />
+                                  <Envelope size={16} className="text-ink-muted" />
                                   <a href={`mailto:${contact.email}`} className="text-sm text-ink hover:underline">
                                     {contact.email}
                                   </a>
@@ -586,7 +586,7 @@ export function CrmNLeadDrawer({
                               )}
                               {contact.company && (
                                 <div className="flex items-center gap-2">
-                                  <Buildings size={14} className="text-ink-muted" />
+                                  <Buildings size={16} className="text-ink-muted" />
                                   <span className="text-sm text-ink">{contact.company}</span>
                                 </div>
                               )}
@@ -646,7 +646,7 @@ export function CrmNLeadDrawer({
                         aria-expanded={showTaskForm}
                         className="flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
                       >
-                        <Plus size={12} />
+                        <Plus size={12} weight="bold" />
                         Qo'shish
                       </button>
                     </div>
@@ -709,7 +709,7 @@ export function CrmNLeadDrawer({
                               </span>
                               {task.due_date && (
                                 <div className="flex items-center gap-1">
-                                  <Clock size={12} className="text-ink-muted" />
+                                  <Clock size={12} weight="bold" className="text-ink-muted" />
                                   <span className="text-xs text-ink-muted">{formatDate(task.due_date)}</span>
                                 </div>
                               )}

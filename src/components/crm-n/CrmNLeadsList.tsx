@@ -274,7 +274,7 @@ export function CrmNLeadsList({
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+          <CaretDown size={12} weight="bold" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
         {/* Responsible filter */}
@@ -289,7 +289,7 @@ export function CrmNLeadsList({
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+          <CaretDown size={12} weight="bold" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
         <span className="text-sm text-ink-muted font-medium ml-auto">
@@ -387,10 +387,10 @@ export function CrmNLeadsList({
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {header.column.getIsSorted() === "asc" && (
-                              <CaretUp size={12} />
+                              <CaretUp size={12} weight="bold" />
                             )}
                             {header.column.getIsSorted() === "desc" && (
-                              <CaretDown size={12} />
+                              <CaretDown size={12} weight="bold" />
                             )}
                           </button>
                         ) : (

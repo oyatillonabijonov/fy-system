@@ -58,7 +58,7 @@ export function EventsBoshqaruv() {
     <div className="flex flex-col gap-5 h-full">
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4">
-          <CalendarBlank size={64} className="text-ink-faint" />
+          <CalendarBlank size={64} weight="thin" className="text-ink-faint" />
           <p className="text-base text-ink-muted">Hozircha tadbirlar yo'q</p>
           <button
             onClick={() => setShowCreate(true)}

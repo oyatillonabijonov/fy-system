@@ -187,7 +187,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                       onClick={() => setClient(null)}
                       className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
                     >
-                      <CaretLeft size={12} /> O'zgartirish
+                      <CaretLeft size={12} weight="bold" /> O'zgartirish
                     </button>
                   </div>
                 </div>

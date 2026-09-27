@@ -35,7 +35,7 @@ export function PaymentsLog() {
           onClick={() => { setOpenKey((k) => k + 1); setShowAdd(true) }}
           className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
         >
-          <Plus size={15} />
+          <Plus size={16} />
           To'lov qo'shish
         </button>
       </div>

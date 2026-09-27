@@ -93,7 +93,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
         )}
         {contact?.phone && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink-muted">
-            <Phone size={10} className="text-ink-faint" />
+            <Phone size={10} weight="bold" className="text-ink-faint" />
             {contact.phone}
           </span>
         )}
