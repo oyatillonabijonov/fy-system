@@ -17,8 +17,8 @@
 /* Dark mode, rebuilt (overrides Plexus' mid-grey dark): three clear elevation steps
    from near-black up, off-white text with ~7:1 secondary contrast, semantic colours
    tuned for dark grounds (soft fills dark, their text light).
-   :root[...] outranks the tokens file's prefers-color-scheme rule (:root:not([data-theme="light"])). */
-:root[data-theme="dark"] {
+   Also applied to any element carrying data-theme="dark" — the "contrast" theme scopes the sidebar that way. */
+:root[data-theme="dark"], [data-theme="dark"] {
   /* Elevation: page/sidebar → main card → cards, fields, table header */
   --ds-color-bg-default: #0b0b0c;
   --ds-color-bg-subtle: #111113;
@@ -716,6 +716,10 @@ select:not(.appearance-none):not([multiple]) {
   background-size: 16px;
   padding-right: 2.25rem;
 }
-:root[data-theme="dark"] select:not(.appearance-none):not([multiple]) {
+[data-theme="dark"] select:not(.appearance-none):not([multiple]) {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M208 96l-80 80-80-80' fill='none' stroke='%239d9da6' stroke-width='16' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
+
+/* "Contrast" theme: light tokens everywhere except the ground and the sidebar,
+   which sits in a data-theme="dark" scope (see Sidebar.tsx). */
+:root[data-theme="contrast"] .app-ground { background-color: #0b0b0c; }

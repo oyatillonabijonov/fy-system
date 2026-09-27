@@ -2,12 +2,10 @@ import {
     MagnifyingGlass,
     House,
     Users,
-    CreditCard,
     CalendarBlank,
     Gear,
     SignOut,
     CaretUpDown,
-    Moon,
     User,
     SidebarSimple,
     CaretDown,
@@ -21,12 +19,18 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useNavigate } from "react-router-dom"
-import { useTheme } from "@/context/ThemeContext"
+import { useTheme, type ThemeId } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
+
+const THEMES: { id: ThemeId; label: string }[] = [
+    { id: "light", label: "Yorug'" },
+    { id: "contrast", label: "Kontrast" },
+    { id: "dark", label: "Qorong'i" },
+]
 
 const accountItem = "w-full flex items-center gap-2.5 h-control-md px-2.5 rounded-item text-base font-medium text-ink transition-colors hover:bg-mute-ghost-hover"
 
@@ -50,13 +54,12 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard", module: "dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
-            { name: "Sotuv bo'limi", icon: CreditCard, path: "/sotuv/crm-n", module: "sotuv-crmn" },
             {
-                name: "Tadbirlar",
+                name: "Menejment",
                 icon: CalendarBlank,
                 path: "/tadbirlar",
                 subItems: [
-                    { name: "Boshqaruv", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
+                    { name: "Tadbirlar", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
                     { name: "Moliya", icon: Coins, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
                 ],
             },
@@ -82,7 +85,7 @@ const navigationSections: NavSection[] = [
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
-    Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
+    Menejment: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
 export function Sidebar() {
@@ -184,13 +187,14 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-            className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5"
+            data-theme={themeId === "contrast" ? "dark" : undefined}
+            className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
         >
             {/* Top: Logo + Collapse button */}
             <div className={`flex items-center h-control-md mb-6 ${isCollapsed ? "justify-center" : "justify-between pl-1"}`}>
                 {!isCollapsed && (
                     <img
-                        src={themeId === 'dark' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
+                        src={themeId === 'light' ? "/Sidebar/Logo.svg" : "/Sidebar/Logo-white.svg"}
                         alt="Biznes Klub Logo"
                         className="w-auto h-7"
                     />
@@ -344,19 +348,23 @@ export function Sidebar() {
                                     Profilim
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                role="menuitemcheckbox"
-                                aria-checked={themeId === "dark"}
-                                onClick={() => setThemeId(themeId === "dark" ? "light" : "dark")}
-                                className={accountItem}
-                            >
-                                <Moon size={18} className="text-ink-muted" />
-                                <span className="flex-1 text-left">Tungi rejim</span>
-                                <span className={`relative h-4 w-7 rounded-full transition-colors ${themeId === "dark" ? "bg-accent" : "bg-mute-soft"}`}>
-                                    <span className={`absolute top-0.5 size-3 rounded-full bg-surface transition-[left] ${themeId === "dark" ? "left-3.5" : "left-0.5"}`} />
-                                </span>
-                            </button>
+                            <div className="px-2.5 pt-2 pb-1.5 flex flex-col gap-2">
+                                <span className="text-sm text-ink-muted">Mavzu</span>
+                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-3 gap-1 p-0.5 rounded-control bg-surface-sunken">
+                                    {THEMES.map((t) => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={themeId === t.id}
+                                            onClick={() => setThemeId(t.id)}
+                                            className={`h-8 rounded-item text-sm font-medium transition-colors ${themeId === t.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
+                                        >
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="h-px bg-line my-1 mx-2" />
                             <button type="button" role="menuitem" onClick={handleSignOut} className={`${accountItem} text-danger-text`}>
                                 <SignOut size={18} />

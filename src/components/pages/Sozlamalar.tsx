@@ -28,15 +28,7 @@ export function Sozlamalar() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-6 pb-10">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
-          Profilim
-        </h1>
-        <p className="text-base text-ink-muted">
-          Shaxsiy ma'lumotlar va parolingizni boshqaring
-        </p>
-      </div>
+    <div className="flex flex-col pb-10 max-w-[960px]">
 
       {user && <ProfileTab key={user.id} user={user} showToast={showToast} />}
 
@@ -46,10 +38,9 @@ export function Sozlamalar() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-surface text-sm font-bold ${
-              toast.type === "success"
-                ? "bg-surface-sunken text-ink border border-line"
-                : "bg-danger-soft text-danger-dark border border-danger-soft"
+            role="status"
+            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-medium border border-line ${
+              toast.type === "success" ? "bg-surface-raised text-ink" : "bg-danger-soft text-danger-text"
             }`}
           >
             {toast.message}
@@ -162,146 +153,90 @@ function ProfileTab({
   const dirty = fullName.trim() !== user.full_name || (phone.trim() || null) !== (user.phone ?? null)
 
   return (
-    <div className="flex flex-col gap-6 max-w-[640px]">
-      {/* Avatar */}
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Rasmni o'zgartirish"
-          className="relative w-20 h-20 rounded-full bg-accent flex items-center justify-center overflow-hidden cursor-pointer group"
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={user.full_name} className="w-full h-full object-cover" />
-          ) : (
-            <UserIcon size={32} weight="thin" className="text-ink-on-accent" />
-          )}
-          <span className="absolute inset-0 bg-surface-overlay opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <Camera size={20} className="text-ink-on-accent" />
-          </span>
-        </button>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-base font-bold text-ink">{user.full_name}</span>
-          <span className="text-sm text-ink-muted">{ROLE_LABELS[user.role]}</span>
+    <div className="flex flex-col">
+      {/* Photo */}
+      <SettingsRow title="Profil rasmi" desc="Sidebar'da va jurnal yozuvlarida ko'rinadi. JPG yoki PNG, 5MB gacha.">
+        <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="mt-1 text-sm font-bold text-ink hover:text-ink-muted underline w-fit transition-colors"
+            aria-label="Rasmni o'zgartirish"
+            className="relative size-16 rounded-full bg-mute-soft flex items-center justify-center overflow-hidden cursor-pointer group flex-shrink-0"
           >
-            {uploading ? "Yuklanmoqda..." : "Rasmni yangilash"}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon size={28} weight="light" className="text-ink-muted" />
+            )}
+            <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <Camera size={20} className="text-white" />
+            </span>
+          </button>
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className={softBtn}>
+            {uploading ? "Yuklanmoqda…" : avatarUrl ? "Rasmni almashtirish" : "Rasm yuklash"}
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
+        </div>
+      </SettingsRow>
+
+      {/* Personal info */}
+      <SettingsRow title="Shaxsiy ma'lumotlar" desc="Ism va telefoningizni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${uid}-full-name`} className={labelCls}>Ism familiya</label>
+            <input id={`${uid}-full-name`} type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${uid}-phone`} className={labelCls}>Telefon</label>
+            <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
+          </div>
+          <ReadOnly label="Email" value={user.email} />
+          <ReadOnly label="Rol" value={ROLE_LABELS[user.role]} />
+        </div>
+        <div className="flex justify-end mt-5">
+          <button type="button" onClick={handleSave} disabled={saving || !dirty} className={primaryBtn}>
+            {saving ? "Saqlanmoqda…" : "O'zgarishlarni saqlash"}
           </button>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleAvatarPick}
-        />
-      </div>
+      </SettingsRow>
 
-      {/* Form */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-full-name`} className="text-sm font-medium text-ink-muted">Ism Familiya</label>
-          <input
-            id={`${uid}-full-name`}
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-email`} className="text-sm font-medium text-ink-muted">Email</label>
-          <input
-            id={`${uid}-email`}
-            type="email"
-            value={user.email}
-            disabled
-            className="border border-line rounded-control px-3 py-2 text-base text-ink-muted bg-surface-sunken cursor-not-allowed"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-phone`} className="text-sm font-medium text-ink-muted">Telefon</label>
-          <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-role`} className="text-sm font-medium text-ink-muted">Rol</label>
-          <input
-            id={`${uid}-role`}
-            type="text"
-            value={ROLE_LABELS[user.role]}
-            disabled
-            className="border border-line rounded-control px-3 py-2 text-base text-ink-muted bg-surface-sunken cursor-not-allowed"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleSave}
-          disabled={saving || !dirty}
-          className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
-            saving || !dirty ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
-          }`}
-        >
-          {saving ? "Saqlanmoqda..." : "Saqlash"}
-        </button>
-        {!showPasswordForm && (
-          <button
-            onClick={() => setShowPasswordForm(true)}
-            className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
-          >
-            Parolni o'zgartirish
-          </button>
+      {/* Password */}
+      <SettingsRow title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning." last>
+        {showPasswordForm ? (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${uid}-pwd`} className={labelCls}>Yangi parol</label>
+                <input id={`${uid}-pwd`} type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputCls} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${uid}-pwd2`} className={labelCls}>Parolni tasdiqlang</label>
+                <input id={`${uid}-pwd2`} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowPasswordForm(false); setNewPassword(""); setConfirmPassword("") }}
+                disabled={pwdSaving}
+                className={softBtn}
+              >
+                Bekor qilish
+              </button>
+              <button type="button" onClick={handlePasswordChange} disabled={pwdSaving || !newPassword} className={primaryBtn}>
+                {pwdSaving ? "Saqlanmoqda…" : "Parolni yangilash"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-base text-ink-muted tracking-widest">••••••••</span>
+            <button type="button" onClick={() => setShowPasswordForm(true)} className={softBtn}>
+              Parolni o'zgartirish
+            </button>
+          </div>
         )}
-      </div>
-
-      {/* Password form */}
-      {showPasswordForm && (
-        <div className="border border-line rounded-surface p-4 flex flex-col gap-3">
-          <h3 className="text-base font-bold text-ink">Yangi parol</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Yangi parol (kamida 6 belgi)"
-              className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
-            />
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Parolni tasdiqlang"
-              className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePasswordChange}
-              disabled={pwdSaving}
-              className={`px-4 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
-                pwdSaving ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
-              }`}
-            >
-              {pwdSaving ? "..." : "O'zgartirish"}
-            </button>
-            <button
-              onClick={() => {
-                setShowPasswordForm(false)
-                setNewPassword("")
-                setConfirmPassword("")
-              }}
-              disabled={pwdSaving}
-              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink-muted"
-            >
-              Bekor qilish
-            </button>
-          </div>
-        </div>
-      )}
+      </SettingsRow>
 
       <ImageCropModal
         isOpen={showCrop}
@@ -309,6 +244,38 @@ function ProfileTab({
         onClose={() => setShowCrop(false)}
         onCropped={handleCropped}
       />
+    </div>
+  )
+}
+
+// ─── Layout pieces ──────────────────────────────────────
+
+const labelCls = "text-sm font-medium text-ink-muted"
+const inputCls =
+  "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+const softBtn =
+  "flex items-center gap-2 px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+const primaryBtn =
+  "px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+
+/** One settings group: title + hint on the left, controls on the right, hairline between groups */
+function SettingsRow({ title, desc, last, children }: { title: string; desc: string; last?: boolean; children: React.ReactNode }) {
+  return (
+    <section className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"}`}>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
+        <p className="text-sm text-ink-muted leading-relaxed">{desc}</p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
+  )
+}
+
+function ReadOnly({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className={labelCls}>{label}</span>
+      <span className="h-control-md px-3 flex items-center rounded-control bg-surface-sunken text-base text-ink-muted truncate">{value}</span>
     </div>
   )
 }

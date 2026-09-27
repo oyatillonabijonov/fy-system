@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
-import { CrmN } from "./components/pages/CrmN"
 import { EventsBoshqaruv } from "./components/pages/EventsBoshqaruv"
 import { EventsMoliya } from "./components/pages/EventsMoliya"
 import { Sozlamalar } from "./components/pages/Sozlamalar"
@@ -37,7 +36,6 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
-  '/sotuv/crm-n':   { title: "Sotuv bo'limi",    desc: 'Savdo jarayonlari va lidlar boshqaruvi.' },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
@@ -81,7 +79,7 @@ function AppShell() {
   const iconBtn = "relative h-control-md w-9 flex items-center justify-center rounded-control text-ink transition-colors hover:bg-mute-ghost-hover"
 
   return (
-    <div className="h-screen text-ink flex overflow-hidden bg-page">
+    <div className="app-ground h-screen text-ink flex overflow-hidden bg-page">
       <Sidebar />
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
@@ -197,10 +195,6 @@ function App() {
 
           <Route path="/dashboard" element={
             <ProtectedRoute module="dashboard"><Dashboard /></ProtectedRoute>
-          } />
-
-          <Route path="/sotuv/crm-n" element={
-            <ProtectedRoute module="sotuv-crmn"><CrmN /></ProtectedRoute>
           } />
 
           <Route path="/mijozlar" element={
