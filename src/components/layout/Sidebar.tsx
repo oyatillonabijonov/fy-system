@@ -2,7 +2,6 @@ import {
     MagnifyingGlass,
     House,
     Users,
-    CreditCard,
     CalendarBlank,
     Gear,
     SignOut,
@@ -50,7 +49,6 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard", module: "dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
-            { name: "Sotuv bo'limi", icon: CreditCard, path: "/sotuv/crm-n", module: "sotuv-crmn" },
             {
                 name: "Menejment",
                 icon: CalendarBlank,
