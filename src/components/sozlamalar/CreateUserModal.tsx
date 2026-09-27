@@ -175,7 +175,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
@@ -191,51 +191,51 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-2xl shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-2xl shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0F0F0] sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-surface-raised z-10">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Yangi xodim qo'shish</h2>
-              <span className="text-[11px] text-[#999]">Tizimga yangi foydalanuvchi qo'shing va modullarini sozlang</span>
+              <h2 id={titleId} className="text-md font-bold text-ink">Yangi xodim qo'shish</h2>
+              <span className="text-xs text-ink-muted">Tizimga yangi foydalanuvchi qo'shing va modullarini sozlang</span>
             </div>
             <button
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" weight="bold" />
             </button>
           </div>
 
           <div className="p-6 flex flex-col gap-6">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                 {error}
               </div>
             )}
 
             {/* Avatar */}
-            <div className="flex flex-col items-center gap-3 pb-6 border-b border-[#F0F0F0]">
+            <div className="flex flex-col items-center gap-3 pb-6 border-b border-line">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="Rasm yuklash"
-                className="relative w-24 h-24 rounded-full bg-[#F5F5F5] border-2 border-dashed border-[#E5E5E5] flex items-center justify-center cursor-pointer hover:border-[#141414] transition-all overflow-hidden group"
+                className="relative w-24 h-24 rounded-full bg-surface-sunken border-2 border-dashed border-line flex items-center justify-center cursor-pointer hover:border-line-focus transition-all overflow-hidden group"
               >
                 {avatarPreview ? (
                   <>
                     <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
-                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="text-white text-[11px] font-bold">O'zgartirish</span>
+                    <span className="absolute inset-0 bg-surface-overlay opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-ink-on-accent text-xs font-bold">O'zgartirish</span>
                     </span>
                   </>
                 ) : (
-                  <span className="flex flex-col items-center gap-1 text-[#999]">
+                  <span className="flex flex-col items-center gap-1 text-ink-muted">
                     <Camera size={20} weight="bold" />
-                    <span className="text-[10px]">Rasm yuklash</span>
+                    <span className="text-xs">Rasm yuklash</span>
                   </span>
                 )}
               </button>
@@ -243,12 +243,12 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                 <button
                   type="button"
                   onClick={clearAvatar}
-                  className="text-[11px] text-red-500 hover:text-red-700 transition-colors"
+                  className="text-xs text-danger-text hover:text-danger-dark transition-colors"
                 >
                   O'chirish
                 </button>
               )}
-              <p className="text-[11px] text-[#999]">Profil rasm (ixtiyoriy)</p>
+              <p className="text-xs text-ink-muted">Profil rasm (ixtiyoriy)</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -354,17 +354,17 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                 type="button"
                 onClick={() => setExtraOpen((v) => !v)}
                 aria-expanded={extraOpen}
-                className="flex items-center gap-2 text-left -mx-1 px-1 py-1 rounded-[6px] hover:bg-[#F9F9F9] transition-colors"
+                className="flex items-center gap-2 text-left -mx-1 px-1 py-1 rounded-item hover:bg-mute-ghost-hover transition-colors"
               >
                 <CaretDown
                   size={14}
                   weight="bold"
-                  className={`text-[#999] transition-transform ${extraOpen ? "" : "-rotate-90"}`}
+                  className={`text-ink-muted transition-transform ${extraOpen ? "" : "-rotate-90"}`}
                 />
-                <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">
+                <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">
                   Qo'shimcha ma'lumotlar
                 </span>
-                <span className="text-[11px] text-[#CCC]">(majburiy emas)</span>
+                <span className="text-xs text-ink-faint">(majburiy emas)</span>
               </button>
               {extraOpen && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-5">
@@ -436,7 +436,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
             {/* ── Section 4 — Modullar va ruxsatlar ── */}
             <Section title="Modullar va ruxsatlar">
               {isAdminRole && (
-                <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-[#F0F0F0] text-[#141414] border border-[#E0E0E0] mb-3">
+                <div className="px-3 py-2 rounded-control text-sm font-medium bg-surface-sunken text-ink border border-line mb-3">
                   Admin barcha modullarga avtomatik kirish huquqiga ega
                 </div>
               )}
@@ -446,10 +446,10 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                   return (
                     <label
                       key={m.id}
-                      className={`flex items-center gap-2 px-3 py-2 border rounded-[8px] transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-control transition-colors ${
                         isAdminRole
-                          ? "border-[#F0F0F0] bg-[#FAFAFA] cursor-not-allowed opacity-60"
-                          : "border-[#E0E0E0] cursor-pointer hover:bg-[#F9F9F9]"
+                          ? "border-line bg-surface-sunken cursor-not-allowed opacity-60"
+                          : "border-line cursor-pointer hover:bg-mute-ghost-hover"
                       }`}
                     >
                       <input
@@ -457,9 +457,9 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                         checked={checked}
                         disabled={isAdminRole}
                         onChange={() => toggleModule(m.id)}
-                        className="w-4 h-4 rounded accent-[#141414] cursor-pointer disabled:cursor-not-allowed"
+                        className="w-4 h-4 rounded-checkbox accent-accent cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <span className="text-[13px] text-[#141414]">{m.label}</span>
+                      <span className="text-base text-ink">{m.label}</span>
                     </label>
                   )
                 })}
@@ -468,19 +468,19 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#F0F0F0] sticky bottom-0 bg-white">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line sticky bottom-0 bg-surface-raised">
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                saving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+                saving ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Yaratilmoqda..." : "Yaratish"}
@@ -500,12 +500,12 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
 }
 
 const inputCls =
-  "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
-      <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">{title}</span>
+      <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">{title}</span>
       <div>{children}</div>
     </div>
   )
@@ -514,7 +514,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, full, htmlFor, children }: { label: string; full?: boolean; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "md:col-span-2" : ""}`}>
-      <label htmlFor={htmlFor} className="text-[12px] font-medium text-[#999]">{label}</label>
+      <label htmlFor={htmlFor} className="text-sm font-medium text-ink-muted">{label}</label>
       {children}
     </div>
   )

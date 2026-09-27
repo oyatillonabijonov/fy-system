@@ -14,13 +14,14 @@ export function FinanceOverview() {
           label="Jami tushum"
           value={totals?.total_income}
           loading={isLoading}
+          tone="success"
         />
         <KpiCard
           icon={<Wallet size={15} weight="bold" />}
           label="Jami qarzdorlik"
           value={totals?.total_debt}
           loading={isLoading}
-          danger
+          tone="danger"
         />
         <KpiCard
           icon={<Gift size={15} weight="bold" />}
@@ -40,28 +41,27 @@ function KpiCard({
   label,
   value,
   loading,
-  danger,
+  tone,
 }: {
   icon: React.ReactNode
   label: string
   value: number | undefined
   loading: boolean
-  danger?: boolean
+  tone?: "danger" | "success"
 }) {
+  const isPositive = (value ?? 0) > 0
+  const valueColor =
+    tone === "danger" ? (isPositive ? "text-danger-text" : "text-ink") : tone === "success" ? "text-success-text" : "text-ink"
+
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-4 flex flex-col gap-3">
-      <span className="flex items-center gap-2 text-[12px] font-bold text-[#999]">
+    <div className="bg-surface border border-line rounded-surface p-4 flex flex-col gap-3">
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink-muted">
         {icon} {label}
       </span>
       {loading ? (
-        <div className="animate-pulse bg-[#F0F0F0] rounded-[6px] h-7 w-32" />
+        <div className="animate-pulse bg-surface-sunken rounded-item h-7 w-32" />
       ) : (
-        <span
-          className="text-[22px] font-bold leading-none"
-          style={{ color: danger && (value ?? 0) > 0 ? "#D13328" : "#141414" }}
-        >
-          {formatMoney(value ?? 0)}
-        </span>
+        <span className={`text-lg font-bold leading-none tabular-nums ${valueColor}`}>{formatMoney(value ?? 0)}</span>
       )}
     </div>
   )

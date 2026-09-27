@@ -16,8 +16,8 @@ export function EventsMoliya() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-5 h-full">
-        <div className="animate-pulse bg-[#F0F0F0] rounded-[6px] h-9 w-64" />
-        <div className="animate-pulse bg-[#F0F0F0] rounded-[12px] h-24" />
+        <div className="animate-pulse bg-surface-sunken rounded-item h-9 w-64" />
+        <div className="animate-pulse bg-surface-sunken rounded-surface h-24" />
       </div>
     )
   }

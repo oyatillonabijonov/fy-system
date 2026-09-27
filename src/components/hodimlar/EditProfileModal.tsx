@@ -22,12 +22,12 @@ interface InnerProps {
 }
 
 const inputCls =
-  "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 function Field({ label, full, htmlFor, children }: { label: string; full?: boolean; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div className={`flex flex-col gap-1.5 ${full ? "md:col-span-2" : ""}`}>
-      <label htmlFor={htmlFor} className="text-[12px] font-medium text-[#999]">{label}</label>
+      <label htmlFor={htmlFor} className="text-sm font-medium text-ink-muted">{label}</label>
       {children}
     </div>
   )
@@ -91,7 +91,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
@@ -107,33 +107,33 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-2xl shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-2xl shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0F0F0] sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-surface-raised z-10">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Profilni tahrirlash</h2>
-              <span className="text-[11px] text-[#999]">{user.full_name} · {user.email}</span>
+              <h2 id={titleId} className="text-lg font-bold text-ink">Profilni tahrirlash</h2>
+              <span className="text-xs text-ink-muted">{user.full_name} · {user.email}</span>
             </div>
             <button
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" weight="bold" />
             </button>
           </div>
 
           <div className="p-6 flex flex-col gap-6">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Asosiy</span>
+              <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">Asosiy</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Ism Familiya *" htmlFor={`${uid}-full-name`}>
                   <input
@@ -152,7 +152,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             </div>
 
             <div className="flex flex-col gap-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Ish</span>
+              <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">Ish</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Bo'lim" htmlFor={`${uid}-department`}>
                   <select
@@ -189,7 +189,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             </div>
 
             <div className="flex flex-col gap-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-[#999]">Shaxsiy</span>
+              <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">Shaxsiy</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Tug'ilgan sana" htmlFor={`${uid}-birth-date`}>
                   <input
@@ -254,19 +254,19 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#F0F0F0] sticky bottom-0 bg-white">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line sticky bottom-0 bg-surface-raised">
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                saving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+              className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
+                saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}

@@ -104,12 +104,12 @@ export function Faollik() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-surface border border-line rounded-surface p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
           <MagnifyingGlass
             size={14}
             weight="bold"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
           />
           <input
             type="text"
@@ -118,7 +118,7 @@ export function Faollik() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") applySearch() }}
             onBlur={applySearch}
-            className="w-full pl-9 pr-3 py-2 border border-[#E5E5E5] rounded-[8px] text-[13px] focus:border-[#141414] outline-none transition-colors"
+            className="w-full pl-9 pr-3 py-2 border border-line rounded-control text-base focus:border-line-focus outline-none transition-colors"
           />
         </div>
 
@@ -128,7 +128,7 @@ export function Faollik() {
             setFilters({ ...filters, actor_id: e.target.value || undefined })
             setPage(0)
           }}
-          className="px-3 py-2 border border-[#E5E5E5] rounded-[8px] text-[12px] text-[#141414] focus:border-[#141414] outline-none transition-colors"
+          className="px-3 py-2 border border-line rounded-control text-sm text-ink focus:border-line-focus outline-none transition-colors"
         >
           <option value="">Barcha hodimlar</option>
           {users.map((u) => (
@@ -145,7 +145,7 @@ export function Faollik() {
             })
             setPage(0)
           }}
-          className="px-3 py-2 border border-[#E5E5E5] rounded-[8px] text-[12px] text-[#141414] focus:border-[#141414] outline-none transition-colors"
+          className="px-3 py-2 border border-line rounded-control text-sm text-ink focus:border-line-focus outline-none transition-colors"
         >
           <option value="">Barcha bo'limlar</option>
           {(Object.keys(ENTITY_LABELS) as ActivityEntityType[]).map((k) => (
@@ -162,7 +162,7 @@ export function Faollik() {
             })
             setPage(0)
           }}
-          className="px-3 py-2 border border-[#E5E5E5] rounded-[8px] text-[12px] text-[#141414] focus:border-[#141414] outline-none transition-colors"
+          className="px-3 py-2 border border-line rounded-control text-sm text-ink focus:border-line-focus outline-none transition-colors"
         >
           <option value="">Barcha amallar</option>
           <option value="created">Yaratish</option>
@@ -173,7 +173,7 @@ export function Faollik() {
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="px-3 py-2 text-[12px] text-[#666] hover:text-[#141414] transition-colors"
+            className="px-3 py-2 text-sm text-ink-muted hover:text-ink transition-colors"
           >
             Tozalash
           </button>
@@ -181,23 +181,23 @@ export function Faollik() {
       </div>
 
       {/* Activity feed */}
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
+      <div className="bg-surface border border-line rounded-surface overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-[13px] text-[#999]">Yuklanmoqda...</div>
+          <div className="p-12 text-center text-base text-ink-faint">Yuklanmoqda...</div>
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
-            <ClockCounterClockwise size={32} weight="bold" className="mx-auto text-[#CCC] mb-3" />
-            <p className="text-[14px] font-bold text-[#141414] mb-1">Hech narsa topilmadi</p>
-            <p className="text-[12px] text-[#999]">
+            <ClockCounterClockwise size={32} weight="bold" className="mx-auto text-ink-faint mb-3" />
+            <p className="text-md font-bold text-ink mb-1">Hech narsa topilmadi</p>
+            <p className="text-sm text-ink-faint">
               Filtrni o'zgartiring yoki keyinroq qaytib keling
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#F0F0F0]">
+          <div className="divide-y divide-line">
             {grouped.map((group) => (
               <div key={group.date}>
-                <div className="px-6 py-3 bg-[#FBFBFB] border-b border-[#F0F0F0]">
-                  <p className="text-[11px] font-bold text-[#666] uppercase tracking-wide">
+                <div className="px-6 py-3 bg-surface-sunken border-b border-line">
+                  <p className="text-xs font-bold text-ink-muted uppercase tracking-wide">
                     {group.label}
                   </p>
                 </div>
@@ -209,22 +209,22 @@ export function Faollik() {
 
         {/* Pagination */}
         {!isLoading && total > 0 && (
-          <div className="px-6 py-3 border-t border-[#F0F0F0] flex items-center justify-between flex-wrap gap-2">
-            <p className="text-[11px] text-[#999]">
+          <div className="px-6 py-3 border-t border-line flex items-center justify-between flex-wrap gap-2">
+            <p className="text-xs text-ink-faint">
               Jami {total} ta amal · {page * PAGE_LIMIT + 1}-{Math.min((page + 1) * PAGE_LIMIT, total)} ko'rsatilmoqda
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-3 py-1 text-[12px] border border-[#E5E5E5] rounded-[6px] disabled:opacity-40 hover:bg-[#F9F9F8] transition-colors"
+                className="px-3 py-1 text-sm border border-line rounded-control-sm disabled:opacity-40 hover:bg-mute-ghost-hover transition-colors"
               >
                 ← Oldingi
               </button>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!hasMore}
-                className="px-3 py-1 text-[12px] border border-[#E5E5E5] rounded-[6px] disabled:opacity-40 hover:bg-[#F9F9F8] transition-colors"
+                className="px-3 py-1 text-sm border border-line rounded-control-sm disabled:opacity-40 hover:bg-mute-ghost-hover transition-colors"
               >
                 Keyingi →
               </button>
@@ -248,15 +248,15 @@ function StatCard({
   subtitle?: string
 }) {
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-5">
+    <div className="bg-surface border border-line rounded-surface p-5">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-[#666]">{icon}</div>
-        <span className="text-[12px] text-[#666] font-medium">{label}</span>
+        <div className="text-ink-muted">{icon}</div>
+        <span className="text-sm text-ink-muted font-medium">{label}</span>
       </div>
-      <p className="text-[20px] font-bold text-[#141414] mb-1" style={{ letterSpacing: "-0.4px" }}>
+      <p className="text-lg font-bold text-ink mb-1" style={{ letterSpacing: "-0.4px" }}>
         {value}
       </p>
-      {subtitle && <p className="text-[11px] text-[#999]">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-ink-faint">{subtitle}</p>}
     </div>
   )
 }
@@ -270,33 +270,33 @@ function ActivityRow({ log }: { log: ActivityLog }) {
     minute: "2-digit",
   })
 
-  const entityColor = ENTITY_COLORS[log.entity_type] ?? "#999"
+  const entityColor = ENTITY_COLORS[log.entity_type] ?? "#999999"
   const entityLabel = ENTITY_LABELS[log.entity_type] ?? log.entity_type
 
   return (
-    <div className="px-6 py-4 hover:bg-[#FBFBFB] transition-colors">
+    <div className="px-6 py-4 hover:bg-surface-sunken transition-colors">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-[#141414] flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-ink-on-accent flex-shrink-0">
           {initials}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-[13px] font-bold text-[#141414]">
+            <span className="text-base font-bold text-ink">
               {log.actor_name ?? "Tizim"}
             </span>
             <StatusBadge label={ACTION_LABELS[log.action]} variant={ACTION_VARIANTS[log.action]} />
             <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
               style={{ backgroundColor: entityColor + "15", color: entityColor }}
             >
               <span className="w-1 h-1 rounded-full" style={{ backgroundColor: entityColor }} />
               {entityLabel}
             </span>
-            <span className="text-[11px] text-[#999] ml-auto">{time}</span>
+            <span className="text-xs text-ink-faint ml-auto">{time}</span>
           </div>
 
-          <p className="text-[13px] text-[#666] leading-snug">
+          <p className="text-base text-ink-muted leading-snug">
             {log.description ?? `${log.entity_type}: ${log.entity_id}`}
           </p>
         </div>

@@ -97,29 +97,29 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Cashbackni o'zgartirish</h2>
-              <span className="text-[11px] text-[#999]">{clientName} · joriy: {formattedBalance} so'm</span>
+              <h2 id={titleId} className="text-md font-bold text-ink">Cashbackni o'zgartirish</h2>
+              <span className="text-xs text-ink-muted">{clientName} · joriy: {formattedBalance} so'm</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" weight="bold" />
             </button>
           </div>
 
           {/* Body */}
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-text border border-line">
                 {error}
               </div>
             )}
@@ -130,10 +130,10 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 type="button"
                 onClick={() => setType("add")}
                 aria-pressed={type === "add"}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[13px] font-bold transition-colors border ${
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-control text-base font-bold transition-colors border ${
                   type === "add"
-                    ? "bg-[#F5F5F5] text-[#141414] border-[#E0E0E0]"
-                    : "bg-white text-[#999] border-[#E0E0E0] hover:bg-[#F9F9F9]"
+                    ? "bg-mute-soft text-ink border-line"
+                    : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
                 <Plus size={14} weight="bold" />
@@ -143,10 +143,10 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 type="button"
                 onClick={() => setType("subtract")}
                 aria-pressed={type === "subtract"}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-[8px] text-[13px] font-bold transition-colors border ${
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-control text-base font-bold transition-colors border ${
                   type === "subtract"
-                    ? "bg-orange-50 text-orange-700 border-orange-200"
-                    : "bg-white text-[#999] border-[#E0E0E0] hover:bg-[#F9F9F9]"
+                    ? "bg-warning-soft text-warning-dark border-line"
+                    : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
                 <Minus size={14} weight="bold" />
@@ -156,7 +156,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
 
             {/* Amount */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={amountId} className="text-[12px] font-medium text-[#999]">Summa (so'm) *</label>
+              <label htmlFor={amountId} className="text-sm font-medium text-ink-muted">Summa (so'm) *</label>
               <input
                 id={amountId}
                 type="number"
@@ -166,40 +166,40 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="10000"
                 autoFocus
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={descriptionId} className="text-[12px] font-medium text-[#999]">Tavsif *</label>
+              <label htmlFor={descriptionId} className="text-sm font-medium text-ink-muted">Tavsif *</label>
               <textarea
                 id={descriptionId}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Masalan: bayram bonusi"
                 rows={2}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors resize-none"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors resize-none"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !amount || !description.trim()}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
+              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
                 saving || !amount || !description.trim()
-                  ? "bg-[#CCCCCC] cursor-not-allowed"
-                  : "bg-[#141414] hover:bg-[#333]"
+                  ? "bg-mute-soft cursor-not-allowed"
+                  : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}

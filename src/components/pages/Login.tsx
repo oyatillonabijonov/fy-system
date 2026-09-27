@@ -13,7 +13,7 @@ export function Login() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Gradient mesh background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FAFAFA] via-white to-[#F5F5F5]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-page-subtle via-page to-page-subtle" />
 
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-40 blur-[100px] animate-blob"
@@ -28,8 +28,7 @@ export function Login() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div
-          className="bg-white/95 backdrop-blur-xl rounded-[16px] p-10 border border-white/60"
-          style={{ boxShadow: "0 20px 60px -10px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255,255,255,0.5)" }}
+          className="bg-surface-raised rounded-overlay p-10 shadow-lg"
         >
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
@@ -39,7 +38,7 @@ export function Login() {
           <LoginForm onSuccess={() => navigate("/dashboard", { replace: true })} />
         </div>
 
-        <p className="text-center text-[11px] text-[#999999] mt-6 tracking-tight">
+        <p className="text-center text-xs text-ink-muted mt-6 tracking-tight">
           © 2026 Fikr Yetakchilari · Biznes Klub
         </p>
       </div>
@@ -74,48 +73,48 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label htmlFor={emailId} className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Email</label>
+        <label htmlFor={emailId} className="text-sm font-semibold text-ink mb-1.5 block tracking-tight">Email</label>
         <input
           id={emailId}
           type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           required autoFocus placeholder="email@example.com"
-          className="w-full px-4 py-3 bg-white border border-[#E5E5E5] rounded-[10px] text-[14px] text-[#141414] placeholder:text-[#CCCCCC] focus:border-[#141414] focus:ring-2 focus:ring-[#141414]/5 outline-none transition-all"
+          className="w-full px-4 py-3 bg-surface border border-line rounded-control text-md text-ink placeholder:text-ink-faint focus:border-line-focus outline-none transition-all"
         />
       </div>
 
       <div>
-        <label htmlFor={passwordId} className="text-[12px] font-semibold text-[#141414] mb-1.5 block tracking-tight">Parol</label>
+        <label htmlFor={passwordId} className="text-sm font-semibold text-ink mb-1.5 block tracking-tight">Parol</label>
         <div className="relative">
           <input
             id={passwordId}
             type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
             required placeholder="••••••••"
-            className="w-full px-4 py-3 pr-12 bg-white border border-[#E5E5E5] rounded-[10px] text-[14px] text-[#141414] placeholder:text-[#CCCCCC] focus:border-[#141414] focus:ring-2 focus:ring-[#141414]/5 outline-none transition-all"
+            className="w-full px-4 py-3 pr-12 bg-surface border border-line rounded-control text-md text-ink placeholder:text-ink-faint focus:border-line-focus outline-none transition-all"
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-[#999999] hover:text-[#141414] transition-colors" tabIndex={-1}>
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-muted hover:text-ink transition-colors" tabIndex={-1}>
             {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="px-3.5 py-2.5 bg-red-50 border border-red-200 rounded-[10px] text-[12px] text-red-700 font-medium">{error}</div>
+        <div className="px-3.5 py-2.5 bg-danger-soft border border-danger-soft rounded-control text-sm text-danger-dark font-medium">{error}</div>
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full py-3 mt-2 bg-[#141414] text-white rounded-[10px] text-[14px] font-bold hover:bg-[#000] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 group"
+        className="w-full py-3 mt-2 bg-accent text-ink-on-accent rounded-control text-md font-bold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 group"
         style={{ letterSpacing: "-0.3px" }}>
         {loading ? (
-          <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Kirilmoqda...</>
+          <><span className="w-4 h-4 border-2 border-ink-on-accent/30 border-t-ink-on-accent rounded-full animate-spin" />Kirilmoqda...</>
         ) : (
           <>Kirish<ArrowRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" /></>
         )}
       </button>
 
-      <div className="pt-2 border-t border-[#F0F0F0] text-center">
-        <p className="text-[11px] text-[#999999]">Yordam kerak? Administrator bilan bog'laning</p>
+      <div className="pt-2 border-t border-line text-center">
+        <p className="text-xs text-ink-muted">Yordam kerak? Administrator bilan bog'laning</p>
       </div>
     </form>
   )

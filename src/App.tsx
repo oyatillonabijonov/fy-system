@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom"
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
@@ -63,6 +63,7 @@ function pageMetaFor(pathname: string): PageMeta {
 
 function AppShell() {
   const location = useLocation()
+  const navigate = useNavigate()
   const meta = pageMetaFor(location.pathname)
 
   const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
@@ -89,229 +90,152 @@ function AppShell() {
     { id: 3, title: "Tizim yangilanishi", desc: "Yangi versiya 2.4.0 muvaffaqiyatli o'rnatildi.",   time: "3 soat oldin",   type: "system",  unread: false },
   ]
 
+  const menuItem = "flex items-start gap-3 px-3 py-2 rounded-item"
+  const iconBtn = "relative h-control-md w-9 flex items-center justify-center rounded-control text-ink transition-colors hover:bg-mute-ghost-hover"
+
   return (
-    <div className="h-screen text-foreground flex overflow-hidden transition-colors duration-300"
-      style={{ background: 'var(--sidebar-bg)' }}>
+    <div className="h-screen text-ink flex overflow-hidden bg-page">
       <Sidebar />
 
       {/* Main content panel */}
-      <div
-        className="flex-1 flex flex-col h-screen overflow-hidden rounded-none relative z-10 transition-colors duration-300"
-        style={{ background: 'var(--main-bg)' }}
-      >
-        <div className="flex-1 flex flex-col relative min-h-0">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-surface">
+        {/* Header */}
+        <header className="h-16 px-6 flex items-center justify-between gap-6 flex-shrink-0 border-b border-line">
+          {/* Left: page title */}
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-md font-semibold text-ink truncate">{meta.title}</h1>
+            <p className="text-sm text-ink-muted truncate">{meta.desc}</p>
+          </div>
 
-          {/* Header */}
-          <header
-            className="px-[24px] pt-[15px] pb-[15px] flex-shrink-0 transition-colors duration-300"
-            style={{ borderBottom: '1px solid var(--header-border)' }}
-          >
-            <div
-              className="h-[54px] apple-sq-12 flex items-center justify-between px-[16px]"
-              style={{ background: 'var(--header-bg)' }}
-            >
-              {/* Left: page title */}
-              <div className="flex flex-col gap-[4px]">
-                <div className="text-[20px] font-bold leading-tight" style={{ color: 'var(--header-text)' }}>
-                  {meta.title}
-                </div>
-                <div className="text-[12px] font-medium leading-tight" style={{ color: 'var(--header-muted)' }}>
-                  {meta.desc}
-                </div>
-              </div>
-
-              {/* Right: Search, Notif, Lang, Theme, Settings */}
-              <div className="flex items-center gap-[12px]">
-
-                {/* Search */}
-                <div className="relative w-[320px]">
-                  <MagnifyingGlass
-                    size={20}
-                    className="absolute left-[12px] top-1/2 -translate-y-1/2"
-                    weight="bold"
-                    style={{ color: 'var(--header-muted)' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Tizim bo'ylab qidirish..."
-                    aria-label="Tizim bo'ylab qidirish"
-                    className="w-full border border-transparent focus:border-[var(--header-text)] rounded-[8px] py-[10px] pl-[40px] pr-[16px] text-sm focus:ring-0 outline-none transition-colors"
-                    style={{
-                      background: 'var(--header-input-bg)',
-                      color: 'var(--header-text)',
-                    }}
-                  />
-                </div>
-
-                {/* Notifications */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsNotifOpen(!isNotifOpen)}
-                    aria-label="Bildirishnomalar"
-                    aria-haspopup="true"
-                    aria-expanded={isNotifOpen}
-                    className="relative p-2 rounded-[8px] transition-colors"
-                    style={{ background: isNotifOpen ? 'var(--header-hover)' : 'transparent' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isNotifOpen ? 'var(--header-hover)' : 'transparent'}
-                  >
-                    <Bell size={24} weight="bold" style={{ color: 'var(--header-icon)' }} />
-                    <span className="absolute top-[8px] right-[8px] w-[10px] h-[10px] bg-[#FF3B30] border-2 rounded-full"
-                      style={{ borderColor: 'var(--main-bg)' }}></span>
-                  </button>
-
-                  <AnimatePresence>
-                    {isNotifOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                        className="absolute top-full right-0 mt-2 w-[300px] rounded-[8px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] overflow-hidden z-50 origin-top-right"
-                        style={{
-                          background: 'var(--dropdown-bg)',
-                          border: '1px solid var(--dropdown-border)',
-                        }}
-                      >
-                        <div className="px-4 py-3 flex items-center justify-between"
-                          style={{ borderBottom: '1px solid var(--dropdown-border)' }}>
-                          <span className="text-[14px] font-bold" style={{ color: 'var(--dropdown-text)' }}>
-                            Bildirishnomalar
-                          </span>
-                          <div className="w-2 h-2 bg-[#FF3B30] rounded-full shadow-[0_0_8px_rgba(255,59,48,0.4)]" />
-                        </div>
-                        <div className="max-h-[360px] overflow-y-auto no-scrollbar py-1">
-                          {notifications.map((notif) => (
-                            <div
-                              key={notif.id}
-                              className="px-4 py-2.5 flex items-start gap-3 cursor-pointer transition-colors"
-                              style={{ color: 'var(--dropdown-text)' }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--dropdown-hover-bg)'}
-                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                            >
-                              <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${notif.unread ? '' : 'border'}`}
-                                style={{
-                                  background: notif.unread ? 'var(--accent)' : 'transparent',
-                                  borderColor: 'var(--dropdown-border)',
-                                }} />
-                              <div className="flex flex-col gap-0.5 overflow-hidden">
-                                <div className="text-[12px] font-bold leading-tight">{notif.title}</div>
-                                <div className="text-[11px] line-clamp-1 leading-tight" style={{ color: 'var(--dropdown-muted)' }}>{notif.desc}</div>
-                                <div className="text-[10px] mt-0.5" style={{ color: 'var(--dropdown-muted)', opacity: 0.7 }}>{notif.time}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          className="w-full py-2.5 text-[11px] font-bold transition-colors"
-                          style={{ borderTop: '1px solid var(--dropdown-border)', color: 'var(--dropdown-muted)' }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'var(--dropdown-hover-bg)'
-                              ; (e.currentTarget as HTMLElement).style.color = 'var(--dropdown-text)'
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'transparent'
-                              ; (e.currentTarget as HTMLElement).style.color = 'var(--dropdown-muted)'
-                          }}
-                        >
-                          Barchasini ko'rish
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Language */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsLangOpen(!isLangOpen)}
-                    aria-label="Tilni tanlash"
-                    aria-haspopup="true"
-                    aria-expanded={isLangOpen}
-                    className="flex items-center gap-[6px] px-3 py-2 rounded-[8px] cursor-pointer transition-colors"
-                    style={{ background: 'var(--header-input-bg)', color: 'var(--header-text)' }}
-                  >
-                    <span className="text-sm font-semibold uppercase">{currentLang}</span>
-                    <CaretDown
-                      size={16}
-                      weight="bold"
-                      className={`transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`}
-                      style={{ color: 'var(--header-muted)' }}
-                    />
-                  </button>
-                  <AnimatePresence>
-                    {isLangOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-full right-0 mt-2 w-[80px] rounded-[8px] shadow-lg overflow-hidden z-50"
-                        style={{ background: 'var(--dropdown-bg)', border: '1px solid var(--dropdown-border)' }}
-                      >
-                        {['uz', 'ru', 'en'].map((lang) => (
-                          <button
-                            type="button"
-                            key={lang}
-                            onClick={() => { setCurrentLang(lang); setIsLangOpen(false) }}
-                            aria-pressed={currentLang === lang}
-                            className="w-full px-4 py-2 text-sm font-medium transition-colors text-left uppercase"
-                            style={{
-                              color: currentLang === lang ? 'var(--accent)' : 'var(--dropdown-text)',
-                              background: currentLang === lang ? 'var(--dropdown-active-bg)' : 'transparent',
-                            }}
-                            onMouseEnter={e => {
-                              if (currentLang !== lang) (e.currentTarget as HTMLElement).style.background = 'var(--dropdown-hover-bg)'
-                            }}
-                            onMouseLeave={e => {
-                              if (currentLang !== lang) (e.currentTarget as HTMLElement).style.background = 'transparent'
-                            }}
-                          >
-                            {lang}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Theme switcher */}
-                <ThemeSwitcher />
-
-                {/* Settings */}
-                <button
-                  type="button"
-                  aria-label="Sozlamalar"
-                  className="p-2 rounded-[8px] transition-colors"
-                  style={{ color: 'var(--header-icon)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <Gear size={24} weight="bold" />
-                </button>
-              </div>
+          {/* Right: Search, Notif, Lang, Theme, Settings */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Search */}
+            <div className="relative w-[280px]">
+              <MagnifyingGlass
+                size={16}
+                weight="bold"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Tizim bo'ylab qidirish"
+                aria-label="Tizim bo'ylab qidirish"
+                className="w-full h-control-md rounded-control pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface-sunken border border-transparent outline-none transition-colors hover:bg-surface-sunken-hover focus:border-line-focus"
+              />
             </div>
-          </header>
 
-          {/* Main scroll area */}
-          <main className="flex-1 px-[16px] pt-[32px] pb-[20px] overflow-y-auto no-scrollbar relative"
-            style={{ background: 'var(--main-bg)' }}>
-            <div className="max-w-[1400px] mx-auto h-full">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={location.pathname}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="h-full"
-                >
-                  <Outlet />
-                </motion.div>
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                aria-label="Bildirishnomalar"
+                aria-haspopup="true"
+                aria-expanded={isNotifOpen}
+                className={`${iconBtn} ${isNotifOpen ? "bg-mute-ghost-hover" : ""}`}
+              >
+                <Bell size={20} weight="bold" />
+                <span className="absolute top-2 right-2 size-2 rounded-full bg-danger" />
+              </button>
+
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+                    className="absolute top-full right-0 mt-2 w-[320px] rounded-menu bg-surface-raised shadow-md overflow-hidden z-50 origin-top-right"
+                  >
+                    <div className="px-4 h-11 flex items-center border-b border-line">
+                      <span className="text-base font-semibold text-ink">Bildirishnomalar</span>
+                    </div>
+                    <div className="max-h-[360px] overflow-y-auto no-scrollbar p-1">
+                      {notifications.map((notif) => (
+                        <div key={notif.id} className={menuItem}>
+                          <span className={`mt-1.5 size-2 rounded-full flex-shrink-0 ${notif.unread ? "bg-accent" : "bg-mute-soft"}`} />
+                          <span className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-base font-medium text-ink">{notif.title}</span>
+                            <span className="text-sm text-ink-muted line-clamp-1">{notif.desc}</span>
+                            <span className="text-xs text-ink-faint">{notif.time}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
-          </main>
-        </div>
+
+            {/* Language */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                aria-label="Tilni tanlash"
+                aria-haspopup="true"
+                aria-expanded={isLangOpen}
+                className="h-control-md flex items-center gap-1.5 px-3 rounded-control bg-mute-soft text-ink transition-colors hover:bg-mute-soft-hover"
+              >
+                <span className="text-base font-medium uppercase">{currentLang}</span>
+                <CaretDown
+                  size={14}
+                  weight="bold"
+                  className={`text-ink-muted transition-transform ${isLangOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              <AnimatePresence>
+                {isLangOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+                    className="absolute top-full right-0 mt-2 w-[96px] p-1 rounded-menu bg-surface-raised shadow-md z-50"
+                  >
+                    {['uz', 'ru', 'en'].map((lang) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        aria-pressed={currentLang === lang}
+                        onClick={() => { setCurrentLang(lang); setIsLangOpen(false) }}
+                        className={`w-full h-control-sm px-3 rounded-item text-base font-medium text-left uppercase transition-colors ${currentLang === lang ? "bg-surface-sunken text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Theme switcher */}
+            <ThemeSwitcher />
+
+            {/* Settings */}
+            <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Sozlamalar" className={iconBtn}>
+              <Gear size={20} weight="bold" />
+            </button>
+          </div>
+        </header>
+
+        {/* Main scroll area */}
+        <main className="flex-1 px-6 pt-6 pb-5 overflow-y-auto no-scrollbar relative">
+          <div className="max-w-[1400px] mx-auto h-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
+                className="h-full"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ import {
     type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useTheme } from "@/context/ThemeContext"
@@ -194,282 +194,159 @@ export function Sidebar() {
     return (
         <motion.aside
             initial={false}
-            animate={{ width: isCollapsed ? 80 : 340 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="h-screen flex flex-col overflow-hidden relative sticky top-0 flex-shrink-0 transition-colors duration-300"
-            style={{
-                background: 'var(--sidebar-bg)',
-                padding: "20px 20px",
-            }}
+            animate={{ width: isCollapsed ? 68 : 264 }}
+            transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+            className="h-screen flex flex-col overflow-hidden sticky top-0 flex-shrink-0 bg-page px-3 py-4"
         >
             {/* Top: Logo + Collapse button */}
-            <div className="flex items-center justify-between h-8 mb-[20px] px-1">
-                <AnimatePresence mode="wait">
-                    {!isCollapsed ? (
-                        <motion.img
-                            key="logo"
-                            src={themeId === 'black-orange' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
-                            alt="Biznes Klub Logo"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            className="w-auto h-8"
-                        />
-                    ) : (
-                        <div key="spacer" className="w-0 h-8" />
-                    )}
-                </AnimatePresence>
+            <div className={`flex items-center h-control-md mb-4 ${isCollapsed ? "justify-center" : "justify-between pl-2"}`}>
+                {!isCollapsed && (
+                    <img
+                        src={themeId === 'dark' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
+                        alt="Biznes Klub Logo"
+                        className="w-auto h-7"
+                    />
+                )}
                 <button
                     type="button"
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
                     aria-expanded={!isCollapsed}
-                    className="p-2 rounded-[8px] transition-colors flex items-center justify-center flex-shrink-0"
-                    style={{ color: 'var(--sidebar-muted)' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--sidebar-collapse-hover)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                    className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink-muted transition-colors hover:bg-mute-ghost-hover hover:text-ink"
                 >
-                    {isCollapsed ? <CaretRight size={20} weight="bold" /> : <CaretLeft size={20} weight="bold" />}
+                    {isCollapsed ? <CaretRight size={16} weight="bold" /> : <CaretLeft size={16} weight="bold" />}
                 </button>
             </div>
 
             {/* Search */}
-            <AnimatePresence>
-                {!isCollapsed && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="relative mb-[20px]"
-                    >
-                        <input
-                            type="text"
-                            placeholder="Qidiruv..."
-                            aria-label="Menyudan qidirish"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-[52px] apple-sq-12 pl-4 pr-12 text-[16px] outline-none transition-colors border border-[var(--sidebar-search-border)] focus:border-[var(--sidebar-fg)]"
-                            style={{
-                                background: 'var(--sidebar-search-bg)',
-                                color: 'var(--sidebar-fg)',
-                            }}
-                        />
-                        <MagnifyingGlass
-                            size={20}
-                            className="absolute right-5 top-1/2 -translate-y-1/2"
-                            weight="bold"
-                            style={{ color: 'var(--sidebar-muted)' }}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {!isCollapsed && (
+                <div className="relative mb-4">
+                    <MagnifyingGlass
+                        size={16}
+                        weight="bold"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Menyudan qidirish"
+                        aria-label="Menyudan qidirish"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full h-control-md rounded-control pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface border border-transparent outline-none transition-colors focus:border-line-focus"
+                    />
+                </div>
+            )}
 
             {/* Nav */}
-            <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden -mx-4 px-4">
-                <nav className="flex-1 flex flex-col gap-[12px] overflow-y-hidden hover:overflow-y-auto no-scrollbar transition-all pt-2 pb-[100px]">
-                    {visibleSections.map((section, index) => (
-                        <motion.div key={section.title} layout className="flex flex-col gap-[12px]">
-                            <div className="flex flex-col gap-[8px]">
-                                <AnimatePresence>
-                                    {!isCollapsed && (
-                                        <motion.h3
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -10 }}
-                                            className="text-[12px] font-medium uppercase tracking-wider px-4"
-                                            style={{ color: 'var(--sidebar-section-label)' }}
-                                        >
-                                            {section.title}
-                                        </motion.h3>
+            <nav aria-label="Asosiy menyu" className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar min-h-0 pb-4">
+                {visibleSections.map((section) => (
+                    <div key={section.title} className="flex flex-col gap-0.5">
+                        {!isCollapsed && (
+                            <h3 className="text-xs font-medium text-ink-muted px-3 pb-1">
+                                {section.title}
+                            </h3>
+                        )}
+                        {section.items.map((item) => {
+                            const active = isActive(item)
+                            const hasSubItems = item.subItems && item.subItems.length > 0
+                            const isExpanded = expandedItems.includes(item.name)
+
+                            return (
+                                <div key={item.name} className="flex flex-col">
+                                    <button
+                                        onClick={() => {
+                                            if (hasSubItems && !isCollapsed) {
+                                                toggleExpand(item.name)
+                                            } else {
+                                                handleNavigate(item)
+                                            }
+                                        }}
+                                        type="button"
+                                        onMouseEnter={() => handlePrefetch(item.name)}
+                                        onFocus={() => handlePrefetch(item.name)}
+                                        aria-current={active && !hasSubItems ? "page" : undefined}
+                                        aria-expanded={hasSubItems && !isCollapsed ? isExpanded : undefined}
+                                        title={isCollapsed ? item.name : undefined}
+                                        aria-label={isCollapsed ? item.name : undefined}
+                                        className={`flex items-center gap-3 h-control-md rounded-control text-base font-medium transition-colors ${isCollapsed ? "w-11 justify-center self-center" : "w-full px-3"} ${active ? "bg-surface text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                                    >
+                                        <item.icon size={18} weight="bold" className="flex-shrink-0" />
+                                        {!isCollapsed && (
+                                            <>
+                                                <span className="flex-1 text-left whitespace-nowrap truncate">{item.name}</span>
+                                                {hasSubItems && (
+                                                    <CaretDown
+                                                        size={14}
+                                                        weight="bold"
+                                                        className={`text-ink-faint transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                                    />
+                                                )}
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {hasSubItems && isExpanded && !isCollapsed && (
+                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                            {item.subItems?.map((subItem) => {
+                                                const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
+                                                return (
+                                                    <button
+                                                        key={subItem.name}
+                                                        type="button"
+                                                        onClick={() => handleNavigate(subItem)}
+                                                        aria-current={isSubActive ? "page" : undefined}
+                                                        className={`flex items-center gap-3 h-control-sm rounded-control-sm pl-10 pr-3 text-base font-medium transition-colors ${isSubActive ? "bg-surface text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                                                    >
+                                                        <subItem.icon size={16} weight="bold" className="flex-shrink-0" />
+                                                        <span className="flex-1 text-left truncate">{subItem.name}</span>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
                                     )}
-                                </AnimatePresence>
-                                <div className="flex flex-col gap-1">
-                                    {section.items.map((item) => {
-                                        const active = isActive(item)
-                                        const hasSubItems = item.subItems && item.subItems.length > 0
-                                        const isExpanded = expandedItems.includes(item.name)
-
-                                        return (
-                                            <div key={item.name} className="flex flex-col">
-                                                <motion.button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (hasSubItems && !isCollapsed) {
-                                                            toggleExpand(item.name)
-                                                        } else {
-                                                            handleNavigate(item)
-                                                        }
-                                                    }}
-                                                    onFocus={() => handlePrefetch(item.name)}
-                                                    aria-current={active && !hasSubItems ? "page" : undefined}
-                                                    aria-expanded={hasSubItems && !isCollapsed ? isExpanded : undefined}
-                                                    aria-label={isCollapsed ? item.name : undefined}
-                                                    layout
-                                                    className={`flex items-center text-left apple-sq-12 cursor-pointer transition-all duration-200 group relative overflow-hidden ${isCollapsed ? "w-11 h-11" : "px-4 py-2 w-full"}`}
-                                                    style={{
-                                                        background: active ? 'var(--sidebar-active-bg)' : 'transparent',
-                                                        border: active ? '1px solid var(--sidebar-active-border)' : '1px solid transparent',
-                                                        color: active ? 'var(--sidebar-fg)' : 'var(--sidebar-muted)',
-                                                    }}
-                                                    onMouseEnter={e => {
-                                                        if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--sidebar-hover-bg)'
-                                                        handlePrefetch(item.name)
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'
-                                                    }}
-                                                    title={isCollapsed ? item.name : ""}
-                                                >
-                                                    <span className={`flex-shrink-0 flex items-center justify-center ${isCollapsed ? "w-11 h-11" : "w-5 h-5 mr-3"}`}>
-                                                        <item.icon size={20} className="transition-all" weight="bold" />
-                                                    </span>
-                                                    <AnimatePresence>
-                                                        {!isCollapsed && (
-                                                            <motion.span
-                                                                initial={{ opacity: 0, x: -5 }}
-                                                                animate={{ opacity: 1, x: 0 }}
-                                                                exit={{ opacity: 0, x: -5 }}
-                                                                className="flex-1 flex items-center justify-between"
-                                                            >
-                                                                <span className="text-[16px] font-normal whitespace-nowrap">
-                                                                    {item.name}
-                                                                </span>
-                                                                {hasSubItems && (
-                                                                    <motion.span
-                                                                        animate={{ rotate: isExpanded ? 180 : 0 }}
-                                                                        transition={{ duration: 0.2 }}
-                                                                    >
-                                                                        <CaretDown size={16} weight="bold" style={{ color: 'var(--sidebar-muted)' }} />
-                                                                    </motion.span>
-                                                                )}
-                                                            </motion.span>
-                                                        )}
-                                                    </AnimatePresence>
-                                                    {active && !isCollapsed && (
-                                                        <motion.span
-                                                            layoutId="active-indicator"
-                                                            className="absolute left-0 w-1 h-6 rounded-r-full"
-                                                            style={{ background: 'var(--sidebar-indicator)' }}
-                                                        />
-                                                    )}
-                                                </motion.button>
-
-                                                <AnimatePresence>
-                                                    {hasSubItems && isExpanded && !isCollapsed && (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: "auto" }}
-                                                            exit={{ opacity: 0, height: 0 }}
-                                                            className="overflow-hidden flex flex-col mt-1"
-                                                        >
-                                                            {item.subItems?.map((subItem) => {
-                                                                const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
-                                                                return (
-                                                                    <motion.button
-                                                                        type="button"
-                                                                        key={subItem.name}
-                                                                        onClick={() => handleNavigate(subItem)}
-                                                                        aria-current={isSubActive ? "page" : undefined}
-                                                                        className="flex items-center text-left pl-12 pr-4 py-2 cursor-pointer transition-all duration-200 apple-sq-10 group"
-                                                                        style={{
-                                                                            color: isSubActive ? 'var(--sidebar-fg)' : 'var(--sidebar-muted)',
-                                                                            fontWeight: isSubActive ? 500 : 400,
-                                                                        }}
-                                                                        onMouseEnter={e => {
-                                                                            if (!isSubActive) (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-fg)'
-                                                                        }}
-                                                                        onMouseLeave={e => {
-                                                                            if (!isSubActive) (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-muted)'
-                                                                        }}
-                                                                    >
-                                                                        <subItem.icon size={16} className="mr-3 transition-colors" weight="bold" />
-                                                                        <span className="flex-1 truncate">{subItem.name}</span>
-                                                                    </motion.button>
-                                                                )
-                                                            })}
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        )
-                                    })}
                                 </div>
-                            </div>
-                            {index < visibleSections.length - 1 && (
-                                <div
-                                    className="mx-4 h-[1px]"
-                                    style={{
-                                        backgroundImage: `linear-gradient(to right, var(--sidebar-divider) 0%, var(--sidebar-divider) 50%, transparent 50%, transparent 100%)`,
-                                        backgroundSize: '14px 1px',
-                                        backgroundRepeat: 'repeat-x'
-                                    }}
-                                />
-                            )}
-                        </motion.div>
-                    ))}
-                </nav>
-                {/* Scroll blurs */}
-                <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none z-10"
-                    style={{ background: 'linear-gradient(to bottom, var(--sidebar-bg), transparent)' }} />
-                <div className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none z-10"
-                    style={{ background: 'linear-gradient(to top, var(--sidebar-bg) 30%, transparent)' }} />
-            </div>
+                            )
+                        })}
+                    </div>
+                ))}
+            </nav>
 
             {/* Profile / Logout */}
-            <motion.div
-                layout
-                className={`mt-auto w-full transition-all duration-300 ${isCollapsed ? "bg-transparent border-none p-0 h-auto flex flex-col items-center" : "h-[60px] apple-sq-12 px-4 py-[10px] flex items-center gap-3"}`}
-                style={isCollapsed ? {} : {
-                    background: 'var(--sidebar-profile-bg)',
-                    border: '1px solid var(--sidebar-profile-border)',
-                }}
-            >
-                <motion.div
-                    layout
-                    className={`rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${isCollapsed ? "w-11 h-11" : "w-10 h-10"}`}
-                    style={{ background: 'var(--sidebar-avatar-bg)' }}
+            <div className={`mt-auto flex items-center ${isCollapsed ? "flex-col" : "gap-3 rounded-surface bg-surface p-2"}`}>
+                <div
+                    className="size-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent text-ink-on-accent"
                     title={displayName ?? ""}
                 >
                     {displayAvatar ? (
                         <img src={displayAvatar} alt={displayName ?? ""} className="w-full h-full object-cover" />
                     ) : displayName ? (
-                        <span className="text-[14px] font-bold text-white">{userInitials}</span>
+                        <span className="text-sm font-semibold">{userInitials}</span>
                     ) : (
-                        <User size={20} className="text-white" weight="bold" />
+                        <User size={18} weight="bold" />
                     )}
-                </motion.div>
-                <AnimatePresence>
-                    {!isCollapsed && (
-                        <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            className="flex flex-col gap-0 min-w-0"
-                        >
-                            <span className="text-[16px] font-semibold truncate leading-tight" style={{ color: 'var(--sidebar-fg)' }}>
+                </div>
+                {!isCollapsed && (
+                    <>
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-base font-medium text-ink truncate">
                                 {displayName ?? "Mehmon"}
                             </span>
-                            <span className="text-[14px] truncate leading-tight" style={{ color: 'var(--sidebar-muted)' }}>
+                            <span className="text-sm text-ink-muted truncate">
                                 {roleLabel}
                             </span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-                {!isCollapsed && (
-                    <button
-                        type="button"
-                        onClick={handleSignOut}
-                        aria-label="Chiqish"
-                        className="ml-auto p-1 rounded-[6px] transition-colors flex-shrink-0"
-                        style={{ color: 'var(--sidebar-muted)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-fg)' }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--sidebar-muted)' }}
-                        title="Chiqish"
-                    >
-                        <SignOut size={20} weight="bold" />
-                    </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleSignOut}
+                            aria-label="Chiqish"
+                            title="Chiqish"
+                            className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink-muted transition-colors hover:bg-mute-ghost-hover hover:text-ink"
+                        >
+                            <SignOut size={18} weight="bold" />
+                        </button>
+                    </>
                 )}
-            </motion.div>
+            </div>
         </motion.aside>
     )
 }

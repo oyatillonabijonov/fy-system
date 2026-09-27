@@ -27,68 +27,68 @@ export function PaymentsLog() {
     <div className="flex flex-col gap-3">
       {/* Section header */}
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2 text-[15px] font-bold text-[#141414]">
+        <span className="flex items-center gap-2 text-md font-semibold text-ink">
           <Receipt size={18} weight="bold" /> To'lovlar tarixi
         </span>
         <button
           onClick={() => { setOpenKey((k) => k + 1); setShowAdd(true) }}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-[#333] transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
         >
           <Plus size={15} weight="bold" />
           To'lov qo'shish
         </button>
       </div>
 
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
+      <div className="bg-surface border border-line rounded-surface overflow-hidden">
         {isLoading ? (
           <div className="py-10 flex items-center justify-center">
             <ThinkingOrb state="searching" size={20} theme="light" />
           </div>
         ) : payments.length === 0 ? (
-          <div className="py-10 text-center text-[13px] text-[#999]">Hali to'lov qilinmagan</div>
+          <div className="py-10 text-center text-base text-ink-muted">Hali to'lov qilinmagan</div>
         ) : (
           <>
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-[11px] font-bold text-[#999] border-b border-[#F0F0F0]">
-                    <th className="px-4 py-2.5 font-bold">Ism / familiya</th>
-                    <th className="px-4 py-2.5 font-bold">Telefon</th>
-                    <th className="px-4 py-2.5 font-bold text-right">To'lov summasi</th>
-                    <th className="px-4 py-2.5 font-bold text-right">Kelishilgan summa</th>
-                    <th className="px-4 py-2.5 font-bold text-right">Qolgan qarz</th>
-                    <th className="px-4 py-2.5 font-bold">Tadbir</th>
-                    <th className="px-4 py-2.5 font-bold">To'lov turi</th>
-                    <th className="px-4 py-2.5 font-bold">Mas'ul</th>
-                    <th className="px-4 py-2.5 font-bold">Sana</th>
+                  <tr className="text-xs font-medium text-ink-muted border-b border-line">
+                    <th className="px-4 py-2.5 font-medium">Ism / familiya</th>
+                    <th className="px-4 py-2.5 font-medium">Telefon</th>
+                    <th className="px-4 py-2.5 font-medium text-right">To'lov summasi</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Kelishilgan summa</th>
+                    <th className="px-4 py-2.5 font-medium text-right">Qolgan qarz</th>
+                    <th className="px-4 py-2.5 font-medium">Tadbir</th>
+                    <th className="px-4 py-2.5 font-medium">To'lov turi</th>
+                    <th className="px-4 py-2.5 font-medium">Mas'ul</th>
+                    <th className="px-4 py-2.5 font-medium">Sana</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payments.map((p) => (
-                    <tr key={p.id} className="border-b border-[#F7F7F7] last:border-0 hover:bg-[#FBFBFB] transition-colors">
-                      <td className="px-4 py-2.5 text-[13px] font-medium text-[#141414] whitespace-nowrap">
+                    <tr key={p.id} className="border-b border-line last:border-0 hover:bg-mute-ghost-hover transition-colors">
+                      <td className="px-4 py-2.5 text-base font-medium text-ink whitespace-nowrap">
                         {p.client_name ?? p.participant_name ?? "—"}
                       </td>
-                      <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{formatPhone(p.client_phone)}</td>
-                      <td className="px-4 py-2.5 text-[13px] font-bold text-right whitespace-nowrap" style={{ color: "#1E7E34" }}>
+                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{formatPhone(p.client_phone)}</td>
+                      <td className="px-4 py-2.5 text-base font-bold text-right tabular-nums whitespace-nowrap text-success-text">
                         +{formatMoney(p.amount)}
                       </td>
-                      <td className="px-4 py-2.5 text-[13px] text-[#141414] text-right whitespace-nowrap">{formatMoney(p.price)}</td>
+                      <td className="px-4 py-2.5 text-base text-ink text-right tabular-nums whitespace-nowrap">{formatMoney(p.price)}</td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
                         {p.debt <= 0 ? (
                           <span className="inline-flex justify-end">
                             <StatusBadge label="To'langan" variant="success" dot />
                           </span>
                         ) : (
-                          <span className="text-[13px] font-bold" style={{ color: "#D13328" }}>{formatMoney(p.debt)}</span>
+                          <span className="text-base font-bold text-danger-text tabular-nums">{formatMoney(p.debt)}</span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{p.event_name ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{p.event_name ?? "—"}</td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
                         <StatusBadge label={METHOD_LABEL[p.method]} variant="neutral" />
                       </td>
-                      <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{p.recorded_by_name ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-[12px] text-[#999] whitespace-nowrap">{formatDate(p.created_at)}</td>
+                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{p.recorded_by_name ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-sm text-ink-muted whitespace-nowrap">{formatDate(p.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -96,10 +96,10 @@ export function PaymentsLog() {
             </div>
 
             {canLoadMore && (
-              <div className="p-3 border-t border-[#F0F0F0] flex justify-center">
+              <div className="p-3 border-t border-line flex justify-center">
                 <button
                   onClick={() => setLimit((l) => l + PAGE)}
-                  className="px-4 py-1.5 rounded-[8px] text-[12px] font-semibold text-[#666] border border-[#E0E0E0] hover:bg-[#F5F5F5] transition-colors"
+                  className="px-4 py-1.5 rounded-control text-sm font-semibold text-ink-muted border border-line hover:bg-mute-ghost-hover transition-colors"
                 >
                   Ko'proq yuklash
                 </button>

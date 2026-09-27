@@ -27,7 +27,7 @@ function initials(name: string): string {
 }
 
 const INPUT =
-  "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded }: EnrollParticipantModalProps) {
   const { user } = useAuth()
@@ -105,18 +105,18 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
             aria-labelledby={titleId}
             tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-white rounded-[12px] shadow-2xl w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
           >
-            <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 id={titleId} className="text-[16px] font-bold text-[#141414]">Ishtirokchi qo'shish</h3>
-              <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all">
-                <X size={20} className="text-[#999999]" weight="bold" />
+            <div className="p-5 border-b border-line flex items-center justify-between">
+              <h3 id={titleId} className="text-md font-bold text-ink">Ishtirokchi qo'shish</h3>
+              <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
+                <X size={20} className="text-ink-muted" weight="bold" />
               </button>
             </div>
 
             <div className="p-5 flex flex-col gap-4 overflow-y-auto">
               {error && (
-                <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+                <div className="px-3 py-2 rounded-surface text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                   {error}
                 </div>
               )}
@@ -124,9 +124,9 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               {/* 1. Client */}
               {!client ? (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={clientSearchId} className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
+                  <label htmlFor={clientSearchId} className="text-sm font-medium text-ink-muted">Mijoz *</label>
                   <div className="relative">
-                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
+                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" weight="bold" />
                     <input
                       id={clientSearchId}
                       value={query}
@@ -145,47 +145,47 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                             key={c.id}
                             disabled={added}
                             onClick={() => { setClient(c); setQuery(""); setResults([]); setError(null) }}
-                            className={`w-full flex items-center gap-2.5 p-2 rounded-[8px] transition-colors text-left ${added ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F5F5]"}`}
+                            className={`w-full flex items-center gap-2.5 p-2 rounded-item transition-colors text-left ${added ? "opacity-50 cursor-not-allowed" : "hover:bg-mute-ghost-hover"}`}
                           >
                             {c.image ? (
                               <img src={c.image} alt={c.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                             ) : (
-                              <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center shrink-0">
+                              <span className="w-8 h-8 rounded-full bg-mute-soft text-ink-muted text-xs font-bold flex items-center justify-center shrink-0">
                                 {initials(c.full_name)}
                               </span>
                             )}
                             <span className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[13px] font-medium text-[#141414] truncate">{c.full_name}</span>
-                              <span className="text-[11px] text-[#999]">{formatPhone(c.phone)}</span>
+                              <span className="text-base font-medium text-ink truncate">{c.full_name}</span>
+                              <span className="text-xs text-ink-muted">{formatPhone(c.phone)}</span>
                             </span>
-                            {added && <span className="text-[10px] font-bold text-[#999]">qo'shilgan</span>}
+                            {added && <span className="text-xs font-bold text-ink-muted">qo'shilgan</span>}
                           </button>
                         )
                       })}
                     </div>
                   )}
                   {query.trim() && results.length === 0 && (
-                    <p className="text-[12px] text-[#999] py-2">Mijoz topilmadi</p>
+                    <p className="text-sm text-ink-muted py-2">Mijoz topilmadi</p>
                   )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
-                  <div className="flex items-center gap-2.5 border border-[#E0E0E0] rounded-[8px] p-2">
+                  <label className="text-sm font-medium text-ink-muted">Mijoz *</label>
+                  <div className="flex items-center gap-2.5 border border-line rounded-control p-2">
                     {client.image ? (
                       <img src={client.image} alt={client.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                     ) : (
-                      <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-8 h-8 rounded-full bg-mute-soft text-ink-muted text-xs font-bold flex items-center justify-center shrink-0">
                         {initials(client.full_name)}
                       </span>
                     )}
                     <span className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[13px] font-medium text-[#141414] truncate">{client.full_name}</span>
-                      <span className="text-[11px] text-[#999]">{formatPhone(client.phone)}</span>
+                      <span className="text-base font-medium text-ink truncate">{client.full_name}</span>
+                      <span className="text-xs text-ink-muted">{formatPhone(client.phone)}</span>
                     </span>
                     <button
                       onClick={() => setClient(null)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-[#999] hover:text-[#141414] transition-colors"
+                      className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
                     >
                       <CaretLeft size={12} weight="bold" /> O'zgartirish
                     </button>
@@ -197,7 +197,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 <>
                   {/* 2. Agreed amount */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor={priceId} className="text-[12px] font-medium text-[#999999]">Kelishilgan summa</label>
+                    <label htmlFor={priceId} className="text-sm font-medium text-ink-muted">Kelishilgan summa</label>
                     <div className="relative">
                       <input
                         id={priceId}
@@ -208,14 +208,14 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                         autoFocus
                         className={`${INPUT} pr-12`}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
                     </div>
-                    <span className="text-[11px] text-[#999]">Mijoz jami to'lashi kerak bo'lgan summa (0 = bepul)</span>
+                    <span className="text-xs text-ink-muted">Mijoz jami to'lashi kerak bo'lgan summa (0 = bepul)</span>
                   </div>
 
                   {/* 3. Optional first payment */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor={initialAmountId} className="text-[12px] font-medium text-[#999999]">Boshlang'ich to'lov (ixtiyoriy)</label>
+                    <label htmlFor={initialAmountId} className="text-sm font-medium text-ink-muted">Boshlang'ich to'lov (ixtiyoriy)</label>
                     <div className="relative">
                       <input
                         id={initialAmountId}
@@ -225,21 +225,21 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                         placeholder="0"
                         className={`${INPUT} pr-12`}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
                     </div>
                   </div>
 
                   {initNum > 0 && (
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[12px] font-medium text-[#999999]">To'lov turi</label>
+                      <label className="text-sm font-medium text-ink-muted">To'lov turi</label>
                       <div className="flex gap-2">
                         {METHODS.map((m) => (
                           <button
                             key={m.value}
                             onClick={() => setMethod(m.value)}
                             aria-pressed={method === m.value}
-                            className={`flex-1 py-2 rounded-[8px] text-[12px] font-semibold border transition-colors ${
-                              method === m.value ? "bg-[#141414] text-white border-[#141414]" : "bg-white text-[#666] border-[#E0E0E0] hover:bg-[#F5F5F5]"
+                            className={`flex-1 py-2 rounded-control text-sm font-semibold border transition-colors ${
+                              method === m.value ? "bg-accent text-ink-on-accent border-accent" : "bg-surface-raised text-ink-muted border-line hover:bg-mute-ghost-hover"
                             }`}
                           >
                             {m.label}
@@ -250,16 +250,16 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                   )}
 
                   {/* Summary */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-[8px] bg-[#FBFBFB] border border-[#F0F0F0] text-[12px]">
-                    <span className="text-[#999]">Qoladigan qarz</span>
-                    <span className="font-bold" style={{ color: priceNum - initNum > 0 ? "#D13328" : "#1E7E34" }}>
+                  <div className="flex items-center justify-between px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
+                    <span className="text-ink-muted">Qoladigan qarz</span>
+                    <span className="font-bold" style={{ color: priceNum - initNum > 0 ? "var(--ds-color-danger-text)" : "var(--ds-color-success-text)" }}>
                       {formatMoney(Math.max(priceNum - initNum, 0))}
                     </span>
                   </div>
 
                   {initNum > 0 && (
-                    <div className="text-[11px] text-[#999]">
-                      Mas'ul: <span className="font-semibold text-[#141414]">{user?.full_name ?? "—"}</span>
+                    <div className="text-xs text-ink-muted">
+                      Mas'ul: <span className="font-semibold text-ink">{user?.full_name ?? "—"}</span>
                     </div>
                   )}
                 </>
@@ -270,20 +270,20 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               <button
                 onClick={onClose}
                 disabled={enroll.isPending}
-                className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[8px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className={`flex-1 px-4 py-2.5 rounded-[8px] text-[13px] font-bold transition-all flex items-center justify-center gap-2 ${
-                  canSubmit ? "bg-[#141414] text-white hover:bg-black active:scale-95" : "bg-[#E0E0E0] text-[#999] cursor-not-allowed"
+                className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold transition-all flex items-center justify-center gap-2 ${
+                  canSubmit ? "bg-accent text-ink-on-accent hover:bg-accent-hover active:scale-95" : "bg-mute-soft text-ink-muted cursor-not-allowed"
                 }`}
               >
                 {enroll.isPending ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     Saqlanmoqda...
                   </>
                 ) : (
