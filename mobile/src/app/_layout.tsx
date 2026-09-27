@@ -36,7 +36,6 @@ function RootNavigator() {
       <Stack.Protected guard={isMember}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="event/[id]" />
-        <Stack.Screen name="news/[id]" />
       </Stack.Protected>
     </Stack>
   )

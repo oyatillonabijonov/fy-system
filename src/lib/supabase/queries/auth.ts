@@ -158,50 +158,6 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   return (data ?? []).map((row) => mapProfileRow(row as ProfileRow))
 }
 
-// ─── Department aggregates ───────────────────────────────
-
-export interface DepartmentStats {
-  department: Department
-  total_employees: number
-  active_employees: number
-  head_user_id: string | null
-  head_name: string | null
-  members: UserProfile[]
-}
-
-export async function getDepartmentStats(): Promise<DepartmentStats[]> {
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select(PROFILE_COLUMNS)
-    .order("full_name")
-
-  const { data: heads } = await supabase
-    .from("department_heads")
-    .select("department, user_id")
-
-  const headsMap = new Map<Department, string | null>(
-    (heads ?? []).map((h) => [h.department as Department, h.user_id]),
-  )
-
-  const allDepartments: Department[] = ["marketing", "sotuv", "buxgalteriya", "operatsion", "it", "hr"]
-  const allProfiles = (profiles ?? []).map((row) => mapProfileRow(row as ProfileRow))
-
-  return allDepartments.map((dep) => {
-    const members = allProfiles.filter((p) => p.department === dep)
-    const headId = headsMap.get(dep) ?? null
-    const head = headId ? members.find((m) => m.id === headId) ?? null : null
-
-    return {
-      department: dep,
-      total_employees: members.length,
-      active_employees: members.filter((m) => m.is_active).length,
-      head_user_id: headId,
-      head_name: head?.full_name ?? null,
-      members,
-    }
-  })
-}
-
 export async function getUserById(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from("profiles")

@@ -160,85 +160,6 @@ export async function getKpiHistory(userId: string): Promise<KpiTarget[]> {
   return (data ?? []).map((row) => mapTargetRow(row as KpiTargetRow))
 }
 
-// ─── Department-level KPI rollup ────────────────────────
-
-export interface DepartmentKpi {
-  department: Department
-  total_revenue_target: number
-  total_revenue_actual: number
-  total_leads_target: number
-  total_leads_closed: number
-  revenue_progress: number
-  leads_progress: number
-  members_with_targets: number
-}
-
-export async function getDepartmentKpi(
-  department: Department,
-  year: number,
-  month: number,
-): Promise<DepartmentKpi> {
-  const { data: members } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("department", department)
-    .eq("is_active", true)
-
-  const empty: DepartmentKpi = {
-    department,
-    total_revenue_target: 0,
-    total_revenue_actual: 0,
-    total_leads_target: 0,
-    total_leads_closed: 0,
-    revenue_progress: 0,
-    leads_progress: 0,
-    members_with_targets: 0,
-  }
-
-  if (!members || members.length === 0) return empty
-
-  const summaries = await Promise.all(
-    members.map((m) => getKpiSummary(m.id, year, month)),
-  )
-
-  let total_revenue_target = 0
-  let total_revenue_actual = 0
-  let total_leads_target = 0
-  let total_leads_closed = 0
-  let members_with_targets = 0
-
-  // Actuals and targets must cover the SAME people: the card renders them side by
-  // side as "Tushum <actual> / <target> (<progress>%)". Counting every member's
-  // revenue against only the targeted members' goals let one untargeted employee
-  // push a department to 100% while the tracked one sat at 20%.
-  for (const s of summaries) {
-    if (!s.target) continue
-    members_with_targets += 1
-    total_revenue_target += Number(s.target.revenue_target)
-    total_leads_target += s.target.leads_target
-    total_revenue_actual += Number(s.actual.revenue_actual)
-    total_leads_closed += s.actual.leads_closed
-  }
-
-  const revenue_progress = total_revenue_target > 0
-    ? Math.floor((total_revenue_actual / total_revenue_target) * 100)
-    : 0
-  const leads_progress = total_leads_target > 0
-    ? Math.floor((total_leads_closed / total_leads_target) * 100)
-    : 0
-
-  return {
-    department,
-    total_revenue_target,
-    total_revenue_actual,
-    total_leads_target,
-    total_leads_closed,
-    revenue_progress,
-    leads_progress,
-    members_with_targets,
-  }
-}
-
 // ─── Department heads ───────────────────────────────────
 
 export async function getDepartmentHeads(): Promise<Record<Department, string>> {
@@ -251,22 +172,4 @@ export async function getDepartmentHeads(): Promise<Record<Department, string>> 
     if (row.user_id) result[row.department as Department] = row.user_id
   }
   return result
-}
-
-export async function setDepartmentHead(
-  department: Department,
-  userId: string | null,
-): Promise<void> {
-  if (userId) {
-    const { error } = await supabase
-      .from("department_heads")
-      .upsert({ department, user_id: userId }, { onConflict: "department" })
-    if (error) throw error
-  } else {
-    const { error } = await supabase
-      .from("department_heads")
-      .delete()
-      .eq("department", department)
-    if (error) throw error
-  }
 }

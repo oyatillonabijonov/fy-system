@@ -12,9 +12,8 @@ import { Image } from "expo-image"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { useAuth } from "@/context/AuthContext"
 import { useEvents, useMyParticipations } from "@/hooks/useEvents"
-import { useNews } from "@/hooks/useNews"
 import type { EventRow } from "@/lib/supabase/queries/events"
-import { formatDate, formatDateTime, formatMoney } from "@/lib/format"
+import { formatDateTime, formatMoney } from "@/lib/format"
 import { Card, SectionHeader } from "@/components/ui"
 import { colors, font, radius, radiusLg, spacing } from "@/theme/tokens"
 
@@ -33,14 +32,12 @@ function nextUpcoming(events: EventRow[]): EventRow | null {
 export default function HomeScreen() {
   const { client } = useAuth()
   const eventsQuery = useEvents()
-  const newsQuery = useNews()
   const participationsQuery = useMyParticipations()
 
   const upcomingEvent = useMemo(
     () => nextUpcoming(eventsQuery.data ?? []),
     [eventsQuery.data],
   )
-  const latestNews = (newsQuery.data ?? []).slice(0, 2)
   const eventsCount = (participationsQuery.data ?? []).length
 
   const firstName = client?.full_name.split(" ")[0] ?? ""
@@ -154,37 +151,6 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>Hozircha kelgusi tadbirlar yo'q</Text>
           </Card>
         )}
-
-        {/* Latest news */}
-        <SectionHeader
-          title="So'nggi yangiliklar"
-          actionLabel="Barchasi"
-          onAction={() => router.push("/(tabs)/news")}
-        />
-        {latestNews.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Hozircha yangiliklar yo'q</Text>
-          </Card>
-        ) : (
-          latestNews.map((post) => (
-            <Pressable key={post.id} onPress={() => router.push(`/news/${post.id}`)}>
-              <Card style={styles.newsCard}>
-                {post.image_url ? (
-                  <Image source={{ uri: post.image_url }} style={styles.newsThumb} contentFit="cover" />
-                ) : (
-                  <View style={[styles.newsThumb, styles.newsThumbFallback]}>
-                    <Ionicons name="newspaper-outline" size={18} color={colors.muted} />
-                  </View>
-                )}
-                <View style={styles.newsBody}>
-                  <Text style={styles.newsTitle} numberOfLines={2}>{post.title}</Text>
-                  <Text style={styles.newsDate}>{formatDate(post.published_at)}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.border} />
-              </Card>
-            </Pressable>
-          ))
-        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -263,22 +229,6 @@ const styles = StyleSheet.create({
     borderRadius: radius - 2,
   },
   cashbackChipText: { ...font.bold, fontSize: 11, color: colors.success },
-
-  newsCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  newsThumb: { width: 52, height: 52, borderRadius: radius },
-  newsThumbFallback: {
-    backgroundColor: colors.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  newsBody: { flex: 1, gap: 3 },
-  newsTitle: { ...font.semibold, fontSize: 14, color: colors.text },
-  newsDate: { ...font.regular, fontSize: 11, color: colors.muted },
 
   emptyCard: { alignItems: "center", paddingVertical: spacing.xl },
   emptyText: { ...font.medium, fontSize: 13, color: colors.muted },

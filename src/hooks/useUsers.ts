@@ -3,7 +3,6 @@ import {
   getAllUsers,
   getUserById,
   getUserStats,
-  getDepartmentStats,
   createUser,
   updateUserPermissions,
   updateUserRole,
@@ -16,20 +15,10 @@ import {
   type UserProfile,
   type UserPermission,
   type UserStats,
-  type DepartmentStats,
 } from "@/lib/supabase/queries/auth"
 
 export const USERS_KEY = ["users"] as const
 export const USER_PERMISSIONS_KEY = ["user-permissions"] as const
-export const DEPARTMENT_STATS_KEY = ["department-stats"] as const
-
-export function useDepartmentStats() {
-  return useQuery<DepartmentStats[]>({
-    queryKey: DEPARTMENT_STATS_KEY,
-    queryFn: getDepartmentStats,
-    staleTime: 1000 * 60 * 2,
-  })
-}
 
 export function useUsers() {
   return useQuery<UserProfile[]>({

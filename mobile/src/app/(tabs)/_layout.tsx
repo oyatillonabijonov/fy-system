@@ -45,15 +45,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="news"
-        options={{
-          title: "Yangiliklar",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "newspaper" : "newspaper-outline"} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",

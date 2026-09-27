@@ -9,16 +9,13 @@ import { EventsMoliya } from "./components/pages/EventsMoliya"
 import { Sozlamalar } from "./components/pages/Sozlamalar"
 import { Hodimlar } from "./components/pages/Hodimlar"
 import { HodimDetail } from "./components/pages/HodimDetail"
-import { Bolimlar } from "./components/pages/Bolimlar"
 import { Faollik } from "./components/pages/Faollik"
-import { Yangiliklar } from "./components/pages/Yangiliklar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  Bell,
   MagnifyingGlass,
   CaretDown,
   Gear,
@@ -44,9 +41,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
-  '/bolimlar':      { title: "Bo'limlar",       desc: "Tizim bo'limlari va hodimlar boshqaruvi." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
-  '/yangiliklar':   { title: 'Yangiliklar',     desc: "Klub yangiliklari — a'zolar mobil ilovada ko'radi." },
   '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash." },
 }
 
@@ -67,27 +62,20 @@ function AppShell() {
 
   const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
   const [isLangOpen, setIsLangOpen] = useState(false)
-  const [isNotifOpen, setIsNotifOpen] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(LANG_KEY, currentLang) } catch { /* private browsing */ }
   }, [currentLang])
 
-  // Escape closes the header popovers (notifications, language)
+  // Escape closes the language popover
   useEffect(() => {
-    if (!isNotifOpen && !isLangOpen) return
+    if (!isLangOpen) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") { setIsNotifOpen(false); setIsLangOpen(false) }
+      if (e.key === "Escape") setIsLangOpen(false)
     }
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
-  }, [isNotifOpen, isLangOpen])
-
-  const notifications = [
-    { id: 1, title: "Yangi tadbir",       desc: "Biznes nonushta tadbiri yakunlandi.",   time: "2 daqiqa oldin", type: "event",   unread: true },
-    { id: 2, title: "To'lov tasdiqlandi", desc: "Mijoz #4412 tomonidan to'lov amalga oshirildi.", time: "1 soat oldin",   type: "payment", unread: true },
-    { id: 3, title: "Tizim yangilanishi", desc: "Yangi versiya 2.4.0 muvaffaqiyatli o'rnatildi.",   time: "3 soat oldin",   type: "system",  unread: false },
-  ]
+  }, [isLangOpen])
 
   return (
     <div className="h-screen text-foreground flex overflow-hidden transition-colors duration-300"
@@ -120,7 +108,7 @@ function AppShell() {
                 </div>
               </div>
 
-              {/* Right: Search, Notif, Lang, Theme, Settings */}
+              {/* Right: Search, Lang, Theme, Settings */}
               <div className="flex items-center gap-[12px]">
 
                 {/* Search */}
@@ -141,84 +129,6 @@ function AppShell() {
                       color: 'var(--header-text)',
                     }}
                   />
-                </div>
-
-                {/* Notifications */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsNotifOpen(!isNotifOpen)}
-                    aria-label="Bildirishnomalar"
-                    aria-haspopup="true"
-                    aria-expanded={isNotifOpen}
-                    className="relative p-2 rounded-[8px] transition-colors"
-                    style={{ background: isNotifOpen ? 'var(--header-hover)' : 'transparent' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--header-hover)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isNotifOpen ? 'var(--header-hover)' : 'transparent'}
-                  >
-                    <Bell size={24} weight="bold" style={{ color: 'var(--header-icon)' }} />
-                    <span className="absolute top-[8px] right-[8px] w-[10px] h-[10px] bg-[#FF3B30] border-2 rounded-full"
-                      style={{ borderColor: 'var(--main-bg)' }}></span>
-                  </button>
-
-                  <AnimatePresence>
-                    {isNotifOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                        className="absolute top-full right-0 mt-2 w-[300px] rounded-[8px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] overflow-hidden z-50 origin-top-right"
-                        style={{
-                          background: 'var(--dropdown-bg)',
-                          border: '1px solid var(--dropdown-border)',
-                        }}
-                      >
-                        <div className="px-4 py-3 flex items-center justify-between"
-                          style={{ borderBottom: '1px solid var(--dropdown-border)' }}>
-                          <span className="text-[14px] font-bold" style={{ color: 'var(--dropdown-text)' }}>
-                            Bildirishnomalar
-                          </span>
-                          <div className="w-2 h-2 bg-[#FF3B30] rounded-full shadow-[0_0_8px_rgba(255,59,48,0.4)]" />
-                        </div>
-                        <div className="max-h-[360px] overflow-y-auto no-scrollbar py-1">
-                          {notifications.map((notif) => (
-                            <div
-                              key={notif.id}
-                              className="px-4 py-2.5 flex items-start gap-3 cursor-pointer transition-colors"
-                              style={{ color: 'var(--dropdown-text)' }}
-                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--dropdown-hover-bg)'}
-                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                            >
-                              <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${notif.unread ? '' : 'border'}`}
-                                style={{
-                                  background: notif.unread ? 'var(--accent)' : 'transparent',
-                                  borderColor: 'var(--dropdown-border)',
-                                }} />
-                              <div className="flex flex-col gap-0.5 overflow-hidden">
-                                <div className="text-[12px] font-bold leading-tight">{notif.title}</div>
-                                <div className="text-[11px] line-clamp-1 leading-tight" style={{ color: 'var(--dropdown-muted)' }}>{notif.desc}</div>
-                                <div className="text-[10px] mt-0.5" style={{ color: 'var(--dropdown-muted)', opacity: 0.7 }}>{notif.time}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          className="w-full py-2.5 text-[11px] font-bold transition-colors"
-                          style={{ borderTop: '1px solid var(--dropdown-border)', color: 'var(--dropdown-muted)' }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'var(--dropdown-hover-bg)'
-                              ; (e.currentTarget as HTMLElement).style.color = 'var(--dropdown-text)'
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'transparent'
-                              ; (e.currentTarget as HTMLElement).style.color = 'var(--dropdown-muted)'
-                          }}
-                        >
-                          Barchasini ko'rish
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
 
                 {/* Language */}
@@ -355,14 +265,8 @@ function App() {
           <Route path="/hodimlar/:id" element={
             <ProtectedRoute adminOnly><HodimDetail /></ProtectedRoute>
           } />
-          <Route path="/bolimlar" element={
-            <ProtectedRoute adminOnly><Bolimlar /></ProtectedRoute>
-          } />
           <Route path="/faollik" element={
             <ProtectedRoute adminOnly><Faollik /></ProtectedRoute>
-          } />
-          <Route path="/yangiliklar" element={
-            <ProtectedRoute adminOnly><Yangiliklar /></ProtectedRoute>
           } />
 
           <Route path="/sozlamalar" element={
