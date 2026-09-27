@@ -48,7 +48,7 @@ export function EventFinance({ event }: { event: Event }) {
     <div className="flex flex-col gap-5">
       {/* Compact header — editing/deleting the event lives on Boshqaruv */}
       <div className="flex items-center gap-2 px-4 py-2.5 rounded-surface border border-line bg-surface min-w-0">
-        <span className="w-3.5 h-3.5 rounded-checkbox shrink-0" style={{ backgroundColor: eventTint(event.name) }} />
+        <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: eventTint(event.name) }} />
         <span className="text-base font-semibold text-ink truncate">{event.name}</span>
         <span className="text-sm text-ink-muted whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
       </div>
