@@ -85,7 +85,6 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Hodimlar", icon: Users, path: "/hodimlar", adminOnly: true },
             { name: "Bo'limlar", icon: Buildings, path: "/bolimlar", adminOnly: true },
-            { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
             { name: "Yangiliklar", icon: Newspaper, path: "/yangiliklar", adminOnly: true },
             {
                 name: "Sozlamalar",
@@ -94,6 +93,7 @@ const navigationSections: NavSection[] = [
                 module: "sozlamalar",
                 subItems: [
                     { name: "API", icon: Terminal },
+                    { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
                 ],
             },
         ],
@@ -328,7 +328,7 @@ export function Sidebar() {
                     aria-expanded={isAccountOpen}
                     aria-label={isCollapsed ? "Akkaunt menyusi" : undefined}
                     title={isCollapsed ? (displayName ?? "") : undefined}
-                    className={`flex items-center rounded-full transition-colors ${isCollapsed ? "self-center p-0.5 mx-auto" : "w-full gap-3 p-1.5 pr-3"} ${isAccountOpen ? "bg-surface" : "hover:bg-mute-ghost-hover"}`}
+                    className={`flex items-center rounded-full transition-colors ${isCollapsed ? "self-center p-0.5 mx-auto" : "w-full gap-3 p-1.5 pr-3"} bg-surface ${isAccountOpen ? "" : "hover:bg-surface-sunken-hover"}`}
                 >
                     <span className="size-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent text-ink-on-accent">
                         {displayAvatar ? (
