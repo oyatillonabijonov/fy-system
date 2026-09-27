@@ -41,37 +41,6 @@ export async function getParticipantPayments(participantId: string): Promise<Pay
   }))
 }
 
-export async function addPayment(input: {
-  participantId: string
-  amount: number
-  method: PaymentMethod
-  paidAt: string
-  note?: string
-}): Promise<Payment> {
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { data, error } = await supabase
-    .from("payments")
-    .insert({
-      participant_id: input.participantId,
-      amount:         input.amount,
-      method:         input.method,
-      paid_at:        input.paidAt,
-      recorded_by:    user?.id ?? null,
-      note:           input.note ?? null,
-    })
-    .select()
-    .single()
-
-  if (error) throw error
-  return data as unknown as Payment
-}
-
-export async function deletePayment(id: string): Promise<void> {
-  const { error } = await supabase.from("payments").delete().eq("id", id)
-  if (error) throw error
-}
-
 // ─── Event-scoped & global payment log ─────────────────────────────────────────
 // The payments table has no event_id/client_id columns; both are derived via the
 // participant join (participant.event_id, participant.contact_id).
@@ -160,18 +129,6 @@ export async function getEventPayments(eventId: string): Promise<EventPayment[]>
   return ((data ?? []) as unknown as PaymentJoinRow[]).map(mapEventPayment)
 }
 
-// Global payment log across all events, newest first (Sprint C log).
-export async function getRecentPayments(limit = 50, offset = 0): Promise<EventPayment[]> {
-  const { data, error } = await supabase
-    .from("payments")
-    .select(PAYMENT_JOIN_SELECT)
-    .order("paid_at", { ascending: false })
-    .range(offset, offset + limit - 1)
-
-  if (error) throw error
-  return ((data ?? []) as unknown as PaymentJoinRow[]).map(mapEventPayment)
-}
-
 // ─── Client → event participations (Add-payment modal event picker) ────────────
 export interface ClientParticipation {
   participant_id: string
@@ -202,30 +159,4 @@ export async function getClientParticipations(clientId: string): Promise<ClientP
     price: row.price,
     paid: row.paid,
   }))
-}
-
-// ─── Finance KPI totals (Moliya → Umumiy) ─────────────────────────────────────
-// Server-side aggregate via RPC (migration 047). Never sum in the browser: an
-// unbounded select is capped by PostgREST max_rows and would silently undercount.
-export interface FinanceTotals {
-  total_income: number           // SUM(payments.amount) — real cash, cashback excluded
-  total_debt: number             // SUM(GREATEST(price - paid, 0))
-  total_cashback_balance: number // SUM(clients.cashback_balance)
-}
-
-export async function getFinanceTotals(): Promise<FinanceTotals> {
-  // Stale types workaround (CLAUDE.md): types.ts doesn't know this RPC yet
-  // (needs a local Supabase stand to regenerate). Cast until gen:types runs.
-  const { data, error } = await (supabase.rpc as unknown as
-    (fn: string) => Promise<{ data: FinanceTotals[] | null; error: Error | null }>
-  )("event_finance_totals")
-  if (error) throw error
-
-  // The RPC returns TABLE(...) → supabase-js gives an array of one row.
-  const row = (data as unknown as FinanceTotals[] | null)?.[0]
-  return {
-    total_income:           Number(row?.total_income ?? 0),
-    total_debt:             Number(row?.total_debt ?? 0),
-    total_cashback_balance: Number(row?.total_cashback_balance ?? 0),
-  }
 }

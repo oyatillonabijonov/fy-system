@@ -1,0 +1,76 @@
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query"
+import {
+  getFinanceSummary,
+  listPayments,
+  listDebtors,
+  recordPayment,
+  voidPayment,
+  refundPayment,
+  updateParticipantFinance,
+  type FinanceFilters,
+  type FinanceSummary,
+  type PaymentRow,
+  type DebtorRow,
+  type DebtStatus,
+  type ParticipantFinancePatch,
+} from "@/lib/supabase/queries/finance"
+import { FINANCE_KEY, PARTICIPANTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
+import { CLIENTS_KEY } from "@/hooks/useClients"
+import { CLIENT_CASHBACK_KEY } from "@/hooks/useCashback"
+
+// Money must never look stale: every view that shows it, after any movement.
+// FINANCE_KEY's own queries already set refetchOnMount: true, so a plain
+// invalidate is enough there. Everything else relies on main.tsx's global
+// refetchOnMount: false, which only refetches a query that's active — an
+// inactive one (e.g. Mijozlar, Boshqaruv participants) would stay on stale
+// cache until its screen happens to remount, so force those with refetchType.
+function invalidateMoney(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: FINANCE_KEY })
+  qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY, refetchType: "all" })
+  qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY, refetchType: "all" })
+  qc.invalidateQueries({ queryKey: CLIENTS_KEY, refetchType: "all" })
+  qc.invalidateQueries({ queryKey: CLIENT_CASHBACK_KEY, refetchType: "all" })
+  qc.invalidateQueries({ queryKey: ["client-journey"], refetchType: "all" })
+  qc.invalidateQueries({ queryKey: ["client-participations"], refetchType: "all" })
+}
+
+// refetchOnMount: true — main.tsx defaults this off globally (avoids tab-return
+// flicker), but a money movement invalidates other tabs' queries while they're
+// inactive, only marking them stale; without this they'd stay on the stale cache
+// forever. `true` still only refetches when actually stale, so no extra traffic.
+export function useFinanceSummary(f: FinanceFilters) {
+  return useQuery<FinanceSummary>({
+    queryKey: [...FINANCE_KEY, "summary", f],
+    queryFn: () => getFinanceSummary(f),
+    refetchOnMount: true,
+  })
+}
+
+export function usePaymentsList(f: FinanceFilters, limit: number) {
+  return useQuery<PaymentRow[]>({
+    queryKey: [...FINANCE_KEY, "payments", f, limit],
+    queryFn: () => listPayments(f, limit),
+    placeholderData: (prev) => prev, // "Ko'proq yuklash" keeps the rows on screen
+    refetchOnMount: true,
+  })
+}
+
+export function useDebtors(f: FinanceFilters, status: DebtStatus) {
+  return useQuery<DebtorRow[]>({
+    queryKey: [...FINANCE_KEY, "debtors", f, status],
+    queryFn: () => listDebtors(f, status),
+    refetchOnMount: true,
+  })
+}
+
+function useMoneyMutation<V>(fn: (vars: V) => Promise<unknown>) {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: fn, onSuccess: () => invalidateMoney(qc) })
+}
+
+export const useRecordPayment = () => useMoneyMutation(recordPayment)
+export const useVoidPayment = () =>
+  useMoneyMutation((v: { id: string; reason: string }) => voidPayment(v.id, v.reason))
+export const useRefundPayment = () => useMoneyMutation(refundPayment)
+export const useUpdateParticipantFinance = () =>
+  useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch))

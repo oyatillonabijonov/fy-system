@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Plus, BookmarkSimple, SquaresFour } from "@phosphor-icons/react"
+import { Plus, BookmarkSimple } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
-import { UMUMIY } from "@/hooks/useEventTab"
 import { eventTint } from "@/lib/eventTint"
 import { formatDate } from "@/lib/format"
 
@@ -21,11 +20,10 @@ interface EventTabsProps {
   events: Event[]
   selectedId: string
   onSelect: (id: string) => void
-  showUmumiy: boolean
   onCreate?: () => void
 }
 
-export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }: EventTabsProps) {
+export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsProps) {
   const [archiveOpen, setArchiveOpen] = useState(false)
   const archiveRef = useRef<HTMLDivElement>(null)
 
@@ -61,22 +59,6 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
   return (
     <div className="flex items-end gap-1 border-b border-[#E8E8E8]">
       <div className="flex items-end gap-1 overflow-x-auto no-scrollbar flex-1 pt-1.5">
-        {showUmumiy && (
-          <button
-            onClick={() => onSelect(UMUMIY)}
-            title="Umumiy"
-            aria-current={selectedId === UMUMIY ? "true" : undefined}
-            className={`relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px shrink-0 whitespace-nowrap bg-[#141414] transition-colors ${
-              selectedId === UMUMIY
-                ? "text-white border border-[#141414] shadow-[0_-1px_3px_rgba(0,0,0,0.18)]"
-                : "text-white/55 border border-transparent hover:text-white"
-            }`}
-          >
-            <SquaresFour size={15} weight="bold" />
-            <span className="text-[12.5px] font-semibold">Umumiy</span>
-          </button>
-        )}
-
         {tabEvents.map((e) => {
           const isSel = e.id === selectedId
           return (

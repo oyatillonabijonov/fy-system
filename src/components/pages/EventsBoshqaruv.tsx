@@ -73,7 +73,6 @@ export function EventsBoshqaruv() {
             events={events}
             selectedId={selected?.id ?? ""}
             onSelect={setSelectedId}
-            showUmumiy={false}
             onCreate={() => setShowCreate(true)}
           />
 

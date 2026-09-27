@@ -11,14 +11,14 @@ import { formatNumber } from "@/lib/format"
 interface ApplyCashbackModalProps {
   isOpen: boolean
   onClose: () => void
-  participant: Participant
+  participant: Pick<Participant, "id" | "contact_id" | "event_id" | "full_name" | "price" | "paid">
   balance: number
   onSuccess?: (msg: string) => void
 }
 
 interface InnerProps {
   onClose: () => void
-  participant: Participant
+  participant: Pick<Participant, "id" | "contact_id" | "event_id" | "full_name" | "price" | "paid">
   balance: number
   onSuccess?: (msg: string) => void
 }

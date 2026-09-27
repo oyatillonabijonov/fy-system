@@ -20,9 +20,9 @@ import { getEventTariffs, type EventTariff } from "@/lib/supabase/queries/tariff
 export const EVENTS_KEY = ["events"] as const
 export const EVENT_COUNTS_KEY = ["event-participant-counts"] as const
 export const PARTICIPANTS_KEY = ["participants"] as const
-// Declared here (not in usePayments.ts) to avoid a circular import: usePayments.ts
-// already imports from useEvents.ts, so the reverse would form a cycle.
-export const FINANCE_TOTALS_KEY = ["finance-totals"] as const
+// Prefix of every Moliya query (KPIs, payments log, debtors). Declared here, not in
+// useFinance.ts, because useFinance/useCashback/usePayments all import useEvents.
+export const FINANCE_KEY = ["finance"] as const
 export const TARIFFS_KEY = ["event-tariffs"] as const
 
 export function useEvents() {
@@ -98,7 +98,7 @@ export function useDeleteEvent() {
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
       // Deleting an event cascade-deletes its participants + payments (035),
       // so income and debt both move — keep the Moliya KPIs fresh.
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }
@@ -116,7 +116,7 @@ export function useEnrollParticipant(eventId: string) {
       qc.invalidateQueries({ queryKey: ["clients"] })
       qc.invalidateQueries({ queryKey: ["client-journey"] })
       qc.invalidateQueries({ queryKey: ["client-participations"] })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY }) // new price → new debt
+      qc.invalidateQueries({ queryKey: FINANCE_KEY }) // new price → new debt
     },
   })
 }
@@ -134,7 +134,7 @@ export function useUpdateParticipant(eventId: string) {
       qc.invalidateQueries({ queryKey: ["clients"] })
       qc.invalidateQueries({ queryKey: ["recent-payments"] })
       qc.invalidateQueries({ queryKey: ["event-payments"] })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }
@@ -157,7 +157,7 @@ export function useDeleteParticipant(eventId: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }

@@ -378,7 +378,7 @@ export class ClientExistsError extends Error {
   }
 }
 
-const ENROLL_ERRORS: Record<string, string> = {
+export const ENROLL_ERRORS: Record<string, string> = {
   "forbidden: staff_only": "Bu amal uchun ruxsat yo'q",
   tariff_mismatch: "Tarif bu tadbirga tegishli emas",
   seller_invalid: "Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak",

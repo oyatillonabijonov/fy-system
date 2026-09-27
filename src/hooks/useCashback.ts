@@ -9,7 +9,7 @@ import {
 } from "@/lib/supabase/queries/cashback"
 import { supabase } from "@/lib/supabase/client"
 import { CLIENTS_KEY } from "@/hooks/useClients"
-import { EVENTS_KEY, PARTICIPANTS_KEY, FINANCE_TOTALS_KEY } from "@/hooks/useEvents"
+import { EVENTS_KEY, PARTICIPANTS_KEY, FINANCE_KEY } from "@/hooks/useEvents"
 
 export const CLIENT_CASHBACK_KEY = ["client-cashback"] as const
 
@@ -33,7 +33,7 @@ export function useAdjustCashback() {
       qc.invalidateQueries({ queryKey: [...CASHBACK_HISTORY_KEY, vars.clientId] })
       qc.invalidateQueries({ queryKey: CLIENTS_KEY })
       qc.invalidateQueries({ queryKey: ['client-journey', vars.clientId] })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }
@@ -45,6 +45,7 @@ export function useSetParticipantCashbackPercent(eventId: string) {
       setParticipantCashbackPercent(vars.participantId, vars.percent),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }
@@ -71,7 +72,7 @@ export function useSpendCashback() {
       qc.invalidateQueries({ queryKey: [...CLIENT_CASHBACK_KEY, vars.clientId] })
       qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY })
       qc.invalidateQueries({ queryKey: ['client-journey', vars.clientId] })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY })
+      qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
   })
 }

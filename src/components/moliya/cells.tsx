@@ -1,0 +1,106 @@
+import { useState } from "react"
+import { PencilSimple } from "@phosphor-icons/react"
+import { StatusBadge } from "@/components/ui/StatusBadge"
+import { formatMoney, formatNumber } from "@/lib/format"
+
+// Inline-edit the agreed price (chegirma / individual deal).
+export function PriceCell({ value, onSave }: { value: number; onSave: (v: number) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState("")
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => { setVal(value ? String(Math.round(value)) : ""); setEditing(true) }}
+        className="group/price inline-flex items-center gap-1 text-[13px] text-[#141414]"
+        title="Kelishuv summasini tahrirlash"
+      >
+        {formatMoney(value)}
+        <PencilSimple size={12} weight="bold" className="text-[#CCC] opacity-0 group-hover/price:opacity-100 transition-opacity" />
+      </button>
+    )
+  }
+
+  function commit() {
+    const next = val ? Number(val) : 0
+    setEditing(false)
+    if (next !== value) onSave(next)
+  }
+
+  return (
+    <input
+      autoFocus
+      inputMode="numeric"
+      aria-label="Kelishuv summasi"
+      value={val ? formatNumber(Number(val)) : ""}
+      onChange={(e) => setVal(e.target.value.replace(/\D/g, ""))}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit()
+        if (e.key === "Escape") setEditing(false)
+      }}
+      className="w-28 border border-[#141414] rounded-[6px] px-2 py-1 text-[13px] text-right text-[#141414] focus:outline-none"
+    />
+  )
+}
+
+// Per-participant cashback % override; empty = the event default.
+export function CashbackPercentCell({
+  percent,
+  earned,
+  defaultPercent,
+  onSet,
+}: {
+  percent: number | null
+  earned: number
+  defaultPercent: number
+  onSet: (percent: number | null) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState("")
+  const effective = percent ?? defaultPercent
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => { setVal(percent !== null ? String(percent) : ""); setEditing(true) }}
+        className="inline-flex items-center gap-1.5 justify-end"
+        title="Keshbek foizini tahrirlash (bo'sh = tadbir standarti)"
+      >
+        <StatusBadge label={`${effective}%`} variant={percent !== null ? "warning" : "neutral"} />
+        {earned > 0 && <span className="text-[11px] text-[#666]">{formatMoney(earned)}</span>}
+      </button>
+    )
+  }
+
+  function commit() {
+    setEditing(false)
+    const trimmed = val.trim()
+    if (trimmed === "") { onSet(null); return }
+    const n = Number(trimmed)
+    if (Number.isFinite(n) && n >= 0 && n <= 100) onSet(n)
+  }
+
+  return (
+    <div className="relative inline-block">
+      <input
+        autoFocus
+        type="number"
+        min={0}
+        max={100}
+        step={0.5}
+        aria-label="Keshbek foizi"
+        value={val}
+        placeholder={`${defaultPercent}`}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit()
+          if (e.key === "Escape") setEditing(false)
+        }}
+        className="w-16 border border-[#141414] rounded-[6px] px-2 py-1 pr-5 text-[13px] text-right text-[#141414] focus:outline-none"
+      />
+      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#999] pointer-events-none">%</span>
+    </div>
+  )
+}

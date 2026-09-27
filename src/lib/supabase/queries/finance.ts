@@ -1,0 +1,273 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { supabase } from "../client"
+import type { PaymentMethod } from "./payments"
+import { ClientExistsError, ENROLL_ERRORS, type EnrollClient } from "./events"
+import { dayEnd, dayStart } from "@/lib/period"
+import { formatMoney } from "@/lib/format"
+
+// ponytail: untyped client until `bun run gen:types` picks up migration 051.
+const db = supabase as unknown as SupabaseClient
+
+export type DebtStatus = "debt" | "overdue" | "paid" | "all"
+
+export interface FinanceFilters {
+  from: string | null            // YYYY-MM-DD, Tashkent calendar day
+  to: string | null
+  eventId: string | null
+  seller: string | null          // profile id; "none" = no seller; null = any
+  method: PaymentMethod | null
+}
+
+function filterParams(f: FinanceFilters) {
+  return {
+    p_from: f.from,
+    p_to: f.to,
+    p_event_id: f.eventId,
+    p_seller_id: f.seller && f.seller !== "none" ? f.seller : null,
+    p_no_seller: f.seller === "none",
+  }
+}
+
+const FINANCE_ERRORS: Record<string, string> = {
+  ...ENROLL_ERRORS,
+  "forbidden: finance_only": "Moliyani tahrirlash uchun ruxsat yo'q",
+  "forbidden: finance_fields": "Kelishuv summasi va to'lov sanasini faqat Moliya o'zgartiradi",
+  invalid_amount: "Summa 0 dan katta bo'lishi kerak",
+  invalid_price: "Kelishuv summasi manfiy bo'lishi mumkin emas",
+  enroll_required: "Mijoz bu tadbirda yo'q — tarif va sotuvchini tanlang",
+  reason_required: "Bekor qilish sababini yozing",
+  already_voided: "Bu to'lov allaqachon bekor qilingan",
+  payment_not_found: "To'lov topilmadi",
+  participant_not_found: "Ishtirokchi topilmadi",
+  void_would_overpay: "Bu qaytarishni bekor qilsak, to'langan summa kelishuvdan oshib ketadi",
+  void_would_go_negative: "Avval shu to'lovga tegishli qaytarishni bekor qiling — aks holda to'langan summa manfiy bo'ladi",
+  price_below_paid: "Kelishuv summasi to'langan summadan kam bo'lishi mumkin emas — avval qaytarish qiling",
+}
+
+function financeError(e: { message: string; code?: string }): Error {
+  const exists = /^client_exists:([0-9a-f-]{36}):(.*)$/s.exec(e.message)
+  if (exists) return new ClientExistsError(exists[1], exists[2])
+  const debt = /^amount_exceeds_debt \(debt=([\d.]+)\)$/.exec(e.message)
+  if (debt) return new Error(`To'lov qarzdan ko'p. Qolgan qarz: ${formatMoney(Number(debt[1]))}`)
+  const cash = /^refund_exceeds_paid \(paid=([\d.]+)\)$/.exec(e.message)
+  if (cash) return new Error(`Qaytarish to'langan puldan ko'p. Ko'pi bilan: ${formatMoney(Number(cash[1]))}`)
+  if (e.code === "23505") return new Error("Bu telefon raqam boshqa mijozda band")
+  return new Error(FINANCE_ERRORS[e.message] ?? e.message)
+}
+
+// ─── KPIs ────────────────────────────────────────────────────────────────────
+
+export interface FinanceSummary {
+  income: number            // active payments − refunds (cashback excluded)
+  debt: number
+  overdue_debt: number
+  agreed: number            // SUM(price)
+  collected: number         // SUM(paid)
+  cashback_balance: number  // all clients, unfiltered
+}
+
+export async function getFinanceSummary(f: FinanceFilters): Promise<FinanceSummary> {
+  const { data, error } = await db.rpc("finance_summary", { ...filterParams(f), p_method: f.method })
+  if (error) throw financeError(error)
+  const row = ((data ?? []) as Array<Record<keyof FinanceSummary, number | string | null>>)[0]
+  return {
+    income: Number(row?.income ?? 0),
+    debt: Number(row?.debt ?? 0),
+    overdue_debt: Number(row?.overdue_debt ?? 0),
+    agreed: Number(row?.agreed ?? 0),
+    collected: Number(row?.collected ?? 0),
+    cashback_balance: Number(row?.cashback_balance ?? 0),
+  }
+}
+
+// ─── Payments log ────────────────────────────────────────────────────────────
+
+export const PAYMENTS_PAGE = 50
+
+export interface PaymentRow {
+  id: string
+  participant_id: string
+  amount: number                  // negative for refunds
+  kind: "payment" | "refund"
+  method: PaymentMethod
+  paid_at: string
+  note: string | null
+  voided_at: string | null
+  void_reason: string | null
+  recorder_name: string | null
+  client_name: string
+  client_phone: string | null
+  event_name: string | null
+  seller_name: string | null
+  participant_cash_paid: number   // paid − cashback_used: the most that can be refunded
+}
+
+interface PaymentJoin {
+  id: string
+  participant_id: string
+  amount: number | string
+  kind: "payment" | "refund"
+  method: PaymentMethod
+  paid_at: string
+  note: string | null
+  voided_at: string | null
+  void_reason: string | null
+  recorder: { full_name: string } | null
+  participant: {
+    full_name: string
+    phone: string | null
+    paid: number | string
+    cashback_used: number | string | null
+    event: { name: string } | null
+    seller: { full_name: string } | null
+  } | null
+}
+
+export async function listPayments(f: FinanceFilters, limit: number): Promise<PaymentRow[]> {
+  let q = db
+    .from("payments")
+    .select(
+      "id, participant_id, amount, kind, method, paid_at, note, voided_at, void_reason, " +
+        "recorder:recorded_by(full_name), " +
+        "participant:participant_id!inner(full_name, phone, paid, cashback_used, event_id, seller_id, " +
+        "event:event_id(name), seller:seller_id(full_name))",
+    )
+    .order("paid_at", { ascending: false })
+    .range(0, limit - 1)
+  if (f.from) q = q.gte("paid_at", dayStart(f.from))
+  if (f.to) q = q.lte("paid_at", dayEnd(f.to))
+  if (f.method) q = q.eq("method", f.method)
+  if (f.eventId) q = q.eq("participant.event_id", f.eventId)
+  if (f.seller === "none") q = q.is("participant.seller_id", null)
+  else if (f.seller) q = q.eq("participant.seller_id", f.seller)
+
+  const { data, error } = await q
+  if (error) throw financeError(error)
+  return ((data ?? []) as unknown as PaymentJoin[]).map((r) => ({
+    id: r.id,
+    participant_id: r.participant_id,
+    amount: Number(r.amount),
+    kind: r.kind,
+    method: r.method,
+    paid_at: r.paid_at,
+    note: r.note,
+    voided_at: r.voided_at,
+    void_reason: r.void_reason,
+    recorder_name: r.recorder?.full_name ?? null,
+    client_name: r.participant?.full_name ?? "—",
+    client_phone: r.participant?.phone ?? null,
+    event_name: r.participant?.event?.name ?? null,
+    seller_name: r.participant?.seller?.full_name ?? null,
+    participant_cash_paid: Number(r.participant?.paid ?? 0) - Number(r.participant?.cashback_used ?? 0),
+  }))
+}
+
+// ─── Debtors ─────────────────────────────────────────────────────────────────
+
+export interface DebtorRow {
+  participant_id: string
+  event_id: string
+  event_name: string
+  client_id: string | null
+  full_name: string
+  phone: string | null
+  seller_id: string | null
+  seller_name: string | null
+  tariff_id: string | null
+  tariff_name: string | null
+  price: number
+  paid: number
+  debt: number
+  cashback_used: number
+  cashback_earned: number
+  cashback_percent: number | null
+  event_cashback_percent: number
+  cashback_balance: number
+  next_due_date: string | null
+  enrolled_at: string
+  age_days: number
+}
+
+export async function listDebtors(f: FinanceFilters, status: DebtStatus): Promise<DebtorRow[]> {
+  const { data, error } = await db.rpc("finance_debtors", { ...filterParams(f), p_status: status })
+  if (error) throw financeError(error)
+  // Normalise numerics once here so the UI never does arithmetic on strings.
+  return ((data ?? []) as Array<DebtorRow & Record<string, unknown>>).map((r) => ({
+    ...r,
+    price: Number(r.price),
+    paid: Number(r.paid),
+    debt: Number(r.debt),
+    cashback_used: Number(r.cashback_used),
+    cashback_earned: Number(r.cashback_earned),
+    cashback_percent: r.cashback_percent === null ? null : Number(r.cashback_percent),
+    event_cashback_percent: Number(r.event_cashback_percent),
+    cashback_balance: Number(r.cashback_balance),
+    age_days: Number(r.age_days),
+  }))
+}
+
+// ─── Money movements (RPC only — payments has no write policy) ──────────────
+
+export interface RecordPaymentInput {
+  eventId: string
+  amount: number
+  method: PaymentMethod
+  paidAt: string
+  client: EnrollClient
+  // Required when the client isn't in the event yet: enrols them in the same transaction.
+  enroll: { tariffId: string; sellerId: string; price: number } | null
+  nextDueDate: string | null
+  note: string
+}
+
+export async function recordPayment(i: RecordPaymentInput): Promise<string> {
+  const c = i.client
+  const { data, error } = await db.rpc("record_payment", {
+    p_event_id: i.eventId,
+    p_amount: i.amount,
+    p_method: i.method,
+    p_paid_at: i.paidAt,
+    p_client_id: "clientId" in c ? c.clientId : null,
+    p_full_name: "fullName" in c ? c.fullName : null,
+    p_phone: "phone" in c ? c.phone : null,
+    p_tariff_id: i.enroll?.tariffId ?? null,
+    p_seller_id: i.enroll?.sellerId ?? null,
+    p_price: i.enroll?.price ?? null,
+    p_next_due_date: i.nextDueDate,
+    p_note: i.note || null,
+  })
+  if (error) throw financeError(error)
+  return data as string
+}
+
+export async function voidPayment(id: string, reason: string): Promise<void> {
+  const { error } = await db.rpc("void_payment", { p_payment_id: id, p_reason: reason })
+  if (error) throw financeError(error)
+}
+
+export async function refundPayment(v: {
+  participantId: string
+  amount: number
+  method: PaymentMethod
+  note: string
+}): Promise<void> {
+  const { error } = await db.rpc("refund_payment", {
+    p_participant_id: v.participantId,
+    p_amount: v.amount,
+    p_method: v.method,
+    p_note: v.note || null,
+  })
+  if (error) throw financeError(error)
+}
+
+export interface ParticipantFinancePatch {
+  price?: number
+  seller_id?: string | null
+  next_due_date?: string | null
+}
+
+// price / next_due_date are guarded in the DB (051): non-finance users get forbidden: finance_fields.
+export async function updateParticipantFinance(id: string, patch: ParticipantFinancePatch): Promise<void> {
+  const { error } = await db.from("event_participants").update(patch).eq("id", id)
+  if (error) throw financeError(error)
+}
