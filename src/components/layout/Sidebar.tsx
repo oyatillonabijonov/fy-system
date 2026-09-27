@@ -30,7 +30,6 @@ import { useTheme } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
-import { DASHBOARD_KEY } from "@/hooks/useDashboard"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
 
@@ -98,7 +97,6 @@ const navigationSections: NavSection[] = [
 ]
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
-    Dashboard: { key: [...DASHBOARD_KEY], fn: () => import("@/lib/supabase/queries/dashboard").then(m => m.getDashboardAnalytics()) },
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
     Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
