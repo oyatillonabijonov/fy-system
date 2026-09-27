@@ -14,8 +14,69 @@
   --ds-color-border-default: #1c1c1c12;
 }
 
-[data-theme="dark"] {
-  --ds-color-border-default: #ffffff17;
+/* Dark mode, rebuilt (overrides Plexus' mid-grey dark): three clear elevation steps
+   from near-black up, off-white text with ~7:1 secondary contrast, semantic colours
+   tuned for dark grounds (soft fills dark, their text light).
+   :root[...] outranks the tokens file's prefers-color-scheme rule (:root:not([data-theme="light"])). */
+:root[data-theme="dark"] {
+  /* Elevation: page/sidebar → main card → cards, fields, table header */
+  --ds-color-bg-default: #0b0b0c;
+  --ds-color-bg-subtle: #111113;
+  --ds-color-bg-inverted: #ededef;
+  --ds-color-surface-default: #141416;
+  --ds-color-surface-raised: #19191c;   /* menus, dialogs — between the card and its fields */
+  --ds-color-surface-sunken: #202024;   /* fields, inner cards, table header: one step up from both */
+  --ds-color-surface-sunken-hover: #27272b;
+  --ds-color-surface-glass: rgba(25, 25, 28, 0.8);
+  --ds-color-surface-overlay: #000000b3;
+
+  /* Text */
+  --ds-color-text-default: #ededef;
+  --ds-color-text-muted: #9d9da6;
+  --ds-color-text-faint: #6f6f78;
+  --ds-color-text-on-inverted: #0b0b0c;
+  --ds-color-text-on-accent: #0b0b0c;
+
+  /* Strokes */
+  --ds-color-border-default: #ffffff12;
+  --ds-color-border-strong: #52525a;
+  --ds-color-border-focus: #ededef;
+
+  /* Accent (off-white) */
+  --ds-color-accent-default: #ededef;
+  --ds-color-accent-hover: #d4d4d8;
+  --ds-color-accent-active: #bfbfc4;
+  --ds-color-accent-subtle: #27272b;
+  --ds-color-accent-text: #ededef;
+  --ds-color-accent-ghost-hover: #ffffff0d;
+  --ds-color-accent-soft: #27272b;
+  --ds-color-accent-soft-hover: #303035;
+
+  /* Neutral controls */
+  --ds-color-mute-default: #8a8a93;
+  --ds-color-mute-ghost-hover: #ffffff0d;
+  --ds-color-mute-soft: #27272b;
+  --ds-color-mute-soft-hover: #303035;
+  --ds-color-mute-dark: #d4d4d8;
+
+  /* Semantic */
+  --ds-color-danger-default: #f2555a;
+  --ds-color-danger-text: #ff7b75;
+  --ds-color-danger-soft: #2a1416;
+  --ds-color-danger-soft-hover: #36191c;
+  --ds-color-danger-dark: #ffa9a3;
+  --ds-color-success-default: #3ecf6e;
+  --ds-color-success-text: #4fd67d;
+  --ds-color-success-soft: #0f2518;
+  --ds-color-success-dark: #86efac;
+  --ds-color-warning-default: #f5a524;
+  --ds-color-warning-text: #fbbf4a;
+  --ds-color-warning-soft: #2a1f0b;
+  --ds-color-warning-dark: #fcd38a;
+  --ds-color-info-default: #3b9eff;
+  --ds-color-info-text: #6cb6ff;
+  --ds-color-info-soft: #0d2136;
+  --ds-color-info-dark: #a5d0ff;
 }
 
 @layer base {
