@@ -15,7 +15,7 @@ export function EventsMoliya() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-5 h-full">
+      <div className="flex flex-col gap-5 min-h-full pb-10">
         <div className="animate-pulse bg-surface-sunken rounded-item h-9 w-64" />
         <div className="animate-pulse bg-surface-sunken rounded-surface h-24" />
       </div>
@@ -23,7 +23,7 @@ export function EventsMoliya() {
   }
 
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-5 min-h-full pb-10">
       {/* No onCreate: creating events belongs to Boshqaruv. */}
       <EventTabs events={events} selectedId={effectiveId} onSelect={setSelectedId} showUmumiy />
 

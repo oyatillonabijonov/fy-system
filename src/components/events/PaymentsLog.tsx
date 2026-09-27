@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { Plus, Receipt } from "@phosphor-icons/react"
-import { useRecentPayments } from "@/hooks/usePayments"
+import { useRecentPayments, usePaymentsCount } from "@/hooks/usePayments"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { AddPaymentModal } from "@/components/events/AddPaymentModal"
 import { formatMoney, formatPhone, formatDate } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
+import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 import { ThinkingOrb } from "thinking-orbs"
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
@@ -14,15 +15,12 @@ const METHOD_LABEL: Record<PaymentMethod, string> = {
   transfer: "Transfer",
 }
 
-const PAGE = 50
-
 export function PaymentsLog() {
-  const [limit, setLimit] = useState(PAGE)
+  const [page, setPage] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
   const [openKey, setOpenKey] = useState(0) // bump on open → modal remounts fresh
-  const { data: payments = [], isLoading } = useRecentPayments(limit)
-
-  const canLoadMore = payments.length === limit
+  const { data: payments = [], isLoading } = useRecentPayments(PAGE_SIZE, page * PAGE_SIZE)
+  const { data: total = 0 } = usePaymentsCount()
 
   return (
     <div className="flex flex-col gap-3">
@@ -96,16 +94,7 @@ export function PaymentsLog() {
               </table>
             </div>
 
-            {canLoadMore && (
-              <div className="pt-3 flex justify-center">
-                <button
-                  onClick={() => setLimit((l) => l + PAGE)}
-                  className="px-4 h-control-sm rounded-control-sm text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
-                >
-                  Ko'proq yuklash
-                </button>
-              </div>
-            )}
+            <Pager page={page} pageCount={Math.ceil(total / PAGE_SIZE)} total={total} onPage={setPage} />
           </>
         )}
       </div>

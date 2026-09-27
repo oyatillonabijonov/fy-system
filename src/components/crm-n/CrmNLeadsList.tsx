@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
+  getPaginationRowModel,
   getFilteredRowModel,
   type SortingState,
 } from "@tanstack/react-table"
@@ -18,6 +19,7 @@ import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase
 import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatNumber, formatDate } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
+import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 
 interface CrmNLeadsListProps {
   leads: CrmLeadWithContact[]
@@ -45,7 +47,6 @@ export function CrmNLeadsList({
   const [bulkAction, setBulkAction] = useState<string>("")
   const [bulkActionValue, setBulkActionValue] = useState<string>("")
   const [bulkLoading, setBulkLoading] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(50)
 
   // Filter leads
   const filteredLeads = useMemo(() => {
@@ -180,7 +181,7 @@ export function CrmNLeadsList({
   ], [filteredLeads, selectedIds, stages, users])
 
   const table = useReactTable({
-    data: filteredLeads.slice(0, visibleCount),
+    data: filteredLeads,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -188,6 +189,8 @@ export function CrmNLeadsList({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageIndex: 0, pageSize: PAGE_SIZE } },
     globalFilterFn: (row, _columnId, filterValue: string) => {
       const search = filterValue.toLowerCase()
       const contact = row.original.crm_contacts
@@ -434,17 +437,12 @@ export function CrmNLeadsList({
             </table>
           </div>
 
-          {/* Load more */}
-          {filteredLeads.length > visibleCount && (
-            <div className="flex items-center justify-center pt-3">
-              <button
-                onClick={() => setVisibleCount((v) => v + 50)}
-                className="px-4 h-control-sm rounded-control-sm text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
-              >
-                Ko'proq yuklash ({filteredLeads.length - visibleCount} ta qoldi)
-              </button>
-            </div>
-          )}
+          <Pager
+            page={table.getState().pagination.pageIndex}
+            pageCount={table.getPageCount()}
+            total={table.getFilteredRowModel().rows.length}
+            onPage={table.setPageIndex}
+          />
         </div>
       )}
     </div>

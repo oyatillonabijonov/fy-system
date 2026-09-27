@@ -172,6 +172,12 @@ export async function getRecentPayments(limit = 50, offset = 0): Promise<EventPa
   return ((data ?? []) as unknown as PaymentJoinRow[]).map(mapEventPayment)
 }
 
+export async function getPaymentsCount(): Promise<number> {
+  const { count, error } = await supabase.from("payments").select("id", { count: "exact", head: true })
+  if (error) throw error
+  return count ?? 0
+}
+
 // ─── Client → event participations (Add-payment modal event picker) ────────────
 export interface ClientParticipation {
   participant_id: string

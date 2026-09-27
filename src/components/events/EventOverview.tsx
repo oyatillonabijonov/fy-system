@@ -1,25 +1,21 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import {
   CalendarBlank,
   MapPin,
   PencilSimple,
   Trash,
   UsersThree,
-  UserPlus,
-  CaretUp,
-  CaretDown,
+  UserCircle,
   Plus,
   Export,
 } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { useParticipants, useDeleteParticipant } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
-import { EventBanner } from "@/components/events/EventBanner"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
-import { eventTint } from "@/lib/eventTint"
 import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
-import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -32,7 +28,6 @@ interface EventOverviewProps {
 }
 
 export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
-  const [bannerOpen, setBannerOpen] = useState(true)
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [enrollKey, setEnrollKey] = useState(0)
   const [exporting, setExporting] = useState(false)
@@ -43,20 +38,9 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const { data: users = [] } = useUsers()
   const manager = users.find((u) => u.id === event.manager_id) ?? null
 
+  const paged = usePaged(participants)
   const existingContactIds = new Set(participants.map((p) => p.contact_id).filter((id): id is string => !!id))
 
-  const { todayCount, weekCount } = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    let t = 0
-    let w = 0
-    for (const p of participants) {
-      if (!p.created_at) continue
-      if (p.created_at.slice(0, 10) === today) t++
-      if (new Date(p.created_at).getTime() >= weekAgo) w++
-    }
-    return { todayCount: t, weekCount: w }
-  }, [participants])
 
   const dateLabel = event.date
     ? event.end_date
@@ -79,59 +63,50 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Banner header (collapsible) */}
-      {bannerOpen ? (
-        <EventBanner name={event.name} coverImage={event.cover_image} className="h-[184px] rounded-surface">
-          {/* Bottom scrim keeps text legible on photos; barely visible on generated covers */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-          <div className="absolute top-4 right-4 flex items-center gap-1.5">
-            <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={16} /></IconBtn>
-            <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={16} /></IconBtn>
-            <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish" expanded={bannerOpen}><CaretUp size={16} /></IconBtn>
-          </div>
-          <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col gap-2.5">
-            <h2 className="text-xl font-semibold text-white leading-tight line-clamp-2 pr-32">{event.name}</h2>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-base text-white/80">
-              <MetaItem icon={<CalendarBlank size={16} />}>{dateLabel}</MetaItem>
-              {event.location && <MetaItem icon={<MapPin size={16} />}>{event.location}</MetaItem>}
-              {manager && (
-                <MetaItem
-                  icon={
-                    manager.avatar_url ? (
-                      <img src={manager.avatar_url} alt="" className="size-5 rounded-full object-cover" />
-                    ) : (
-                      <span className="size-5 rounded-full bg-white/20 text-white text-xs font-medium flex items-center justify-center">
-                        {initials(manager.full_name)}
-                      </span>
-                    )
-                  }
-                >
-                  {manager.full_name}
-                </MetaItem>
-              )}
-            </div>
-          </div>
-        </EventBanner>
-      ) : (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-surface border border-line bg-surface">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: eventTint(event.name) }} />
-            <span className="text-base font-semibold text-ink truncate">{event.name}</span>
-            <span className="text-sm text-ink-muted whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={16} /></CompactBtn>
-            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={16} /></CompactBtn>
-            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={16} /></CompactBtn>
-          </div>
+      {/* Event header: name + actions */}
+      <div className="flex items-center justify-between gap-4 px-1">
+        <h2 className="text-lg font-semibold text-ink leading-tight">{event.name}</h2>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-control text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
+          >
+            <PencilSimple size={16} /> Tahrirlash
+          </button>
+          <button
+            onClick={onDelete}
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-control text-base font-medium text-danger-text bg-danger-soft hover:bg-danger-soft-hover transition-colors"
+          >
+            <Trash size={16} /> O'chirish
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Registration KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard label="Jami ishtirokchi" value={String(participants.length)} icon={<UsersThree size={16} />} />
-        <KpiCard label="Bugun" value={`+${todayCount}`} icon={<UserPlus size={16} />} />
-        <KpiCard label="Oxirgi 7 kun" value={`+${weekCount}`} icon={<CalendarBlank size={16} />} />
+      {/* Event facts */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <InfoCard label="Jami ishtirokchi" icon={<UsersThree size={16} />}>
+          <span className="text-2xl font-semibold tabular-nums">{participants.length}</span>
+        </InfoCard>
+        <InfoCard label="Sana" icon={<CalendarBlank size={16} />}>
+          <span className="tabular-nums">{dateLabel}</span>
+        </InfoCard>
+        <InfoCard label="Joy" icon={<MapPin size={16} />}>{event.location || "—"}</InfoCard>
+        <InfoCard label="Mas'ul" icon={<UserCircle size={16} />}>
+          {manager ? (
+            <span className="flex items-center gap-2 min-w-0">
+              {manager.avatar_url ? (
+                <img src={manager.avatar_url} alt="" className="size-6 rounded-full object-cover shrink-0" />
+              ) : (
+                <span className="size-6 rounded-full bg-mute-soft text-ink-muted text-xs font-medium flex items-center justify-center shrink-0">
+                  {initials(manager.full_name)}
+                </span>
+              )}
+              <span className="truncate">{manager.full_name}</span>
+            </span>
+          ) : (
+            "—"
+          )}
+        </InfoCard>
       </div>
 
       {/* Participants table */}
@@ -163,67 +138,51 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         ) : participants.length === 0 ? (
           <div className="py-10 text-center text-base text-ink-muted">Hali ishtirokchi qo'shilmagan</div>
         ) : (
-          <div className={tbl.scroll}>
-            <table className={tbl.table}>
-              <thead>
-                <tr>
-                  <th className={tbl.th}>Mijoz</th>
-                  <th className={tbl.th}>Telefon</th>
-                  <th className={`${tbl.th} text-right`}>Amal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {participants.map((p) => (
-                  <tr key={p.id} className={tbl.tr}>
-                    <td className={tbl.td}>
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full overflow-hidden flex-shrink-0 bg-mute-soft flex items-center justify-center">
-                          {p.photo_url ? (
-                            <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
-                          ) : (
-                            <span className="text-sm font-medium text-ink-muted">{initials(p.full_name)}</span>
-                          )}
-                        </div>
-                        <span className="font-medium whitespace-nowrap">{p.full_name}</span>
-                      </div>
-                    </td>
-                    <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{formatPhone(p.phone)}</td>
-                    <td className={`${tbl.td} text-right whitespace-nowrap`}>
-                      {confirmingId === p.id ? (
-                        <span className="inline-flex items-center gap-2">
-                          {p.paid > 0 && (
-                            <span className="text-xs font-bold text-danger-text">To'lovlar ham o'chadi!</span>
-                          )}
-                          <button
-                            onClick={() => { deleteParticipant.mutate(p.id); setConfirmingId(null) }}
-                            disabled={deleteParticipant.isPending}
-                            className="text-xs font-bold text-danger-text hover:text-danger-dark disabled:opacity-50"
-                          >
-                            O'chirish
-                          </button>
-                          <button
-                            onClick={() => setConfirmingId(null)}
-                            className="text-xs font-medium text-ink-muted hover:text-ink"
-                          >
-                            Bekor
-                          </button>
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmingId(p.id)}
-                          title="O'chirish"
-                          aria-label="O'chirish"
-                          className="text-ink-faint hover:text-danger-text transition-colors"
-                        >
-                          <Trash size={16} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Two-column list, filled column by column (1–10 left, 11–20 right); no header row */}
+            <ul className="lg:columns-2 gap-x-8">
+              {paged.pageItems.map((p) => (
+                <li key={p.id} className="break-inside-avoid flex items-center gap-2.5 h-12 border-b border-line text-base">
+                  <span className="size-6 rounded-full overflow-hidden shrink-0 bg-mute-soft flex items-center justify-center">
+                    {p.photo_url ? (
+                      <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
+                    ) : (
+                      <span className="text-xs font-medium text-ink-muted">{initials(p.full_name)}</span>
+                    )}
+                  </span>
+                  <span className="flex-1 min-w-0 truncate text-ink">{p.full_name}</span>
+                  {confirmingId === p.id ? (
+                    <span className="flex items-center gap-2 shrink-0 text-sm">
+                      {p.paid > 0 && <span className="text-danger-text">To'lovlar ham o'chadi</span>}
+                      <button
+                        onClick={() => { deleteParticipant.mutate(p.id); setConfirmingId(null) }}
+                        disabled={deleteParticipant.isPending}
+                        className="font-medium text-danger-text hover:text-danger-dark disabled:opacity-50"
+                      >
+                        O'chirish
+                      </button>
+                      <button onClick={() => setConfirmingId(null)} className="text-ink-muted hover:text-ink">
+                        Bekor
+                      </button>
+                    </span>
+                  ) : (
+                    <>
+                      <span className="shrink-0 text-sm text-ink-muted tabular-nums">{formatPhone(p.phone)}</span>
+                      <button
+                        onClick={() => setConfirmingId(p.id)}
+                        title="O'chirish"
+                        aria-label={`${p.full_name}ni o'chirish`}
+                        className="shrink-0 size-7 flex items-center justify-center rounded-control-sm text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <Pager page={paged.page} pageCount={paged.pageCount} total={participants.length} onPage={paged.setPage} />
+          </>
         )}
       </div>
 
@@ -241,75 +200,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
 
 // ── Banner buttons / chips ──────────────────────────────────────────────────────
 
-function IconBtn({
-  children,
-  onClick,
-  title,
-  danger,
-  expanded,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  title: string
-  danger?: boolean
-  expanded?: boolean
-}) {
+function InfoCard({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      aria-expanded={expanded}
-      className={`size-8 flex items-center justify-center rounded-full bg-white/15 backdrop-blur-md text-white transition-colors ${danger ? "hover:bg-danger" : "hover:bg-white/25"}`}
-    >
-      {children}
-    </button>
-  )
-}
-
-function CompactBtn({
-  children,
-  onClick,
-  title,
-  danger,
-  expanded,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  title: string
-  danger?: boolean
-  expanded?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      aria-expanded={expanded}
-      className={`p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors ${danger ? "text-danger-text" : "text-ink-muted"}`}
-    >
-      {children}
-    </button>
-  )
-}
-
-function MetaItem({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      {icon}
-      {children}
-    </span>
-  )
-}
-
-function KpiCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  return (
-    <div className="bg-surface-sunken rounded-surface p-5 flex flex-col gap-4">
+    <div className="bg-surface-sunken rounded-surface p-5 flex flex-col gap-3 min-w-0">
       <div className="flex items-center justify-between">
         <span className="text-base font-medium text-ink-muted">{label}</span>
         <span className="size-8 rounded-control-sm bg-surface flex items-center justify-center text-ink">{icon}</span>
       </div>
-      <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
+      <div className="min-h-9 flex items-end text-md font-medium text-ink min-w-0 truncate">{children}</div>
     </div>
   )
 }
