@@ -1,8 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource-variable/dm-sans";
 @import "./styles/plexus-tokens.css";
 @custom-variant dark (&:is([data-theme="dark"] *));
+
+/* DM Sans (self-hosted via @fontsource-variable/dm-sans) replaces Plexus' Inter.
+   Overrides the generated tokens here so a Broom regeneration of plexus-tokens.css doesn't undo it. */
+:root {
+  --ds-font-display: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --ds-font-body: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+}
 
 @layer base {
   :root {
@@ -400,16 +408,16 @@
   --text-5xl:  48px;
   --text-5xl--line-height: 1.1;
 
-  /* Four weights: 400 read, 500 labels, 600/700 headings */
+  /* Three weights, SemiBold (600) is the ceiling: bold/extrabold/black all render at 600 */
   --font-weight-thin:       400;
   --font-weight-extralight: 400;
   --font-weight-light:      400;
   --font-weight-normal:     400;
   --font-weight-medium:     500;
   --font-weight-semibold:   600;
-  --font-weight-bold:       700;
-  --font-weight-extrabold:  700;
-  --font-weight-black:      700;
+  --font-weight-bold:       600;
+  --font-weight-extrabold:  600;
+  --font-weight-black:      600;
 
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -510,6 +518,7 @@
 
 @layer base {
   :focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 2px; }
+  b, strong, th { font-weight: 600; }
   ::selection { background: var(--ds-color-accent-default); color: var(--ds-color-text-on-accent); }
 }
 

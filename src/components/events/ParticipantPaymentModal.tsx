@@ -77,7 +77,7 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
             aria-labelledby={titleId}
             tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-sm relative overflow-hidden flex flex-col"
+            className="bg-surface-raised rounded-overlay w-full max-w-sm relative overflow-hidden flex flex-col"
           >
             <div className="p-5 border-b border-line flex items-center justify-between">
               <div className="flex flex-col min-w-0">

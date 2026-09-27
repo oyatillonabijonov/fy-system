@@ -105,7 +105,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
             aria-labelledby={titleId}
             tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-surface-raised rounded-overlay w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
           >
             <div className="p-5 border-b border-line flex items-center justify-between">
               <h3 id={titleId} className="text-md font-bold text-ink">Ishtirokchi qo'shish</h3>

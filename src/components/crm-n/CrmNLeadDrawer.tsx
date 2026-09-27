@@ -405,7 +405,7 @@ export function CrmNLeadDrawer({
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 w-[420px] bg-surface-raised border-l border-line z-50 flex flex-col shadow-lg"
+            className="fixed top-0 right-0 bottom-0 w-[420px] bg-surface-raised border-l border-line z-50 flex flex-col "
           >
             {/* Header */}
             <div className="flex items-start justify-between p-5 pb-4 border-b border-line">

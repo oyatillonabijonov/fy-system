@@ -191,7 +191,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-2xl shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

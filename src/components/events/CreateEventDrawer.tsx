@@ -88,7 +88,7 @@ function ManagerSelect({
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full bg-surface-raised border border-line rounded-menu shadow-md overflow-hidden">
+        <div className="absolute z-20 mt-1 w-full bg-surface-raised border border-line rounded-menu overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
             <MagnifyingGlass size={14} className="text-ink-muted" weight="bold" />
             <input
@@ -312,7 +312,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               animate={{ x: 0 }}
               exit={{ x: 460 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col shadow-lg"
+              className="fixed top-0 right-0 bottom-0 w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col "
             >
               {/* Header */}
               <div className="flex items-center justify-between p-5 pb-4 border-b border-line">

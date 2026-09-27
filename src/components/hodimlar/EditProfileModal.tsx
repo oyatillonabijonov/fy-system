@@ -107,7 +107,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-2xl shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-surface-raised z-10">

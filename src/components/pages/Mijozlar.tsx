@@ -727,7 +727,7 @@ export function Mijozlar() {
                         exit={{ opacity: 0, scale: 0.96, y: 16 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                         onClick={e => e.stopPropagation()}
-                        className="w-[520px] max-h-[92vh] bg-surface-raised rounded-overlay shadow-lg flex flex-col overflow-hidden"
+                        className="w-[520px] max-h-[92vh] bg-surface-raised rounded-overlay flex flex-col overflow-hidden"
                     >
                         <div className="flex flex-col">
                             {/* AVATAR + INFO */}
@@ -1025,7 +1025,7 @@ export function Mijozlar() {
                                                 className="relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0"
                                                 style={{ background: selectedCustomer.communityApproved ? "var(--ds-color-success-default)" : "var(--ds-color-mute-soft)" }}
                                             >
-                                                <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-surface-raised rounded-full shadow transition-transform duration-200"
+                                                <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-surface-raised rounded-full transition-transform duration-200"
                                                     style={{ transform: selectedCustomer.communityApproved ? "translateX(20px)" : "translateX(0)" }} />
                                             </button>
                                         </div>
@@ -1094,7 +1094,7 @@ export function Mijozlar() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-bold shadow-lg ${
+                        className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-bold ${
                             toast.type === "success"
                                 ? "bg-surface-sunken text-ink border border-line"
                                 : "bg-danger-soft text-danger-text border border-line"
@@ -1125,7 +1125,7 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-xl relative overflow-hidden flex flex-col"
+                            className="bg-surface-raised rounded-overlay w-full max-w-xl relative overflow-hidden flex flex-col"
                         >
                             <div className="p-6 border-b border-line flex items-center justify-between bg-surface-raised">
                                 <h3 id={addModalTitleId} className="text-lg font-bold text-ink">Yangi mijoz qo'shish</h3>
@@ -1332,7 +1332,7 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-[400px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
+                            className="bg-surface-raised rounded-overlay w-full max-w-[400px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
                         >
                             <div className="w-14 h-14 bg-danger-soft rounded-full flex items-center justify-center">
                                 <Trash size={28} className="text-danger-text" weight="bold" />
@@ -1399,7 +1399,7 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-[420px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
+                            className="bg-surface-raised rounded-overlay w-full max-w-[420px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
                         >
                             <div className="w-14 h-14 bg-danger-soft rounded-full flex items-center justify-center">
                                 <Trash size={28} className="text-danger-text" weight="bold" />

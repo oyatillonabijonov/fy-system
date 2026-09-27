@@ -8,8 +8,7 @@ import {
     Gear,
     SignOut,
     User,
-    CaretLeft,
-    CaretRight,
+    SidebarSimple,
     CaretDown,
     PaperPlaneRight,
     ChatTeardropDots,
@@ -196,10 +195,10 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-            className="h-screen flex flex-col overflow-hidden sticky top-0 flex-shrink-0 bg-page px-3 py-4"
+            className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5"
         >
             {/* Top: Logo + Collapse button */}
-            <div className={`flex items-center h-control-md mb-4 ${isCollapsed ? "justify-center" : "justify-between pl-2"}`}>
+            <div className={`flex items-center h-control-md mb-6 ${isCollapsed ? "justify-center" : "justify-between pl-1"}`}>
                 {!isCollapsed && (
                     <img
                         src={themeId === 'dark' ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
@@ -212,9 +211,9 @@ export function Sidebar() {
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
                     aria-expanded={!isCollapsed}
-                    className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink-muted transition-colors hover:bg-mute-ghost-hover hover:text-ink"
+                    className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink transition-colors hover:bg-mute-ghost-hover"
                 >
-                    {isCollapsed ? <CaretRight size={16} weight="bold" /> : <CaretLeft size={16} weight="bold" />}
+                    <SidebarSimple size={20} />
                 </button>
             </div>
 
@@ -232,17 +231,17 @@ export function Sidebar() {
                         aria-label="Menyudan qidirish"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-control-md rounded-control pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface border border-transparent outline-none transition-colors focus:border-line-focus"
+                        className="w-full h-control-md rounded-full pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface border border-transparent outline-none transition-colors focus:border-line-focus"
                     />
                 </div>
             )}
 
             {/* Nav */}
-            <nav aria-label="Asosiy menyu" className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar min-h-0 pb-4">
+            <nav aria-label="Asosiy menyu" className="flex-1 flex flex-col gap-6 overflow-y-auto no-scrollbar min-h-0 pb-4">
                 {visibleSections.map((section) => (
                     <div key={section.title} className="flex flex-col gap-0.5">
                         {!isCollapsed && (
-                            <h3 className="text-xs font-medium text-ink-muted px-3 pb-1">
+                            <h3 className="text-sm text-ink-muted px-3 pb-1.5">
                                 {section.title}
                             </h3>
                         )}
@@ -268,9 +267,9 @@ export function Sidebar() {
                                         aria-expanded={hasSubItems && !isCollapsed ? isExpanded : undefined}
                                         title={isCollapsed ? item.name : undefined}
                                         aria-label={isCollapsed ? item.name : undefined}
-                                        className={`flex items-center gap-3 h-control-md rounded-control text-base font-medium transition-colors ${isCollapsed ? "w-11 justify-center self-center" : "w-full px-3"} ${active ? "bg-surface text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                                        className={`flex items-center gap-3 h-control-md rounded-full text-base font-medium text-ink transition-colors ${isCollapsed ? "w-10 justify-center self-center" : "w-full px-3"} ${active ? "bg-surface " : "hover:bg-mute-ghost-hover"}`}
                                     >
-                                        <item.icon size={18} weight="bold" className="flex-shrink-0" />
+                                        <item.icon size={18} className="flex-shrink-0" />
                                         {!isCollapsed && (
                                             <>
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">{item.name}</span>
@@ -295,9 +294,9 @@ export function Sidebar() {
                                                         type="button"
                                                         onClick={() => handleNavigate(subItem)}
                                                         aria-current={isSubActive ? "page" : undefined}
-                                                        className={`flex items-center gap-3 h-control-sm rounded-control-sm pl-10 pr-3 text-base font-medium transition-colors ${isSubActive ? "bg-surface text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                                                        className={`flex items-center gap-3 h-control-sm rounded-full pl-10 pr-3 text-base font-medium transition-colors ${isSubActive ? "bg-surface text-ink " : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
                                                     >
-                                                        <subItem.icon size={16} weight="bold" className="flex-shrink-0" />
+                                                        <subItem.icon size={16} className="flex-shrink-0" />
                                                         <span className="flex-1 text-left truncate">{subItem.name}</span>
                                                     </button>
                                                 )
@@ -312,7 +311,8 @@ export function Sidebar() {
             </nav>
 
             {/* Profile / Logout */}
-            <div className={`mt-auto flex items-center ${isCollapsed ? "flex-col" : "gap-3 rounded-surface bg-surface p-2"}`}>
+            {!isCollapsed && <h3 className="text-sm text-ink-muted px-3 pb-2">Akkaunt</h3>}
+            <div className={`flex items-center ${isCollapsed ? "flex-col" : "gap-3 px-1"}`}>
                 <div
                     className="size-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent text-ink-on-accent"
                     title={displayName ?? ""}

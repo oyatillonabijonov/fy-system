@@ -97,10 +97,10 @@ function AppShell() {
     <div className="h-screen text-ink flex overflow-hidden bg-page">
       <Sidebar />
 
-      {/* Main content panel */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-surface">
+      {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
+      <div className="flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
         {/* Header */}
-        <header className="h-16 px-6 flex items-center justify-between gap-6 flex-shrink-0 border-b border-line">
+        <header className="mx-3 mt-3 h-14 px-4 flex items-center justify-between gap-6 flex-shrink-0 rounded-surface border border-line">
           {/* Left: page title */}
           <div className="flex flex-col min-w-0">
             <h1 className="text-md font-semibold text-ink truncate">{meta.title}</h1>
@@ -145,7 +145,7 @@ function AppShell() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 4 }}
                     transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-                    className="absolute top-full right-0 mt-2 w-[320px] rounded-menu bg-surface-raised shadow-md overflow-hidden z-50 origin-top-right"
+                    className="absolute top-full right-0 mt-2 w-[320px] rounded-menu bg-surface-raised border border-line overflow-hidden z-50 origin-top-right"
                   >
                     <div className="px-4 h-11 flex items-center border-b border-line">
                       <span className="text-base font-semibold text-ink">Bildirishnomalar</span>
@@ -191,7 +191,7 @@ function AppShell() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 4 }}
                     transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-                    className="absolute top-full right-0 mt-2 w-[96px] p-1 rounded-menu bg-surface-raised shadow-md z-50"
+                    className="absolute top-full right-0 mt-2 w-[96px] p-1 rounded-menu bg-surface-raised border border-line z-50"
                   >
                     {['uz', 'ru', 'en'].map((lang) => (
                       <button

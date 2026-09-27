@@ -87,7 +87,7 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
