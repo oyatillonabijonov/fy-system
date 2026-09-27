@@ -5,6 +5,7 @@ import { EXPENSE_CATEGORY_LABEL, type ExpenseCategory, type ExpenseRow } from "@
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatNumber } from "@/lib/format"
+import { ReceiptInput } from "@/components/moliya/Receipt"
 
 // Both modals are mounted only while open, so their state starts fresh.
 export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: string | null; onClose: () => void }) {
@@ -20,6 +21,7 @@ export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: s
   const [amount, setAmount] = useState("")
   const [spentAt, setSpentAt] = useState(tashkentToday())
   const [note, setNote] = useState("")
+  const [receipt, setReceipt] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const amountNum = amount ? Number(amount) : 0
 
@@ -34,8 +36,14 @@ export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: s
       onSubmit={() =>
         category !== "" &&
         add.mutate(
-          { category, amount: amountNum, spentAt, eventId: event || null, note: note.trim() },
-          { onSuccess: onClose, onError: (e) => setError(e.message) },
+          { category, amount: amountNum, spentAt, eventId: event || null, note: note.trim(), receipt },
+          {
+            onSuccess: (attached) => {
+              if (!attached) window.alert("Xarajat saqlandi, lekin chek yuklanmadi — Xarajatlar ro'yxatidan qayta biriktiring")
+              onClose()
+            },
+            onError: (e) => setError(e.message),
+          },
         )
       }
     >
@@ -76,6 +84,7 @@ export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: s
         <label htmlFor={noteId} className={LABEL}>Izoh</label>
         <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Masalan: zal ijarasi, 2-kun" />
       </div>
+      <ReceiptInput file={receipt} onChange={setReceipt} />
     </ModalShell>
   )
 }

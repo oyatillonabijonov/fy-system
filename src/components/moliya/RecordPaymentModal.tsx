@@ -10,6 +10,7 @@ import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
+import { ReceiptInput } from "@/components/moliya/Receipt"
 
 export type PickedClient = Pick<ClientContact, "id" | "full_name" | "phone" | "image">
 
@@ -101,6 +102,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const [date, setDate] = useState(() => tashkentToday())
   const [due, setDue] = useState("")
   const [note, setNote] = useState("")
+  const [receipt, setReceipt] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -174,9 +176,13 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
         enroll: needsEnroll ? { tariffId, sellerId, price: Number(price) } : null,
         nextDueDate: remaining > 0 && due ? due : null,
         note: note.trim(),
+        receipt,
       },
       {
-        onSuccess: onClose,
+        onSuccess: (attached) => {
+          if (!attached) window.alert("To'lov saqlandi, lekin chek yuklanmadi — To'lovlar ro'yxatidan qayta biriktiring")
+          onClose()
+        },
         onError: (err) => {
           if (err instanceof ClientExistsError) {
             setSuggestion({ id: err.clientId, full_name: err.clientName, phone, image: null })
@@ -408,6 +414,8 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
               <label htmlFor={noteId} className={LABEL}>Izoh</label>
               <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Ixtiyoriy" />
             </div>
+
+            <ReceiptInput file={receipt} onChange={setReceipt} />
   
             {amountNum > 0 && !overDebt && (
               <div className="flex items-center justify-between px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">

@@ -5,6 +5,7 @@ import type { FinanceFilters, PaymentRow } from "@/lib/supabase/queries/finance"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { RefundModal, VoidPaymentModal } from "@/components/moliya/PaymentActionModals"
+import { ReceiptCell } from "@/components/moliya/Receipt"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
@@ -50,6 +51,7 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
                   <th className={tbl.th}>Sotuvchi</th>
                   <th className={`${tbl.th} text-right`}>Summa</th>
                   <th className={tbl.th}>Usul</th>
+                  <th className={tbl.th}>Chek</th>
                   <th className={tbl.th}>Kiritgan</th>
                   {canEdit && <th className={`${tbl.th} text-right`}>Amal</th>}
                 </tr>
@@ -82,6 +84,9 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
                         ) : (
                           <StatusBadge label={p.kind === "refund" ? `Qaytarish · ${METHOD_LABEL[p.method]}` : METHOD_LABEL[p.method]} variant="neutral" />
                         )}
+                      </td>
+                      <td className={`${tbl.td} whitespace-nowrap`}>
+                        <ReceiptCell kind="payment" id={p.id} path={p.receipt_path} canAttach={canEdit && !voided} />
                       </td>
                       <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{p.recorder_name ?? "—"}</td>
                       {canEdit && (

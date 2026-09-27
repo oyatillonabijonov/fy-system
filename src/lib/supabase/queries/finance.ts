@@ -44,6 +44,9 @@ const FINANCE_ERRORS: Record<string, string> = {
   void_would_overpay: "Bu qaytarishni bekor qilsak, to'langan summa kelishuvdan oshib ketadi",
   void_would_go_negative: "Avval shu to'lovga tegishli qaytarishni bekor qiling — aks holda to'langan summa manfiy bo'ladi",
   price_below_paid: "Kelishuv summasi to'langan summadan kam bo'lishi mumkin emas — avval qaytarish qiling",
+  invalid_receipt_path: "Chek fayli noto'g'ri joyga yuklangan",
+  receipt_exists: "Bu yozuvda chek allaqachon bor",
+  receipt_target_not_found: "Yozuv topilmadi",
 }
 
 function financeError(e: { message: string; code?: string }): Error {
@@ -99,6 +102,7 @@ export interface PaymentRow {
   note: string | null
   voided_at: string | null
   void_reason: string | null
+  receipt_path: string | null
   recorder_name: string | null
   client_name: string
   client_phone: string | null
@@ -117,6 +121,7 @@ interface PaymentJoin {
   note: string | null
   voided_at: string | null
   void_reason: string | null
+  receipt_path: string | null
   recorder: { full_name: string } | null
   participant: {
     full_name: string
@@ -132,7 +137,7 @@ export async function listPayments(f: FinanceFilters, page: number): Promise<Pay
   let q = db
     .from("payments")
     .select(
-      "id, participant_id, amount, kind, method, paid_at, note, voided_at, void_reason, " +
+      "id, participant_id, amount, kind, method, paid_at, note, voided_at, void_reason, receipt_path, " +
         "recorder:recorded_by(full_name), " +
         "participant:participant_id!inner(full_name, phone, paid, cashback_used, event_id, seller_id, " +
         "event:event_id(name), seller:seller_id(full_name))",
@@ -158,6 +163,7 @@ export async function listPayments(f: FinanceFilters, page: number): Promise<Pay
     note: r.note,
     voided_at: r.voided_at,
     void_reason: r.void_reason,
+    receipt_path: r.receipt_path,
     recorder_name: r.recorder?.full_name ?? null,
     client_name: r.participant?.full_name ?? "—",
     client_phone: r.participant?.phone ?? null,
@@ -318,6 +324,7 @@ export interface ExpenseRow {
   note: string | null
   voided_at: string | null
   void_reason: string | null
+  receipt_path: string | null
   recorder_name: string | null
 }
 
@@ -331,7 +338,7 @@ interface ExpenseJoin extends Omit<ExpenseRow, "amount" | "event_name" | "record
 export async function listExpenses(f: FinanceFilters, page: number): Promise<ExpenseRow[]> {
   let q = db
     .from("expenses")
-    .select("id, event_id, category, amount, spent_at, note, voided_at, void_reason, event:event_id(name), recorder:recorded_by(full_name)")
+    .select("id, event_id, category, amount, spent_at, note, voided_at, void_reason, receipt_path, event:event_id(name), recorder:recorded_by(full_name)")
     .order("spent_at", { ascending: false })
     .order("created_at", { ascending: false })
     .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
@@ -411,4 +418,27 @@ export async function listEventProfit(f: FinanceFilters): Promise<EventProfitRow
     expense: Number(r.expense),
     profit: Number(r.profit),
   }))
+}
+
+// ─── Receipts (chek) — private bucket, path '<kind>/<id>/<file>' ────────────
+
+export type ReceiptKind = "payment" | "expense"
+export const RECEIPT_ACCEPT = "image/jpeg,image/png,image/webp,application/pdf"
+export const RECEIPT_MAX_BYTES = 10 * 1024 * 1024
+
+// Upload, then link through attach_receipt (the RPC checks the path belongs to that row).
+export async function attachReceipt(kind: ReceiptKind, id: string, file: File): Promise<void> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "bin"
+  const path = `${kind}/${id}/${crypto.randomUUID()}.${ext}`
+  const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file, { contentType: file.type })
+  if (uploadError) throw new Error(`Chek yuklanmadi: ${uploadError.message}`)
+  const { error } = await db.rpc("attach_receipt", { p_kind: kind, p_id: id, p_path: path })
+  if (error) throw financeError(error)
+}
+
+// Short-lived link: the bucket is private.
+export async function receiptUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from("receipts").createSignedUrl(path, 300)
+  if (error) throw new Error(error.message)
+  return data.signedUrl
 }

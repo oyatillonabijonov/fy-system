@@ -5,6 +5,7 @@ import { EXPENSE_CATEGORY_LABEL, type ExpenseRow, type FinanceFilters } from "@/
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { RowAction } from "@/components/moliya/PaymentsTab"
 import { VoidExpenseModal } from "@/components/moliya/ExpenseModals"
+import { ReceiptCell } from "@/components/moliya/Receipt"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 import { formatDate, formatMoney } from "@/lib/format"
@@ -47,6 +48,7 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
                   <th className={tbl.th}>Tadbir</th>
                   <th className={`${tbl.th} text-right`}>Summa</th>
                   <th className={tbl.th}>Izoh</th>
+                  <th className={tbl.th}>Chek</th>
                   <th className={tbl.th}>Kiritgan</th>
                   {canEdit && <th className={`${tbl.th} text-right`}>Amal</th>}
                 </tr>
@@ -71,6 +73,9 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
                         −{formatMoney(x.amount)}
                       </td>
                       <td className={`${tbl.td} text-ink-muted max-w-[280px] truncate`} title={x.note ?? undefined}>{x.note ?? "—"}</td>
+                      <td className={`${tbl.td} whitespace-nowrap`}>
+                        <ReceiptCell kind="expense" id={x.id} path={x.receipt_path} canAttach={canEdit && !voided} />
+                      </td>
                       <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{x.recorder_name ?? "—"}</td>
                       {canEdit && (
                         <td className={`${tbl.td} text-right whitespace-nowrap`}>

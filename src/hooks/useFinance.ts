@@ -12,6 +12,7 @@ import {
   countExpenses,
   addExpense,
   voidExpense,
+  attachReceipt,
   listEventProfit,
   type FinanceFilters,
   type FinanceSummary,
@@ -19,6 +20,9 @@ import {
   type DebtorRow,
   type DebtStatus,
   type ParticipantFinancePatch,
+  type RecordPaymentInput,
+  type AddExpenseInput,
+  type ReceiptKind,
   type ExpenseRow,
   type EventProfitRow,
 } from "@/lib/supabase/queries/finance"
@@ -104,18 +108,35 @@ export function useEventProfit(f: FinanceFilters) {
   })
 }
 
-function useMoneyMutation<V>(fn: (vars: V) => Promise<unknown>) {
+function useMoneyMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient()
   return useMutation({ mutationFn: fn, onSuccess: () => invalidateMoney(qc) })
 }
 
-export const useRecordPayment = () => useMoneyMutation(recordPayment)
+// A receipt that fails to upload never undoes the money: the row stays saved and the
+// receipt can be attached later from the list. Resolves false when it wasn't attached.
+async function saveThenAttach(kind: ReceiptKind, save: () => Promise<string>, file: File | null): Promise<boolean> {
+  const id = await save()
+  if (!file) return true
+  try {
+    await attachReceipt(kind, id, file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const useRecordPayment = () =>
+  useMoneyMutation((v: RecordPaymentInput & { receipt: File | null }) => saveThenAttach("payment", () => recordPayment(v), v.receipt))
 export const useVoidPayment = () =>
   useMoneyMutation((v: { id: string; reason: string }) => voidPayment(v.id, v.reason))
 export const useRefundPayment = () => useMoneyMutation(refundPayment)
 export const useUpdateParticipantFinance = () =>
   useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch))
 
-export const useAddExpense = () => useMoneyMutation(addExpense)
+export const useAddExpense = () =>
+  useMoneyMutation((v: AddExpenseInput & { receipt: File | null }) => saveThenAttach("expense", () => addExpense(v), v.receipt))
+export const useAttachReceipt = () =>
+  useMoneyMutation((v: { kind: ReceiptKind; id: string; file: File }) => attachReceipt(v.kind, v.id, v.file))
 export const useVoidExpense = () =>
   useMoneyMutation((v: { id: string; reason: string }) => voidExpense(v.id, v.reason))
