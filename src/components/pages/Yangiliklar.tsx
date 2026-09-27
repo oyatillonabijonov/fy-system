@@ -130,7 +130,7 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
               aria-label="Yopish"
               className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-faint" weight="bold" />
+              <X size={20} className="text-ink-faint" />
             </button>
           </div>
 
@@ -179,7 +179,7 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
                   <img src={preview} alt="Rasm" className="w-full h-32 object-cover rounded-control" />
                 ) : (
                   <span className="flex flex-col items-center gap-2 text-ink-faint">
-                    <UploadSimple size={22} weight="bold" />
+                    <UploadSimple size={22} />
                     <span className="text-sm">Rasm yuklash uchun bosing</span>
                   </span>
                 )}
@@ -272,7 +272,7 @@ export function Yangiliklar() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-ink">
-          <Newspaper size={20} weight="bold" />
+          <Newspaper size={20} />
           <span className="text-base font-bold">
             Klub yangiliklari {posts.length > 0 && `(${posts.length})`}
           </span>
@@ -281,7 +281,7 @@ export function Yangiliklar() {
           onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-ink-on-accent rounded-control text-base font-bold transition-colors"
         >
-          <Plus size={16} weight="bold" />
+          <Plus size={16} />
           Yangi post
         </button>
       </div>
@@ -291,7 +291,7 @@ export function Yangiliklar() {
         <div className="text-base text-ink-faint italic py-8 text-center">Yuklanmoqda...</div>
       ) : posts.length === 0 ? (
         <div className="bg-surface border border-line rounded-surface py-16 flex flex-col items-center gap-3 text-ink-faint">
-          <Newspaper size={32} weight="bold" />
+          <Newspaper size={32} />
           <span className="text-base">Hozircha yangiliklar yo'q</span>
         </div>
       ) : (
@@ -326,7 +326,7 @@ export function Yangiliklar() {
                       aria-label={post.is_published ? "Yashirish" : "E'lon qilish"}
                       aria-pressed={post.is_published}
                     >
-                      {post.is_published ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+                      {post.is_published ? <EyeSlash size={16} /> : <Eye size={16} />}
                     </button>
                     <button
                       onClick={() => openEdit(post)}
@@ -334,7 +334,7 @@ export function Yangiliklar() {
                       title="Tahrirlash"
                       aria-label="Tahrirlash"
                     >
-                      <PencilSimple size={16} weight="bold" />
+                      <PencilSimple size={16} />
                     </button>
                     <button
                       onClick={() => setPostToDelete(post)}
@@ -342,7 +342,7 @@ export function Yangiliklar() {
                       title="O'chirish"
                       aria-label="O'chirish"
                     >
-                      <Trash size={16} weight="bold" />
+                      <Trash size={16} />
                     </button>
                   </div>
                 </div>

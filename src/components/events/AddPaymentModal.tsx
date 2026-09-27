@@ -127,7 +127,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
             <div className="p-5 border-b border-line flex items-center justify-between">
               <h3 id={titleId} className="text-md font-semibold text-ink">To'lov qo'shish</h3>
               <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
-                <X size={20} className="text-ink-muted" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
@@ -144,7 +144,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor={clientSearchId} className="text-sm font-medium text-ink-muted">Mijoz *</label>
                   <div className="relative">
-                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" weight="bold" />
+                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                     <input
                       id={clientSearchId}
                       value={query}
@@ -200,7 +200,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                       onClick={() => { setClient(null); setParticipationId(null) }}
                       className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
                     >
-                      <CaretLeft size={12} weight="bold" /> O'zgartirish
+                      <CaretLeft size={12} /> O'zgartirish
                     </button>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                     </div>
                   ) : noParticipations ? (
                     <div className="flex items-start gap-2 px-3 py-2.5 rounded-control bg-warning-soft text-sm text-warning-dark">
-                      <Warning size={15} weight="bold" className="shrink-0 mt-0.5" />
+                      <Warning size={15} className="shrink-0 mt-0.5" />
                       Bu mijoz hech qaysi tadbirda ishtirokchi emas. Avval tadbirga qo'shing.
                     </div>
                   ) : (
@@ -229,7 +229,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                             onClick={() => { setParticipationId(p.participant_id); setError(null) }}
                             aria-pressed={sel}
                             className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-control border text-left transition-colors ${
-                              sel ? "border-line-strong bg-surface-sunken" : "border-line hover:bg-mute-ghost-hover"
+                              sel ? "border-line bg-surface-sunken" : "border-line hover:bg-mute-ghost-hover"
                             }`}
                           >
                             <span className="flex flex-col min-w-0">
@@ -238,7 +238,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                                 Narx: {formatMoney(p.price)} · To'langan: {formatMoney(p.paid)}
                               </span>
                             </span>
-                            {sel && <Check size={15} weight="bold" className="text-ink shrink-0" />}
+                            {sel && <Check size={15} className="text-ink shrink-0" />}
                           </button>
                         )
                       })}

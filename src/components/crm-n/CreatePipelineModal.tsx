@@ -144,7 +144,7 @@ export function CreatePipelineModal({
                   className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
                   aria-label="Yopish"
                 >
-                  <X size={20} className="text-ink-muted" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
@@ -203,11 +203,11 @@ export function CreatePipelineModal({
                           className={`w-4.5 h-4.5 rounded-checkbox flex items-center justify-center shrink-0 transition-colors ${
                             stage.checked
                               ? "bg-accent"
-                              : "bg-surface-raised border border-line group-hover:border-line-strong"
+                              : "bg-surface-raised border border-line"
                           }`}
                           style={{ width: 18, height: 18 }}
                         >
-                          {stage.checked && <Check size={12} className="text-ink-on-accent" weight="bold" />}
+                          {stage.checked && <Check size={12} className="text-ink-on-accent" />}
                         </button>
                         <div
                           className="w-3 h-3 rounded-full shrink-0"

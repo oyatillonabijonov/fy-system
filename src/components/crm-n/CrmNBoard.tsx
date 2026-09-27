@@ -141,9 +141,9 @@ export function CrmNBoard({
                         {!isLost && !isWon && (
                           <button
                             onClick={onAddLead}
-                            className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-line rounded-surface text-sm font-medium text-ink-muted hover:border-line-strong hover:text-ink transition-colors shrink-0"
+                            className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-line rounded-surface text-sm font-medium text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors shrink-0"
                           >
-                            <Plus size={14} weight="bold" />
+                            <Plus size={14} />
                             Lid qo'shish
                           </button>
                         )}

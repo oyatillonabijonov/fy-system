@@ -85,7 +85,7 @@ function PermissionsShell({
           <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <h2 id={titleId} className="text-md font-bold text-ink">Foydalanuvchi sozlamalari</h2>
             <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
-              <X size={20} className="text-ink-muted" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
           <div className="p-5 flex flex-col gap-4">

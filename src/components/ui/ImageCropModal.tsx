@@ -126,7 +126,7 @@ export function ImageCropModal({
                 aria-label="Yopish"
                 className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all"
               >
-                <X size={20} className="text-ink-muted" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 

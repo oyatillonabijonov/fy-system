@@ -17,6 +17,7 @@ import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase/queries/crm"
 import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatNumber, formatDate } from "@/lib/format"
+import { tbl } from "@/components/ui/table"
 
 interface CrmNLeadsListProps {
   leads: CrmLeadWithContact[]
@@ -103,12 +104,12 @@ export function CrmNLeadsList({
     }),
     columnHelper.accessor((row) => row.crm_contacts?.name ?? row.name, {
       id: "contact_name",
-      header: "ISM / KOMPANIYA",
+      header: "Ism / kompaniya",
       cell: ({ row }) => {
         const contact = row.original.crm_contacts
         return (
           <div className="flex flex-col gap-0.5">
-            <span className="text-base font-semibold text-ink truncate">
+            <span className="text-base font-medium text-ink truncate">
               {contact?.name ?? row.original.name}
             </span>
             {contact?.company && (
@@ -120,7 +121,7 @@ export function CrmNLeadsList({
       size: 200,
     }),
     columnHelper.accessor("stage_id", {
-      header: "BOSQICH",
+      header: "Bosqich",
       cell: ({ row }) => {
         const stage = stages.find((s) => s.id === row.original.stage_id)
         if (!stage) return <span className="text-ink-muted">—</span>
@@ -134,7 +135,7 @@ export function CrmNLeadsList({
       size: 150,
     }),
     columnHelper.accessor("responsible_user_id", {
-      header: "MAS'UL",
+      header: "Mas'ul",
       cell: ({ row }) => {
         const user = users.find((u) => u.id === row.original.responsible_user_id)
         return (
@@ -146,16 +147,16 @@ export function CrmNLeadsList({
       size: 140,
     }),
     columnHelper.accessor("price", {
-      header: "SUMMA",
+      header: "Summa",
       cell: ({ row }) => (
-        <span className="text-base font-semibold text-ink">
+        <span className="text-base text-ink tabular-nums">
           {row.original.price > 0 ? `${formatNumber(row.original.price)} so'm` : "—"}
         </span>
       ),
       size: 130,
     }),
     columnHelper.accessor("source", {
-      header: "MANBA",
+      header: "Manba",
       cell: ({ row }) => {
         const label = row.original.source === "telegram" ? "Telegram" : row.original.source === "manual" ? "Qo'lda" : row.original.source
         return (
@@ -168,7 +169,7 @@ export function CrmNLeadsList({
       size: 100,
     }),
     columnHelper.accessor("created_at", {
-      header: "SANA",
+      header: "Sana",
       cell: ({ row }) => (
         <span className="text-sm text-ink-muted">
           {formatDate(row.original.created_at)}
@@ -251,7 +252,7 @@ export function CrmNLeadsList({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" weight="bold" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
             type="text"
             value={globalFilter}
@@ -273,7 +274,7 @@ export function CrmNLeadsList({
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" weight="bold" />
+          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
         {/* Responsible filter */}
@@ -288,7 +289,7 @@ export function CrmNLeadsList({
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" weight="bold" />
+          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
         <span className="text-sm text-ink-muted font-medium ml-auto">
@@ -366,16 +367,16 @@ export function CrmNLeadsList({
           <span className="text-sm text-ink-faint">Yangi lid qo'shing</span>
         </div>
       ) : (
-        <div className="border border-line rounded-surface overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div>
+          <div className={tbl.scroll}>
+            <table className={tbl.table}>
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="bg-surface-sunken border-b border-line">
+                  <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="text-left px-4 py-3 text-xs font-bold text-ink-muted uppercase tracking-wider whitespace-nowrap"
+                        className={tbl.th}
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -386,10 +387,10 @@ export function CrmNLeadsList({
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                             {header.column.getIsSorted() === "asc" && (
-                              <CaretUp size={12} weight="bold" />
+                              <CaretUp size={12} />
                             )}
                             {header.column.getIsSorted() === "desc" && (
-                              <CaretDown size={12} weight="bold" />
+                              <CaretDown size={12} />
                             )}
                           </button>
                         ) : (
@@ -416,12 +417,12 @@ export function CrmNLeadsList({
                         onLeadClick(row.original)
                       }
                     }}
-                    className="border-b border-line hover:bg-mute-ghost-hover cursor-pointer transition-colors"
+                    className={`${tbl.tr} cursor-pointer`}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-4 py-3"
+                        className={tbl.td}
                         onClick={cell.column.id === "select" ? (e) => e.stopPropagation() : undefined}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -435,10 +436,10 @@ export function CrmNLeadsList({
 
           {/* Load more */}
           {filteredLeads.length > visibleCount && (
-            <div className="flex items-center justify-center py-4 border-t border-line">
+            <div className="flex items-center justify-center pt-3">
               <button
                 onClick={() => setVisibleCount((v) => v + 50)}
-                className="text-base font-bold text-ink hover:text-ink transition-colors"
+                className="px-4 h-control-sm rounded-control-sm text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
               >
                 Ko'proq yuklash ({filteredLeads.length - visibleCount} ta qoldi)
               </button>

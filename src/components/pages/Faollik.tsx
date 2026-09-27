@@ -86,17 +86,17 @@ export function Faollik() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          icon={<ClockCounterClockwise size={18} weight="bold" />}
+          icon={<ClockCounterClockwise size={18} />}
           label="Bugungi amallar"
           value={stats?.total_today.toString() ?? "—"}
         />
         <StatCard
-          icon={<ChartLine size={18} weight="bold" />}
+          icon={<ChartLine size={18} />}
           label="Hafta davomida"
           value={stats?.total_week.toString() ?? "—"}
         />
         <StatCard
-          icon={<User size={18} weight="bold" />}
+          icon={<User size={18} />}
           label="Eng faol hodim"
           value={stats?.most_active_user?.name ?? "—"}
           subtitle={stats?.most_active_user ? `${stats.most_active_user.count} ta amal` : undefined}
@@ -108,7 +108,7 @@ export function Faollik() {
         <div className="relative flex-1 min-w-[240px]">
           <MagnifyingGlass
             size={14}
-            weight="bold"
+           
             className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
           />
           <input
@@ -186,7 +186,7 @@ export function Faollik() {
           <div className="p-12 text-center text-base text-ink-faint">Yuklanmoqda...</div>
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
-            <ClockCounterClockwise size={32} weight="bold" className="mx-auto text-ink-faint mb-3" />
+            <ClockCounterClockwise size={32} className="mx-auto text-ink-faint mb-3" />
             <p className="text-md font-bold text-ink mb-1">Hech narsa topilmadi</p>
             <p className="text-sm text-ink-faint">
               Filtrni o'zgartiring yoki keyinroq qaytib keling

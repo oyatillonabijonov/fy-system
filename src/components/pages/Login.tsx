@@ -94,7 +94,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-ink-muted hover:text-ink transition-colors" tabIndex={-1}>
-            {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
+            {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
@@ -109,7 +109,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         {loading ? (
           <><span className="w-4 h-4 border-2 border-ink-on-accent/30 border-t-ink-on-accent rounded-full animate-spin" />Kirilmoqda...</>
         ) : (
-          <>Kirish<ArrowRight size={16} weight="bold" className="group-hover:translate-x-0.5 transition-transform" /></>
+          <>Kirish<ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" /></>
         )}
       </button>
 

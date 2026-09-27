@@ -76,7 +76,7 @@ export function Dashboard() {
                         <div className="flex items-center justify-between">
                             <span className="text-base font-medium text-ink-muted">{stat.title}</span>
                             <div className="size-8 rounded-control-sm bg-surface flex items-center justify-center text-ink">
-                                <stat.icon size={16} weight="bold" />
+                                <stat.icon size={16} />
                             </div>
                         </div>
                         {loading ? (

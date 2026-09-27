@@ -6,6 +6,7 @@ import { CreateUserModal } from "@/components/sozlamalar/CreateUserModal"
 import { ROLE_LABELS, ROLE_BADGE_VARIANT, type UserProfile } from "@/lib/supabase/queries/auth"
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { formatDate, formatPhone } from "@/lib/format"
+import { tbl } from "@/components/ui/table"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -41,7 +42,7 @@ export function Hodimlar() {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 h-control-md bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
         >
-          <Plus weight="bold" size={16} />
+          <Plus size={16} />
           Yangi xodim
         </button>
       </div>
@@ -50,7 +51,7 @@ export function Hodimlar() {
       <div className="relative max-w-md">
         <MagnifyingGlass
           size={16}
-          weight="bold"
+         
           className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted"
         />
         <input
@@ -70,7 +71,7 @@ export function Hodimlar() {
       </div>
 
       {/* Users table */}
-      <div className="bg-surface border border-line rounded-surface overflow-hidden">
+      <div>
         {isLoading ? (
           <div className="p-8 text-center text-base text-ink-muted">Yuklanmoqda...</div>
         ) : filteredUsers.length === 0 ? (
@@ -83,22 +84,24 @@ export function Hodimlar() {
             </p>
           </div>
         ) : (
-          <table className="w-full">
+          <div className={tbl.scroll}>
+          <table className={tbl.table}>
             <thead>
-              <tr className="bg-surface-sunken border-b border-line">
-                <th className="px-6 py-4 text-left text-xs font-bold text-ink-muted uppercase tracking-wide">Xodim</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-ink-muted uppercase tracking-wide">Email</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-ink-muted uppercase tracking-wide">Rol</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-ink-muted uppercase tracking-wide">Holat</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-ink-muted uppercase tracking-wide">Yaratilgan</th>
+              <tr>
+                <th className={tbl.th}>Xodim</th>
+                <th className={tbl.th}>Email</th>
+                <th className={tbl.th}>Rol</th>
+                <th className={tbl.th}>Holat</th>
+                <th className={`${tbl.th} text-right`}>Yaratilgan</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody>
               {filteredUsers.map((user) => (
                 <UserRow key={user.id} user={user} onClick={() => navigate(`/hodimlar/${user.id}`)} />
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -128,9 +131,9 @@ function UserRow({ user, onClick }: { user: UserProfile; onClick: () => void }) 
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick() } }}
-      className="hover:bg-mute-ghost-hover cursor-pointer transition-colors"
+      className={`${tbl.tr} cursor-pointer`}
     >
-      <td className="px-6 py-4">
+      <td className={tbl.td}>
         <div className="flex items-center gap-3">
           {user.avatar_url ? (
             <img src={user.avatar_url} alt={user.full_name} className="w-9 h-9 rounded-full object-cover" />
@@ -140,19 +143,19 @@ function UserRow({ user, onClick }: { user: UserProfile; onClick: () => void }) 
             </div>
           )}
           <div>
-            <p className="text-base font-bold text-ink">{user.full_name}</p>
+            <p className="text-base font-medium text-ink">{user.full_name}</p>
             {user.phone && <p className="text-xs text-ink-muted">{formatPhone(user.phone)}</p>}
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 text-base text-ink-muted">{user.email}</td>
-      <td className="px-6 py-4">
+      <td className={`${tbl.td} text-ink-muted`}>{user.email}</td>
+      <td className={tbl.td}>
         <StatusBadge label={ROLE_LABELS[user.role]} variant={ROLE_BADGE_VARIANT[user.role]} />
       </td>
-      <td className="px-6 py-4">
+      <td className={tbl.td}>
         <StatusBadge label={user.is_active ? "Faol" : "Faol emas"} variant={user.is_active ? 'success' : 'danger'} />
       </td>
-      <td className="px-6 py-4 text-right text-sm text-ink-muted">
+      <td className={`${tbl.td} text-right text-sm text-ink-muted tabular-nums`}>
         {formatDate(user.created_at)}
       </td>
     </tr>

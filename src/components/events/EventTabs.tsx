@@ -72,7 +72,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
                 : "text-ink-on-accent/55 border border-transparent hover:text-ink-on-accent"
             }`}
           >
-            <SquaresFour size={15} weight="bold" />
+            <SquaresFour size={15} />
             <span className="text-sm font-semibold">Umumiy</span>
           </button>
         )}
@@ -107,7 +107,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
             aria-label="Yangi tadbir"
             className="flex items-center justify-center w-8 h-8 mb-[3px] ml-0.5 shrink-0 rounded-full text-ink-muted hover:bg-surface-sunken-hover hover:text-ink transition-colors"
           >
-            <Plus size={16} weight="bold" />
+            <Plus size={16} />
           </button>
         )}
       </div>
@@ -123,7 +123,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
             archiveOpen ? "bg-surface-sunken-hover text-ink" : "text-ink-muted hover:bg-surface-sunken-hover hover:text-ink"
           }`}
         >
-          <BookmarkSimple size={17} weight={archiveOpen ? "fill" : "bold"} />
+          <BookmarkSimple size={17} weight={archiveOpen ? "fill" : "regular"} />
           {archive.length > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-accent text-ink-on-accent text-xs font-bold flex items-center justify-center">
               {archive.length}

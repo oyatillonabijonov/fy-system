@@ -10,21 +10,21 @@ export function FinanceOverview() {
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard
-          icon={<TrendUp size={15} weight="bold" />}
+          icon={<TrendUp size={15} />}
           label="Jami tushum"
           value={totals?.total_income}
           loading={isLoading}
           tone="success"
         />
         <KpiCard
-          icon={<Wallet size={15} weight="bold" />}
+          icon={<Wallet size={15} />}
           label="Jami qarzdorlik"
           value={totals?.total_debt}
           loading={isLoading}
           tone="danger"
         />
         <KpiCard
-          icon={<Gift size={15} weight="bold" />}
+          icon={<Gift size={15} />}
           label="Keshbek qoldig'i"
           value={totals?.total_cashback_balance}
           loading={isLoading}

@@ -112,7 +112,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
               aria-label="Yopish"
               className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-muted" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
@@ -136,7 +136,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                     : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
-                <Plus size={14} weight="bold" />
+                <Plus size={14} />
                 Qo'shish
               </button>
               <button
@@ -149,7 +149,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                     : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
                 }`}
               >
-                <Minus size={14} weight="bold" />
+                <Minus size={14} />
                 Ayirish
               </button>
             </div>

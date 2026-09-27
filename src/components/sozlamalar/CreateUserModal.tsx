@@ -206,7 +206,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
               aria-label="Yopish"
               className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-muted" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
@@ -234,7 +234,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
                   </>
                 ) : (
                   <span className="flex flex-col items-center gap-1 text-ink-muted">
-                    <Camera size={20} weight="bold" />
+                    <Camera size={20} />
                     <span className="text-xs">Rasm yuklash</span>
                   </span>
                 )}
@@ -358,7 +358,7 @@ function CreateForm({ onClose, onCreated }: CreateFormProps) {
               >
                 <CaretDown
                   size={14}
-                  weight="bold"
+                 
                   className={`text-ink-muted transition-transform ${extraOpen ? "" : "-rotate-90"}`}
                 />
                 <span className="text-sm font-bold uppercase tracking-wider text-ink-muted">

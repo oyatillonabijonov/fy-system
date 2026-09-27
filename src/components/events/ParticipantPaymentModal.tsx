@@ -85,7 +85,7 @@ export function ParticipantPaymentModal({ isOpen, participant, onClose, onPaid }
                 <span className="text-xs text-ink-muted">To'lov qo'shish</span>
               </div>
               <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
-                <X size={20} className="text-ink-muted" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
