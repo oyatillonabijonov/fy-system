@@ -15,10 +15,10 @@ function getInitials(name: string): string {
 }
 
 function progressColor(p: number): string {
-  if (p < 50) return "#EF4444"
-  if (p < 80) return "#F59E0B"
-  if (p < 100) return "#3B82F6"
-  return "#10B981"
+  if (p < 50) return "var(--ds-color-danger-default)"
+  if (p < 80) return "var(--ds-color-warning-default)"
+  if (p < 100) return "var(--ds-color-info-default)"
+  return "var(--ds-color-success-default)"
 }
 
 export function Bolimlar() {
@@ -40,10 +40,10 @@ export function Bolimlar() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
+          <h1 className="text-xl font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
             Bo'limlar
           </h1>
-          <p className="text-[13px] text-[#999999] mt-1">
+          <p className="text-base text-ink-muted mt-1">
             Tizim bo'limlari va ulardagi hodimlar — {monthName}
           </p>
         </div>
@@ -81,7 +81,7 @@ export function Bolimlar() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white border border-[#F0F0F0] rounded-[12px] p-6 h-[240px] animate-pulse" />
+            <div key={i} className="bg-surface border border-line rounded-surface p-6 h-[240px] animate-pulse" />
           ))}
         </div>
       ) : (
@@ -115,15 +115,15 @@ function TopStatCard({
   subtitle: string
 }) {
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-5">
+    <div className="bg-surface border border-line rounded-surface p-5">
       <div className="flex items-center gap-2 mb-3">
-        <div className="text-[#666]">{icon}</div>
-        <span className="text-[12px] text-[#666] font-medium">{label}</span>
+        <div className="text-ink-muted">{icon}</div>
+        <span className="text-sm text-ink-muted font-medium">{label}</span>
       </div>
-      <p className="text-[20px] font-bold text-[#141414] mb-1" style={{ letterSpacing: "-0.4px" }}>
+      <p className="text-lg font-bold text-ink mb-1" style={{ letterSpacing: "-0.4px" }}>
         {value}
       </p>
-      <p className="text-[11px] text-[#999]">{subtitle}</p>
+      <p className="text-xs text-ink-faint">{subtitle}</p>
     </div>
   )
 }
@@ -147,21 +147,21 @@ function DepartmentCard({
   const [showAssignHead, setShowAssignHead] = useState(false)
 
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-6 flex flex-col gap-5">
+    <div className="bg-surface border border-line rounded-surface p-6 flex flex-col gap-5">
       {/* Department header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-[10px] flex items-center justify-center"
+            className="w-10 h-10 rounded-control flex items-center justify-center"
             style={{ backgroundColor: color + "15" }}
           >
             <Buildings size={18} weight="bold" style={{ color }} />
           </div>
           <div>
-            <h3 className="text-[15px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
+            <h3 className="text-base font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
               {label}
             </h3>
-            <p className="text-[11px] text-[#999]">
+            <p className="text-xs text-ink-faint">
               {stats.total_employees} ta hodim · {stats.active_employees} faol
             </p>
           </div>
@@ -169,15 +169,15 @@ function DepartmentCard({
 
         <div className="flex items-center gap-2 flex-wrap">
           {stats.head_name && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-[#F5F5F5] rounded-[6px]">
-              <Crown size={12} weight="fill" className="text-[#F59E0B]" />
-              <span className="text-[11px] font-bold text-[#666]">{stats.head_name}</span>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-surface-sunken rounded-tag">
+              <Crown size={12} weight="fill" className="text-warning-text" />
+              <span className="text-xs font-bold text-ink-muted">{stats.head_name}</span>
             </div>
           )}
           {isAdmin && stats.members.length > 0 && (
             <button
               onClick={() => setShowAssignHead(true)}
-              className="text-[11px] font-bold text-[#666] hover:text-[#141414] underline transition-colors"
+              className="text-xs font-bold text-ink-muted hover:text-ink underline transition-colors"
             >
               {stats.head_user_id ? "O'zgartirish" : "Boshliq tayinlash"}
             </button>
@@ -203,8 +203,8 @@ function DepartmentCard({
           />
         </div>
       ) : stats.total_employees > 0 ? (
-        <div className="py-3 text-center bg-[#FBFBFB] rounded-[8px] border border-dashed border-[#E5E5E5]">
-          <p className="text-[11px] text-[#999]">
+        <div className="py-3 text-center bg-surface-sunken rounded-control border border-dashed border-line">
+          <p className="text-xs text-ink-faint">
             Bu davr uchun KPI maqsadlari belgilanmagan
           </p>
         </div>
@@ -213,12 +213,12 @@ function DepartmentCard({
       {/* Members */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-bold text-[#666] uppercase tracking-wide">Hodimlar</span>
-          <span className="text-[10px] text-[#999]">{stats.members.length} ta</span>
+          <span className="text-xs font-bold text-ink-muted uppercase tracking-wide">Hodimlar</span>
+          <span className="text-xs text-ink-faint">{stats.members.length} ta</span>
         </div>
 
         {stats.members.length === 0 ? (
-          <p className="text-[12px] text-[#999] py-3 text-center bg-[#FBFBFB] rounded-[8px]">
+          <p className="text-sm text-ink-faint py-3 text-center bg-surface-sunken rounded-control">
             Bu bo'limda hodim yo'q
           </p>
         ) : (
@@ -232,7 +232,7 @@ function DepartmentCard({
               />
             ))}
             {stats.members.length > 5 && (
-              <p className="text-[11px] text-[#999] text-center pt-1">
+              <p className="text-xs text-ink-faint text-center pt-1">
                 +{stats.members.length - 5} ta hodim
               </p>
             )}
@@ -268,21 +268,21 @@ function KpiMiniCard({
 }) {
   const color = progressColor(progress)
   return (
-    <div className="bg-[#FBFBFB] border border-[#F0F0F0] rounded-[8px] p-3">
-      <p className="text-[10px] text-[#999] mb-1.5">{label}</p>
+    <div className="bg-surface-sunken border border-line rounded-control p-3">
+      <p className="text-xs text-ink-faint mb-1.5">{label}</p>
       <div className="mb-2">
-        <span className="text-[14px] font-bold text-[#141414]">{formatNumber(actual)}</span>
-        <span className="text-[10px] text-[#999] ml-1">
+        <span className="text-base font-bold text-ink">{formatNumber(actual)}</span>
+        <span className="text-xs text-ink-faint ml-1">
           / {formatNumber(target)}{isCurrency ? " so'm" : ""}
         </span>
       </div>
-      <div className="h-1 bg-[#F0F0F0] rounded-full overflow-hidden">
+      <div className="h-1 bg-surface-sunken-hover rounded-full overflow-hidden">
         <div
           className="h-full transition-all duration-500"
           style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: color }}
         />
       </div>
-      <p className="text-[10px] font-bold mt-1.5" style={{ color }}>{progress}%</p>
+      <p className="text-xs font-bold mt-1.5" style={{ color }}>{progress}%</p>
     </div>
   )
 }
@@ -302,7 +302,7 @@ function MemberRow({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2.5 p-2 rounded-[8px] hover:bg-[#F9F9F8] transition-colors text-left"
+      className="w-full flex items-center gap-2.5 p-2 rounded-control hover:bg-mute-ghost-hover transition-colors text-left"
     >
       {member.avatar_url ? (
         <img
@@ -311,19 +311,19 @@ function MemberRow({
           className="w-7 h-7 rounded-full object-cover flex-shrink-0"
         />
       ) : (
-        <div className="w-7 h-7 rounded-full bg-[#141414] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+        <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-ink-on-accent flex-shrink-0">
           {initials}
         </div>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-[12px] font-bold text-[#141414] truncate">{member.full_name}</span>
-          {isHead && <Crown size={11} weight="fill" className="text-[#F59E0B] flex-shrink-0" />}
+          <span className="text-sm font-bold text-ink truncate">{member.full_name}</span>
+          {isHead && <Crown size={11} weight="fill" className="text-warning-text flex-shrink-0" />}
         </div>
-        {member.position && <p className="text-[10px] text-[#999] truncate">{member.position}</p>}
+        {member.position && <p className="text-xs text-ink-faint truncate">{member.position}</p>}
       </div>
       {!member.is_active && (
-        <span className="text-[10px] text-red-500 flex-shrink-0">Faol emas</span>
+        <span className="text-xs text-danger-text flex-shrink-0">Faol emas</span>
       )}
     </button>
   )
@@ -408,7 +408,7 @@ function AssignHeadForm({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
@@ -424,34 +424,34 @@ function AssignHeadForm({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Bo'lim boshlig'i</h2>
-              <span className="text-[11px] text-[#999]">{departmentLabel(department)} bo'limi</span>
+              <h2 id={titleId} className="text-md font-bold text-ink">Bo'lim boshlig'i</h2>
+              <span className="text-xs text-ink-faint">{departmentLabel(department)} bo'limi</span>
             </div>
-            <button onClick={onClose} disabled={saving} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
-              <X size={20} className="text-[#999]" weight="bold" />
+            <button onClick={onClose} disabled={saving} aria-label="Yopish" className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors">
+              <X size={20} className="text-ink-faint" weight="bold" />
             </button>
           </div>
 
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={selectId} className="text-[12px] font-medium text-[#999]">Hodim</label>
+              <label htmlFor={selectId} className="text-sm font-medium text-ink-faint">Hodim</label>
               <select
                 id={selectId}
                 value={selected}
                 onChange={(e) => setSelected(e.target.value)}
                 disabled={saving}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
               >
                 <option value="">— Tanlang —</option>
                 {members.map((m) => (
@@ -463,12 +463,12 @@ function AssignHeadForm({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-line">
             {currentHeadId ? (
               <button
                 onClick={handleRemove}
                 disabled={saving}
-                className="text-[12px] font-bold text-red-600 hover:text-red-700 transition-colors"
+                className="text-sm font-bold text-danger-text hover:text-danger-dark transition-colors"
               >
                 Boshliqni olib tashlash
               </button>
@@ -477,15 +477,15 @@ function AssignHeadForm({
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                className="px-4 py-2 rounded-control text-base font-medium text-ink-faint hover:text-ink-muted transition-colors"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                  saving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+                className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+                  saving ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
                 }`}
               >
                 {saving ? "Saqlanmoqda..." : "Tayinlash"}

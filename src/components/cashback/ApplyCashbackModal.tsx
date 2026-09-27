@@ -97,45 +97,45 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Cashback bilan to'lash</h2>
-              <span className="text-[11px] text-[#999]">{participant.full_name}</span>
+              <h2 id={titleId} className="text-md font-bold text-ink">Cashback bilan to'lash</h2>
+              <span className="text-xs text-ink-muted">{participant.full_name}</span>
             </div>
             <button
               onClick={onClose}
               disabled={busy}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" weight="bold" />
             </button>
           </div>
 
           <div className="p-5 flex flex-col gap-4">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#F5F5F5] border border-[#E8E8E8] rounded-[8px] p-3">
-                <p className="text-[10px] font-bold text-[#141414] uppercase tracking-wider mb-1">Joriy balans</p>
-                <p className="text-[16px] font-bold text-[#141414]">{formatNumber(balance)} so'm</p>
+              <div className="bg-surface-sunken border border-line rounded-control p-3">
+                <p className="text-xs font-bold text-ink uppercase tracking-wider mb-1">Joriy balans</p>
+                <p className="text-md font-bold text-ink">{formatNumber(balance)} so'm</p>
               </div>
-              <div className="bg-orange-50 border border-orange-100 rounded-[8px] p-3">
-                <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-1">Qarz</p>
-                <p className="text-[16px] font-bold text-orange-700">{formatNumber(debt)} so'm</p>
+              <div className="bg-warning-soft border border-line rounded-control p-3">
+                <p className="text-xs font-bold text-warning-dark uppercase tracking-wider mb-1">Qarz</p>
+                <p className="text-md font-bold text-warning-dark">{formatNumber(debt)} so'm</p>
               </div>
             </div>
 
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-text border border-line">
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={amountId} className="text-[12px] font-medium text-[#999]">Qo'llanadigan summa (so'm)</label>
+              <label htmlFor={amountId} className="text-sm font-medium text-ink-muted">Qo'llanadigan summa (so'm)</label>
               <input
                 id={amountId}
                 type="number"
@@ -148,32 +148,32 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
                   setAmount(Math.max(0, Math.min(v, maxApplicable)))
                 }}
                 autoFocus
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
               />
-              <span className="text-[11px] text-[#999]">
+              <span className="text-xs text-ink-muted">
                 Maksimum: <strong>{formatNumber(maxApplicable)} so'm</strong>
                 {balance < debt && " (balans yetarli emas — qarzning bir qismi qoladi)"}
               </span>
             </div>
 
-            <p className="text-[11px] text-[#999] italic">
+            <p className="text-xs text-ink-muted italic">
               💡 Cashback orqali to'lov uchun yangi cashback berilmaydi
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={onClose}
               disabled={busy}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleApply}
               disabled={busy || amount <= 0}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                busy || amount <= 0 ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+                busy || amount <= 0 ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {busy ? "Qo'llanmoqda..." : "Qo'llash"}

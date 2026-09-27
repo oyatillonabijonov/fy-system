@@ -85,11 +85,11 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
     <div className="flex flex-col gap-5">
       {/* Banner header (collapsible) */}
       {bannerOpen ? (
-        <EventBanner name={event.name} coverImage={event.cover_image} className="h-[160px] rounded-[12px]">
+        <EventBanner name={event.name} coverImage={event.cover_image} className="h-[160px] rounded-surface">
           <div className="absolute inset-0 bg-black/35" />
           <div className="absolute inset-0 p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-[20px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{event.name}</h2>
+              <h2 className="text-lg font-bold text-white leading-tight line-clamp-2 drop-shadow">{event.name}</h2>
               <div className="flex items-center gap-1.5 shrink-0">
                 <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></IconBtn>
                 <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></IconBtn>
@@ -105,7 +105,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                     {manager.avatar_url ? (
                       <img src={manager.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                     ) : (
-                      <span className="w-4 h-4 rounded-full bg-white/30 text-white text-[8px] font-bold flex items-center justify-center">
+                      <span className="w-4 h-4 rounded-full bg-white/30 text-white text-xs font-bold flex items-center justify-center">
                         {initials(manager.full_name)}
                       </span>
                     )}
@@ -117,11 +117,11 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
           </div>
         </EventBanner>
       ) : (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-[12px] border border-[#F0F0F0] bg-white">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-surface border border-line bg-surface">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-3.5 h-3.5 rounded-[4px] shrink-0" style={{ backgroundColor: eventTint(event.name) }} />
-            <span className="text-[14px] font-bold text-[#141414] truncate">{event.name}</span>
-            <span className="text-[12px] text-[#999] whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
+            <span className="w-3.5 h-3.5 rounded-checkbox shrink-0" style={{ backgroundColor: eventTint(event.name) }} />
+            <span className="text-base font-bold text-ink truncate">{event.name}</span>
+            <span className="text-sm text-ink-muted whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></CompactBtn>
@@ -132,24 +132,24 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
       )}
 
       {/* Stat cards */}
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-4 flex flex-col gap-3">
+      <div className="bg-surface border border-line rounded-surface p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-[12px] font-bold text-[#999]">
+          <span className="flex items-center gap-2 text-sm font-bold text-ink-muted">
             <UsersThree size={15} weight="bold" /> Ro'yxatdan o'tish
           </span>
-          <span className="text-[18px] font-bold text-[#141414]">{participants.length}</span>
+          <span className="text-md font-bold text-ink tabular-nums">{participants.length}</span>
         </div>
         <div className="h-[110px]">
           {regData.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-[12px] text-[#CCC]">Hali ishtirokchi yo'q</div>
+            <div className="h-full flex items-center justify-center text-sm text-ink-faint">Hali ishtirokchi yo'q</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={regData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#999" }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#999" }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: "#F5F5F5" }} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #F0F0F0" }} />
-                <Bar dataKey="count" name="Ro'yxat" fill="#141414" radius={[4, 4, 0, 0]} barSize={20} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ds-color-border-default)" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--ds-color-text-muted)" }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--ds-color-text-muted)" }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: "var(--ds-color-surface-sunken)" }} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid var(--ds-color-border-default)" }} />
+                <Bar dataKey="count" name="Ro'yxat" fill="var(--ds-color-accent-default)" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -157,21 +157,21 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
       </div>
 
       {/* Participants table */}
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#F0F0F0]">
-          <span className="text-[13px] font-bold text-[#141414]">Ishtirokchilar ({participants.length})</span>
+      <div className="bg-surface border border-line rounded-surface overflow-hidden">
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
+          <span className="text-base font-bold text-ink">Ishtirokchilar ({participants.length})</span>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleExportBooklet}
               disabled={exporting || participants.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold border border-[#E0E0E0] text-[#666] hover:bg-[#F5F5F5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-semibold border border-line text-ink-muted hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Export size={14} weight="bold" />
               {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
             </button>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-bold bg-[#141414] text-white hover:bg-[#333] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
             >
               <Plus size={14} weight="bold" />
               Ishtirokchi qo'shish
@@ -183,12 +183,12 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <ThinkingOrb state="searching" size={20} theme="light" />
           </div>
         ) : participants.length === 0 ? (
-          <div className="py-10 text-center text-[13px] text-[#999]">Hali ishtirokchi qo'shilmagan</div>
+          <div className="py-10 text-center text-base text-ink-muted">Hali ishtirokchi qo'shilmagan</div>
         ) : (
           <div className="overflow-x-auto no-scrollbar">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[11px] font-bold text-[#999] border-b border-[#F0F0F0]">
+                <tr className="text-xs font-bold text-ink-muted border-b border-line">
                   <th className="px-4 py-2.5 font-bold">Rasmi</th>
                   <th className="px-4 py-2.5 font-bold">Mijoz ismi</th>
                   <th className="px-4 py-2.5 font-bold">Telefon</th>
@@ -197,34 +197,34 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
               </thead>
               <tbody>
                 {participants.map((p) => (
-                  <tr key={p.id} className="border-b border-[#F7F7F7] last:border-0 hover:bg-[#FBFBFB] transition-colors">
+                  <tr key={p.id} className="border-b border-line last:border-0 hover:bg-mute-ghost-hover transition-colors">
                     <td className="px-4 py-2.5">
                       {p.photo_url ? (
                         <img src={p.photo_url} alt={p.full_name} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
-                        <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center">
+                        <span className="w-8 h-8 rounded-full bg-mute-soft text-ink-muted text-xs font-bold flex items-center justify-center">
                           {initials(p.full_name)}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-[13px] font-medium text-[#141414] whitespace-nowrap">{p.full_name}</td>
-                    <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{formatPhone(p.phone)}</td>
+                    <td className="px-4 py-2.5 text-base font-medium text-ink whitespace-nowrap">{p.full_name}</td>
+                    <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{formatPhone(p.phone)}</td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       {confirmingId === p.id ? (
                         <span className="inline-flex items-center gap-2">
                           {p.paid > 0 && (
-                            <span className="text-[10px] font-bold text-red-500">To'lovlar ham o'chadi!</span>
+                            <span className="text-xs font-bold text-danger-text">To'lovlar ham o'chadi!</span>
                           )}
                           <button
                             onClick={() => { deleteParticipant.mutate(p.id); setConfirmingId(null) }}
                             disabled={deleteParticipant.isPending}
-                            className="text-[11px] font-bold text-red-600 hover:text-red-700 disabled:opacity-50"
+                            className="text-xs font-bold text-danger-text hover:text-danger-dark disabled:opacity-50"
                           >
                             O'chirish
                           </button>
                           <button
                             onClick={() => setConfirmingId(null)}
-                            className="text-[11px] font-medium text-[#999] hover:text-[#666]"
+                            className="text-xs font-medium text-ink-muted hover:text-ink"
                           >
                             Bekor
                           </button>
@@ -234,7 +234,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                           onClick={() => setConfirmingId(p.id)}
                           title="O'chirish"
                           aria-label="O'chirish"
-                          className="text-[#CCC] hover:text-red-600 transition-colors"
+                          className="text-ink-faint hover:text-danger-text transition-colors"
                         >
                           <Trash size={15} weight="bold" />
                         </button>
@@ -281,7 +281,7 @@ function IconBtn({
       title={title}
       aria-label={title}
       aria-expanded={expanded}
-      className={`p-1.5 rounded-[6px] bg-white/90 hover:bg-white transition-colors ${danger ? "text-[#D13328]" : "text-[#141414]"}`}
+      className={`p-1.5 rounded-item bg-surface-raised/90 hover:bg-surface-raised transition-colors ${danger ? "text-danger-text" : "text-ink"}`}
     >
       {children}
     </button>
@@ -307,7 +307,7 @@ function CompactBtn({
       title={title}
       aria-label={title}
       aria-expanded={expanded}
-      className={`p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors ${danger ? "text-[#D13328]" : "text-[#666]"}`}
+      className={`p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors ${danger ? "text-danger-text" : "text-ink-muted"}`}
     >
       {children}
     </button>
@@ -316,7 +316,7 @@ function CompactBtn({
 
 function MetaChip({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-white/20 backdrop-blur-sm text-[11px] font-medium text-white">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-item bg-white/20 backdrop-blur-sm text-xs font-medium text-white">
       {icon}
       {children}
     </span>

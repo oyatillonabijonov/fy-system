@@ -245,24 +245,24 @@ export function Mijozlar() {
                 value: customers.length.toString(),
                 subtitle: "Bazadagi barcha mijozlar",
                 icon: Users,
-                color: "text-[#141414]",
-                bg: "bg-[#F5F5F5]",
+                color: "text-ink",
+                bg: "bg-surface-sunken",
             },
             {
                 title: "Yangi mijozlar (30 kun)",
                 value: newLast30.toString(),
                 subtitle: "So'nggi 30 kun ichida qo'shilgan",
                 icon: UserPlus,
-                color: "text-[#141414]",
-                bg: "bg-[#F5F5F5]",
+                color: "text-ink",
+                bg: "bg-surface-sunken",
             },
             {
                 title: "Tadbirlarda ishtirok etgan",
                 value: withEvents.toString(),
                 subtitle: "Kamida 1 ta tadbirga yozilgan",
                 icon: Ticket,
-                color: "text-[#141414]",
-                bg: "bg-[#F5F5F5]",
+                color: "text-ink",
+                bg: "bg-surface-sunken",
             },
         ]
     }, [customers])
@@ -275,7 +275,7 @@ export function Mijozlar() {
                     type="checkbox"
                     checked={table.getIsAllPageRowsSelected()}
                     onChange={table.getToggleAllPageRowsSelectedHandler()}
-                    className="w-4 h-4 rounded-[4px] border-[#D0D0D0] text-[#141414] focus:ring-0 cursor-pointer"
+                    className="w-4 h-4 rounded-checkbox border-line text-ink focus:ring-0 cursor-pointer"
                 />
             ),
             cell: ({ row }) => (
@@ -284,7 +284,7 @@ export function Mijozlar() {
                     checked={row.getIsSelected()}
                     onChange={row.getToggleSelectedHandler()}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 rounded-[4px] border-[#D0D0D0] text-[#141414] focus:ring-0 cursor-pointer"
+                    className="w-4 h-4 rounded-checkbox border-line text-ink focus:ring-0 cursor-pointer"
                 />
             ),
         }),
@@ -292,17 +292,17 @@ export function Mijozlar() {
             header: 'Mijoz',
             cell: info => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-[#F0F0F0] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-surface-sunken flex items-center justify-center">
                         {info.row.original.image ? (
                             <img src={info.row.original.image} alt="" className="w-full h-full object-cover object-top" />
                         ) : (
-                            <span className="text-[13px] font-semibold text-[#BBBBBB]">
+                            <span className="text-base font-semibold text-ink-faint">
                                 {info.row.original.name.split(" ").map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
                             </span>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-semibold text-[#141414]">{info.getValue()}</span>
+                        <span className="text-base font-semibold text-ink">{info.getValue()}</span>
                         <CashbackBadge balance={info.row.original.cashbackBalance} size="sm" />
                     </div>
                 </div>
@@ -310,11 +310,11 @@ export function Mijozlar() {
         }),
         columnHelper.accessor('phone', {
             header: 'Kontakt',
-            cell: info => <span className="text-[13px] text-[#141414] font-medium">{info.getValue()}</span>,
+            cell: info => <span className="text-base text-ink font-medium">{info.getValue()}</span>,
         }),
         columnHelper.accessor('activity', {
             header: 'Faoliyati',
-            cell: info => <div className="text-[13px] text-[#141414] font-medium leading-tight line-clamp-1">{info.getValue()}</div>,
+            cell: info => <div className="text-base text-ink font-medium leading-tight line-clamp-1">{info.getValue()}</div>,
         }),
         columnHelper.display({
             id: 'holat',
@@ -334,12 +334,12 @@ export function Mijozlar() {
             cell: (info) => (
                 <div className="flex items-center justify-end gap-1 pr-2">
                     {info.row.original.authUserId ? (
-                        <span className="p-1.5 text-[#141414]" title="Mobil akkaunt mavjud">
+                        <span className="p-1.5 text-ink" title="Mobil akkaunt mavjud">
                             <DeviceMobile size={20} weight="bold" />
                         </span>
                     ) : (
                         <button
-                            className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999999] hover:text-[#141414]"
+                            className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm transition-colors text-ink-muted hover:text-ink"
                             title="Mobil akkaunt ochish"
                             aria-label="Mobil akkaunt ochish"
                             onClick={(e) => {
@@ -351,7 +351,7 @@ export function Mijozlar() {
                         </button>
                     )}
                     <button
-                        className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999999] hover:text-[#141414]"
+                        className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm transition-colors text-ink-muted hover:text-ink"
                         title="Ko'rish"
                         aria-label="Ko'rish"
                         onClick={(e) => {
@@ -362,7 +362,7 @@ export function Mijozlar() {
                         <Eye size={20} weight="bold" />
                     </button>
                     <button
-                        className="p-1.5 hover:bg-red-50 rounded-[6px] transition-colors text-[#999999] hover:text-red-600"
+                        className="p-1.5 hover:bg-danger-soft rounded-control-sm transition-colors text-ink-muted hover:text-danger-text"
                         title="O'chirish"
                         aria-label="O'chirish"
                         onClick={(e) => {
@@ -561,49 +561,49 @@ export function Mijozlar() {
             )}
             {error && !loading && (
                 <div className="flex flex-col items-center justify-center py-20 gap-2">
-                    <span className="text-[14px] text-red-500 font-medium">{error}</span>
-                    <button onClick={() => fetchCustomers()} className="text-[13px] text-[#141414] font-bold underline">Qayta urinish</button>
+                    <span className="text-base text-danger-text font-medium">{error}</span>
+                    <button onClick={() => fetchCustomers()} className="text-base text-ink font-bold underline">Qayta urinish</button>
                 </div>
             )}
             {!loading && !error && <>
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
-                    <div key={index} className="bg-white border border-[#F0F0F0] rounded-[8px] p-5 flex flex-col gap-3 transition-all">
-                        <span className="text-[13px] font-medium text-[#999999]">{stat.title}</span>
+                    <div key={index} className="bg-surface border border-line rounded-surface p-5 flex flex-col gap-3 transition-all">
+                        <span className="text-base font-medium text-ink-muted">{stat.title}</span>
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 ${stat.bg} rounded-[6px] flex items-center justify-center`}>
+                            <div className={`w-10 h-10 ${stat.bg} rounded-control-sm flex items-center justify-center`}>
                                 <stat.icon size={20} className={stat.color} weight="bold" />
                             </div>
-                            <span className="text-[24px] font-bold text-[#141414]">{stat.value}</span>
+                            <span className="text-xl font-bold text-ink">{stat.value}</span>
                         </div>
-                        <span className="text-[11px] text-[#CCCCCC]">{stat.subtitle}</span>
+                        <span className="text-xs text-ink-faint">{stat.subtitle}</span>
                     </div>
                 ))}
             </div>
 
             {/* Table Area */}
-            <div className="bg-white border border-[#F0F0F0] rounded-[8px] flex flex-col overflow-hidden shadow-xs">
+            <div className="bg-surface border border-line rounded-surface flex flex-col overflow-hidden">
                 {/* Tabs */}
-                <div className="px-4 pt-3 flex items-center gap-1 border-b border-[#F0F0F0]">
+                <div className="px-4 pt-3 flex items-center gap-1 border-b border-line">
                     {([
                         { id: "all",     label: "Barcha mijozlar",  count: customers.length },
                         { id: "members", label: "A'zolar",          count: customers.filter(c => c.authUserId !== null).length, badge: pendingMembersCount },
                     ] as { id: MijozlarTab; label: string; count: number; badge?: number }[]).map(tab => (
                         <button key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className="flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-[13px] font-semibold border-b-2 transition-colors relative"
+                            className="flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-base font-semibold border-b-2 transition-colors relative"
                             style={{
-                                borderColor: activeTab === tab.id ? "#141414" : "transparent",
-                                color: activeTab === tab.id ? "#141414" : "#999999",
+                                borderColor: activeTab === tab.id ? "var(--ds-color-text-default)" : "transparent",
+                                color: activeTab === tab.id ? "var(--ds-color-text-default)" : "var(--ds-color-text-muted)",
                             }}>
                             {tab.label}
-                            <span className="px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold"
-                                style={{ background: activeTab === tab.id ? "#141414" : "#F0F0F0", color: activeTab === tab.id ? "#fff" : "#999" }}>
+                            <span className="px-1.5 py-0.5 rounded-checkbox text-xs font-bold"
+                                style={{ background: activeTab === tab.id ? "var(--ds-color-text-default)" : "var(--ds-color-surface-sunken)", color: activeTab === tab.id ? "var(--ds-color-text-on-accent)" : "var(--ds-color-text-muted)" }}>
                                 {tab.count}
                             </span>
                             {tab.badge != null && tab.badge > 0 && (
-                                <span className="absolute -top-0.5 -right-1 w-4 h-4 bg-[#FF3B30] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                                <span className="absolute -top-0.5 -right-1 w-4 h-4 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center">
                                     {tab.badge}
                                 </span>
                             )}
@@ -611,7 +611,7 @@ export function Mijozlar() {
                     ))}
                 </div>
                 {/* Search & Actions */}
-                <div className="p-4 border-b border-[#F0F0F0] flex items-center justify-between bg-white">
+                <div className="p-4 border-b border-line flex items-center justify-between bg-surface">
                     <div className="flex items-center gap-4">
                         <div className="relative">
                             <input 
@@ -619,24 +619,24 @@ export function Mijozlar() {
                                 value={globalFilter ?? ''}
                                 onChange={e => setGlobalFilter(e.target.value)}
                                 placeholder="Ism, telefon yoki faoliyat bo'yicha qidirish..." 
-                                className="pl-9 pr-4 py-2 bg-[#F5F5F5] border-transparent focus:bg-white focus:border-[#141414]/10 rounded-[8px] text-[13px] w-80 transition-all outline-hidden font-medium"
+                                className="pl-9 pr-4 py-2 bg-surface-sunken border-transparent focus:bg-surface focus:border-line-focus rounded-control text-base w-80 transition-all outline-hidden font-medium"
                             />
-                            <Users size={16} className="text-[#999999] absolute left-3 top-1/2 -translate-y-1/2" weight="bold" />
+                            <Users size={16} className="text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" weight="bold" />
                         </div>
                         {selectedMijozlar.length > 0 && (
-                            <div className="flex items-center gap-2 pl-4 border-l border-[#F0F0F0]">
-                                <span className="text-[13px] font-bold text-[#141414]">{selectedMijozlar.length} ta tanlandi</span>
+                            <div className="flex items-center gap-2 pl-4 border-l border-line">
+                                <span className="text-base font-bold text-ink">{selectedMijozlar.length} ta tanlandi</span>
                                 <button
                                     onClick={() => setBulkDeleteConfirm(true)}
                                     disabled={deleteClientsMutation.isPending}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-[6px] text-[12px] font-bold transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-soft hover:bg-danger-soft text-danger-text rounded-control-sm text-sm font-bold transition-colors disabled:opacity-50"
                                 >
                                     <Trash size={14} weight="bold" />
                                     Tanlanganlarni o'chirish
                                 </button>
                                 <button
                                     onClick={() => setSelectedMijozlar([])}
-                                    className="text-[12px] text-[#999] hover:text-[#666] transition-colors"
+                                    className="text-sm text-ink-muted hover:text-ink transition-colors"
                                 >
                                     Bekor
                                 </button>
@@ -644,17 +644,17 @@ export function Mijozlar() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#F5F5F5] rounded-[8px] text-[13px] font-bold text-[#141414] transition-colors">
+                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-mute-ghost-hover rounded-control text-base font-bold text-ink transition-colors">
                             <Funnel size={16} weight="bold" />
                             Filtrlar
                         </button>
-                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-[#F5F5F5] rounded-[8px] text-[13px] font-bold text-[#141414] transition-colors">
+                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-mute-ghost-hover rounded-control text-base font-bold text-ink transition-colors">
                             <UploadSimple size={16} weight="bold" />
                             Eksport
                         </button>
                         <button 
                             onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-black transition-all active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
                         >
                             <Plus size={16} weight="bold" />
                             Yangi mijoz
@@ -667,16 +667,16 @@ export function Mijozlar() {
                     <table className="w-full border-collapse">
                         <thead>
                             {table.getHeaderGroups().map(headerGroup => (
-                                <tr key={headerGroup.id} className="bg-[#FBFBFB] border-b border-[#F0F0F0]">
+                                <tr key={headerGroup.id} className="bg-surface-sunken border-b border-line">
                                     {headerGroup.headers.map(header => (
-                                        <th key={header.id} className="p-4 text-[13px] font-bold text-[#999999] text-left uppercase tracking-tight">
+                                        <th key={header.id} className="p-4 text-base font-bold text-ink-muted text-left uppercase tracking-tight">
                                             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                                         </th>
                                     ))}
                                 </tr>
                             ))}
                         </thead>
-                        <tbody className="divide-y divide-[#F0F0F0]">
+                        <tbody className="divide-y divide-line">
                             {table.getRowModel().rows.length > 0 ? (
                                 table.getRowModel().rows.map(row => (
                                     <tr
@@ -685,7 +685,7 @@ export function Mijozlar() {
                                         tabIndex={0}
                                         onClick={() => setSelectedCustomer(row.original)}
                                         onKeyDown={e => { if (e.target !== e.currentTarget) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedCustomer(row.original) } }}
-                                        className={`hover:bg-[#FBFBFB] transition-colors group cursor-pointer ${row.getIsSelected() ? 'bg-[#F9F9F8]' : ''}`}
+                                        className={`hover:bg-mute-ghost-hover transition-colors group cursor-pointer ${row.getIsSelected() ? 'bg-surface-sunken' : ''}`}
                                     >
                                         {row.getVisibleCells().map(cell => (
                                             <td key={cell.id} className="p-4">
@@ -696,7 +696,7 @@ export function Mijozlar() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={columns.length} className="p-12 text-center text-[#999999] text-[14px]">
+                                    <td colSpan={columns.length} className="p-12 text-center text-ink-muted text-base">
                                         Ma'lumot topilmadi
                                     </td>
                                 </tr>
@@ -713,7 +713,7 @@ export function Mijozlar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/40 backdrop-blur-[3px]"
+                        className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-surface-overlay backdrop-blur-[3px]"
                         onClick={closeDetailsModal}
                     >
                     <motion.div
@@ -727,26 +727,26 @@ export function Mijozlar() {
                         exit={{ opacity: 0, scale: 0.96, y: 16 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                         onClick={e => e.stopPropagation()}
-                        className="w-[520px] max-h-[92vh] bg-white rounded-[16px] shadow-2xl flex flex-col overflow-hidden"
+                        className="w-[520px] max-h-[92vh] bg-surface-raised rounded-overlay shadow-lg flex flex-col overflow-hidden"
                     >
                         <div className="flex flex-col">
                             {/* AVATAR + INFO */}
-                            <div className="relative flex flex-col items-center pt-6 pb-6 px-8 border-b border-[#F0F0F0] gap-3">
+                            <div className="relative flex flex-col items-center pt-6 pb-6 px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}
                                 <button
                                     onClick={closeDetailsModal}
                                     aria-label="Yopish"
-                                    className="absolute top-3 right-3 p-2 hover:bg-[#F5F5F5] rounded-[8px] transition-colors text-[#999999]"
+                                    className="absolute top-3 right-3 p-2 hover:bg-mute-ghost-hover rounded-control transition-colors text-ink-muted"
                                 >
                                     <X size={20} weight="bold" />
                                 </button>
                                 {/* Circle avatar */}
                                 <div className="relative group flex-shrink-0">
-                                    <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-[#F0F0F0] flex items-center justify-center">
+                                    <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-surface-sunken flex items-center justify-center">
                                         {selectedCustomer.image ? (
                                             <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover object-top" />
                                         ) : (
-                                            <span className="text-[34px] font-semibold text-[#CCCCCC]">
+                                            <span className="text-2xl font-semibold text-ink-faint">
                                                 {selectedCustomer.name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
                                             </span>
                                         )}
@@ -763,9 +763,9 @@ export function Mijozlar() {
 
                                 {/* Name + phone */}
                                 <div className="flex flex-col items-center gap-1 text-center">
-                                    <h1 id={detailsTitleId} className="text-[20px] font-semibold text-[#141414] leading-tight">{selectedCustomer.name}</h1>
+                                    <h1 id={detailsTitleId} className="text-lg font-semibold text-ink leading-tight">{selectedCustomer.name}</h1>
                                     {selectedCustomer.phone && (
-                                        <span className="text-[13px] text-[#999]">{formatPhone(selectedCustomer.phone)}</span>
+                                        <span className="text-base text-ink-muted">{formatPhone(selectedCustomer.phone)}</span>
                                     )}
                                 </div>
 
@@ -784,7 +784,7 @@ export function Mijozlar() {
                                                 setTimeout(() => URL.revokeObjectURL(url), 1000)
                                             } catch { /* ignore */ }
                                         }}
-                                        className="flex items-center gap-1.5 text-[11px] text-[#999] hover:text-[#141414] transition-colors"
+                                        className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors"
                                     >
                                         <DownloadSimple size={12} weight="bold" />
                                         Rasmni saqlash
@@ -793,7 +793,7 @@ export function Mijozlar() {
                             </div>
 
                             {/* TABS */}
-                            <div className="flex border-b border-[#F0F0F0] bg-white sticky top-0 z-[5] pl-4">
+                            <div className="flex border-b border-line bg-surface-raised sticky top-0 z-[5] pl-4">
                                 {([
                                     { id: 'malumotlar' as const, label: "Ma'lumotlar" },
                                     { id: 'cashback' as const, label: 'Cashback' },
@@ -801,10 +801,10 @@ export function Mijozlar() {
                                     <button
                                         key={tab.id}
                                         onClick={() => { cancelEdit(); setDrawerTab(tab.id) }}
-                                        className={`px-4 py-2.5 text-[12px] font-semibold border-b-2 transition-colors ${
+                                        className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
                                             drawerTab === tab.id
-                                                ? 'border-[#141414] text-[#141414]'
-                                                : 'border-transparent text-[#999]'
+                                                ? 'border-line-focus text-ink'
+                                                : 'border-transparent text-ink-muted'
                                         }`}
                                     >
                                         {tab.label}
@@ -818,8 +818,8 @@ export function Mijozlar() {
                                     {/* Balance row */}
                                     <div className="flex items-center justify-between py-2">
                                         <div>
-                                            <span className="text-[11px] text-[#999]">Joriy balans</span>
-                                            <div className="text-[20px] font-semibold text-[#141414] mt-0.5">
+                                            <span className="text-xs text-ink-muted">Joriy balans</span>
+                                            <div className="text-lg font-semibold text-ink mt-0.5">
                                                 {formatMoney(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
                                             </div>
                                         </div>
@@ -833,21 +833,21 @@ export function Mijozlar() {
                                     ) : (() => {
                                         const earned = journeyQuery.data?.events.filter(ev => ev.cashback_earned > 0) ?? []
                                         if (earned.length === 0) return (
-                                            <p className="text-[12px] text-[#999] py-4 text-center">Hali cashback olinmagan</p>
+                                            <p className="text-sm text-ink-muted py-4 text-center">Hali cashback olinmagan</p>
                                         )
                                         return (
-                                            <div className="flex flex-col divide-y divide-[#F0F0F0]">
+                                            <div className="flex flex-col divide-y divide-line">
                                                 {earned.map(ev => {
                                                     const pct = ev.paid > 0 ? Math.round(ev.cashback_earned / ev.paid * 100) : 0
                                                     return (
                                                         <div key={ev.participant_id} className="flex items-center justify-between py-2.5">
                                                             <div className="flex flex-col gap-0.5">
-                                                                <span className="text-[13px] text-[#141414]">{ev.event_name}</span>
-                                                                <span className="text-[11px] text-[#999]">{formatDate(ev.event_date)}</span>
+                                                                <span className="text-base text-ink">{ev.event_name}</span>
+                                                                <span className="text-xs text-ink-muted">{formatDate(ev.event_date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                                <span className="text-[11px] text-[#999]">{pct}%</span>
-                                                                <span className="text-[13px] font-semibold text-[#141414]">{formatNumber(ev.cashback_earned)} UZS</span>
+                                                                <span className="text-xs text-ink-muted">{pct}%</span>
+                                                                <span className="text-base font-semibold text-ink">{formatNumber(ev.cashback_earned)} UZS</span>
                                                             </div>
                                                         </div>
                                                     )
@@ -865,47 +865,47 @@ export function Mijozlar() {
                                     {editAllMode ? (
                                         <>
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Ism</span>
+                                                <span className="text-sm text-ink-muted">Ism</span>
                                                 <input autoFocus value={editAllValues.name}
                                                     onChange={e => setEditAllValues(v => ({ ...v, name: e.target.value }))}
-                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                    className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Telefon</span>
+                                                <span className="text-sm text-ink-muted">Telefon</span>
                                                 <input value={editAllValues.phone}
                                                     onChange={e => setEditAllValues(v => ({ ...v, phone: e.target.value }))}
                                                     placeholder="+998 90 123 45 67"
-                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                    className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Email</span>
+                                                <span className="text-sm text-ink-muted">Email</span>
                                                 <input value={editAllValues.email}
                                                     onChange={e => setEditAllValues(v => ({ ...v, email: e.target.value }))}
                                                     placeholder="email@example.com"
-                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                    className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Faoliyat</span>
+                                                <span className="text-sm text-ink-muted">Faoliyat</span>
                                                 <input value={editAllValues.activity}
                                                     onChange={e => setEditAllValues(v => ({ ...v, activity: e.target.value }))}
-                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                    className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Lokatsiya</span>
+                                                <span className="text-sm text-ink-muted">Lokatsiya</span>
                                                 <input value={editAllValues.location}
                                                     onChange={e => setEditAllValues(v => ({ ...v, location: e.target.value }))}
                                                     placeholder="Shahar, tuman"
-                                                    className="px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
+                                                    className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
                                         </>
                                     ) : (
                                         <>
                                             <div className="flex flex-col gap-1 group">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[12px] text-[#999]">Ism</span>
+                                                    <span className="text-sm text-ink-muted">Ism</span>
                                                     {editingField !== "name" && (
                                                         <button type="button" onClick={() => startEdit("name")} aria-label="Tahrirlash"
-                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -914,21 +914,21 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={14} className="text-ink" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={14} className="text-ink-muted" weight="bold" /></button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.name}</span>
+                                                    <span className="text-base text-ink">{selectedCustomer.name}</span>
                                                 )}
                                             </div>
                                             {/* Phone */}
                                             <div className="flex flex-col gap-1 group">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[12px] text-[#999]">Telefon</span>
+                                                    <span className="text-sm text-ink-muted">Telefon</span>
                                                     {editingField !== "phone" && (
                                                         <button type="button" onClick={() => startEdit("phone")} aria-label="Tahrirlash"
-                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -937,22 +937,22 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="+998 90 123 45 67" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={14} className="text-ink" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={14} className="text-ink-muted" weight="bold" /></button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.phone || '—'}</span>
+                                                    <span className="text-base text-ink">{selectedCustomer.phone || '—'}</span>
                                                 )}
                                             </div>
                                             {/* Email */}
                                             <div className="flex flex-col gap-1 group">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[12px] text-[#999]">Email</span>
+                                                    <span className="text-sm text-ink-muted">Email</span>
                                                     {editingField !== "email" && (
                                                         <button type="button" onClick={() => startEdit("email")} aria-label="Tahrirlash"
-                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -961,22 +961,22 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="email@example.com" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={14} className="text-ink" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={14} className="text-ink-muted" weight="bold" /></button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[14px] text-[#141414] truncate">{selectedCustomer.email || '—'}</span>
+                                                    <span className="text-base text-ink truncate">{selectedCustomer.email || '—'}</span>
                                                 )}
                                             </div>
                                             {/* Activity */}
                                             <div className="flex flex-col gap-1 group">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[12px] text-[#999]">Faoliyat</span>
+                                                    <span className="text-sm text-ink-muted">Faoliyat</span>
                                                     {editingField !== "activity" && (
                                                         <button type="button" onClick={() => startEdit("activity")} aria-label="Tahrirlash"
-                                                            className="text-[#999] opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -985,32 +985,32 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#141414] outline-none focus:bg-white focus:ring-1 focus:ring-[#141414]/10" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-[#F0F0F0] rounded-[6px]"><Check size={14} className="text-[#141414]" weight="bold" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-[#F5F5F5] rounded-[6px]"><X size={14} className="text-[#999]" weight="bold" /></button>
+                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={14} className="text-ink" weight="bold" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={14} className="text-ink-muted" weight="bold" /></button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[14px] text-[#141414]">{selectedCustomer.activity || '—'}</span>
+                                                    <span className="text-base text-ink">{selectedCustomer.activity || '—'}</span>
                                                 )}
                                             </div>
                                             {/* Lokatsiya */}
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[12px] text-[#999]">Lokatsiya</span>
-                                                <span className="text-[14px] text-[#141414]">{selectedCustomer.location || '—'}</span>
+                                                <span className="text-sm text-ink-muted">Lokatsiya</span>
+                                                <span className="text-base text-ink">{selectedCustomer.location || '—'}</span>
                                             </div>
                                         </>
                                     )}
                                     {/* Join date */}
                                     <div className="flex flex-col gap-1">
-                                        <span className="text-[12px] text-[#999]">Qo'shilgan sana</span>
-                                        <span className="text-[14px] text-[#141414]">{selectedCustomer.joinDate || '—'}</span>
+                                        <span className="text-sm text-ink-muted">Qo'shilgan sana</span>
+                                        <span className="text-base text-ink">{selectedCustomer.joinDate || '—'}</span>
                                     </div>
                                     {/* Community toggle */}
                                     {selectedCustomer.authUserId && (
-                                        <div className="flex items-center justify-between py-2 border-t border-[#F0F0F0]">
+                                        <div className="flex items-center justify-between py-2 border-t border-line">
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="text-[13px] text-[#141414]">Hamjamiyat</span>
-                                                <span className="text-[11px] text-[#999]">
+                                                <span className="text-base text-ink">Hamjamiyat</span>
+                                                <span className="text-xs text-ink-muted">
                                                     {selectedCustomer.communityApproved ? "Tasdiqlangan — chat ochiq" : "Kutilmoqda — chat yopiq"}
                                                 </span>
                                             </div>
@@ -1023,9 +1023,9 @@ export function Mijozlar() {
                                                 aria-pressed={selectedCustomer.communityApproved}
                                                 aria-label="Hamjamiyat"
                                                 className="relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0"
-                                                style={{ background: selectedCustomer.communityApproved ? "#22C55E" : "#D0D0D0" }}
+                                                style={{ background: selectedCustomer.communityApproved ? "var(--ds-color-success-default)" : "var(--ds-color-mute-soft)" }}
                                             >
-                                                <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                                                <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-surface-raised rounded-full shadow transition-transform duration-200"
                                                     style={{ transform: selectedCustomer.communityApproved ? "translateX(20px)" : "translateX(0)" }} />
                                             </button>
                                         </div>
@@ -1036,14 +1036,14 @@ export function Mijozlar() {
                                             <button
                                                 onClick={saveEditAll}
                                                 disabled={updateClientMutation.isPending}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold bg-[#141414] text-white hover:bg-[#333] transition-colors disabled:opacity-50"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50"
                                             >
                                                 <Check size={13} weight="bold" />
                                                 Saqlash
                                             </button>
                                             <button
                                                 onClick={cancelEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold text-[#666] bg-[#F5F5F5] hover:bg-[#EBEBEB] transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold text-ink-muted bg-mute-soft hover:bg-mute-soft-hover transition-colors"
                                             >
                                                 Bekor qilish
                                             </button>
@@ -1052,14 +1052,14 @@ export function Mijozlar() {
                                         <div className="flex gap-3 mt-6 mb-6">
                                             <button
                                                 onClick={startEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold bg-[#141414] text-white hover:bg-[#333] transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
                                             >
                                                 <PencilSimple size={13} weight="bold" />
                                                 O'zgartirish
                                             </button>
                                             <button
                                                 onClick={() => setCustomerToDelete(selectedCustomer)}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[12px] font-semibold text-[#D13328] bg-[rgba(209,51,40,0.07)] hover:bg-[rgba(209,51,40,0.12)] transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold text-danger-text bg-danger-soft hover:bg-danger-soft transition-colors"
                                             >
                                                 <Trash size={13} weight="bold" />
                                                 O'chirish
@@ -1094,10 +1094,10 @@ export function Mijozlar() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
+                        className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-bold shadow-lg ${
                             toast.type === "success"
-                                ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
-                                : "bg-red-50 text-red-700 border border-red-200"
+                                ? "bg-surface-sunken text-ink border border-line"
+                                : "bg-danger-soft text-danger-text border border-line"
                         }`}
                     >
                         {toast.message}
@@ -1114,7 +1114,7 @@ export function Mijozlar() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeAddModal}
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
                         />
                         <motion.div
                             ref={addModalPanelRef}
@@ -1125,16 +1125,16 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[12px] shadow-2xl w-full max-w-xl relative overflow-hidden flex flex-col"
+                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-xl relative overflow-hidden flex flex-col"
                         >
-                            <div className="p-6 border-b border-[#F0F0F0] flex items-center justify-between bg-white">
-                                <h3 id={addModalTitleId} className="text-[18px] font-bold text-[#141414]">Yangi mijoz qo'shish</h3>
+                            <div className="p-6 border-b border-line flex items-center justify-between bg-surface-raised">
+                                <h3 id={addModalTitleId} className="text-lg font-bold text-ink">Yangi mijoz qo'shish</h3>
                                 <button
                                     onClick={closeAddModal}
                                     aria-label="Yopish"
-                                    className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all"
+                                    className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all"
                                 >
-                                    <X size={24} className="text-[#999999]" weight="bold" />
+                                    <X size={24} className="text-ink-muted" weight="bold" />
                                 </button>
                             </div>
 
@@ -1146,7 +1146,7 @@ export function Mijozlar() {
                                             type="button"
                                             onClick={() => document.getElementById('image-upload')?.click()}
                                             aria-label="Rasm yuklash"
-                                            className="w-28 h-28 rounded-[12px] border-2 border-dashed border-[#E0E0E0] bg-[#F9F9F9] flex flex-col items-center justify-center text-[#999999] relative overflow-hidden group hover:border-[#141414] hover:bg-white transition-all cursor-pointer"
+                                            className="w-28 h-28 rounded-control-lg border-2 border-dashed border-line bg-surface-sunken flex flex-col items-center justify-center text-ink-muted relative overflow-hidden group hover:border-line-focus hover:bg-surface transition-all cursor-pointer"
                                         >
                                             {newCustomer.image ? (
                                                 <>
@@ -1158,7 +1158,7 @@ export function Mijozlar() {
                                             ) : (
                                                 <span className="flex flex-col items-center gap-1">
                                                     <Camera size={32} className="opacity-30" weight="bold" />
-                                                    <span className="text-[11px] font-bold">RASM YUKLASH</span>
+                                                    <span className="text-xs font-bold">RASM YUKLASH</span>
                                                 </span>
                                             )}
                                         </button>
@@ -1169,14 +1169,14 @@ export function Mijozlar() {
                                             onChange={handleImageChange}
                                             className="hidden"
                                         />
-                                        <p className="text-[11px] text-[#999999] font-medium text-center">
+                                        <p className="text-xs text-ink-muted font-medium text-center">
                                             Tavsiya etiladi: Kvadrat rasm, max 2MB
                                         </p>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
-                                            <label htmlFor={`${addFormId}-name`} className="text-[12px] font-bold text-[#141414]">ISM FAMILYASI *</label>
+                                            <label htmlFor={`${addFormId}-name`} className="text-sm font-bold text-ink">ISM FAMILYASI *</label>
                                             <input
                                                 id={`${addFormId}-name`}
                                                 required
@@ -1184,13 +1184,13 @@ export function Mijozlar() {
                                                 value={newCustomer.name}
                                                 onChange={e => setNewCustomer({...newCustomer, name: e.target.value})}
                                                 placeholder="Masalan: Aziz Rahimov"
-                                                className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <label htmlFor={`${addFormId}-activity`} className="text-[12px] font-bold text-[#141414]">BIZNES FAOLIYATI *</label>
+                                        <label htmlFor={`${addFormId}-activity`} className="text-sm font-bold text-ink">BIZNES FAOLIYATI *</label>
                                         <textarea
                                             id={`${addFormId}-activity`}
                                             required
@@ -1198,54 +1198,54 @@ export function Mijozlar() {
                                             value={newCustomer.activity}
                                             onChange={e => setNewCustomer({...newCustomer, activity: e.target.value})}
                                             placeholder="Kompaniya nomi yoki loyiha haqida..."
-                                            className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10 resize-none"
+                                            className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface resize-none"
                                         />
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <label htmlFor={`${addFormId}-role`} className="text-[12px] font-bold text-[#141414]">LAVOZIM</label>
+                                        <label htmlFor={`${addFormId}-role`} className="text-sm font-bold text-ink">LAVOZIM</label>
                                         <input
                                             id={`${addFormId}-role`}
                                             type="text"
                                             value={newCustomer.role}
                                             onChange={e => setNewCustomer({...newCustomer, role: e.target.value})}
                                             placeholder="Masalan: Direktor, Menejer"
-                                            className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                            className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
-                                            <label htmlFor={`${addFormId}-phone`} className="text-[12px] font-bold text-[#141414]">TELEFON RAQAMI *</label>
+                                            <label htmlFor={`${addFormId}-phone`} className="text-sm font-bold text-ink">TELEFON RAQAMI *</label>
                                             <PhoneInput id={`${addFormId}-phone`} value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
                                         <div className="flex flex-col gap-1.5">
-                                            <label htmlFor={`${addFormId}-email`} className="text-[12px] font-bold text-[#141414]">EMAIL (IXTIYORIY)</label>
+                                            <label htmlFor={`${addFormId}-email`} className="text-sm font-bold text-ink">EMAIL (IXTIYORIY)</label>
                                             <input
                                                 id={`${addFormId}-email`}
                                                 type="email"
                                                 value={newCustomer.email}
                                                 onChange={e => setNewCustomer({...newCustomer, email: e.target.value})}
                                                 placeholder="example@mail.uz"
-                                                className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                                className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <label htmlFor={`${addFormId}-joinDate`} className="text-[12px] font-bold text-[#141414]">KLUBGA QO'SHILGAN VAQT</label>
+                                        <label htmlFor={`${addFormId}-joinDate`} className="text-sm font-bold text-ink">KLUBGA QO'SHILGAN VAQT</label>
                                         <input
                                             id={`${addFormId}-joinDate`}
                                             type="date"
                                             value={newCustomer.joinDate}
                                             onChange={e => setNewCustomer({...newCustomer, joinDate: e.target.value})}
-                                            className="w-full px-4 py-2 bg-[#F5F5F5] border-transparent rounded-[8px] text-[13px] outline-hidden focus:bg-white focus:ring-1 focus:ring-[#141414]/10"
+                                            className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                         />
                                     </div>
                                 </div>
 
                                 {addError && (
-                                    <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-[8px] text-[12px] font-medium text-red-700">
+                                    <div className="mt-4 px-3 py-2 bg-danger-soft border border-line rounded-control text-sm font-medium text-danger-text">
                                         {addError}
                                     </div>
                                 )}
@@ -1255,22 +1255,22 @@ export function Mijozlar() {
                                         type="button"
                                         onClick={closeAddModal}
                                         disabled={savingNewCustomer}
-                                        className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[8px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Bekor qilish
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={savingNewCustomer || !newCustomer.name.trim()}
-                                        className={`flex-1 px-4 py-2.5 rounded-[8px] text-[13px] font-bold text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                                        className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-ink-on-accent transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                             savingNewCustomer || !newCustomer.name.trim()
-                                                ? "bg-[#CCC] cursor-not-allowed"
-                                                : "bg-[#141414] hover:bg-black"
+                                                ? "bg-mute-soft cursor-not-allowed"
+                                                : "bg-accent hover:bg-accent-hover"
                                         }`}
                                     >
                                         {savingNewCustomer ? (
                                             <>
-                                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                                 Saqlanmoqda...
                                             </>
                                         ) : "Saqlash"}
@@ -1321,7 +1321,7 @@ export function Mijozlar() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setCustomerToDelete(null)}
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
                         />
                         <motion.div
                             ref={deletePanelRef}
@@ -1332,16 +1332,16 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[16px] shadow-2xl w-full max-w-[400px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
+                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-[400px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
                         >
-                            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center">
-                                <Trash size={28} className="text-red-600" weight="bold" />
+                            <div className="w-14 h-14 bg-danger-soft rounded-full flex items-center justify-center">
+                                <Trash size={28} className="text-danger-text" weight="bold" />
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <h3 id={deleteTitleId} className="text-[18px] font-bold text-[#141414]">Mijozni o'chirish</h3>
-                                <p className="text-[14px] text-[#999999] font-medium leading-relaxed">
-                                    Siz rostdan ham <span className="text-[#141414] font-bold">{customerToDelete.name}</span>ni tizimdan o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
+                                <h3 id={deleteTitleId} className="text-lg font-bold text-ink">Mijozni o'chirish</h3>
+                                <p className="text-base text-ink-muted font-medium leading-relaxed">
+                                    Siz rostdan ham <span className="text-ink font-bold">{customerToDelete.name}</span>ni tizimdan o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
                                 </p>
                             </div>
 
@@ -1349,7 +1349,7 @@ export function Mijozlar() {
                                 <button
                                     onClick={() => setCustomerToDelete(null)}
                                     disabled={deleteClientMutation.isPending}
-                                    className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[10px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Bekor qilish
                                 </button>
@@ -1360,15 +1360,15 @@ export function Mijozlar() {
                                         })
                                     }}
                                     disabled={deleteClientMutation.isPending}
-                                    className={`flex-1 px-4 py-2.5 rounded-[10px] text-[13px] font-bold text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                                    className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                         deleteClientMutation.isPending
-                                            ? "bg-[#CCC] cursor-not-allowed shadow-none"
-                                            : "bg-red-600 hover:bg-red-700 shadow-red-200"
+                                            ? "bg-mute-soft cursor-not-allowed"
+                                            : "bg-danger hover:bg-danger"
                                     }`}
                                 >
                                     {deleteClientMutation.isPending ? (
                                         <>
-                                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                             O'chirilmoqda...
                                         </>
                                     ) : "O'chirish"}
@@ -1388,7 +1388,7 @@ export function Mijozlar() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={closeBulkDeleteConfirm}
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
                         />
                         <motion.div
                             ref={bulkDeletePanelRef}
@@ -1399,22 +1399,22 @@ export function Mijozlar() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[16px] shadow-2xl w-full max-w-[420px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
+                            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-[420px] relative overflow-hidden p-6 flex flex-col items-center text-center gap-4"
                         >
-                            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center">
-                                <Trash size={28} className="text-red-600" weight="bold" />
+                            <div className="w-14 h-14 bg-danger-soft rounded-full flex items-center justify-center">
+                                <Trash size={28} className="text-danger-text" weight="bold" />
                             </div>
                             <div className="flex flex-col gap-1">
-                                <h3 id={bulkDeleteTitleId} className="text-[18px] font-bold text-[#141414]">Mijozlarni o'chirish</h3>
-                                <p className="text-[14px] text-[#999999] font-medium leading-relaxed">
-                                    Tanlangan <span className="text-[#141414] font-bold">{selectedMijozlar.length} ta</span> mijozni o'chirishni tasdiqlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.
+                                <h3 id={bulkDeleteTitleId} className="text-lg font-bold text-ink">Mijozlarni o'chirish</h3>
+                                <p className="text-base text-ink-muted font-medium leading-relaxed">
+                                    Tanlangan <span className="text-ink font-bold">{selectedMijozlar.length} ta</span> mijozni o'chirishni tasdiqlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.
                                 </p>
                             </div>
                             <div className="flex gap-3 w-full mt-2">
                                 <button
                                     onClick={() => setBulkDeleteConfirm(false)}
                                     disabled={deleteClientsMutation.isPending}
-                                    className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[10px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Bekor qilish
                                 </button>
@@ -1428,15 +1428,15 @@ export function Mijozlar() {
                                         })
                                     }}
                                     disabled={deleteClientsMutation.isPending}
-                                    className={`flex-1 px-4 py-2.5 rounded-[10px] text-[13px] font-bold text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
+                                    className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                         deleteClientsMutation.isPending
-                                            ? "bg-[#CCC] cursor-not-allowed shadow-none"
-                                            : "bg-red-600 hover:bg-red-700 shadow-red-200"
+                                            ? "bg-mute-soft cursor-not-allowed"
+                                            : "bg-danger hover:bg-danger"
                                     }`}
                                 >
                                     {deleteClientsMutation.isPending ? (
                                         <>
-                                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                             O'chirilmoqda...
                                         </>
                                     ) : "Ha, o'chir"}

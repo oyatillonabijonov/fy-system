@@ -38,17 +38,17 @@ export function CrmNBoard({
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex items-center gap-4">
-        <span className="text-[13px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
+        <span className="text-base font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
           {pipelineName}
         </span>
 
-        <div className="flex items-center gap-3 text-[12px] text-[#999] font-medium">
+        <div className="flex items-center gap-3 text-sm text-ink-muted font-medium">
           <span>
-            <span className="font-bold text-[#141414]">{totalLeads}</span> ta lid
+            <span className="font-bold text-ink">{totalLeads}</span> ta lid
           </span>
-          <span className="text-[#E0E0E0]">|</span>
+          <span style={{ color: "var(--ds-color-border-default)" }}>|</span>
           <span>
-            <span className="font-bold text-[#141414]">
+            <span className="font-bold text-ink">
               {formatNumber(totalAmount)}
             </span>{" "}
             so'm
@@ -57,8 +57,8 @@ export function CrmNBoard({
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-1.5 text-[12px] text-[#999999] font-medium">
-          <div className="w-2 h-2 rounded-full bg-[#141414]" />
+        <div className="flex items-center gap-1.5 text-sm text-ink-muted font-medium">
+          <div className="w-2 h-2 rounded-full bg-accent" />
           CRM-N
         </div>
       </div>
@@ -69,7 +69,7 @@ export function CrmNBoard({
           className="flex gap-3 overflow-x-auto pb-4"
           style={{
             scrollbarWidth: "thin",
-            scrollbarColor: "#e0e0e0 transparent",
+            scrollbarColor: "var(--ds-color-border-default) transparent",
           }}
         >
           {stages.map((stage) => {
@@ -93,16 +93,16 @@ export function CrmNBoard({
                             className="w-2 h-2 rounded-full"
                             style={{ backgroundColor: stage.color }}
                           />
-                          <span className="text-[13px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
+                          <span className="text-base font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
                             {stage.name}
                           </span>
                         </div>
-                        <span className="inline-flex px-1.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#f5f5f5] text-[#666]">
+                        <span className="inline-flex px-1.5 py-0.5 rounded-tag text-xs font-bold bg-surface-sunken text-ink-muted">
                           {stageLeads.length}
                         </span>
                       </div>
                       {stageTotal > 0 && (
-                        <span className="text-[11px] text-[#999] font-medium pl-4">
+                        <span className="text-xs text-ink-muted font-medium pl-4">
                           {formatNumber(stageTotal)} so'm
                         </span>
                       )}
@@ -113,12 +113,12 @@ export function CrmNBoard({
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex flex-col gap-2 h-full overflow-y-auto py-1 px-1 transition-colors rounded-[8px] ${
-                          snapshot.isDraggingOver ? "bg-[#f0f7ff]" : ""
+                        className={`flex flex-col gap-2 h-full overflow-y-auto py-1 px-1 transition-colors rounded-surface ${
+                          snapshot.isDraggingOver ? "bg-info-soft" : ""
                         }`}
                         style={{
                           scrollbarWidth: "thin",
-                          scrollbarColor: "#e0e0e0 transparent",
+                          scrollbarColor: "var(--ds-color-border-default) transparent",
                         }}
                       >
                         {stageLeads.map((lead, index) => (
@@ -141,7 +141,7 @@ export function CrmNBoard({
                         {!isLost && !isWon && (
                           <button
                             onClick={onAddLead}
-                            className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-[#D0D0D0] rounded-[10px] text-[12px] font-medium text-[#999] hover:border-[#999] hover:text-[#666] transition-colors shrink-0"
+                            className="flex items-center justify-center gap-1.5 py-3 border border-dashed border-line rounded-surface text-sm font-medium text-ink-muted hover:border-line-strong hover:text-ink transition-colors shrink-0"
                           >
                             <Plus size={14} weight="bold" />
                             Lid qo'shish
@@ -153,7 +153,7 @@ export function CrmNBoard({
                       <div
                         className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none z-[1]"
                         style={{
-                          background: "linear-gradient(to bottom, transparent, var(--main-bg))",
+                          background: "linear-gradient(to bottom, transparent, var(--ds-color-surface-default))",
                         }}
                       />
                     </div>

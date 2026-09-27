@@ -87,43 +87,43 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Mobil ilova akkaunti</h2>
-              <span className="text-[11px] text-[#999]">{clientName}</span>
+              <h2 id={titleId} className="text-md font-bold text-ink">Mobil ilova akkaunti</h2>
+              <span className="text-xs text-ink-muted">{clientName}</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" weight="bold" />
             </button>
           </div>
 
           {/* Body */}
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-text border border-line">
                 {error}
               </div>
             )}
 
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-[8px] bg-[#F9F9F8] border border-[#F0F0F0]">
-              <DeviceMobile size={18} className="text-[#999] mt-0.5 flex-shrink-0" weight="bold" />
-              <span className="text-[12px] text-[#666] leading-snug">
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-control bg-surface-sunken border border-line">
+              <DeviceMobile size={18} className="text-ink-muted mt-0.5 flex-shrink-0" weight="bold" />
+              <span className="text-sm text-ink-muted leading-snug">
                 A'zo shu email va parol bilan mobil ilovaga kiradi. Parolni a'zoga o'zingiz yetkazasiz.
               </span>
             </div>
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${formId}-email`} className="text-[12px] font-medium text-[#999]">Email *</label>
+              <label htmlFor={`${formId}-email`} className="text-sm font-medium text-ink-muted">Email *</label>
               <input
                 id={`${formId}-email`}
                 type="email"
@@ -131,13 +131,13 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="azo@example.uz"
                 autoFocus={!clientEmail}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${formId}-password`} className="text-[12px] font-medium text-[#999]">Parol * (kamida 6 belgi)</label>
+              <label htmlFor={`${formId}-password`} className="text-sm font-medium text-ink-muted">Parol * (kamida 6 belgi)</label>
               <input
                 id={`${formId}-password`}
                 type="text"
@@ -145,27 +145,27 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••"
                 autoFocus={Boolean(clientEmail)}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !email.trim() || password.length < 6}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
+              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
                 saving || !email.trim() || password.length < 6
-                  ? "bg-[#CCCCCC] cursor-not-allowed"
-                  : "bg-[#141414] hover:bg-[#333]"
+                  ? "bg-mute-soft cursor-not-allowed"
+                  : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Yaratilmoqda..." : "Akkaunt ochish"}

@@ -148,7 +148,7 @@ export function CrmN() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-[22px] font-bold text-[#141414]">Sotuv bo'limi</h1>
+          <h1 className="text-lg font-bold text-ink">Sotuv bo'limi</h1>
 
           {/* Pipeline selector */}
           {pipelinesLoading ? (
@@ -159,31 +159,31 @@ export function CrmN() {
                 <select
                   value={selectedPipelineId ?? ""}
                   onChange={(e) => handlePipelineChange(e.target.value)}
-                  className="appearance-none bg-white border border-[#E0E0E0] rounded-[8px] py-1.5 pl-3 pr-8 text-[13px] font-medium text-[#141414] focus:outline-none focus:border-[#141414] transition-colors cursor-pointer"
+                  className="appearance-none bg-surface border border-line rounded-control py-1.5 pl-3 pr-8 text-base font-medium text-ink focus:outline-none focus:border-line-focus transition-colors cursor-pointer"
                 >
                   {pipelines.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999999] pointer-events-none" weight="bold" />
+                <CaretDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" weight="bold" />
               </div>
 
               {/* Settings button */}
               {selectedPipelineId && (
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+                  className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
                   title="Sozlamalar"
                   aria-label="Sozlamalar"
                 >
-                  <Gear size={16} className="text-[#999]" weight="bold" />
+                  <Gear size={16} className="text-ink-muted" weight="bold" />
                 </button>
               )}
 
               {/* Add pipeline button */}
               <button
                 onClick={() => setShowCreatePipeline(true)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-[8px] text-[12px] font-medium text-[#999] hover:text-[#666] hover:bg-[#F5F5F5] transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-control text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
               >
                 <Plus size={14} weight="bold" />
                 Voronka
@@ -192,15 +192,15 @@ export function CrmN() {
           ) : (
             <button
               onClick={() => setShowCreatePipeline(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-bold text-[#141414] border border-[#E0E0E0] hover:bg-[#F5F5F5] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold text-ink border border-line hover:bg-mute-ghost-hover transition-colors"
             >
               <Plus size={14} weight="bold" />
               Voronka yaratish
             </button>
           )}
 
-          <div className="flex items-center gap-1.5 text-[12px] text-[#999999] font-medium">
-            <div className="w-2 h-2 rounded-full bg-[#141414]" />
+          <div className="flex items-center gap-1.5 text-sm text-ink-muted font-medium">
+            <div className="w-2 h-2 rounded-full bg-accent" />
             Sotuv bo'limi
           </div>
         </div>
@@ -217,32 +217,32 @@ export function CrmN() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-0 border-b border-[#F0F0F0]">
+      <div className="flex items-center gap-0 border-b border-line">
         <button
           onClick={() => setActiveTab("lidlar")}
-          className={`px-4 py-2.5 text-[13px] font-bold transition-colors relative ${
-            activeTab === "lidlar" ? "text-[#141414]" : "text-[#999999] hover:text-[#666666]"
+          className={`px-4 py-2.5 text-base font-bold transition-colors relative ${
+            activeTab === "lidlar" ? "text-ink" : "text-ink-muted hover:text-ink"
           }`}
         >
           Lidlar ro'yxati
           {activeTab === "lidlar" && (
             <motion.div
               layoutId="crm-n-tab"
-              className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#141414]"
+              className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent"
             />
           )}
         </button>
         <button
           onClick={() => setActiveTab("pipeline")}
-          className={`px-4 py-2.5 text-[13px] font-bold transition-colors relative ${
-            activeTab === "pipeline" ? "text-[#141414]" : "text-[#999999] hover:text-[#666666]"
+          className={`px-4 py-2.5 text-base font-bold transition-colors relative ${
+            activeTab === "pipeline" ? "text-ink" : "text-ink-muted hover:text-ink"
           }`}
         >
           Pipeline
           {activeTab === "pipeline" && (
             <motion.div
               layoutId="crm-n-tab"
-              className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#141414]"
+              className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent"
             />
           )}
         </button>
@@ -252,11 +252,11 @@ export function CrmN() {
       <div className="flex flex-col gap-0">
         <button
           onClick={() => setStatsOpen((v) => !v)}
-          className="flex items-center justify-between w-full h-9 px-4 border border-[#e5e5e5] rounded-[8px] hover:bg-[#f5f5f5] transition-colors cursor-pointer"
+          className="flex items-center justify-between w-full h-9 px-4 border border-line rounded-control hover:bg-mute-ghost-hover transition-colors cursor-pointer"
         >
-          <span className="text-[12px] font-semibold text-[#999] uppercase">Statistika</span>
+          <span className="text-sm font-semibold text-ink-muted uppercase">Statistika</span>
           <motion.div animate={{ rotate: statsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <CaretDown size={14} className="text-[#999]" weight="bold" />
+            <CaretDown size={14} className="text-ink-muted" weight="bold" />
           </motion.div>
         </button>
 
@@ -276,18 +276,18 @@ export function CrmN() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-white border border-[#F0F0F0] rounded-[8px] p-5 flex flex-col gap-3 group hover:border-[#141414] transition-all cursor-default"
+                    className="bg-surface border border-line rounded-surface p-5 flex flex-col gap-3 group hover:border-line-strong transition-all cursor-default"
                   >
                     <div className="flex flex-col gap-1">
-                      <span className="text-[13px] font-medium text-[#999999]">{stat.title}</span>
+                      <span className="text-base font-medium text-ink-muted">{stat.title}</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[22px] font-bold text-[#141414]">{stat.value}</span>
+                        <span className="text-lg font-bold text-ink">{stat.value}</span>
                         {stat.isMoney && (
-                          <span className="text-[12px] font-bold text-[#999999]">so'm</span>
+                          <span className="text-sm font-bold text-ink-muted">so'm</span>
                         )}
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-[#999999]">{stat.sub}</span>
+                    <span className="text-xs font-bold text-ink-muted">{stat.sub}</span>
                   </motion.div>
                 ))}
               </div>
@@ -303,17 +303,17 @@ export function CrmN() {
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
-          <span className="text-[14px] text-red-500 font-medium">{error}</span>
-          <button onClick={() => invalidateAll()} className="text-[13px] text-[#141414] font-bold underline">
+          <span className="text-base text-danger-text font-medium">{error}</span>
+          <button onClick={() => invalidateAll()} className="text-base text-ink font-bold underline">
             Qayta urinish
           </button>
         </div>
       ) : pipelines.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <span className="text-[14px] text-[#999] font-medium">Pipeline topilmadi</span>
+          <span className="text-base text-ink-muted font-medium">Pipeline topilmadi</span>
           <button
             onClick={() => setShowCreatePipeline(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-[13px] font-bold text-white bg-[#141414] hover:bg-[#333] transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-control text-base font-bold text-ink-on-accent bg-accent hover:bg-accent-hover transition-colors"
           >
             <Plus size={16} weight="bold" />
             Birinchi voronkani yarating

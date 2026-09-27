@@ -102,7 +102,7 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
@@ -118,31 +118,31 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
-            <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+            <h2 id={titleId} className="text-md font-bold text-ink">
               {isEdit ? "Yangilikni tahrirlash" : "Yangi post"}
             </h2>
             <button
               onClick={() => !saving && onClose()}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-faint" weight="bold" />
             </button>
           </div>
 
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${uid}-title`} className="text-[12px] font-medium text-[#999]">Sarlavha *</label>
+              <label htmlFor={`${uid}-title`} className="text-sm font-medium text-ink-faint">Sarlavha *</label>
               <input
                 id={`${uid}-title`}
                 type="text"
@@ -150,37 +150,37 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Masalan: Yangi tadbir e'lon qilindi"
                 autoFocus
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${uid}-body`} className="text-[12px] font-medium text-[#999]">Matn</label>
+              <label htmlFor={`${uid}-body`} className="text-sm font-medium text-ink-faint">Matn</label>
               <textarea
                 id={`${uid}-body`}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Yangilik matni..."
                 rows={5}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors resize-none"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors resize-none"
               />
             </div>
 
             {/* Image upload */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${uid}-image`} className="text-[12px] font-medium text-[#999]">Rasm</label>
+              <label htmlFor={`${uid}-image`} className="text-sm font-medium text-ink-faint">Rasm</label>
               <button
                 id={`${uid}-image`}
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border border-dashed border-[#E0E0E0] rounded-[8px] p-5 cursor-pointer hover:bg-[#F9F9F8] transition-colors"
+                className="w-full border border-dashed border-line rounded-control p-5 cursor-pointer hover:bg-mute-ghost-hover transition-colors"
               >
                 {preview ? (
-                  <img src={preview} alt="Rasm" className="w-full h-32 object-cover rounded-[8px]" />
+                  <img src={preview} alt="Rasm" className="w-full h-32 object-cover rounded-control" />
                 ) : (
-                  <span className="flex flex-col items-center gap-2 text-[#999]">
+                  <span className="flex flex-col items-center gap-2 text-ink-faint">
                     <UploadSimple size={22} weight="bold" />
-                    <span className="text-[12px]">Rasm yuklash uchun bosing</span>
+                    <span className="text-sm">Rasm yuklash uchun bosing</span>
                   </span>
                 )}
               </button>
@@ -199,29 +199,29 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
                 type="checkbox"
                 checked={isPublished}
                 onChange={(e) => setIsPublished(e.target.checked)}
-                className="w-4 h-4 accent-[#141414]"
+                className="w-4 h-4 accent-accent"
               />
-              <span className="text-[13px] font-medium text-[#141414]">
+              <span className="text-base font-medium text-ink">
                 Darhol e'lon qilish (a'zolar ilovada ko'radi)
               </span>
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={() => !saving && onClose()}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-faint hover:text-ink-muted transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !title.trim()}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
+              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
                 saving || !title.trim()
-                  ? "bg-[#CCCCCC] cursor-not-allowed"
-                  : "bg-[#141414] hover:bg-[#333]"
+                  ? "bg-mute-soft cursor-not-allowed"
+                  : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Saqlanmoqda..." : isEdit ? "Saqlash" : "E'lon qilish"}
@@ -271,15 +271,15 @@ export function Yangiliklar() {
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[#141414]">
+        <div className="flex items-center gap-2 text-ink">
           <Newspaper size={20} weight="bold" />
-          <span className="text-[15px] font-bold">
+          <span className="text-base font-bold">
             Klub yangiliklari {posts.length > 0 && `(${posts.length})`}
           </span>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] hover:bg-[#333] text-white rounded-[8px] text-[13px] font-bold transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-ink-on-accent rounded-control text-base font-bold transition-colors"
         >
           <Plus size={16} weight="bold" />
           Yangi post
@@ -288,18 +288,18 @@ export function Yangiliklar() {
 
       {/* List */}
       {isLoading ? (
-        <div className="text-[13px] text-[#999] italic py-8 text-center">Yuklanmoqda...</div>
+        <div className="text-base text-ink-faint italic py-8 text-center">Yuklanmoqda...</div>
       ) : posts.length === 0 ? (
-        <div className="bg-white border border-[#F0F0F0] rounded-[12px] py-16 flex flex-col items-center gap-3 text-[#999]">
+        <div className="bg-surface border border-line rounded-surface py-16 flex flex-col items-center gap-3 text-ink-faint">
           <Newspaper size={32} weight="bold" />
-          <span className="text-[13px]">Hozircha yangiliklar yo'q</span>
+          <span className="text-base">Hozircha yangiliklar yo'q</span>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {posts.map((post) => (
             <div
               key={post.id}
-              className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden flex flex-col"
+              className="bg-surface border border-line rounded-surface overflow-hidden flex flex-col"
             >
               {post.image_url && (
                 <img
@@ -310,18 +310,18 @@ export function Yangiliklar() {
               )}
               <div className="p-4 flex flex-col gap-2 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[14px] font-bold text-[#141414] leading-snug">{post.title}</h3>
+                  <h3 className="text-md font-bold text-ink leading-snug">{post.title}</h3>
                   <StatusBadge label={post.is_published ? "E'lon qilingan" : "Qoralama"} variant={post.is_published ? 'success' : 'warning'} />
                 </div>
                 {post.body && (
-                  <p className="text-[12px] text-[#666] leading-snug line-clamp-3">{post.body}</p>
+                  <p className="text-sm text-ink-muted leading-snug line-clamp-3">{post.body}</p>
                 )}
                 <div className="mt-auto pt-2 flex items-center justify-between">
-                  <span className="text-[11px] text-[#999]">{formatDate(post.published_at)}</span>
+                  <span className="text-xs text-ink-faint">{formatDate(post.published_at)}</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => void togglePublish(post)}
-                      className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999] hover:text-[#141414]"
+                      className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm transition-colors text-ink-faint hover:text-ink"
                       title={post.is_published ? "Yashirish" : "E'lon qilish"}
                       aria-label={post.is_published ? "Yashirish" : "E'lon qilish"}
                       aria-pressed={post.is_published}
@@ -330,7 +330,7 @@ export function Yangiliklar() {
                     </button>
                     <button
                       onClick={() => openEdit(post)}
-                      className="p-1.5 hover:bg-[#F3F2F0] rounded-[6px] transition-colors text-[#999] hover:text-[#141414]"
+                      className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm transition-colors text-ink-faint hover:text-ink"
                       title="Tahrirlash"
                       aria-label="Tahrirlash"
                     >
@@ -338,7 +338,7 @@ export function Yangiliklar() {
                     </button>
                     <button
                       onClick={() => setPostToDelete(post)}
-                      className="p-1.5 hover:bg-red-50 rounded-[6px] transition-colors text-[#999] hover:text-red-600"
+                      className="p-1.5 hover:bg-danger-soft rounded-control-sm transition-colors text-ink-faint hover:text-danger-text"
                       title="O'chirish"
                       aria-label="O'chirish"
                     >
@@ -373,7 +373,7 @@ export function Yangiliklar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+              className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
               onClick={() => setPostToDelete(null)}
             />
             <motion.div
@@ -388,24 +388,24 @@ export function Yangiliklar() {
                 aria-modal="true"
                 aria-labelledby={deleteTitleId}
                 tabIndex={-1}
-                className="bg-white rounded-[12px] w-full max-w-sm shadow-2xl pointer-events-auto p-5 flex flex-col gap-4"
+                className="bg-surface-raised rounded-overlay w-full max-w-sm shadow-lg pointer-events-auto p-5 flex flex-col gap-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h3 id={deleteTitleId} className="text-[15px] font-bold text-[#141414]">Postni o'chirish</h3>
-                <p className="text-[13px] text-[#666]">
+                <h3 id={deleteTitleId} className="text-base font-bold text-ink">Postni o'chirish</h3>
+                <p className="text-base text-ink-muted">
                   "{postToDelete.title}" o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.
                 </p>
                 <div className="flex items-center justify-end gap-2">
                   <button
                     onClick={() => setPostToDelete(null)}
-                    className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                    className="px-4 py-2 rounded-control text-base font-medium text-ink-faint hover:text-ink-muted transition-colors"
                   >
                     Bekor qilish
                   </button>
                   <button
                     onClick={() => void confirmDelete()}
                     disabled={deleteMutation.isPending}
-                    className="px-4 py-2 rounded-[8px] text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 transition-colors"
+                    className="px-4 py-2 rounded-control text-base font-bold text-white bg-danger hover:bg-danger/90 transition-colors"
                   >
                     {deleteMutation.isPending ? "O'chirilmoqda..." : "O'chirish"}
                   </button>
