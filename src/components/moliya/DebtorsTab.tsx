@@ -80,12 +80,10 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
                   <th className={tbl.th}>Mijoz</th>
                   <th className={tbl.th}>Tadbir</th>
                   <th className={tbl.th}>Sotuvchi</th>
-                  <th className={tbl.th}>Tarif</th>
                   <th className={`${tbl.th} text-right`}>Kelishuv</th>
                   <th className={`${tbl.th} text-right`}>To'langan</th>
                   <th className={`${tbl.th} text-right`}>Qoldiq</th>
                   <th className={tbl.th}>Keyingi to'lov</th>
-                  <th className={tbl.th}>Qarz yoshi</th>
                   <th className={`${tbl.th} text-right`}>Keshbek</th>
                   {canEdit && <th className={`${tbl.th} text-right`}>Amal</th>}
                 </tr>
@@ -157,7 +155,10 @@ function DebtorTableRow({
         <div className="font-medium text-ink">{r.full_name}</div>
         <div className="text-xs text-ink-muted">{formatPhone(r.phone)}</div>
       </td>
-      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{r.event_name}</td>
+      <td className={`${tbl.td} whitespace-nowrap`}>
+        <div className="text-ink-muted">{r.event_name}</div>
+        <div className="text-xs text-ink-faint">{r.tariff_name ?? "Individual"}</div>
+      </td>
       <td className={`${tbl.td} whitespace-nowrap`}>
         {canEdit ? (
           <select
@@ -175,14 +176,16 @@ function DebtorTableRow({
           <span className="text-ink-muted">{r.seller_name ?? "Belgilanmagan"}</span>
         )}
       </td>
-      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{r.tariff_name ?? "Individual"}</td>
       <td className={`${tbl.td} text-right whitespace-nowrap`}>
         {canEdit ? <PriceCell value={r.price} onSave={(price) => patch({ price })} /> : <span className="text-ink">{formatMoney(r.price)}</span>}
       </td>
       <td className={`${tbl.td} text-ink text-right tabular-nums whitespace-nowrap`}>{formatMoney(r.paid)}</td>
       <td className={`${tbl.td} text-right whitespace-nowrap`}>
         {inDebt ? (
-          <span className="font-bold text-danger-text tabular-nums">{formatMoney(r.debt)}</span>
+          <span className="inline-flex flex-col items-end gap-1">
+            <span className="font-bold text-danger-text tabular-nums">{formatMoney(r.debt)}</span>
+            <StatusBadge label={age.label} variant={age.variant} />
+          </span>
         ) : (
           <span className="inline-flex justify-end"><StatusBadge label="To'langan" variant="success" dot /></span>
         )}
@@ -201,9 +204,6 @@ function DebtorTableRow({
         ) : (
           <span className={`text-sm ${overdue ? "text-danger-text" : "text-ink-muted"}`}>{r.next_due_date ? formatDate(r.next_due_date) : "—"}</span>
         )}
-      </td>
-      <td className={`${tbl.td} whitespace-nowrap`}>
-        {inDebt ? <StatusBadge label={age.label} variant={age.variant} /> : <span className="text-ink-faint">—</span>}
       </td>
       <td className={`${tbl.td} text-right whitespace-nowrap`}>
         {canEdit ? (
