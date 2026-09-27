@@ -17,7 +17,6 @@ import {
   Gear,
   Power,
   Camera,
-  CircleNotch,
   Target,
   TrendUp,
   CaretLeft,
@@ -47,6 +46,7 @@ import {
 import { departmentLabel, departmentColor } from "@/lib/constants/employee"
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { formatDate, formatNumber, formatPhone } from "@/lib/format"
+import { ThinkingOrb } from "thinking-orbs"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -353,7 +353,7 @@ function ProfileHeader({
             )}
             {uploading && (
               <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
-                <CircleNotch size={20} weight="bold" className="animate-spin text-[#141414]" />
+                <ThinkingOrb state="shaping" size={20} theme="light" />
               </div>
             )}
           </div>

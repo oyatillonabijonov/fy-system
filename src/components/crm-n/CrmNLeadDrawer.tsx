@@ -29,6 +29,7 @@ import {
 } from "@/lib/supabase/queries/crm"
 import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatDate } from "@/lib/format"
+import { ThinkingOrb } from "thinking-orbs"
 
 // ─── Utility Components ─────────────────────────────────
 
@@ -441,7 +442,7 @@ export function CrmNLeadDrawer({
             <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
               {loading ? (
                 <div className="flex items-center justify-center py-16">
-                  <div className="w-5 h-5 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+                  <ThinkingOrb state="searching" size={64} theme="light" />
                 </div>
               ) : (
                 <>
@@ -479,7 +480,7 @@ export function CrmNLeadDrawer({
                               ))}
                             </select>
                             {responsibleSaving && (
-                              <div className="w-3 h-3 border border-[#141414] border-t-transparent rounded-full animate-spin" />
+                              <ThinkingOrb state="composing" size={20} theme="light" />
                             )}
                           </div>
                         ) : (

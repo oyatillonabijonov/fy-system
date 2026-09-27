@@ -37,6 +37,7 @@ import {
 import { useSetCommunityApproved } from "@/hooks/useCommunity"
 import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { PhoneInput } from "@/components/ui/PhoneInput"
+import { ThinkingOrb } from "thinking-orbs"
 
 
 
@@ -531,7 +532,7 @@ export function Mijozlar() {
         <div className="flex flex-col gap-6 h-full animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
             {loading && (
                 <div className="flex items-center justify-center py-20">
-                    <div className="w-6 h-6 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+                    <ThinkingOrb state="searching" size={64} theme="light" />
                 </div>
             )}
             {error && !loading && (
@@ -793,7 +794,7 @@ export function Mijozlar() {
                                     {/* Per-event cashback log */}
                                     {journeyQuery.isLoading ? (
                                         <div className="flex items-center gap-2 py-4 justify-center">
-                                            <div className="w-4 h-4 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+                                            <ThinkingOrb state="weaving" size={20} theme="light" />
                                         </div>
                                     ) : (() => {
                                         const earned = journeyQuery.data?.events.filter(ev => ev.cashback_earned > 0) ?? []

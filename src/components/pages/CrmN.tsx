@@ -30,6 +30,7 @@ import { CreateCrmLeadModal } from "@/components/crm-n/CreateCrmLeadModal"
 import { PipelineSettingsModal } from "@/components/crm-n/PipelineSettingsModal"
 import { CreatePipelineModal } from "@/components/crm-n/CreatePipelineModal"
 import { Button } from "@/components/ui/button"
+import { ThinkingOrb } from "thinking-orbs"
 
 const LAST_CRM_PIPELINE_KEY = "fy_last_crm_pipeline_id"
 
@@ -151,7 +152,7 @@ export function CrmN() {
 
           {/* Pipeline selector */}
           {pipelinesLoading ? (
-            <div className="w-4 h-4 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+            <ThinkingOrb state="connecting" size={20} theme="light" />
           ) : pipelines.length > 0 ? (
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -297,7 +298,7 @@ export function CrmN() {
       {/* Loading / Error / Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+          <ThinkingOrb state="searching" size={64} theme="light" />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20 gap-2">

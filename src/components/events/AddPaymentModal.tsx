@@ -6,6 +6,7 @@ import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { useClientParticipations, useAddPayment } from "@/hooks/usePayments"
 import { useAuth } from "@/context/AuthContext"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
+import { ThinkingOrb } from "thinking-orbs"
 
 interface AddPaymentModalProps {
   isOpen: boolean
@@ -207,7 +208,7 @@ export function AddPaymentModal({ isOpen, onClose, onAdded }: AddPaymentModalPro
                   <label className="text-[12px] font-medium text-[#999999]">Tadbir *</label>
                   {loadingParts ? (
                     <div className="py-3 flex justify-center">
-                      <div className="w-4 h-4 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+                      <ThinkingOrb state="searching" size={20} theme="light" />
                     </div>
                   ) : noParticipations ? (
                     <div className="flex items-start gap-2 px-3 py-2.5 rounded-[8px] bg-amber-50 border border-amber-200 text-[12px] text-amber-800">

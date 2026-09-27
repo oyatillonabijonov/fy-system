@@ -5,6 +5,7 @@ import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { AddPaymentModal } from "@/components/events/AddPaymentModal"
 import { formatMoney, formatPhone, formatDate } from "@/lib/format"
+import { ThinkingOrb } from "thinking-orbs"
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   naqd: "Naqd",
@@ -41,7 +42,7 @@ export function PaymentsLog() {
       <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
         {isLoading ? (
           <div className="py-10 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+            <ThinkingOrb state="searching" size={20} theme="light" />
           </div>
         ) : payments.length === 0 ? (
           <div className="py-10 text-center text-[13px] text-[#999]">Hali to'lov qilinmagan</div>

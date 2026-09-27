@@ -26,6 +26,7 @@ import { EventBanner } from "@/components/events/EventBanner"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
 import { eventTint } from "@/lib/eventTint"
 import { formatDate, formatPhone } from "@/lib/format"
+import { ThinkingOrb } from "thinking-orbs"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -179,7 +180,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         </div>
         {isLoading ? (
           <div className="py-10 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-[#141414] border-t-transparent rounded-full animate-spin" />
+            <ThinkingOrb state="searching" size={20} theme="light" />
           </div>
         ) : participants.length === 0 ? (
           <div className="py-10 text-center text-[13px] text-[#999]">Hali ishtirokchi qo'shilmagan</div>
