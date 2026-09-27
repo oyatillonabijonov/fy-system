@@ -48,11 +48,12 @@ export async function generateBooklet(
       })
   )
 
-  const resolved = participants.map((p) =>
-    p.photo_url && photoData.has(p.photo_url)
-      ? { ...p, photo_url: photoData.get(p.photo_url)! }
-      : p
-  )
+  // A photo we couldn't fetch is dropped (→ initials) rather than left as a URL
+  // html2canvas would render as a broken image with its alt text.
+  const resolved = participants.map((p) => ({
+    ...p,
+    photo_url: p.photo_url ? photoData.get(p.photo_url) ?? null : null,
+  }))
 
   const totalPages = Math.ceil(resolved.length / CARDS_PER_PAGE)
 
@@ -81,7 +82,9 @@ export async function generateBooklet(
           event,
           participants: pageParticipants,
           pageNumber: page + 1,
-          isFirstPage: page === 0,
+          totalPages,
+          totalParticipants: resolved.length,
+          cardsPerPage: CARDS_PER_PAGE,
         })
       )
     })
@@ -101,8 +104,8 @@ export async function generateBooklet(
       )
     }
 
-    // Small delay for font rendering
-    await new Promise((r) => setTimeout(r, 100))
+    // Wait until DM Sans (all weights used on the page) is actually loaded
+    await document.fonts.ready
 
     const target = container.firstChild as HTMLElement
 
