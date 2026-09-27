@@ -303,7 +303,7 @@ export function Mijozlar() {
                             </span>
                         )}
                     </div>
-                    <span className="text-base font-medium text-ink">{info.getValue()}</span>
+                    <span className="text-base font-medium text-ink whitespace-nowrap">{info.getValue()}</span>
                 </div>
             ),
         }),
@@ -313,7 +313,12 @@ export function Mijozlar() {
         }),
         columnHelper.accessor('activity', {
             header: 'Faoliyati',
-            cell: info => <div className="text-ink-muted leading-tight line-clamp-1">{info.getValue()}</div>,
+            // w-0 + min-w-full: the text never widens the column; it takes the leftover width and fades out at the edge
+            cell: info => (
+                <div className="w-0 min-w-full overflow-hidden whitespace-nowrap text-ink-muted [mask-image:linear-gradient(to_right,black_calc(100%-48px),transparent)]">
+                    {info.getValue()}
+                </div>
+            ),
         }),
         columnHelper.accessor(
             (c) => getClientActivityStatus({ events_count: c.eventsCount, days_since_last_event: c.daysSinceLastEvent }),
@@ -630,7 +635,7 @@ export function Mijozlar() {
                                         className={`${tbl.tr} cursor-pointer`}
                                     >
                                         {row.getVisibleCells().map(cell => (
-                                            <td key={cell.id} className={`${tbl.td} ${row.getIsSelected() ? tbl.tdSelected : ""}`}>
+                                            <td key={cell.id} className={`${tbl.td} ${cell.column.id === "activity" ? "w-full" : ""} ${row.getIsSelected() ? tbl.tdSelected : ""}`}>
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </td>
                                         ))}
