@@ -9,13 +9,13 @@ import {
   deleteParticipant,
   reorderParticipants,
   updateParticipant,
-  addExistingContactToEvent,
+  enrollParticipant,
   type Event,
   type Participant,
   type CreateEventInput,
-  type ClientContact,
+  type EnrollInput,
 } from "@/lib/supabase/queries/events"
-import { addPayment, type PaymentMethod } from "@/lib/supabase/queries/payments"
+import { getEventTariffs, type EventTariff } from "@/lib/supabase/queries/tariffs"
 
 export const EVENTS_KEY = ["events"] as const
 export const EVENT_COUNTS_KEY = ["event-participant-counts"] as const
@@ -23,6 +23,7 @@ export const PARTICIPANTS_KEY = ["participants"] as const
 // Declared here (not in usePayments.ts) to avoid a circular import: usePayments.ts
 // already imports from useEvents.ts, so the reverse would form a cycle.
 export const FINANCE_TOTALS_KEY = ["finance-totals"] as const
+export const TARIFFS_KEY = ["event-tariffs"] as const
 
 export function useEvents() {
   return useQuery({
@@ -55,6 +56,14 @@ export function useParticipantCounts(eventIds: string[]) {
     queryKey: [...EVENT_COUNTS_KEY, eventIds],
     queryFn: () => getParticipantCounts(eventIds),
     enabled: eventIds.length > 0,
+  })
+}
+
+export function useEventTariffs(eventId: string) {
+  return useQuery<EventTariff[]>({
+    queryKey: [...TARIFFS_KEY, eventId],
+    queryFn: () => getEventTariffs(eventId),
+    enabled: !!eventId,
   })
 }
 
@@ -94,30 +103,12 @@ export function useDeleteEvent() {
   })
 }
 
-// Enroll an existing client into an event with an agreed price + optional first
-// payment. The payment (if any) flows through the Sprint A chain (paid + cashback).
+// Enroll a client (existing or new) with a tariff + seller. Price comes from the
+// tariff inside the RPC; money is recorded later in Moliya, never here.
 export function useEnrollParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: {
-      client: ClientContact
-      price: number
-      initialAmount: number
-      method: PaymentMethod
-      note?: string
-    }) => {
-      const participantId = await addExistingContactToEvent(eventId, vars.client, vars.price)
-      if (vars.initialAmount > 0) {
-        await addPayment({
-          participantId,
-          amount: vars.initialAmount,
-          method: vars.method,
-          paidAt: new Date().toISOString(),
-          note: vars.note,
-        })
-      }
-      return participantId
-    },
+    mutationFn: (vars: Omit<EnrollInput, "eventId">) => enrollParticipant({ ...vars, eventId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
       qc.invalidateQueries({ queryKey: EVENT_COUNTS_KEY })
@@ -125,9 +116,7 @@ export function useEnrollParticipant(eventId: string) {
       qc.invalidateQueries({ queryKey: ["clients"] })
       qc.invalidateQueries({ queryKey: ["client-journey"] })
       qc.invalidateQueries({ queryKey: ["client-participations"] })
-      qc.invalidateQueries({ queryKey: ["recent-payments"] })
-      qc.invalidateQueries({ queryKey: ["event-payments"] })
-      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY }) // price → debt, initial payment → income
+      qc.invalidateQueries({ queryKey: FINANCE_TOTALS_KEY }) // new price → new debt
     },
   })
 }

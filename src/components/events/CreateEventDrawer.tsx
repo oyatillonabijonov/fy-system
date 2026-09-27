@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, UploadSimple, CaretDown, MagnifyingGlass, Check, Image as ImageIcon } from "@phosphor-icons/react"
+import { X, UploadSimple, CaretDown, MagnifyingGlass, Check, Image as ImageIcon, Plus, Trash } from "@phosphor-icons/react"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   createEvent,
   updateEvent,
   uploadEventCover,
   type Event,
 } from "@/lib/supabase/queries/events"
+import { saveEventTariffs } from "@/lib/supabase/queries/tariffs"
 import { useUsers } from "@/hooks/useUsers"
+import { useEventTariffs, TARIFFS_KEY } from "@/hooks/useEvents"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { EventBanner } from "@/components/events/EventBanner"
@@ -32,6 +35,17 @@ function initials(name: string): string {
 function toDateInput(value: string | null): string {
   if (!value) return ""
   return value.slice(0, 10)
+}
+
+interface TariffRow {
+  key: string
+  id?: string
+  name: string
+  price: string // digits only
+}
+
+function blankTariff(): TariffRow {
+  return { key: crypto.randomUUID(), name: "", price: "" }
 }
 
 // ─── Manager combobox ──────────────────────────────────────────────────────────
@@ -165,7 +179,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [location, setLocation] = useState("")
   const [totalValue, setTotalValue] = useState("") // digits only
   const [managerId, setManagerId] = useState<string | null>(null)
-  const [hasTariffs, setHasTariffs] = useState(false)
+  const qc = useQueryClient()
+  const { data: savedTariffs } = useEventTariffs(editEvent?.id ?? "")
+  const [tariffs, setTariffs] = useState<TariffRow[]>([blankTariff()])
+  const tariffsLoadedFor = useRef<string | null>(null)
 
   const [bannerBlob, setBannerBlob] = useState<Blob | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null)
@@ -187,7 +204,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setLocation(editEvent.location ?? "")
       setTotalValue(editEvent.total_value ? String(Math.round(editEvent.total_value)) : "")
       setManagerId(editEvent.manager_id)
-      setHasTariffs(editEvent.has_tariffs)
+      // Empty until the saved list arrives (effect below): saving is blocked
+      // meanwhile, so a half-loaded form can't wipe the event's tariffs.
+      tariffsLoadedFor.current = null
+      setTariffs([])
       setBannerPreview(editEvent.cover_image ?? null)
     } else {
       setName("")
@@ -197,13 +217,25 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setLocation("")
       setTotalValue("")
       setManagerId(null)
-      setHasTariffs(false)
+      setTariffs([blankTariff()])
       setBannerPreview(null)
     }
     setBannerBlob(null)
     setError(null)
     setTouched(false)
   }, [editEvent, isOpen])
+
+  // Load saved tariffs once per open — a late fetch or refetch must not clobber
+  // what the user has already typed.
+  useEffect(() => {
+    if (!isOpen || !editEvent || !savedTariffs || tariffsLoadedFor.current === editEvent.id) return
+    tariffsLoadedFor.current = editEvent.id
+    setTariffs(
+      savedTariffs.length > 0
+        ? savedTariffs.map((t) => ({ key: t.id, id: t.id, name: t.name, price: String(Math.round(t.price)) }))
+        : [blankTariff()],
+    )
+  }, [isOpen, editEvent, savedTariffs])
 
   function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -230,10 +262,11 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const startValid = startDate.length > 0
   const managerValid = !!managerId
   const endValid = !endDate || !startDate || endDate >= startDate
+  const tariffsValid = tariffs.length > 0 && tariffs.every((t) => t.name.trim() && t.price !== "")
 
   async function handleSubmit() {
     setTouched(true)
-    if (!nameValid || !startValid || !managerValid || !cbValid) {
+    if (!nameValid || !startValid || !managerValid || !cbValid || !tariffsValid) {
       setError("Yulduzcha (*) bilan belgilangan maydonlarni to'ldiring")
       return
     }
@@ -254,7 +287,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         cashback_percent: cb,
         total_value: tv,
         manager_id: managerId,
-        has_tariffs: hasTariffs,
       }
 
       if (isEdit && editEvent) {
@@ -266,20 +298,22 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           cashback_percent: cb,
           total_value: tv,
           manager_id: managerId,
-          has_tariffs: hasTariffs,
         }
         if (bannerBlob) {
           updates.cover_image = await uploadEventCover(blobToFile(bannerBlob), editEvent.id)
         }
         await updateEvent(editEvent.id, updates)
+        await saveEventTariffs(editEvent.id, tariffs.map((t) => ({ id: t.id, name: t.name, price: Number(t.price) })))
       } else {
         const event = await createEvent(fields)
+        await saveEventTariffs(event.id, tariffs.map((t) => ({ name: t.name, price: Number(t.price) })))
         if (bannerBlob) {
           const url = await uploadEventCover(blobToFile(bannerBlob), event.id)
           await updateEvent(event.id, { cover_image: url })
         }
       }
 
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY })
       onCreated()
       onClose()
     } catch (err) {
@@ -453,26 +487,51 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 8. Tariffs */}
-                <button
-                  type="button"
-                  onClick={() => setHasTariffs((v) => !v)}
-                  aria-pressed={hasTariffs}
-                  className="flex items-center gap-2.5 text-left"
-                >
-                  <span
-                    className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center transition-colors ${
-                      hasTariffs ? "bg-[#141414] border-[#141414]" : "border-[#D0D0D0]"
-                    }`}
-                  >
-                    {hasTariffs && <Check size={12} className="text-white" weight="bold" />}
-                  </span>
-                  <span className="text-[13px] text-[#141414]">Tadbir uchun tariflar mavjudmi?</span>
-                </button>
-                {hasTariffs && (
-                  <span className="text-[11px] text-[#999] -mt-2">
-                    Tariflar (Presale / Gold / Platinum) ishtirokchi qo'shilganda belgilanadi — narx baribir har kim uchun alohida.
-                  </span>
-                )}
+                <Field label="Tariflar" required>
+                  <div className="flex flex-col gap-2">
+                    {tariffs.map((t, i) => (
+                      <div key={t.key} className="flex items-center gap-2">
+                        <input
+                          aria-label={`${i + 1}-tarif nomi`}
+                          value={t.name}
+                          onChange={(e) => setTariffs((rows) => rows.map((r) => (r.key === t.key ? { ...r, name: e.target.value } : r)))}
+                          placeholder="Standart"
+                          className={`${INPUT} flex-1 ${touched && !t.name.trim() ? "border-[#D13328]" : ""}`}
+                        />
+                        <div className="relative w-[170px] shrink-0">
+                          <input
+                            aria-label={`${i + 1}-tarif narxi`}
+                            inputMode="numeric"
+                            value={t.price ? formatNumber(Number(t.price)) : ""}
+                            onChange={(e) => setTariffs((rows) => rows.map((r) => (r.key === t.key ? { ...r, price: e.target.value.replace(/\D/g, "") } : r)))}
+                            placeholder="17,000,000"
+                            className={`${INPUT} pr-12 ${touched && t.price === "" ? "border-[#D13328]" : ""}`}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setTariffs((rows) => rows.filter((r) => r.key !== t.key))}
+                          disabled={tariffs.length === 1}
+                          aria-label={`${i + 1}-tarifni o'chirish`}
+                          className="p-2 rounded-[8px] text-[#999] hover:text-[#D13328] hover:bg-[#F5F5F5] transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <Trash size={14} weight="bold" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setTariffs((rows) => [...rows, blankTariff()])}
+                      className="self-start flex items-center gap-1.5 text-[12px] font-semibold text-[#666] hover:text-[#141414] transition-colors"
+                    >
+                      <Plus size={12} weight="bold" /> Tarif qo'shish
+                    </button>
+                    <span className="text-[11px] text-[#999]">
+                      Narx mijoz tadbirga yozilganda unga qo'yiladi. Keyin tarif narxini o'zgartirsangiz, avval yozilganlarga ta'sir qilmaydi.
+                    </span>
+                  </div>
+                </Field>
               </div>
 
               {/* Footer */}

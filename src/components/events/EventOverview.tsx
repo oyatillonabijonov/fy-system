@@ -51,6 +51,16 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const manager = users.find((u) => u.id === event.manager_id) ?? null
 
   const existingContactIds = new Set(participants.map((p) => p.contact_id).filter((id): id is string => !!id))
+  // ponytail: UI guard only — the DB trigger that refuses deleting participants
+  // with payments lands in migration 051 (phase 3).
+  const hasPayments = participants.some((p) => p.paid > 0)
+  function handleDelete() {
+    if (hasPayments) {
+      window.alert("Bu tadbirda to'lovlar bor. Tadbirni o'chirib bo'lmaydi — to'lovlar Moliya orqali bekor qilinadi.")
+      return
+    }
+    onDelete()
+  }
 
   const regData = useMemo(() => {
     const byDay = new Map<string, number>()
@@ -92,7 +102,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
               <h2 className="text-[20px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{event.name}</h2>
               <div className="flex items-center gap-1.5 shrink-0">
                 <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></IconBtn>
-                <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></IconBtn>
+                <IconBtn onClick={handleDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></IconBtn>
                 <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish" expanded={bannerOpen}><CaretUp size={15} weight="bold" /></IconBtn>
               </div>
             </div>
@@ -125,7 +135,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></CompactBtn>
-            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></CompactBtn>
+            <CompactBtn onClick={handleDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></CompactBtn>
             <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={15} weight="bold" /></CompactBtn>
           </div>
         </div>
@@ -192,6 +202,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                   <th className="px-4 py-2.5 font-bold">Rasmi</th>
                   <th className="px-4 py-2.5 font-bold">Mijoz ismi</th>
                   <th className="px-4 py-2.5 font-bold">Telefon</th>
+                  <th className="px-4 py-2.5 font-bold">Tarif</th>
+                  <th className="px-4 py-2.5 font-bold">Sotuvchi</th>
                   <th className="px-4 py-2.5 font-bold text-right">Amal</th>
                 </tr>
               </thead>
@@ -209,12 +221,11 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                     </td>
                     <td className="px-4 py-2.5 text-[13px] font-medium text-[#141414] whitespace-nowrap">{p.full_name}</td>
                     <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{formatPhone(p.phone)}</td>
+                    <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{p.tariff_name ?? "Individual"}</td>
+                    <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{p.seller_name ?? "—"}</td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
                       {confirmingId === p.id ? (
                         <span className="inline-flex items-center gap-2">
-                          {p.paid > 0 && (
-                            <span className="text-[10px] font-bold text-red-500">To'lovlar ham o'chadi!</span>
-                          )}
                           <button
                             onClick={() => { deleteParticipant.mutate(p.id); setConfirmingId(null) }}
                             disabled={deleteParticipant.isPending}
@@ -232,9 +243,10 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                       ) : (
                         <button
                           onClick={() => setConfirmingId(p.id)}
-                          title="O'chirish"
-                          aria-label="O'chirish"
-                          className="text-[#CCC] hover:text-red-600 transition-colors"
+                          disabled={p.paid > 0}
+                          title={p.paid > 0 ? "To'lovi bor — Moliya orqali bekor qilinadi" : "O'chirish"}
+                          aria-label={p.paid > 0 ? "To'lovi bor — o'chirib bo'lmaydi" : "O'chirish"}
+                          className="text-[#CCC] hover:text-red-600 transition-colors disabled:opacity-40 disabled:hover:text-[#CCC] disabled:cursor-not-allowed"
                         >
                           <Trash size={15} weight="bold" />
                         </button>

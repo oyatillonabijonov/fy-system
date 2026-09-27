@@ -1,12 +1,11 @@
 import { useState, useEffect, useId, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, MagnifyingGlass, CaretLeft } from "@phosphor-icons/react"
-import { searchContacts, type ClientContact } from "@/lib/supabase/queries/events"
-import type { PaymentMethod } from "@/lib/supabase/queries/payments"
-import { useEnrollParticipant } from "@/hooks/useEvents"
-import { useAuth } from "@/context/AuthContext"
+import { X, MagnifyingGlass, CaretLeft, Plus, Warning } from "@phosphor-icons/react"
+import { searchContacts, ClientExistsError, type ClientContact } from "@/lib/supabase/queries/events"
+import { useEnrollParticipant, useEventTariffs } from "@/hooks/useEvents"
+import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
-import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
+import { formatMoney, formatPhone } from "@/lib/format"
 
 interface EnrollParticipantModalProps {
   isOpen: boolean
@@ -16,11 +15,7 @@ interface EnrollParticipantModalProps {
   onAdded: () => void
 }
 
-const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "naqd", label: "Naqd" },
-  { value: "karta", label: "Karta" },
-  { value: "transfer", label: "Transfer" },
-]
+type PickedClient = Pick<ClientContact, "id" | "full_name" | "phone" | "image">
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -28,28 +23,48 @@ function initials(name: string): string {
 
 const INPUT =
   "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+const LABEL = "text-[12px] font-medium text-[#999999]"
 
+function ClientAvatar({ c }: { c: PickedClient }) {
+  return c.image ? (
+    <img src={c.image} alt={c.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+  ) : (
+    <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center shrink-0">
+      {initials(c.full_name)}
+    </span>
+  )
+}
+
+// State lives here; the parent remounts this modal (via key) on each open.
 export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded }: EnrollParticipantModalProps) {
-  const { user } = useAuth()
   const enroll = useEnrollParticipant(eventId)
+  const { data: tariffs = [], isLoading: loadingTariffs } = useEventTariffs(eventId)
+  const { data: users = [] } = useUsers()
+  const sellers = users.filter((u) => u.is_active && u.department === "sotuv")
+
   const titleId = useId()
   const clientSearchId = useId()
-  const priceId = useId()
-  const initialAmountId = useId()
+  const nameId = useId()
+  const phoneId = useId()
+  const tariffId = useId()
+  const sellerId = useId()
   const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
+  const [mode, setMode] = useState<"search" | "new">("search")
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientContact[]>([])
-  const [client, setClient] = useState<ClientContact | null>(null)
-  const [price, setPrice] = useState("")          // agreed amount, digits
-  const [initialAmount, setInitialAmount] = useState("") // optional first payment, digits
-  const [method, setMethod] = useState<PaymentMethod>("naqd")
+  const [client, setClient] = useState<PickedClient | null>(null)
+  const [fullName, setFullName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [suggestion, setSuggestion] = useState<PickedClient | null>(null)
+  const [tariff, setTariff] = useState("")
+  const [seller, setSeller] = useState("")
   const [error, setError] = useState<string | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounced client search (while no client picked)
+  // Debounced client search (only in search mode, while no client picked)
   useEffect(() => {
-    if (client) return
+    if (client || mode !== "search") return
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
     searchTimeout.current = setTimeout(async () => {
       try {
@@ -61,31 +76,55 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
     return () => {
       if (searchTimeout.current) clearTimeout(searchTimeout.current)
     }
-  }, [query, client])
+  }, [query, client, mode])
 
-  const priceNum = price ? Number(price) : 0
-  const initNum = initialAmount ? Number(initialAmount) : 0
-  const canSubmit = !!client && !enroll.isPending
+  const phoneDigits = phone.replace(/\D/g, "")
+  const newClientValid = fullName.trim().length > 0 && phoneDigits.length >= 9
+  const hasClient = mode === "search" ? !!client : newClientValid
+  const blocked = !loadingTariffs && (tariffs.length === 0 || sellers.length === 0)
+  const canSubmit = hasClient && !!tariff && !!seller && !blocked && !enroll.isPending
+
+  function pick(c: PickedClient) {
+    if (existingContactIds.has(c.id)) {
+      setError("Bu mijoz allaqachon ushbu tadbirga qo'shilgan")
+      return
+    }
+    setMode("search")
+    setClient(c)
+    setSuggestion(null)
+    setQuery("")
+    setResults([])
+    setError(null)
+  }
+
+  function startNew() {
+    setMode("new")
+    setClient(null)
+    // A typed phone-looking query pre-fills the phone, anything else the name.
+    if (/^[\d\s+()-]+$/.test(query.trim())) setPhone(query.trim())
+    else setFullName(query.trim())
+    setError(null)
+  }
 
   function handleSubmit() {
-    if (!client) { setError("Mijozni tanlang"); return }
-    // `priceNum > 0` used to guard this check, which disabled it exactly when the
-    // price was left blank — a payment against a 0 price awards cashback on a
-    // participation that is nominally free.
-    if (initNum > 0 && priceNum <= 0) {
-      setError("Boshlang'ich to'lov uchun avval kelishilgan summani kiriting")
-      return
-    }
-    if (initNum > priceNum) {
-      setError("Boshlang'ich to'lov kelishilgan summadan oshib ketdi")
-      return
-    }
+    if (!canSubmit) return
     setError(null)
+    setSuggestion(null)
     enroll.mutate(
-      { client, price: priceNum, initialAmount: initNum, method },
+      {
+        tariffId: tariff,
+        sellerId: seller,
+        client: mode === "search" && client ? { clientId: client.id } : { fullName: fullName.trim(), phone },
+      },
       {
         onSuccess: () => { onAdded(); onClose() },
-        onError: (err) => setError(err instanceof Error ? err.message : "Xatolik yuz berdi"),
+        onError: (err) => {
+          if (err instanceof ClientExistsError) {
+            setSuggestion({ id: err.clientId, full_name: err.clientName, phone, image: null })
+            return
+          }
+          setError(err instanceof Error ? err.message : "Xatolik yuz berdi")
+        },
       },
     )
   }
@@ -116,15 +155,29 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
 
             <div className="p-5 flex flex-col gap-4 overflow-y-auto">
               {error && (
-                <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+                <div role="alert" className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
                   {error}
                 </div>
               )}
 
+              {blocked && (
+                <div role="alert" className="flex items-start gap-2 px-3 py-2 rounded-[8px] text-[12px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                  <Warning size={14} weight="bold" className="mt-0.5 shrink-0" />
+                  {tariffs.length === 0
+                    ? "Bu tadbirda tarif yo'q. Avval tadbirni tahrirlab, tarif qo'shing."
+                    : "Sotuv bo'limida faol hodim yo'q. Hodimlar bo'limida hodimga \"Sotuv\" bo'limini belgilang."}
+                </div>
+              )}
+
               {/* 1. Client */}
-              {!client ? (
+              {mode === "search" && !client && (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={clientSearchId} className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor={clientSearchId} className={LABEL}>Mijoz *</label>
+                    <button onClick={startNew} className="flex items-center gap-1 text-[11px] font-semibold text-[#666] hover:text-[#141414] transition-colors">
+                      <Plus size={11} weight="bold" /> Yangi mijoz
+                    </button>
+                  </div>
                   <div className="relative">
                     <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
                     <input
@@ -144,16 +197,10 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                           <button
                             key={c.id}
                             disabled={added}
-                            onClick={() => { setClient(c); setQuery(""); setResults([]); setError(null) }}
+                            onClick={() => pick(c)}
                             className={`w-full flex items-center gap-2.5 p-2 rounded-[8px] transition-colors text-left ${added ? "opacity-50 cursor-not-allowed" : "hover:bg-[#F5F5F5]"}`}
                           >
-                            {c.image ? (
-                              <img src={c.image} alt={c.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
-                            ) : (
-                              <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center shrink-0">
-                                {initials(c.full_name)}
-                              </span>
-                            )}
+                            <ClientAvatar c={c} />
                             <span className="flex flex-col min-w-0 flex-1">
                               <span className="text-[13px] font-medium text-[#141414] truncate">{c.full_name}</span>
                               <span className="text-[11px] text-[#999]">{formatPhone(c.phone)}</span>
@@ -165,20 +212,18 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                     </div>
                   )}
                   {query.trim() && results.length === 0 && (
-                    <p className="text-[12px] text-[#999] py-2">Mijoz topilmadi</p>
+                    <button onClick={startNew} className="text-left text-[12px] text-[#666] py-2 hover:text-[#141414]">
+                      Mijoz topilmadi — <span className="font-semibold underline">yangi mijoz qo'shish</span>
+                    </button>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {mode === "search" && client && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Mijoz *</label>
+                  <span className={LABEL}>Mijoz *</span>
                   <div className="flex items-center gap-2.5 border border-[#E0E0E0] rounded-[8px] p-2">
-                    {client.image ? (
-                      <img src={client.image} alt={client.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <span className="w-8 h-8 rounded-full bg-[#EBEBEB] text-[#666] text-[11px] font-bold flex items-center justify-center shrink-0">
-                        {initials(client.full_name)}
-                      </span>
-                    )}
+                    <ClientAvatar c={client} />
                     <span className="flex flex-col min-w-0 flex-1">
                       <span className="text-[13px] font-medium text-[#141414] truncate">{client.full_name}</span>
                       <span className="text-[11px] text-[#999]">{formatPhone(client.phone)}</span>
@@ -193,77 +238,62 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 </div>
               )}
 
-              {client && (
-                <>
-                  {/* 2. Agreed amount */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor={priceId} className="text-[12px] font-medium text-[#999999]">Kelishilgan summa</label>
-                    <div className="relative">
-                      <input
-                        id={priceId}
-                        inputMode="numeric"
-                        value={price ? formatNumber(Number(price)) : ""}
-                        onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))}
-                        placeholder="15,000,000"
-                        autoFocus
-                        className={`${INPUT} pr-12`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
-                    </div>
-                    <span className="text-[11px] text-[#999]">Mijoz jami to'lashi kerak bo'lgan summa (0 = bepul)</span>
+              {mode === "new" && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-[#141414]">Yangi mijoz</span>
+                    <button
+                      onClick={() => { setMode("search"); setSuggestion(null) }}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-[#999] hover:text-[#141414] transition-colors"
+                    >
+                      <CaretLeft size={12} weight="bold" /> Mavjudlardan tanlash
+                    </button>
                   </div>
-
-                  {/* 3. Optional first payment */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor={initialAmountId} className="text-[12px] font-medium text-[#999999]">Boshlang'ich to'lov (ixtiyoriy)</label>
-                    <div className="relative">
-                      <input
-                        id={initialAmountId}
-                        inputMode="numeric"
-                        value={initialAmount ? formatNumber(Number(initialAmount)) : ""}
-                        onChange={(e) => setInitialAmount(e.target.value.replace(/\D/g, ""))}
-                        placeholder="0"
-                        className={`${INPUT} pr-12`}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
-                    </div>
+                    <label htmlFor={nameId} className={LABEL}>Ism Familiya *</label>
+                    <input id={nameId} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Aliyev Vali" autoFocus className={INPUT} />
                   </div>
-
-                  {initNum > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[12px] font-medium text-[#999999]">To'lov turi</label>
-                      <div className="flex gap-2">
-                        {METHODS.map((m) => (
-                          <button
-                            key={m.value}
-                            onClick={() => setMethod(m.value)}
-                            aria-pressed={method === m.value}
-                            className={`flex-1 py-2 rounded-[8px] text-[12px] font-semibold border transition-colors ${
-                              method === m.value ? "bg-[#141414] text-white border-[#141414]" : "bg-white text-[#666] border-[#E0E0E0] hover:bg-[#F5F5F5]"
-                            }`}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor={phoneId} className={LABEL}>Telefon *</label>
+                    <input
+                      id={phoneId}
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setSuggestion(null) }}
+                      placeholder="+998 90 123 45 67"
+                      className={INPUT}
+                    />
+                  </div>
+                  {suggestion && (
+                    <div role="alert" className="flex items-center justify-between gap-2 px-3 py-2 rounded-[8px] bg-[#FBFBFB] border border-[#E0E0E0] text-[12px]">
+                      <span className="text-[#666]">Bu raqam <span className="font-bold text-[#141414]">{suggestion.full_name}</span>ga tegishli.</span>
+                      <button onClick={() => pick(suggestion)} className="shrink-0 font-bold text-[#141414] underline">Shu mijozni tanlash</button>
                     </div>
                   )}
-
-                  {/* Summary */}
-                  <div className="flex items-center justify-between px-3 py-2 rounded-[8px] bg-[#FBFBFB] border border-[#F0F0F0] text-[12px]">
-                    <span className="text-[#999]">Qoladigan qarz</span>
-                    <span className="font-bold" style={{ color: priceNum - initNum > 0 ? "#D13328" : "#1E7E34" }}>
-                      {formatMoney(Math.max(priceNum - initNum, 0))}
-                    </span>
-                  </div>
-
-                  {initNum > 0 && (
-                    <div className="text-[11px] text-[#999]">
-                      Mas'ul: <span className="font-semibold text-[#141414]">{user?.full_name ?? "—"}</span>
-                    </div>
-                  )}
-                </>
+                </div>
               )}
+
+              {/* 2. Tariff */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={tariffId} className={LABEL}>Tarif *</label>
+                <select id={tariffId} value={tariff} onChange={(e) => setTariff(e.target.value)} disabled={tariffs.length === 0} className={INPUT}>
+                  <option value="" disabled>Tarifni tanlang</option>
+                  {tariffs.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name} — {formatMoney(t.price)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 3. Seller */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={sellerId} className={LABEL}>Sotuvchi *</label>
+                <select id={sellerId} value={seller} onChange={(e) => setSeller(e.target.value)} disabled={sellers.length === 0} className={INPUT}>
+                  <option value="" disabled>Sotuvchini tanlang</option>
+                  {sellers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.full_name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="p-5 pt-0 flex gap-3">

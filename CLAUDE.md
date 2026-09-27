@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + shadcn/ui (`base-nova`), framer-motion, Geist Variable font |
-| Database | Supabase Postgres (migrations `001`–`047`) |
+| Database | Supabase Postgres (migrations `001`–`050`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | Meta/Framer/Tilda lead webhooks |
@@ -49,7 +49,7 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–047, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–050, sequential — NEVER edit existing ones
 │   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
@@ -253,6 +253,7 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **Payments are the source of truth for event money** (migration `035`): the `payments` table holds each installment; `event_participants.paid` is a DERIVED total kept in sync by the `sync_participant_paid` trigger (`paid = SUM(payments.amount) + cashback_used`). Never write `paid` directly — insert a `payments` row (via `queries/payments.ts` / `usePayments`). That UPDATE then fires `auto_award_cashback`, so the whole chain (paid → cashback award/clawback → balance) flows from one insert. Debt shown anywhere = `price - paid`.
 - **Events UI is two sibling tab-based pages** (migration `047`, split from the old single `Events.tsx`, which is gone — no separate detail route): both live under the sidebar's "Tadbirlar" submenu and share the selected-event tab via `useEventTab` (localStorage `fy_last_event_tab`), so picking an event on one page lands on it on the other. The tab bar itself is the shared `EventTabs` component.
   - **Boshqaruv** (`/tadbirlar/boshqaruv`, module `tadbirlar`, `components/pages/EventsBoshqaruv.tsx`): event create/edit/delete, `EventOverview` (collapsible banner, registration chart, participants table = photo/name/phone only, enroll, booklet export). **No money here.** No "Umumiy" tab; `+` create button present. `/tadbirlar` redirects here.
+  - **Tariffs & enrolment** (migration `050`): each event has ≥1 row in `event_tariffs` (name + price), edited in `CreateEventDrawer` via `saveEventTariffs`. Enrolling goes ONLY through the `enroll_participant` RPC (existing client by id, or new client by name + phone — a phone that already exists raises `client_exists:<id>:<name>` and the UI offers that client). The RPC copies the tariff price into `event_participants.price` (later tariff edits don't reprice) and requires a `seller_id` from the Sotuv department. `events.has_tariffs` and `event_participants.tariff` (text) are legacy, unused.
   - **Moliya** (`/tadbirlar/moliya`, module `tadbirlar-moliya`, `components/pages/EventsMoliya.tsx`): all money. A dark always-first **"Umumiy"** tab renders `FinanceOverview` — 3 KPI cards (income / debt / cashback balance) from the `event_finance_totals()` RPC via `useFinanceTotals` + the global payments log ("To'lov qo'shish" modal). Each event tab renders `EventFinance` (value-progress card, finance table with inline price/cashback edit, per-row payment, cashback spend). No `+` button (creating events belongs to Boshqaruv).
   - **Finance KPIs come from the DB, never summed in the browser:** `event_finance_totals()` (`047`, `SECURITY INVOKER` so RLS applies) returns `total_income = SUM(payments.amount)` (cashback excluded), `total_debt = SUM(GREATEST(price-paid,0))`, `total_cashback_balance = SUM(clients.cashback_balance)`. `FINANCE_TOTALS_KEY` is declared in `hooks/useEvents.ts` (not `usePayments.ts`, which imports from it — avoids a cycle); **every** money-moving mutation must invalidate it (add/delete payment, spend/adjust cashback, edit participant price, enroll participant, **delete event** — the last two are easy to miss).
   - Don't reintroduce a `/tadbirlar/:id` route or the removed `EventDetail`/`Events.tsx`.

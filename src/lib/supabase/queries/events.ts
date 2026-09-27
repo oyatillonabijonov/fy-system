@@ -1,4 +1,9 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
+
+// ponytail: untyped client for columns added in 050 (tariff_id, seller_id) until
+// `bun run gen:types`; drop once types.ts is regenerated.
+const db = supabase as unknown as SupabaseClient
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -39,6 +44,10 @@ export interface Participant {
   cashback_percent: number | null
   cashback_earned: number
   cashback_used: number
+  tariff_id: string | null
+  seller_id: string | null
+  tariff_name: string | null
+  seller_name: string | null
   created_at: string
 }
 
@@ -177,39 +186,46 @@ export async function uploadEventCover(
 // ─── Participants ────────────────────────────────────────
 
 export async function getParticipants(eventId: string): Promise<Participant[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("event_participants")
-    .select("id, event_id, contact_id, full_name, phone, email, company, role, photo_url, notes, price, paid, attended, sort_order, cashback_percent, cashback_earned, cashback_used, created_at, clients(activity)")
+    .select("id, event_id, contact_id, full_name, phone, email, company, role, photo_url, notes, price, paid, attended, sort_order, cashback_percent, cashback_earned, cashback_used, created_at, tariff_id, seller_id, clients(activity), tariff:tariff_id(name), seller:seller_id(full_name)")
     .eq("event_id", eventId)
     .order("sort_order")
     .order("created_at")
 
   if (error) throw error
 
-  return (data ?? []).map((row) => {
-    const clientData = row.clients as { activity: string | null } | null
-    return {
-      id: row.id,
-      event_id: row.event_id ?? eventId,
-      contact_id: row.contact_id,
-      full_name: row.full_name,
-      phone: row.phone,
-      email: row.email,
-      company: row.company,
-      role: row.role,
-      photo_url: row.photo_url,
-      notes: row.notes,
-      activity: clientData?.activity ?? null,
-      price: row.price,
-      paid: row.paid,
-      attended: row.attended,
-      sort_order: row.sort_order ?? 0,
-      cashback_percent: row.cashback_percent,
-      cashback_earned: row.cashback_earned ?? 0,
-      cashback_used: row.cashback_used ?? 0,
-      created_at: row.created_at ?? new Date().toISOString(),
-    }
-  })
+  type Row = Omit<Participant, "activity" | "tariff_name" | "seller_name"> & {
+    clients: { activity: string | null } | null
+    tariff: { name: string } | null
+    seller: { full_name: string } | null
+  }
+
+  return ((data ?? []) as unknown as Row[]).map((row) => ({
+    id: row.id,
+    event_id: row.event_id ?? eventId,
+    contact_id: row.contact_id,
+    full_name: row.full_name,
+    phone: row.phone,
+    email: row.email,
+    company: row.company,
+    role: row.role,
+    photo_url: row.photo_url,
+    notes: row.notes,
+    activity: row.clients?.activity ?? null,
+    price: row.price,
+    paid: row.paid,
+    attended: row.attended,
+    sort_order: row.sort_order ?? 0,
+    cashback_percent: row.cashback_percent,
+    cashback_earned: row.cashback_earned ?? 0,
+    cashback_used: row.cashback_used ?? 0,
+    tariff_id: row.tariff_id,
+    seller_id: row.seller_id,
+    tariff_name: row.tariff?.name ?? null,
+    seller_name: row.seller?.full_name ?? null,
+    created_at: row.created_at ?? new Date().toISOString(),
+  }))
 }
 
 export async function createParticipant(input: CreateParticipantInput): Promise<Participant> {
@@ -232,7 +248,7 @@ export async function createParticipant(input: CreateParticipantInput): Promise<
     .single()
 
   if (error) throw error
-  return data as Participant
+  return data as unknown as Participant
 }
 
 export async function updateParticipant(
@@ -341,53 +357,54 @@ export async function searchContacts(query: string): Promise<ClientContact[]> {
   return (data ?? []) as ClientContact[]
 }
 
-export async function addExistingContactToEvent(
-  eventId: string,
-  contact: ClientContact,
-  price = 0
-): Promise<string> {
-  // Check if already added
-  const { data: existing } = await supabase
-    .from("event_participants")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("contact_id", contact.id)
-    .maybeSingle()
+export type EnrollClient = { clientId: string } | { fullName: string; phone: string }
 
-  if (existing) {
-    throw new Error("Bu mijoz allaqachon ushbu tadbirga qo'shilgan")
+export interface EnrollInput {
+  eventId: string
+  tariffId: string
+  sellerId: string
+  client: EnrollClient
+}
+
+// Thrown when the phone of a "new" client already belongs to someone — the UI
+// offers that client instead of creating a duplicate.
+export class ClientExistsError extends Error {
+  clientId: string
+  clientName: string
+  constructor(clientId: string, clientName: string) {
+    super(`Bu raqam ${clientName}ga tegishli`)
+    this.clientId = clientId
+    this.clientName = clientName
   }
+}
 
-  const { data: inserted, error } = await supabase
-    .from("event_participants")
-    .insert({
-      event_id: eventId,
-      contact_id: contact.id,
-      full_name: contact.full_name,
-      phone: contact.phone,
-      email: contact.email,
-      company: contact.company,
-      role: contact.role,
-      photo_url: contact.image,
-      price,
-      paid: 0,
-      attended: false,
-    })
-    .select("id")
-    .single()
+const ENROLL_ERRORS: Record<string, string> = {
+  "forbidden: staff_only": "Bu amal uchun ruxsat yo'q",
+  tariff_mismatch: "Tarif bu tadbirga tegishli emas",
+  seller_invalid: "Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak",
+  client_not_found: "Mijoz topilmadi",
+  client_required: "Ism va to'g'ri telefon raqamni kiriting",
+  already_enrolled: "Bu mijoz allaqachon ushbu tadbirga qo'shilgan",
+}
 
-  if (error) throw error
-
-  // Increment events_count
-  await supabase
-    .from("clients")
-    .update({
-      events_count: (contact.events_count ?? 0) + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", contact.id)
-
-  return inserted.id as string
+export async function enrollParticipant(input: EnrollInput): Promise<string> {
+  const c = input.client
+  const { data, error } = await db.rpc("enroll_participant", {
+    p_event_id: input.eventId,
+    p_tariff_id: input.tariffId,
+    p_seller_id: input.sellerId,
+    p_client_id: "clientId" in c ? c.clientId : null,
+    p_full_name: "fullName" in c ? c.fullName : null,
+    p_phone: "phone" in c ? c.phone : null,
+  })
+  if (error) {
+    const exists = /^client_exists:([0-9a-f-]{36}):(.*)$/.exec(error.message)
+    if (exists) throw new ClientExistsError(exists[1], exists[2])
+    // Two people creating the same phone at once: the unique index (034) wins.
+    if (error.code === "23505") throw new Error("Bu telefon raqam boshqa mijozda band")
+    throw new Error(ENROLL_ERRORS[error.message] ?? error.message)
+  }
+  return data as string
 }
 
 // Create a new client in the clients table AND add as participant
