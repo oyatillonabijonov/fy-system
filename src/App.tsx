@@ -79,7 +79,7 @@ function AppShell() {
   const iconBtn = "relative h-control-md w-9 flex items-center justify-center rounded-control text-ink transition-colors hover:bg-mute-ghost-hover"
 
   return (
-    <div className="h-screen text-ink flex overflow-hidden bg-page">
+    <div className="app-ground h-screen text-ink flex overflow-hidden bg-page">
       <Sidebar />
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
