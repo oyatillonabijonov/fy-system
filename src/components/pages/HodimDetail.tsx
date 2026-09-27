@@ -37,16 +37,17 @@ import { useKpiSummary } from "@/hooks/useKpi"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
-  ROLE_BADGE_VARIANT,
   uploadUserAvatar,
   updateUserAvatar,
   deleteUserAvatar,
   type UserProfile,
 } from "@/lib/supabase/queries/auth"
 import { departmentLabel, departmentColor } from "@/lib/constants/employee"
-import { StatusBadge } from '@/components/ui/StatusBadge'
 import { formatDate, formatNumber, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
+
+const softBtn =
+  "flex items-center gap-2 px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -154,11 +155,12 @@ export function HodimDetail() {
   const canEditAvatar = adminUser || isSelf
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+    <div className="flex flex-col gap-8 pb-10">
       {/* Top: Back button */}
       <button
+        type="button"
         onClick={() => navigate("/hodimlar")}
-        className="flex items-center gap-2 text-base text-ink-muted hover:text-ink w-fit transition-colors"
+        className="flex items-center gap-2 h-control-sm -ml-1 px-1 text-base text-ink-muted hover:text-ink w-fit transition-colors"
       >
         <ArrowLeft size={16} />
         Hodimlar
@@ -184,21 +186,21 @@ export function HodimDetail() {
       />
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
-          icon={<ChartBar size={20} />}
+          icon={<ChartBar size={16} />}
           label="CRM-N lidlar"
           value={stats?.leads_handled.toString() ?? "—"}
         />
         <StatCard
-          icon={<Ticket size={20} />}
+          icon={<Ticket size={16} />}
           label="Tadbirlar"
-          value={stats?.events_organized.toString() ?? "0"}
+          value={stats?.events_organized.toString() ?? "—"}
         />
         <StatCard
-          icon={<Briefcase size={20} />}
+          icon={<Briefcase size={16} />}
           label="Mijozlar"
-          value={stats?.clients_added.toString() ?? "0"}
+          value={stats?.clients_added.toString() ?? "—"}
         />
       </div>
 
@@ -214,18 +216,18 @@ export function HodimDetail() {
 
       {/* Two columns: Work info + Personal info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-surface border border-line rounded-surface p-6">
-          <h2 className="text-base font-bold text-ink mb-4">Ish ma'lumotlari</h2>
-          <div className="flex flex-col gap-3">
+        <div className="bg-surface-sunken rounded-surface p-5">
+          <h2 className="text-base font-semibold text-ink mb-2">Ish ma'lumotlari</h2>
+          <div className="flex flex-col">
             <InfoRow icon={<Buildings size={16} />} label="Bo'lim" value={departmentLabel(user.department)} />
             <InfoRow icon={<Briefcase size={16} />} label="Lavozim" value={user.position} />
             <InfoRow icon={<Calendar size={16} />} label="Ish boshlangan" value={formatDate(user.hire_date)} />
           </div>
         </div>
 
-        <div className="bg-surface border border-line rounded-surface p-6">
-          <h2 className="text-base font-bold text-ink mb-4">Shaxsiy ma'lumotlar</h2>
-          <div className="flex flex-col gap-3">
+        <div className="bg-surface-sunken rounded-surface p-5">
+          <h2 className="text-base font-semibold text-ink mb-2">Shaxsiy ma'lumotlar</h2>
+          <div className="flex flex-col">
             <InfoRow icon={<Calendar size={16} />} label="Tug'ilgan sana" value={formatDate(user.birth_date)} />
             <InfoRow icon={<MapPin size={16} />} label="Manzil" value={user.address} />
             <InfoRow icon={<Phone size={16} />} label="Favqulodda kontakt" value={user.emergency_contact} />
@@ -235,16 +237,16 @@ export function HodimDetail() {
 
       {/* Bio */}
       {user.bio && (
-        <div className="bg-surface border border-line rounded-surface p-6">
-          <h2 className="text-base font-bold text-ink mb-3">Haqida</h2>
+        <div className="bg-surface-sunken rounded-surface p-5">
+          <h2 className="text-base font-semibold text-ink mb-2">Haqida</h2>
           <p className="text-base text-ink-muted leading-relaxed whitespace-pre-wrap">{user.bio}</p>
         </div>
       )}
 
       {/* Admin notes — visible to admins, not to self */}
       {user.notes && adminUser && !isSelf && (
-        <div className="bg-warning-soft border border-line rounded-surface p-6">
-          <h2 className="text-base font-bold text-warning-dark mb-3">Admin yozuvlari</h2>
+        <div className="bg-warning-soft rounded-surface p-5">
+          <h2 className="text-base font-semibold text-warning-dark mb-2">Admin yozuvlari</h2>
           <p className="text-base text-warning-dark leading-relaxed whitespace-pre-wrap">{user.notes}</p>
         </div>
       )}
@@ -290,7 +292,7 @@ export function HodimDetail() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-bold ${
+            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-semibold ${
               toast.type === "success"
                 ? "bg-surface-sunken text-ink border border-line"
                 : "bg-danger-soft text-danger-dark border border-line"
@@ -325,107 +327,86 @@ function ProfileHeader({
 }) {
   const initials = getInitials(user.full_name)
   return (
-    <div className="bg-surface border border-line rounded-surface p-6">
-      <div className="flex items-start gap-6 flex-wrap">
-        {/* Avatar */}
-        <div className="flex-shrink-0 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={canEditAvatar ? onAvatarClick : undefined}
-            disabled={!canEditAvatar}
-            aria-label="Rasmni o'zgartirish"
-            className={`relative w-24 h-24 rounded-full overflow-hidden ${
-              canEditAvatar ? "cursor-pointer group" : ""
-            }`}
-          >
-            {user.avatar_url ? (
-              <img
-                src={user.avatar_url}
-                alt={user.full_name}
-                className="w-full h-full object-cover border border-line rounded-full"
-              />
-            ) : (
-              <span className="w-full h-full rounded-full bg-accent flex items-center justify-center text-2xl font-bold text-ink-on-accent">
-                {initials}
-              </span>
-            )}
-            {canEditAvatar && (
-              <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
-                <Camera size={20} className="text-white" />
-              </span>
-            )}
-            {uploading && (
-              <span className="absolute inset-0 bg-surface/80 flex items-center justify-center rounded-full">
-                <ThinkingOrb state="shaping" size={20} theme="light" />
-              </span>
-            )}
-          </button>
-          {user.avatar_url && canEditAvatar && (
-            <button
-              onClick={onAvatarDelete}
-              className="text-xs text-danger-text hover:text-danger-dark transition-colors"
-            >
-              Rasmni o'chirish
-            </button>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-[260px]">
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h1 className="text-xl font-bold text-ink" style={{ letterSpacing: "-0.6px" }}>
-              {user.full_name}
-            </h1>
-            <StatusBadge label={ROLE_LABELS[user.role]} variant={ROLE_BADGE_VARIANT[user.role]} />
-            <StatusBadge label={user.is_active ? "Faol" : "Faol emas"} variant={user.is_active ? 'success' : 'danger'} dot />
-          </div>
-
-          {user.position && <p className="text-md text-ink mb-1">{user.position}</p>}
-          {user.department && (
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
-              style={{
-                backgroundColor: departmentColor(user.department) + "15",
-                color: departmentColor(user.department),
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: departmentColor(user.department) }}
-              />
-              {departmentLabel(user.department)} bo'limi
+    <div className="flex items-start gap-5 flex-wrap">
+      {/* Avatar */}
+      <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          onClick={canEditAvatar ? onAvatarClick : undefined}
+          disabled={!canEditAvatar}
+          aria-label="Rasmni o'zgartirish"
+          className={`relative size-20 rounded-full overflow-hidden ${canEditAvatar ? "cursor-pointer group" : ""}`}
+        >
+          {user.avatar_url ? (
+            <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="w-full h-full bg-mute-soft flex items-center justify-center text-xl font-semibold text-ink-muted">
+              {initials}
             </span>
           )}
-
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
-            <ContactItem icon={<Envelope size={16} />} value={user.email} />
-            {user.phone && <ContactItem icon={<Phone size={16} />} value={formatPhone(user.phone)} />}
-            {user.telegram && (
-              <ContactItem
-                icon={<PaperPlaneRight size={16} />}
-                value={user.telegram.startsWith("@") ? user.telegram : `@${user.telegram}`}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2 shrink-0">
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
-          >
-            <PencilSimple size={16} />
-            Tahrirlash
+          {canEditAvatar && (
+            <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera size={20} className="text-white" />
+            </span>
+          )}
+          {uploading && (
+            <span className="absolute inset-0 bg-surface/80 flex items-center justify-center">
+              <ThinkingOrb state="shaping" size={20} theme="light" />
+            </span>
+          )}
+        </button>
+        {user.avatar_url && canEditAvatar && (
+          <button type="button" onClick={onAvatarDelete} className="text-xs text-ink-faint hover:text-danger-text transition-colors">
+            O'chirish
           </button>
-          <button
-            onClick={onPermissions}
-            className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
-          >
-            <Gear size={16} />
-            Ruxsatlar
-          </button>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-[260px] flex flex-col gap-2 pt-1">
+        <h1 className="text-xl font-semibold text-ink" style={{ letterSpacing: "-0.4px" }}>
+          {user.full_name}
+        </h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
+          <span className="text-ink">{ROLE_LABELS[user.role]}</span>
+          {user.position && <><span className="text-ink-faint">·</span><span className="text-ink-muted">{user.position}</span></>}
+          {user.department && (
+            <>
+              <span className="text-ink-faint">·</span>
+              <span className="flex items-center gap-1.5 text-ink-muted">
+                <span className="size-2 rounded-full" style={{ backgroundColor: departmentColor(user.department) }} />
+                {departmentLabel(user.department)}
+              </span>
+            </>
+          )}
+          <span className="text-ink-faint">·</span>
+          <span className={`flex items-center gap-1.5 ${user.is_active ? "text-ink" : "text-ink-muted"}`}>
+            <span className={`size-2 rounded-full ${user.is_active ? "bg-success" : "bg-mute-soft-hover"}`} />
+            {user.is_active ? "Faol" : "Faol emas"}
+          </span>
         </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-base text-ink-muted">
+          <ContactItem icon={<Envelope size={16} />} value={user.email} />
+          {user.phone && <ContactItem icon={<Phone size={16} />} value={formatPhone(user.phone)} />}
+          {user.telegram && (
+            <ContactItem
+              icon={<PaperPlaneRight size={16} />}
+              value={user.telegram.startsWith("@") ? user.telegram : `@${user.telegram}`}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <button type="button" onClick={onPermissions} className={softBtn}>
+          <Gear size={16} />
+          Ruxsatlar
+        </button>
+        <button type="button" onClick={onEdit} className={softBtn}>
+          <PencilSimple size={16} />
+          Tahrirlash
+        </button>
       </div>
     </div>
   )
@@ -442,14 +423,9 @@ function ContactItem({ icon, value }: { icon: React.ReactNode; value: string }) 
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-surface border border-line rounded-surface p-5 flex flex-col gap-3">
-      <div className="w-9 h-9 rounded-control-sm bg-surface-sunken flex items-center justify-center text-ink-muted">
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs text-ink-muted mb-1">{label}</p>
-        <p className="text-lg font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>{value}</p>
-      </div>
+    <div className="bg-surface-sunken rounded-surface px-5 py-4 flex flex-col gap-1.5">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted">{icon}{label}</span>
+      <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
     </div>
   )
 }
@@ -464,14 +440,12 @@ function InfoRow({
   value: string | null
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="text-ink-muted mt-0.5">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-ink-muted mb-0.5">{label}</p>
-        <p className="text-base text-ink">
-          {value || <span className="text-ink-faint">—</span>}
-        </p>
-      </div>
+    <div className="flex items-center gap-3 py-2.5 border-b border-line last:border-0">
+      <span className="text-ink-muted">{icon}</span>
+      <span className="text-base text-ink-muted w-36 flex-shrink-0">{label}</span>
+      <span className="text-base text-ink min-w-0 break-words">
+        {value || <span className="text-ink-faint">—</span>}
+      </span>
     </div>
   )
 }
@@ -507,28 +481,30 @@ function DangerZone({
   }
 
   return (
-    <div className="bg-surface border border-line rounded-surface p-6">
-      <h2 className="text-base font-bold text-danger-text mb-1">Xavfli amallar</h2>
-      <p className="text-sm text-ink-muted mb-4">
+    <div className="bg-surface-sunken rounded-surface p-5 flex flex-wrap items-center justify-between gap-4">
+      <div>
+      <h2 className="text-base font-semibold text-ink mb-1">Hisobni {user.is_active ? "faolsizlantirish" : "qayta faollashtirish"}</h2>
+      <p className="text-sm text-ink-muted">
         {user.is_active
           ? "Faolsizlantirilgan foydalanuvchi tizimga kira olmaydi, lekin ma'lumotlari saqlanadi."
           : "Foydalanuvchini qayta faollashtirsangiz, u darhol tizimga kira oladi."}
       </p>
-      <div className="flex gap-3">
+      </div>
+      <div className="flex gap-2">
         {confirm ? (
           <>
             <button
               onClick={() => setConfirm(false)}
               disabled={busy}
-              className="px-4 py-2 rounded-control text-sm font-medium text-ink-muted hover:text-ink"
+              className={softBtn}
             >
               Bekor qilish
             </button>
             <button
               onClick={handleToggle}
               disabled={busy}
-              className={`flex items-center gap-2 px-4 py-2 rounded-control text-sm font-bold transition-colors ${
-                busy ? "bg-mute-soft text-ink-faint cursor-not-allowed" : user.is_active ? "bg-danger text-white" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
+              className={`flex items-center gap-2 px-4 h-control-md rounded-control text-base font-medium transition-colors disabled:opacity-50 ${
+                user.is_active ? "bg-danger text-white" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
               <Power size={16} />
@@ -538,11 +514,7 @@ function DangerZone({
         ) : (
           <button
             onClick={() => setConfirm(true)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-control text-sm font-bold transition-colors ${
-              user.is_active
-                ? "border border-line text-danger-text hover:bg-danger-soft"
-                : "border border-line text-ink hover:bg-surface-sunken"
-            }`}
+            className={`${softBtn} ${user.is_active ? "text-danger-text" : ""}`}
           >
             <Power size={16} />
             {user.is_active ? "Faolsizlantirish" : "Qayta faollashtirish"}
@@ -576,19 +548,12 @@ function KpiSection({
   onEdit: () => void
 }) {
   return (
-    <div className="bg-surface border border-line rounded-surface p-6">
+    <section className="flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-control-sm bg-surface-sunken flex items-center justify-center">
-            <Target size={18} className="text-ink" />
-          </div>
-          <div>
-            <h2 className="text-md font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
-              KPI ko'rsatkichlari
-            </h2>
-            <p className="text-sm text-ink-muted">Oylik maqsadlar va natijalar</p>
-          </div>
+      <div className="flex items-end justify-between flex-wrap gap-3 px-1">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-md font-semibold text-ink">KPI ko'rsatkichlari</h2>
+          <p className="text-sm text-ink-muted">Oylik maqsadlar va natijalar</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -596,9 +561,9 @@ function KpiSection({
           {canEdit && (
             <button
               onClick={onEdit}
-              className="flex items-center gap-1.5 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
+              className={softBtn}
             >
-              <PencilSimple size={12} weight="bold" />
+              <PencilSimple size={16} />
               {kpi?.target ? "Maqsadlarni tahrirlash" : "Maqsad belgilash"}
             </button>
           )}
@@ -606,13 +571,13 @@ function KpiSection({
       </div>
 
       {loading && (
-        <div className="py-8 text-center text-sm text-ink-muted italic">Yuklanmoqda...</div>
+        <div className="bg-surface-sunken rounded-surface py-10 text-center text-base text-ink-muted">Yuklanmoqda…</div>
       )}
 
       {!loading && !kpi?.target && (
-        <div className="py-8 text-center">
+        <div className="bg-surface-sunken rounded-surface py-10 text-center">
           <Target size={32} weight="thin" className="mx-auto text-ink-faint mb-3" />
-          <p className="text-base font-bold text-ink mb-1">Maqsadlar belgilanmagan</p>
+          <p className="text-base font-semibold text-ink mb-1">Maqsadlar belgilanmagan</p>
           <p className="text-sm text-ink-muted">
             {canEdit
               ? "Bu hodim uchun ushbu oy maqsadlarini belgilang"
@@ -650,7 +615,7 @@ function KpiSection({
           />
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -679,14 +644,14 @@ function KpiProgressCard({
   else if (progress < 100) progressColor = "var(--ds-color-info-default)"
 
   return (
-    <div className="bg-surface-sunken border border-line rounded-control-lg p-4">
+    <div className="bg-surface-sunken rounded-surface p-5">
       <div className="flex items-center gap-2 mb-3">
         <div className="text-ink-muted">{icon}</div>
         <span className="text-sm text-ink-muted font-medium">{label}</span>
       </div>
 
       <div className="mb-2">
-        <span className="text-lg font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
+        <span className="text-xl font-semibold tabular-nums text-ink">
           {fmt(actual)}
         </span>
         <span className="text-sm text-ink-muted ml-1">
@@ -694,7 +659,7 @@ function KpiProgressCard({
         </span>
       </div>
 
-      <div className="h-1.5 bg-surface-sunken-hover rounded-full overflow-hidden mb-2">
+      <div className="h-1.5 bg-surface rounded-full overflow-hidden mb-2">
         <div
           className="h-full transition-all duration-500"
           style={{
@@ -705,12 +670,12 @@ function KpiProgressCard({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold" style={{ color: progressColor }}>
+        <span className="text-sm font-semibold tabular-nums" style={{ color: progressColor }}>
           {progress}%
         </span>
         {progress >= 100 && (
-          <span className="text-xs font-bold text-ink">
-            ✓ Maqsad bajarildi
+          <span className="text-sm font-medium text-success-text">
+            Maqsad bajarildi
           </span>
         )}
       </div>
@@ -736,25 +701,27 @@ function PeriodSelector({
     else onChange({ year: period.year, month: m })
   }
   return (
-    <div className="flex items-center gap-1 border border-line rounded-control">
+    <div className="flex items-center h-control-md rounded-full bg-mute-soft">
       <button
+        type="button"
         onClick={prev}
-        className="px-2 py-1.5 hover:bg-mute-ghost-hover transition-colors"
+        className="size-9 rounded-full flex items-center justify-center hover:bg-mute-soft-hover transition-colors"
         title="Oldingi oy"
         aria-label="Oldingi oy"
       >
-        <CaretLeft size={12} weight="bold" className="text-ink-muted" />
+        <CaretLeft size={16} className="text-ink-muted" />
       </button>
-      <span className="px-2 text-sm font-bold text-ink min-w-[110px] text-center">
+      <span className="px-1 text-base font-medium text-ink min-w-[120px] text-center tabular-nums">
         {MONTH_NAMES[period.month - 1]} {period.year}
       </span>
       <button
+        type="button"
         onClick={next}
-        className="px-2 py-1.5 hover:bg-mute-ghost-hover transition-colors"
+        className="size-9 rounded-full flex items-center justify-center hover:bg-mute-soft-hover transition-colors"
         title="Keyingi oy"
         aria-label="Keyingi oy"
       >
-        <CaretRight size={12} weight="bold" className="text-ink-muted" />
+        <CaretRight size={16} className="text-ink-muted" />
       </button>
     </div>
   )
