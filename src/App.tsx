@@ -100,7 +100,7 @@ function AppShell() {
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
       <div className="flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
         {/* Header */}
-        <header className="mx-3 mt-3 h-14 px-4 flex items-center justify-between gap-6 flex-shrink-0 rounded-surface border border-line">
+        <header className="h-16 px-6 flex items-center justify-between gap-6 flex-shrink-0 border-b border-line">
           {/* Left: page title */}
           <div className="flex flex-col min-w-0">
             <h1 className="text-md font-semibold text-ink truncate">{meta.title}</h1>
