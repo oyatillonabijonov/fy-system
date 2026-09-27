@@ -52,11 +52,11 @@ const navigationSections: NavSection[] = [
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
             { name: "Sotuv bo'limi", icon: CreditCard, path: "/sotuv/crm-n", module: "sotuv-crmn" },
             {
-                name: "Tadbirlar",
+                name: "Menejment",
                 icon: CalendarBlank,
                 path: "/tadbirlar",
                 subItems: [
-                    { name: "Boshqaruv", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
+                    { name: "Tadbirlar", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
                     { name: "Moliya", icon: Coins, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
                 ],
             },
@@ -82,7 +82,7 @@ const navigationSections: NavSection[] = [
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
-    Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
+    Menejment: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
 export function Sidebar() {
