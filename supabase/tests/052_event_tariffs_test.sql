@@ -1,4 +1,4 @@
--- Behavioural tests for migration 050 (event tariffs + seller + enroll_participant).
+-- Behavioural tests for migration 052 (event tariffs + seller + enroll_participant).
 -- THROWAWAY DB only (recipe: CLAUDE.md §5 "Tests"). Run:
 --   docker exec fy-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/t.sql
 -- Every block RAISEs on failure; the last line prints on success.
@@ -180,4 +180,4 @@ BEGIN
   RAISE NOTICE 'T11 ok: yozilgan narx o''zgarmadi';
 END $$;
 
-SELECT '050: hamma testlar o''tdi ✓' AS natija;
+SELECT '052: hamma testlar o''tdi ✓' AS natija;

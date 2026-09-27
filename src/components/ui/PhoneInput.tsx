@@ -34,9 +34,9 @@ export function PhoneInput({
 
   return (
     <div
-      className={`flex items-center border border-[#E0E0E0] rounded-[8px] focus-within:border-[#141414] transition-colors bg-white ${className ?? ''}`}
+      className={`flex items-center border border-line rounded-control focus-within:border-line-focus transition-colors bg-surface ${className ?? ''}`}
     >
-      <span className="pl-3 pr-1 text-[13px] text-[#141414] select-none flex-shrink-0">
+      <span className="pl-3 pr-1 text-base text-ink select-none flex-shrink-0">
         +998
       </span>
       <input
@@ -49,7 +49,7 @@ export function PhoneInput({
         onPaste={handlePaste}
         placeholder={placeholder}
         maxLength={9}
-        className="flex-1 py-2 pr-3 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] outline-none bg-transparent"
+        className="flex-1 py-2 pr-3 text-base text-ink placeholder:text-ink-faint outline-none bg-transparent"
       />
     </div>
   )

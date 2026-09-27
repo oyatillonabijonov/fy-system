@@ -1,4 +1,4 @@
--- 050: event tariffs + participant seller; enrolment goes through one RPC.
+-- 052: event tariffs + participant seller; enrolment goes through one RPC.
 -- Spec: docs/superpowers/specs/2026-09-27-tadbirlar-moliya-design.md §5.1
 
 BEGIN;

@@ -57,8 +57,9 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
   }, [active, selected])
 
   return (
-    <div className="flex items-end gap-1 border-b border-[#E8E8E8]">
-      <div className="flex items-end gap-1 overflow-x-auto no-scrollbar flex-1 pt-1.5">
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
+
         {tabEvents.map((e) => {
           const isSel = e.id === selectedId
           return (
@@ -67,17 +68,17 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
               onClick={() => onSelect(e.id)}
               title={e.name}
               aria-current={isSel ? "true" : undefined}
-              className={`group relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px max-w-[210px] whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-2 h-control-md px-3.5 rounded-full max-w-[220px] shrink-0 whitespace-nowrap text-base font-medium transition-colors ${
                 isSel
-                  ? "bg-white border border-[#E8E8E8] border-b-white text-[#141414] shadow-[0_-1px_3px_rgba(0,0,0,0.03)]"
-                  : "bg-[#F4F4F4] border border-transparent text-[#8A8A8A] hover:bg-[#ECECEC] hover:text-[#141414]"
+                  ? "bg-mute-soft text-ink"
+                  : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"
               }`}
             >
               <span
-                className="w-[14px] h-[14px] rounded-[4px] shrink-0"
+                className="size-2 rounded-full shrink-0"
                 style={{ backgroundColor: eventTint(e.name) }}
               />
-              <span className="text-[12.5px] font-semibold truncate">{e.name}</span>
+              <span className="truncate">{e.name}</span>
             </button>
           )
         })}
@@ -87,38 +88,38 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
             onClick={onCreate}
             title="Yangi tadbir"
             aria-label="Yangi tadbir"
-            className="flex items-center justify-center w-8 h-8 mb-[3px] ml-0.5 shrink-0 rounded-full text-[#9A9A9A] hover:bg-[#ECECEC] hover:text-[#141414] transition-colors"
+            className="flex items-center justify-center size-9 shrink-0 rounded-full text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors"
           >
-            <Plus size={16} weight="bold" />
+            <Plus size={16} />
           </button>
         )}
       </div>
 
       {/* Bookmark → past events dropdown */}
-      <div className="relative shrink-0 mb-1.5" ref={archiveRef}>
+      <div className="relative shrink-0" ref={archiveRef}>
         <button
           onClick={() => setArchiveOpen((o) => !o)}
           title="O'tgan tadbirlar"
           aria-label="O'tgan tadbirlar"
           aria-expanded={archiveOpen}
-          className={`relative flex items-center justify-center w-8 h-8 rounded-[8px] transition-colors ${
-            archiveOpen ? "bg-[#ECECEC] text-[#141414]" : "text-[#9A9A9A] hover:bg-[#ECECEC] hover:text-[#141414]"
+          className={`relative flex items-center justify-center size-9 rounded-full transition-colors ${
+            archiveOpen ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"
           }`}
         >
-          <BookmarkSimple size={17} weight={archiveOpen ? "fill" : "bold"} />
+          <BookmarkSimple size={17} weight={archiveOpen ? "fill" : "regular"} />
           {archive.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-[#141414] text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-accent text-ink-on-accent text-xs font-medium tabular-nums flex items-center justify-center">
               {archive.length}
             </span>
           )}
         </button>
         {archiveOpen && (
-          <div className="absolute right-0 top-full mt-1.5 bg-white border border-[#F0F0F0] rounded-[10px] shadow-lg z-20 overflow-hidden min-w-[240px] max-h-[300px] overflow-y-auto no-scrollbar">
-            <div className="px-3 py-2 border-b border-[#F0F0F0] text-[11px] font-bold text-[#999]">
+          <div className="absolute right-0 top-full mt-1.5 p-1 bg-surface-raised border border-line rounded-menu z-20 min-w-[240px] max-h-[300px] overflow-y-auto no-scrollbar">
+            <div className="px-2.5 pt-1.5 pb-1 text-sm text-ink-muted">
               O'tgan tadbirlar
             </div>
             {archive.length === 0 ? (
-              <div className="px-3 py-4 text-[12px] text-[#999]">O'tgan tadbir yo'q</div>
+              <div className="px-3 py-4 text-sm text-ink-muted">O'tgan tadbir yo'q</div>
             ) : (
               archive.map((e) => (
                 <button
@@ -127,15 +128,15 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
                     onSelect(e.id)
                     setArchiveOpen(false)
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#F5F5F5] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-item hover:bg-mute-ghost-hover transition-colors text-left"
                 >
                   <span
-                    className="w-[12px] h-[12px] rounded-[3px] shrink-0"
+                    className="size-2 rounded-full shrink-0"
                     style={{ backgroundColor: eventTint(e.name) }}
                   />
                   <span className="flex flex-col min-w-0">
-                    <span className="text-[12px] font-medium text-[#141414] truncate">{e.name}</span>
-                    <span className="text-[10px] text-[#999]">{formatDate(e.date)}</span>
+                    <span className="text-base font-medium text-ink truncate">{e.name}</span>
+                    <span className="text-sm text-ink-muted tabular-nums">{formatDate(e.date)}</span>
                   </span>
                 </button>
               ))

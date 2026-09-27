@@ -1,17 +1,17 @@
-// Deterministic solid tints for events — shared by the banner background and
-// the browser-tab favicon dot so the same event always looks consistent.
+// Deterministic tint per event — the dot on event tabs / finance headers,
+// so the same event always carries the same colour. Muted, business-calm hues.
 const TINTS = [
-  "#141414",
-  "#1E293B",
-  "#1C2A3A",
-  "#27272A",
-  "#33271E",
-  "#22303A",
-  "#2A2433",
-  "#1F2A24",
+  "#3e4f73", // slate
+  "#2f5f58", // teal
+  "#74463d", // terracotta
+  "#51437a", // violet
+  "#56613a", // olive
+  "#735a3a", // sand
+  "#305873", // steel
+  "#4d4d4d", // graphite
 ]
 
-export function hashStr(s: string): number {
+function hashStr(s: string): number {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
   return Math.abs(h)

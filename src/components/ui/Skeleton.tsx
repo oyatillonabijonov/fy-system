@@ -7,7 +7,7 @@ export function Skeleton({
 }) {
   return (
     <div
-      className={`animate-pulse bg-[#F0F0F0] rounded-[6px] ${className ?? ""}`}
+      className={`animate-pulse bg-mute-soft rounded-item ${className ?? ""}`}
       style={style}
     />
   )
@@ -27,8 +27,8 @@ export function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
 
 export function StatCardSkeleton() {
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[8px] p-5 flex flex-col gap-4">
-      <Skeleton className="h-10 w-10 rounded-[8px]" />
+    <div className="bg-surface border border-line rounded-surface p-5 flex flex-col gap-4">
+      <Skeleton className="h-10 w-10 rounded-control-sm" />
       <div className="flex flex-col gap-2">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-7 w-32" />
@@ -39,7 +39,7 @@ export function StatCardSkeleton() {
 
 export function EventCardSkeleton() {
   return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
+    <div className="bg-surface border border-line rounded-surface overflow-hidden">
       <Skeleton className="h-[100px] w-full rounded-none" />
       <div className="p-4 flex flex-col gap-3">
         <Skeleton className="h-4 w-3/4" />

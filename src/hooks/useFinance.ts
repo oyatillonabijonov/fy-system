@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tansta
 import {
   getFinanceSummary,
   listPayments,
+  countPayments,
   listDebtors,
   recordPayment,
   voidPayment,
@@ -46,11 +47,19 @@ export function useFinanceSummary(f: FinanceFilters) {
   })
 }
 
-export function usePaymentsList(f: FinanceFilters, limit: number) {
+export function usePaymentsList(f: FinanceFilters, page: number) {
   return useQuery<PaymentRow[]>({
-    queryKey: [...FINANCE_KEY, "payments", f, limit],
-    queryFn: () => listPayments(f, limit),
-    placeholderData: (prev) => prev, // "Ko'proq yuklash" keeps the rows on screen
+    queryKey: [...FINANCE_KEY, "payments", f, page],
+    queryFn: () => listPayments(f, page),
+    placeholderData: (prev) => prev, // keeps the rows on screen while the next page loads
+    refetchOnMount: true,
+  })
+}
+
+export function usePaymentsCount(f: FinanceFilters) {
+  return useQuery<number>({
+    queryKey: [...FINANCE_KEY, "payments-count", f],
+    queryFn: () => countPayments(f),
     refetchOnMount: true,
   })
 }

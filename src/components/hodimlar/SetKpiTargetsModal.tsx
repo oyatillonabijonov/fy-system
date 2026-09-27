@@ -30,7 +30,7 @@ const MONTHS = [
 ]
 
 const inputCls =
-  "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProps) {
   const [revenueTarget, setRevenueTarget] = useState<string>(
@@ -86,7 +86,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
@@ -102,14 +102,14 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">KPI maqsadlari</h2>
-              <span className="text-[11px] text-[#999]">
+              <h2 id={titleId} className="text-lg font-bold text-ink">KPI maqsadlari</h2>
+              <span className="text-xs text-ink-muted">
                 {user.full_name} · {MONTHS[period.month - 1]} {period.year}
               </span>
             </div>
@@ -117,22 +117,22 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+              className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-[#999]" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
           {/* Form */}
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${uid}-revenue`} className="text-[12px] font-medium text-[#999]">Tushum maqsadi (so'm)</label>
+              <label htmlFor={`${uid}-revenue`} className="text-sm font-medium text-ink-muted">Tushum maqsadi (so'm)</label>
               <input
                 id={`${uid}-revenue`}
                 type="text"
@@ -150,7 +150,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor={`${uid}-leads`} className="text-[12px] font-medium text-[#999]">Yopilishi kerak lidlar</label>
+                <label htmlFor={`${uid}-leads`} className="text-sm font-medium text-ink-muted">Yopilishi kerak lidlar</label>
                 <input
                   id={`${uid}-leads`}
                   type="number"
@@ -162,7 +162,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label htmlFor={`${uid}-events`} className="text-[12px] font-medium text-[#999]">Tadbirlar maqsadi</label>
+                <label htmlFor={`${uid}-events`} className="text-sm font-medium text-ink-muted">Tadbirlar maqsadi</label>
                 <input
                   id={`${uid}-events`}
                   type="number"
@@ -176,7 +176,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${uid}-notes`} className="text-[12px] font-medium text-[#999]">Izoh (ixtiyoriy)</label>
+              <label htmlFor={`${uid}-notes`} className="text-sm font-medium text-ink-muted">Izoh (ixtiyoriy)</label>
               <textarea
                 id={`${uid}-notes`}
                 value={notes}
@@ -189,19 +189,19 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                saving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+              className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
+                saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}

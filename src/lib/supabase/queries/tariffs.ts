@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 
-// ponytail: untyped client until `bun run gen:types` picks up migration 050
+// ponytail: untyped client until `bun run gen:types` picks up migration 052
 // (same trick as community.ts); drop the cast once types.ts is regenerated.
 const db = supabase as unknown as SupabaseClient
 

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fy-web-prod",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["BROWSER=none", "doppler", "run", "-p", "fy-system", "-c", "prd", "--", "bunx", "vite", "--port", "5001", "--strictPort"],
+      "port": 5001
+    }
+  ]
+}

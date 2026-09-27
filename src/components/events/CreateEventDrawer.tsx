@@ -1,19 +1,16 @@
 import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, UploadSimple, CaretDown, MagnifyingGlass, Check, Image as ImageIcon, Plus, Trash } from "@phosphor-icons/react"
+import { X, CaretDown, MagnifyingGlass, Check, Plus, Trash } from "@phosphor-icons/react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   createEvent,
   updateEvent,
-  uploadEventCover,
   type Event,
 } from "@/lib/supabase/queries/events"
 import { saveEventTariffs } from "@/lib/supabase/queries/tariffs"
 import { useUsers } from "@/hooks/useUsers"
 import { useEventTariffs, TARIFFS_KEY } from "@/hooks/useEvents"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
-import { ImageCropModal } from "@/components/ui/ImageCropModal"
-import { EventBanner } from "@/components/events/EventBanner"
 import { useDialog } from "@/hooks/useDialog"
 import { formatNumber, formatDate } from "@/lib/format"
 
@@ -24,18 +21,9 @@ interface CreateEventDrawerProps {
   editEvent?: Event | null
 }
 
-const LABEL = "text-[12px] font-medium text-[#999999]"
+const LABEL = "text-sm font-medium text-ink-muted"
 const INPUT =
-  "w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
-
-function initials(name: string): string {
-  return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
-}
-
-function toDateInput(value: string | null): string {
-  if (!value) return ""
-  return value.slice(0, 10)
-}
+  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 interface TariffRow {
   key: string
@@ -46,6 +34,15 @@ interface TariffRow {
 
 function blankTariff(): TariffRow {
   return { key: crypto.randomUUID(), name: "", price: "" }
+}
+
+function initials(name: string): string {
+  return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
+}
+
+function toDateInput(value: string | null): string {
+  if (!value) return ""
+  return value.slice(0, 10)
 }
 
 // ─── Manager combobox ──────────────────────────────────────────────────────────
@@ -86,36 +83,36 @@ function ManagerSelect({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`w-full flex items-center justify-between gap-2 border rounded-[8px] px-3 py-2 text-[13px] transition-colors ${
-          invalid ? "border-[#D13328]" : "border-[#E0E0E0] focus:border-[#141414]"
+        className={`w-full flex items-center justify-between gap-2 border rounded-control px-3 py-2 text-base transition-colors ${
+          invalid ? "border-danger" : "border-line focus:border-line-focus"
         }`}
       >
         {selected ? (
           <span className="flex items-center gap-2 min-w-0">
             <Avatar name={selected.full_name} url={selected.avatar_url} size={20} />
-            <span className="text-[#141414] font-medium truncate">{selected.full_name}</span>
+            <span className="text-ink font-medium truncate">{selected.full_name}</span>
           </span>
         ) : (
-          <span className="text-[#CCCCCC]">Menejer tanlang</span>
+          <span className="text-ink-faint">Menejer tanlang</span>
         )}
-        <CaretDown size={14} className="text-[#999] shrink-0" weight="bold" />
+        <CaretDown size={16} className="text-ink-muted shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-[#F0F0F0] rounded-[8px] shadow-lg overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#F0F0F0]">
-            <MagnifyingGlass size={14} className="text-[#999]" weight="bold" />
+        <div className="absolute z-20 mt-1 w-full bg-surface-raised border border-line rounded-menu overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
+            <MagnifyingGlass size={16} className="text-ink-muted" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Qidirish..."
-              className="flex-1 text-[12px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none"
+              className="flex-1 text-sm text-ink placeholder:text-ink-faint focus:outline-none"
             />
           </div>
           <div className="max-h-[220px] overflow-y-auto no-scrollbar">
             {filtered.length === 0 ? (
-              <div className="px-3 py-3 text-[12px] text-[#999]">Xodim topilmadi</div>
+              <div className="px-3 py-3 text-sm text-ink-muted">Xodim topilmadi</div>
             ) : (
               filtered.map((m) => (
                 <button
@@ -126,14 +123,14 @@ function ManagerSelect({
                     setOpen(false)
                     setQuery("")
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#F5F5F5] transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-mute-ghost-hover transition-colors text-left"
                 >
                   <Avatar name={m.full_name} url={m.avatar_url} size={24} />
                   <span className="flex flex-col min-w-0">
-                    <span className="text-[12px] font-medium text-[#141414] truncate">{m.full_name}</span>
-                    {m.position && <span className="text-[10px] text-[#999] truncate">{m.position}</span>}
+                    <span className="text-sm font-medium text-ink truncate">{m.full_name}</span>
+                    {m.position && <span className="text-xs text-ink-muted truncate">{m.position}</span>}
                   </span>
-                  {m.id === value && <Check size={14} className="text-[#141414] ml-auto" weight="bold" />}
+                  {m.id === value && <Check size={16} className="text-ink ml-auto" />}
                 </button>
               ))
             )}
@@ -152,7 +149,7 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
   }
   return (
     <span
-      className="rounded-full bg-[#EBEBEB] text-[#666] font-bold flex items-center justify-center shrink-0"
+      className="rounded-full bg-mute-soft text-ink-muted font-bold flex items-center justify-center shrink-0"
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {initials(name)}
@@ -184,11 +181,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [tariffs, setTariffs] = useState<TariffRow[]>([blankTariff()])
   const tariffsLoadedFor = useRef<string | null>(null)
 
-  const [bannerBlob, setBannerBlob] = useState<Blob | null>(null)
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
-  const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const panelRef = useDialog<HTMLDivElement>(() => { if (!cropSrc) onClose() }, isOpen)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -208,7 +201,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       // meanwhile, so a half-loaded form can't wipe the event's tariffs.
       tariffsLoadedFor.current = null
       setTariffs([])
-      setBannerPreview(editEvent.cover_image ?? null)
     } else {
       setName("")
       setStartDate("")
@@ -218,9 +210,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setTotalValue("")
       setManagerId(null)
       setTariffs([blankTariff()])
-      setBannerPreview(null)
     }
-    setBannerBlob(null)
     setError(null)
     setTouched(false)
   }, [editEvent, isOpen])
@@ -236,25 +226,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         : [blankTariff()],
     )
   }, [isOpen, editEvent, savedTariffs])
-
-  function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Rasm hajmi 5MB dan oshmasligi kerak")
-      return
-    }
-    const reader = new FileReader()
-    reader.onloadend = () => setCropSrc(reader.result as string)
-    reader.readAsDataURL(file)
-    e.target.value = ""
-  }
-
-  function handleCropped(blob: Blob) {
-    setBannerBlob(blob)
-    setBannerPreview(URL.createObjectURL(blob))
-    setCropSrc(null)
-  }
 
   const cbValue = Number(cashbackPercent)
   const cbValid = Number.isFinite(cbValue) && cbValue >= 0 && cbValue <= 100
@@ -299,21 +270,15 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           total_value: tv,
           manager_id: managerId,
         }
-        if (bannerBlob) {
-          updates.cover_image = await uploadEventCover(blobToFile(bannerBlob), editEvent.id)
-        }
         await updateEvent(editEvent.id, updates)
         await saveEventTariffs(editEvent.id, tariffs.map((t) => ({ id: t.id, name: t.name, price: Number(t.price) })))
       } else {
         const event = await createEvent(fields)
         await saveEventTariffs(event.id, tariffs.map((t) => ({ name: t.name, price: Number(t.price) })))
-        if (bannerBlob) {
-          const url = await uploadEventCover(blobToFile(bannerBlob), event.id)
-          await updateEvent(event.id, { cover_image: url })
-        }
       }
 
       qc.invalidateQueries({ queryKey: TARIFFS_KEY })
+
       onCreated()
       onClose()
     } catch (err) {
@@ -346,49 +311,24 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               animate={{ x: 0 }}
               exit={{ x: 460 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-[460px] bg-white border-l border-[#F0F0F0] z-50 flex flex-col shadow-xl"
+              className="fixed top-0 right-0 bottom-0 w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col "
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0]">
-                <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
+              <div className="flex items-center justify-between p-5 pb-4 border-b border-line">
+                <h2 id={titleId} className="text-md font-bold text-ink">
                   {isEdit ? "Tadbirni tahrirlash" : "Yangi tadbir"}
                 </h2>
-                <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
-                  <X size={20} className="text-[#999999]" weight="bold" />
+                <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
               {/* Body */}
               <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
                 {error && (
-                  <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+                  <div className="px-3 py-2 rounded-surface text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                     {error}
                   </div>
-                )}
-
-                {/* 1. Banner */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative w-full h-[140px] rounded-[8px] overflow-hidden cursor-pointer border border-[#E0E0E0] group"
-                >
-                  {bannerPreview ? (
-                    <img src={bannerPreview} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <EventBanner name={name} coverImage={null} className="absolute inset-0" />
-                  )}
-                  <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white/90 text-[12px] font-bold text-[#141414] opacity-0 group-hover:opacity-100 transition-opacity">
-                      {bannerPreview ? <ImageIcon size={14} weight="bold" /> : <UploadSimple size={14} weight="bold" />}
-                      {bannerPreview ? "Rasmni o'zgartirish" : "Banner yuklash"}
-                    </span>
-                  </span>
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePickFile} />
-                {!bannerPreview && (
-                  <span className="text-[11px] text-[#999] -mt-2">
-                    Rasm yuklamasangiz, tadbir nomidan avtomatik banner yaratiladi
-                  </span>
                 )}
 
                 {/* 2. Name */}
@@ -398,7 +338,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Masalan: Biznes Nonushta #5"
-                    className={`${INPUT} ${touched && !nameValid ? "border-[#D13328]" : ""}`}
+                    className={`${INPUT} ${touched && !nameValid ? "border-danger" : ""}`}
                   />
                 </Field>
 
@@ -410,19 +350,19 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={`${INPUT} ${touched && !startValid ? "border-[#D13328]" : ""}`}
+                      className={`${INPUT} ${touched && !startValid ? "border-danger" : ""}`}
                     />
-                    <span className="text-[#999] text-[12px]">—</span>
+                    <span className="text-ink-muted text-sm">—</span>
                     <input
                       type="date"
                       aria-label="Tugash sanasi"
                       value={endDate}
                       min={startDate || undefined}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={`${INPUT} ${touched && !endValid ? "border-[#D13328]" : ""}`}
+                      className={`${INPUT} ${touched && !endValid ? "border-danger" : ""}`}
                     />
                   </div>
-                  <span className="text-[11px] text-[#999]">
+                  <span className="text-xs text-ink-muted">
                     {startDate
                       ? endDate
                         ? `${formatDate(startDate)} — ${formatDate(endDate)} (ko'p kunlik)`
@@ -442,11 +382,11 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       step={0.5}
                       value={cashbackPercent}
                       onChange={(e) => setCashbackPercent(e.target.value)}
-                      className={`${INPUT} pr-9 ${touched && !cbValid ? "border-[#D13328]" : ""}`}
+                      className={`${INPUT} pr-9 ${touched && !cbValid ? "border-danger" : ""}`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">%</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">%</span>
                   </div>
-                  <span className="text-[11px] text-[#999]">Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi</span>
+                  <span className="text-xs text-ink-muted">Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi</span>
                 </Field>
 
                 {/* 5. Location */}
@@ -471,7 +411,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       placeholder="600,000,000"
                       className={`${INPUT} pr-12`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
                   </div>
                 </Field>
 
@@ -496,7 +436,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                           value={t.name}
                           onChange={(e) => setTariffs((rows) => rows.map((r) => (r.key === t.key ? { ...r, name: e.target.value } : r)))}
                           placeholder="Standart"
-                          className={`${INPUT} flex-1 ${touched && !t.name.trim() ? "border-[#D13328]" : ""}`}
+                          className={`${INPUT} flex-1 ${touched && !t.name.trim() ? "border-danger" : ""}`}
                         />
                         <div className="relative w-[170px] shrink-0">
                           <input
@@ -505,29 +445,29 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                             value={t.price ? formatNumber(Number(t.price)) : ""}
                             onChange={(e) => setTariffs((rows) => rows.map((r) => (r.key === t.key ? { ...r, price: e.target.value.replace(/\D/g, "") } : r)))}
                             placeholder="17,000,000"
-                            className={`${INPUT} pr-12 ${touched && t.price === "" ? "border-[#D13328]" : ""}`}
+                            className={`${INPUT} pr-12 ${touched && t.price === "" ? "border-danger" : ""}`}
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#999] pointer-events-none">UZS</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setTariffs((rows) => rows.filter((r) => r.key !== t.key))}
                           disabled={tariffs.length === 1}
                           aria-label={`${i + 1}-tarifni o'chirish`}
-                          className="p-2 rounded-[8px] text-[#999] hover:text-[#D13328] hover:bg-[#F5F5F5] transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          className="shrink-0 size-9 flex items-center justify-center rounded-control text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
                         >
-                          <Trash size={14} weight="bold" />
+                          <Trash size={16} />
                         </button>
                       </div>
                     ))}
                     <button
                       type="button"
                       onClick={() => setTariffs((rows) => [...rows, blankTariff()])}
-                      className="self-start flex items-center gap-1.5 text-[12px] font-semibold text-[#666] hover:text-[#141414] transition-colors"
+                      className="self-start flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors"
                     >
                       <Plus size={12} weight="bold" /> Tarif qo'shish
                     </button>
-                    <span className="text-[11px] text-[#999]">
+                    <span className="text-xs text-ink-muted">
                       Narx mijoz tadbirga yozilganda unga qo'yiladi. Keyin tarif narxini o'zgartirsangiz, avval yozilganlarga ta'sir qilmaydi.
                     </span>
                   </div>
@@ -535,19 +475,19 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
                 <button
                   onClick={onClose}
                   disabled={saving}
-                  className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                  className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                    saving ? "bg-[#CCCCCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333333]"
+                  className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
+                    saving ? "bg-mute-soft text-ink-muted cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
                   }`}
                 >
                   {saving ? (isEdit ? "Saqlanmoqda..." : "Yaratilmoqda...") : isEdit ? "Saqlash" : "Yaratish"}
@@ -558,16 +498,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         )}
       </AnimatePresence>
 
-      <ImageCropModal
-        isOpen={!!cropSrc}
-        imageSrc={cropSrc ?? ""}
-        onClose={() => setCropSrc(null)}
-        onCropped={handleCropped}
-        aspect={16 / 9}
-        circular={false}
-        outputWidth={1280}
-        outputHeight={720}
-      />
     </>
   )
 }
@@ -586,13 +516,9 @@ function Field({
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={htmlFor} className={LABEL}>
-        {label} {required && <span className="text-[#D13328]">*</span>}
+        {label} {required && <span className="text-danger-text">*</span>}
       </label>
       {children}
     </div>
   )
-}
-
-function blobToFile(blob: Blob): File {
-  return new File([blob], "cover.jpg", { type: "image/jpeg" })
 }

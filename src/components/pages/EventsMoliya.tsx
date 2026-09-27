@@ -29,24 +29,24 @@ export function EventsMoliya() {
         {editable && (
           <button
             onClick={() => setRecording(null)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-[#333] transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
           >
-            <Plus size={15} weight="bold" /> To'lov qo'shish
+            <Plus size={16} /> To'lov qo'shish
           </button>
         )}
       </div>
 
       <FinanceKpis filters={filters} />
 
-      <div role="tablist" aria-label="Moliya bo'limlari" className="flex gap-1 border-b border-[#F0F0F0]">
+      <div role="tablist" aria-label="Moliya bo'limlari" className="flex items-center gap-1">
         {TABS.map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => set({ tab: t.id === "payments" ? null : t.id })}
-            className={`px-4 py-2 -mb-px text-[13px] font-semibold border-b-2 transition-colors ${
-              tab === t.id ? "border-[#141414] text-[#141414]" : "border-transparent text-[#999] hover:text-[#141414]"
+            className={`h-control-md px-3.5 rounded-full whitespace-nowrap text-base font-medium transition-colors ${
+              tab === t.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"
             }`}
           >
             {t.label}

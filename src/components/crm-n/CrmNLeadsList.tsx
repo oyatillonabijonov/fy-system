@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
+  getPaginationRowModel,
   getFilteredRowModel,
   type SortingState,
 } from "@tanstack/react-table"
@@ -17,6 +18,8 @@ import type { CrmStage, CrmLeadWithContact } from "@/lib/supabase/queries/crm"
 import { deleteCrmLead, updateCrmLeadStage, updateCrmLead } from "@/lib/supabase/queries/crm"
 import type { CrmUser } from "@/lib/supabase/queries/crm"
 import { formatNumber, formatDate } from "@/lib/format"
+import { tbl } from "@/components/ui/table"
+import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 
 interface CrmNLeadsListProps {
   leads: CrmLeadWithContact[]
@@ -44,7 +47,6 @@ export function CrmNLeadsList({
   const [bulkAction, setBulkAction] = useState<string>("")
   const [bulkActionValue, setBulkActionValue] = useState<string>("")
   const [bulkLoading, setBulkLoading] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(50)
 
   // Filter leads
   const filteredLeads = useMemo(() => {
@@ -77,7 +79,8 @@ export function CrmNLeadsList({
                 setSelectedIds(new Set(filteredLeads.map((l) => l.id)))
               }
             }}
-            className="w-4 h-4 rounded accent-[#141414] cursor-pointer"
+            className="w-4 h-4 rounded cursor-pointer"
+            style={{ accentColor: "var(--ds-color-accent-default)" }}
           />
         )
       },
@@ -94,23 +97,24 @@ export function CrmNLeadsList({
               return next
             })
           }}
-          className="w-4 h-4 rounded accent-[#141414] cursor-pointer"
+          className="w-4 h-4 rounded cursor-pointer"
+            style={{ accentColor: "var(--ds-color-accent-default)" }}
         />
       ),
       size: 40,
     }),
     columnHelper.accessor((row) => row.crm_contacts?.name ?? row.name, {
       id: "contact_name",
-      header: "ISM / KOMPANIYA",
+      header: "Ism / kompaniya",
       cell: ({ row }) => {
         const contact = row.original.crm_contacts
         return (
           <div className="flex flex-col gap-0.5">
-            <span className="text-[13px] font-semibold text-[#141414] truncate">
+            <span className="text-base font-medium text-ink truncate">
               {contact?.name ?? row.original.name}
             </span>
             {contact?.company && (
-              <span className="text-[11px] text-[#999] truncate">{contact.company}</span>
+              <span className="text-xs text-ink-muted truncate">{contact.company}</span>
             )}
           </div>
         )
@@ -118,12 +122,12 @@ export function CrmNLeadsList({
       size: 200,
     }),
     columnHelper.accessor("stage_id", {
-      header: "BOSQICH",
+      header: "Bosqich",
       cell: ({ row }) => {
         const stage = stages.find((s) => s.id === row.original.stage_id)
-        if (!stage) return <span className="text-[#999]">—</span>
+        if (!stage) return <span className="text-ink-muted">—</span>
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#f5f5f5] text-[#141414]">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-tag text-xs font-bold bg-surface-sunken text-ink">
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stage.color }} />
             {stage.name}
           </span>
@@ -132,11 +136,11 @@ export function CrmNLeadsList({
       size: 150,
     }),
     columnHelper.accessor("responsible_user_id", {
-      header: "MAS'UL",
+      header: "Mas'ul",
       cell: ({ row }) => {
         const user = users.find((u) => u.id === row.original.responsible_user_id)
         return (
-          <span className="text-[12px] text-[#666]">
+          <span className="text-sm text-ink-muted">
             {user?.name ?? "—"}
           </span>
         )
@@ -144,21 +148,21 @@ export function CrmNLeadsList({
       size: 140,
     }),
     columnHelper.accessor("price", {
-      header: "SUMMA",
+      header: "Summa",
       cell: ({ row }) => (
-        <span className="text-[13px] font-semibold text-[#141414]">
+        <span className="text-base text-ink tabular-nums">
           {row.original.price > 0 ? `${formatNumber(row.original.price)} so'm` : "—"}
         </span>
       ),
       size: 130,
     }),
     columnHelper.accessor("source", {
-      header: "MANBA",
+      header: "Manba",
       cell: ({ row }) => {
         const label = row.original.source === "telegram" ? "Telegram" : row.original.source === "manual" ? "Qo'lda" : row.original.source
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5F5F5] text-[#141414]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
             {label}
           </span>
         )
@@ -166,9 +170,9 @@ export function CrmNLeadsList({
       size: 100,
     }),
     columnHelper.accessor("created_at", {
-      header: "SANA",
+      header: "Sana",
       cell: ({ row }) => (
-        <span className="text-[12px] text-[#999]">
+        <span className="text-sm text-ink-muted">
           {formatDate(row.original.created_at)}
         </span>
       ),
@@ -177,7 +181,7 @@ export function CrmNLeadsList({
   ], [filteredLeads, selectedIds, stages, users])
 
   const table = useReactTable({
-    data: filteredLeads.slice(0, visibleCount),
+    data: filteredLeads,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -185,6 +189,8 @@ export function CrmNLeadsList({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageIndex: 0, pageSize: PAGE_SIZE } },
     globalFilterFn: (row, _columnId, filterValue: string) => {
       const search = filterValue.toLowerCase()
       const contact = row.original.crm_contacts
@@ -249,13 +255,13 @@ export function CrmNLeadsList({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" weight="bold" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
             type="text"
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Ism, telefon, kompaniya..."
-            className="w-full border border-[#E0E0E0] rounded-[8px] py-2 pl-9 pr-3 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] transition-colors"
+            className="w-full border border-line rounded-control py-2 pl-9 pr-3 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
           />
         </div>
 
@@ -264,14 +270,14 @@ export function CrmNLeadsList({
           <select
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
-            className="appearance-none border border-[#E0E0E0] rounded-[8px] py-2 pl-3 pr-8 text-[12px] font-medium text-[#141414] focus:outline-none focus:border-[#141414] cursor-pointer"
+            className="appearance-none border border-line rounded-control py-2 pl-3 pr-8 text-sm font-medium text-ink focus:outline-none focus:border-line-focus cursor-pointer"
           >
             <option value="">Barcha bosqichlar</option>
             {stages.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" weight="bold" />
+          <CaretDown size={12} weight="bold" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
         {/* Responsible filter */}
@@ -279,32 +285,32 @@ export function CrmNLeadsList({
           <select
             value={responsibleFilter}
             onChange={(e) => setResponsibleFilter(e.target.value)}
-            className="appearance-none border border-[#E0E0E0] rounded-[8px] py-2 pl-3 pr-8 text-[12px] font-medium text-[#141414] focus:outline-none focus:border-[#141414] cursor-pointer"
+            className="appearance-none border border-line rounded-control py-2 pl-3 pr-8 text-sm font-medium text-ink focus:outline-none focus:border-line-focus cursor-pointer"
           >
             <option value="">Barcha mas'ullar</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
-          <CaretDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none" weight="bold" />
+          <CaretDown size={12} weight="bold" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
         </div>
 
-        <span className="text-[12px] text-[#999] font-medium ml-auto">
+        <span className="text-sm text-ink-muted font-medium ml-auto">
           {filteredLeads.length} ta lid
         </span>
       </div>
 
       {/* Bulk actions */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 bg-[#FBFBFB] rounded-[8px] px-4 py-2.5 border border-[#E0E0E0]">
-          <span className="text-[12px] font-bold text-[#141414]">
+        <div className="flex items-center gap-3 bg-surface-sunken rounded-surface px-4 py-2.5 border border-line">
+          <span className="text-sm font-bold text-ink">
             {selectedIds.size} ta tanlandi
           </span>
 
           <select
             value={bulkAction}
             onChange={(e) => { setBulkAction(e.target.value); setBulkActionValue("") }}
-            className="border border-[#E0E0E0] rounded-[6px] py-1 px-2 text-[12px] focus:outline-none focus:border-[#141414]"
+            className="border border-line rounded-control-sm py-1 px-2 text-sm focus:outline-none focus:border-line-focus"
           >
             <option value="">Amal tanlang</option>
             <option value="stage">Bosqich o'zgartirish</option>
@@ -316,7 +322,7 @@ export function CrmNLeadsList({
             <select
               value={bulkActionValue}
               onChange={(e) => setBulkActionValue(e.target.value)}
-              className="border border-[#E0E0E0] rounded-[6px] py-1 px-2 text-[12px] focus:outline-none focus:border-[#141414]"
+              className="border border-line rounded-control-sm py-1 px-2 text-sm focus:outline-none focus:border-line-focus"
             >
               <option value="">Bosqich tanlang</option>
               {stages.map((s) => (
@@ -329,7 +335,7 @@ export function CrmNLeadsList({
             <select
               value={bulkActionValue}
               onChange={(e) => setBulkActionValue(e.target.value)}
-              className="border border-[#E0E0E0] rounded-[6px] py-1 px-2 text-[12px] focus:outline-none focus:border-[#141414]"
+              className="border border-line rounded-control-sm py-1 px-2 text-sm focus:outline-none focus:border-line-focus"
             >
               <option value="">Mas'ul tanlang</option>
               {users.map((u) => (
@@ -341,8 +347,8 @@ export function CrmNLeadsList({
           <button
             onClick={handleBulkAction}
             disabled={bulkLoading || !bulkAction || (bulkAction !== "delete" && !bulkActionValue)}
-            className={`px-3 py-1 rounded-[6px] text-[11px] font-bold text-white transition-colors disabled:bg-[#CCC] disabled:cursor-not-allowed ${
-              bulkAction === "delete" ? "bg-red-500 hover:bg-red-600" : "bg-[#141414] hover:bg-[#333]"
+            className={`px-3 py-1 rounded-control-sm text-xs font-bold transition-colors disabled:bg-mute-soft disabled:cursor-not-allowed ${
+              bulkAction === "delete" ? "bg-danger text-white hover:bg-danger" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
             }`}
           >
             {bulkLoading ? "..." : bulkAction === "delete" ? "O'chirish" : "Qo'llash"}
@@ -350,7 +356,7 @@ export function CrmNLeadsList({
 
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="text-[11px] text-[#999] hover:text-[#666] ml-auto"
+            className="text-xs text-ink-muted hover:text-ink ml-auto"
           >
             Bekor qilish
           </button>
@@ -360,26 +366,26 @@ export function CrmNLeadsList({
       {/* Table */}
       {filteredLeads.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <span className="text-[14px] text-[#999] font-medium">Hozircha lidlar yo'q</span>
-          <span className="text-[12px] text-[#CCC]">Yangi lid qo'shing</span>
+          <span className="text-base text-ink-muted font-medium">Hozircha lidlar yo'q</span>
+          <span className="text-sm text-ink-faint">Yangi lid qo'shing</span>
         </div>
       ) : (
-        <div className="border border-[#F0F0F0] rounded-[8px] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div>
+          <div className={tbl.scroll}>
+            <table className={tbl.table}>
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="bg-[#FBFBFB] border-b border-[#F0F0F0]">
+                  <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="text-left px-4 py-3 text-[11px] font-bold text-[#999] uppercase tracking-wider whitespace-nowrap"
+                        className={tbl.th}
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder ? null : header.column.getCanSort() ? (
                           <button
                             type="button"
-                            className="flex items-center gap-1 select-none hover:text-[#666]"
+                            className="flex items-center gap-1 select-none hover:text-ink"
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -414,12 +420,12 @@ export function CrmNLeadsList({
                         onLeadClick(row.original)
                       }
                     }}
-                    className="border-b border-[#F0F0F0] hover:bg-[#FBFBFB] cursor-pointer transition-colors"
+                    className={`${tbl.tr} cursor-pointer`}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-4 py-3"
+                        className={tbl.td}
                         onClick={cell.column.id === "select" ? (e) => e.stopPropagation() : undefined}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -431,17 +437,12 @@ export function CrmNLeadsList({
             </table>
           </div>
 
-          {/* Load more */}
-          {filteredLeads.length > visibleCount && (
-            <div className="flex items-center justify-center py-4 border-t border-[#F0F0F0]">
-              <button
-                onClick={() => setVisibleCount((v) => v + 50)}
-                className="text-[13px] font-bold text-[#141414] hover:text-[#666] transition-colors"
-              >
-                Ko'proq yuklash ({filteredLeads.length - visibleCount} ta qoldi)
-              </button>
-            </div>
-          )}
+          <Pager
+            page={table.getState().pagination.pageIndex}
+            pageCount={table.getPageCount()}
+            total={table.getFilteredRowModel().rows.length}
+            onPage={table.setPageIndex}
+          />
         </div>
       )}
     </div>

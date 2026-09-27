@@ -108,7 +108,7 @@ export function CreatePipelineModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50"
+            className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-50"
             onClick={handleClose}
           />
 
@@ -125,40 +125,40 @@ export function CreatePipelineModal({
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto"
+              className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0]">
+              <div className="flex items-center justify-between p-5 pb-4 border-b border-line">
                 <div className="flex items-center gap-2">
-                  <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
+                  <h2 id={titleId} className="text-md font-bold text-ink">
                     Yangi voronka yaratish
                   </h2>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-tag text-xs font-bold bg-surface-sunken text-ink">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                     CRM-N
                   </span>
                 </div>
                 <button
                   onClick={handleClose}
-                  className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+                  className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
                   aria-label="Yopish"
                 >
-                  <X size={20} className="text-[#999999]" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
               {/* Form */}
               <div className="p-5 flex flex-col gap-4">
                 {error && (
-                  <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+                  <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                     {error}
                   </div>
                 )}
 
                 {/* Nomi */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={nameFieldId} className="text-[12px] font-medium text-[#999999]">Voronka nomi *</label>
+                  <label htmlFor={nameFieldId} className="text-sm font-medium text-ink-muted">Voronka nomi *</label>
                   <input
                     id={nameFieldId}
                     type="text"
@@ -166,13 +166,13 @@ export function CreatePipelineModal({
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Masalan: Asosiy voronka"
                     autoFocus
-                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                    className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
                   />
                 </div>
 
                 {/* Rang */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Rang</label>
+                  <label className="text-sm font-medium text-ink-muted">Rang</label>
                   <div className="flex items-center gap-2">
                     {PIPELINE_COLORS.map((c) => (
                       <button
@@ -180,7 +180,7 @@ export function CreatePipelineModal({
                         onClick={() => setColor(c)}
                         aria-label={`Rang: ${c}`}
                         aria-pressed={color === c}
-                        className={`w-7 h-7 rounded-full transition-all ${color === c ? "ring-2 ring-offset-2 ring-[#141414] scale-110" : "hover:scale-110"}`}
+                        className={`w-7 h-7 rounded-full transition-all ${color === c ? "ring-2 ring-offset-2 ring-line-focus scale-110" : "hover:scale-110"}`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
@@ -189,8 +189,8 @@ export function CreatePipelineModal({
 
                 {/* Default bosqichlar */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-[#999999]">Default bosqichlar</label>
-                  <div className="flex flex-col gap-1.5 bg-[#FBFBFB] rounded-[8px] p-3">
+                  <label className="text-sm font-medium text-ink-muted">Default bosqichlar</label>
+                  <div className="flex flex-col gap-1.5 bg-surface-sunken rounded-control p-3">
                     {stages.map((stage, index) => (
                       <label
                         key={index}
@@ -200,29 +200,29 @@ export function CreatePipelineModal({
                           onClick={() => toggleStage(index)}
                           aria-pressed={stage.checked}
                           aria-label={stage.name}
-                          className={`w-4.5 h-4.5 rounded-[4px] flex items-center justify-center shrink-0 transition-colors ${
+                          className={`w-4.5 h-4.5 rounded-checkbox flex items-center justify-center shrink-0 transition-colors ${
                             stage.checked
-                              ? "bg-[#141414]"
-                              : "bg-white border border-[#D0D0D0] group-hover:border-[#999]"
+                              ? "bg-accent"
+                              : "bg-surface-raised border border-line"
                           }`}
                           style={{ width: 18, height: 18 }}
                         >
-                          {stage.checked && <Check size={12} className="text-white" weight="bold" />}
+                          {stage.checked && <Check size={12} weight="bold" className="text-ink-on-accent" />}
                         </button>
                         <div
                           className="w-3 h-3 rounded-full shrink-0"
                           style={{ backgroundColor: stage.color }}
                         />
-                        <span className={`text-[13px] ${stage.checked ? "text-[#141414] font-medium" : "text-[#999]"}`}>
+                        <span className={`text-base ${stage.checked ? "text-ink font-medium" : "text-ink-muted"}`}>
                           {stage.name}
                         </span>
                         {stage.is_won && (
-                          <span className="text-[9px] font-bold text-[#141414] bg-[#F5F5F5] px-1 py-0.5 rounded ml-auto">
+                          <span className="text-xs font-bold text-ink bg-surface-sunken px-1 py-0.5 rounded-tag ml-auto">
                             Yutildi
                           </span>
                         )}
                         {stage.is_lost && (
-                          <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded ml-auto">
+                          <span className="text-xs font-bold text-danger-text bg-danger-soft px-1 py-0.5 rounded-tag ml-auto">
                             Yutqazildi
                           </span>
                         )}
@@ -233,26 +233,26 @@ export function CreatePipelineModal({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
                 <button
                   onClick={handleClose}
                   disabled={saving}
-                  className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                  className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving || !name.trim()}
-                  className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
+                  className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
                     saving || !name.trim()
-                      ? "bg-[#CCCCCC] cursor-not-allowed"
-                      : "bg-[#141414] hover:bg-[#333333]"
+                      ? "bg-mute-soft text-ink-faint cursor-not-allowed"
+                      : "bg-accent text-ink-on-accent hover:bg-accent-hover"
                   }`}
                 >
                   {saving ? (
                     <div className="flex items-center gap-1.5">
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-ink-on-accent border-t-transparent rounded-full animate-spin" />
                       Yaratilmoqda...
                     </div>
                   ) : (

@@ -1,4 +1,4 @@
--- Behavioural tests for migration 051 (Moliya core).
+-- Behavioural tests for migration 053 (Moliya core).
 -- THROWAWAY DB only (recipe: CLAUDE.md §5 "Tests"). Run:
 --   docker exec fy-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/t.sql
 -- Every block RAISEs on failure; the last line prints on success.
@@ -551,4 +551,126 @@ BEGIN
   RAISE NOTICE 'S ok: keshbek yozuvi va spend_cashback faqat can_edit_finance bilan';
 END $$;
 
-SELECT '051: hamma testlar o''tdi ✓' AS natija;
+-- ─── T: amo_dashboard revenue — voided/refunded excluded; dashboard-only
+-- viewer (no tadbirlar-moliya) still sees the correct number, though a direct
+-- SELECT on payments returns nothing for them (merge of 049/050 into 053:
+-- payments SELECT is now Moliya-only, so amo_dashboard's revenue CTE must go
+-- through dashboard_revenue() instead of summing `payments` itself).
+INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+  ('51000000-0000-0000-0000-000000000005', 'dashonly51@fy.uz', '{"full_name":"Dashboard Ko''ruvchi","role":"xodim"}'::jsonb);
+INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
+  ('51000000-0000-0000-0000-000000000005', 'dashboard', true, false, false);
+-- amo_dashboard is SECURITY INVOKER: the calling role needs table SELECT too
+-- (the fixtures' earlier GRANT block didn't cover the amo_* tables).
+GRANT SELECT ON public.amo_pipelines, public.amo_statuses, public.amo_users,
+  public.amo_leads, public.amo_status_changes, public.amo_tasks, public.amo_sync_state
+  TO authenticated;
+
+-- The window must contain "now()" (paid_at defaults to it in record_payment/
+-- refund_payment), and every earlier block's fixtures are also dated within
+-- 2026 — so absolute totals are contaminated by A..S. To stay correct
+-- regardless, this block reads amo_dashboard as deltas around single known
+-- operations (nothing else touches the DB between two consecutive calls in
+-- this single-threaded script), which isolates exactly the effect of that
+-- operation no matter what the running total already is.
+DO $$
+DECLARE
+  v_event  uuid := 'e5100000-0000-0000-0000-0000000000d1';
+  v_tariff uuid := '7b000000-0000-0000-0000-0000000000d1';
+  v_pay1   uuid;
+  v_pay4   uuid;
+  v_part   uuid;
+  v_from   timestamptz := '2026-09-01 00:00:00+05';
+  v_to     timestamptz := '2026-10-01 00:00:00+05';
+  v        jsonb;
+  n        int;
+  rev1 numeric; rev2 numeric; rev3 numeric;
+  pay1 numeric; pay2 numeric; pay3 numeric;
+BEGIN
+  INSERT INTO public.events (id, name) VALUES (v_event, 'Dashboard Test');
+  INSERT INTO public.event_tariffs (id, event_id, name, price) VALUES (v_tariff, v_event, 'Standart', 10000000);
+
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000001');
+  v_pay1 := public.record_payment(
+    p_event_id => v_event, p_amount => 3000000, p_method => 'naqd',
+    p_full_name => 'Dash Mijoz', p_phone => '+998901000031',
+    p_tariff_id => v_tariff, p_seller_id => '51000000-0000-0000-0000-000000000004');
+  SELECT participant_id INTO v_part FROM public.payments WHERE id = v_pay1;
+
+  -- Snapshot 1, as the dashboard-only viewer (no tadbirlar-moliya at all):
+  -- amo_dashboard must already show a non-zero, correct revenue for them.
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000005');
+  SET LOCAL ROLE authenticated;
+  SELECT public.amo_dashboard(v_from, v_to, NULL) INTO v;
+  RESET ROLE;
+  rev1 := (v->'kpi'->>'revenue')::numeric;
+  pay1 := (v->'kpi'->>'payers')::numeric;
+  IF rev1 <= 0 THEN RAISE EXCEPTION 'T FAILED (1): dashboard-only ko''ruvchi uchun daromad 0 (kpi=%)', v->'kpi'; END IF;
+
+  -- Refund 500,000 of it → revenue must drop by exactly that (a refund is a
+  -- negative row that still counts, per record_payment's own design).
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000001');
+  PERFORM public.refund_payment(v_part, 500000, 'naqd', 'test refund');
+
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000005');
+  SET LOCAL ROLE authenticated;
+  SELECT public.amo_dashboard(v_from, v_to, NULL) INTO v;
+  RESET ROLE;
+  rev2 := (v->'kpi'->>'revenue')::numeric;
+  pay2 := (v->'kpi'->>'payers')::numeric;
+  IF rev2 <> rev1 - 500000 THEN
+    RAISE EXCEPTION 'T FAILED (2, qaytarish): rev1=% rev2=% (500000 kamaymadi)', rev1, rev2;
+  END IF;
+  IF pay2 <> pay1 THEN RAISE EXCEPTION 'T FAILED (2, payers): pay1=% pay2=%', pay1, pay2; END IF;
+
+  -- A brand-new client makes a 1,000,000 payment that is immediately voided.
+  -- If voided rows leaked into revenue or the payer count, both would move;
+  -- they must not, since the payment never really happened.
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000001');
+  v_pay4 := public.record_payment(
+    p_event_id => v_event, p_amount => 1000000, p_method => 'karta',
+    p_full_name => 'Dash Mijoz 2', p_phone => '+998901000032',
+    p_tariff_id => v_tariff, p_seller_id => '51000000-0000-0000-0000-000000000004');
+  PERFORM public.void_payment(v_pay4, 'test void');
+
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000005');
+  SET LOCAL ROLE authenticated;
+  SELECT public.amo_dashboard(v_from, v_to, NULL) INTO v;
+  RESET ROLE;
+  rev3 := (v->'kpi'->>'revenue')::numeric;
+  pay3 := (v->'kpi'->>'payers')::numeric;
+  IF rev3 <> rev2 THEN
+    RAISE EXCEPTION 'T FAILED (3, bekor qilingan): rev2=% rev3=% (bekor qilingan to''lov hisoblanmasligi kerak)', rev2, rev3;
+  END IF;
+  IF pay3 <> pay2 THEN
+    RAISE EXCEPTION 'T FAILED (3, payers): bekor qilingan yangi mijoz to''lovchilar sonini oshirdi (pay2=% pay3=%)', pay2, pay3;
+  END IF;
+
+  -- ...yet the same dashboard-only viewer reads nothing directly from
+  -- payments (payments select is Moliya-only, 053) — the numbers above came
+  -- from dashboard_revenue(), not from a leaked row-level read.
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000005');
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO n FROM public.payments;
+  RESET ROLE;
+  IF n <> 0 THEN
+    RAISE EXCEPTION 'T FAILED (to''g''ridan-to''g''ri o''qish): dashboard ko''ruvchi % qator o''qidi', n;
+  END IF;
+
+  -- The gate still holds: an authenticated user with NEITHER `dashboard` NOR
+  -- `tadbirlar-moliya` (plain staff, user 3 — no user_permissions row at all)
+  -- gets exactly 0 from amo_dashboard, not the auth.uid() IS NULL bypass
+  -- (that bypass is for a trusted server context with NO jwt claim at all,
+  -- not for an authenticated-but-unpermitted user).
+  PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000003');
+  SET LOCAL ROLE authenticated;
+  SELECT public.amo_dashboard(v_from, v_to, NULL) INTO v;
+  RESET ROLE;
+  IF (v->'kpi'->>'revenue')::numeric <> 0 OR (v->'kpi'->>'payers')::numeric <> 0 THEN
+    RAISE EXCEPTION 'T FAILED (huquqsiz hodim): kpi=%', v->'kpi';
+  END IF;
+
+  RAISE NOTICE 'T ok: amo_dashboard bekor qilingan/qaytarilgan to''lovlarni to''g''ri hisoblaydi, faqat dashboard huquqi bilan ham ishlaydi, to''lovlar jadvali esa Moliya uchungina ochiq qoladi, huquqsiz hodim uchun esa 0';
+END $$;
+
+SELECT '053: hamma testlar o''tdi ✓' AS natija;

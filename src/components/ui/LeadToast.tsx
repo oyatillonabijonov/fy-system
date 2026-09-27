@@ -42,17 +42,17 @@ export function LeadToastContainer() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 100, scale: 0.95 }}
             transition={{ duration: 0.25 }}
-            className="pointer-events-auto bg-white border border-[#E0E0E0] rounded-[8px] px-4 py-3 shadow-lg flex items-center gap-3 min-w-[280px]"
+            className="pointer-events-auto bg-surface-raised border border-line rounded-surface px-4 py-3 flex items-center gap-3 min-w-[280px]"
           >
             <div className="relative flex-shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#141414]" />
-              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-[#141414] animate-ping" />
+              <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-accent animate-ping" />
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[13px] font-bold text-[#141414]">
+              <span className="text-base font-bold text-ink">
                 Yangi lid tushdi!
               </span>
-              <span className="text-[12px] text-[#666666]">
+              <span className="text-sm text-ink-muted">
                 {toast.name}
               </span>
             </div>

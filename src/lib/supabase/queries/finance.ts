@@ -4,8 +4,9 @@ import type { PaymentMethod } from "./payments"
 import { ClientExistsError, ENROLL_ERRORS, type EnrollClient } from "./events"
 import { dayEnd, dayStart } from "@/lib/period"
 import { formatMoney } from "@/lib/format"
+import { PAGE_SIZE } from "@/components/ui/Pager"
 
-// ponytail: untyped client until `bun run gen:types` picks up migration 051.
+// ponytail: untyped client until `bun run gen:types` picks up migration 053.
 const db = supabase as unknown as SupabaseClient
 
 export type DebtStatus = "debt" | "overdue" | "paid" | "all"
@@ -82,8 +83,6 @@ export async function getFinanceSummary(f: FinanceFilters): Promise<FinanceSumma
 
 // ─── Payments log ────────────────────────────────────────────────────────────
 
-export const PAYMENTS_PAGE = 50
-
 export interface PaymentRow {
   id: string
   participant_id: string
@@ -123,7 +122,7 @@ interface PaymentJoin {
   } | null
 }
 
-export async function listPayments(f: FinanceFilters, limit: number): Promise<PaymentRow[]> {
+export async function listPayments(f: FinanceFilters, page: number): Promise<PaymentRow[]> {
   let q = db
     .from("payments")
     .select(
@@ -133,7 +132,7 @@ export async function listPayments(f: FinanceFilters, limit: number): Promise<Pa
         "event:event_id(name), seller:seller_id(full_name))",
     )
     .order("paid_at", { ascending: false })
-    .range(0, limit - 1)
+    .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
   if (f.from) q = q.gte("paid_at", dayStart(f.from))
   if (f.to) q = q.lte("paid_at", dayEnd(f.to))
   if (f.method) q = q.eq("method", f.method)
@@ -160,6 +159,23 @@ export async function listPayments(f: FinanceFilters, limit: number): Promise<Pa
     seller_name: r.participant?.seller?.full_name ?? null,
     participant_cash_paid: Number(r.participant?.paid ?? 0) - Number(r.participant?.cashback_used ?? 0),
   }))
+}
+
+// Same filters as listPayments, head-only — drives the Pager's "Jami N ta".
+export async function countPayments(f: FinanceFilters): Promise<number> {
+  let q = db
+    .from("payments")
+    .select("id, participant:participant_id!inner(event_id, seller_id)", { count: "exact", head: true })
+  if (f.from) q = q.gte("paid_at", dayStart(f.from))
+  if (f.to) q = q.lte("paid_at", dayEnd(f.to))
+  if (f.method) q = q.eq("method", f.method)
+  if (f.eventId) q = q.eq("participant.event_id", f.eventId)
+  if (f.seller === "none") q = q.is("participant.seller_id", null)
+  else if (f.seller) q = q.eq("participant.seller_id", f.seller)
+
+  const { count, error } = await q
+  if (error) throw financeError(error)
+  return count ?? 0
 }
 
 // ─── Debtors ─────────────────────────────────────────────────────────────────
@@ -266,7 +282,7 @@ export interface ParticipantFinancePatch {
   next_due_date?: string | null
 }
 
-// price / next_due_date are guarded in the DB (051): non-finance users get forbidden: finance_fields.
+// price / next_due_date are guarded in the DB (053): non-finance users get forbidden: finance_fields.
 export async function updateParticipantFinance(id: string, patch: ParticipantFinancePatch): Promise<void> {
   const { error } = await db.from("event_participants").update(patch).eq("id", id)
   if (error) throw financeError(error)

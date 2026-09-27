@@ -12,11 +12,11 @@ export function PriceCell({ value, onSave }: { value: number; onSave: (v: number
     return (
       <button
         onClick={() => { setVal(value ? String(Math.round(value)) : ""); setEditing(true) }}
-        className="group/price inline-flex items-center gap-1 text-[13px] text-[#141414]"
+        className="group/price inline-flex items-center gap-1 text-base text-ink tabular-nums"
         title="Kelishuv summasini tahrirlash"
       >
         {formatMoney(value)}
-        <PencilSimple size={12} weight="bold" className="text-[#CCC] opacity-0 group-hover/price:opacity-100 transition-opacity" />
+        <PencilSimple size={12} weight="bold" className="text-ink-faint opacity-0 group-hover/price:opacity-100 transition-opacity" />
       </button>
     )
   }
@@ -39,7 +39,7 @@ export function PriceCell({ value, onSave }: { value: number; onSave: (v: number
         if (e.key === "Enter") commit()
         if (e.key === "Escape") setEditing(false)
       }}
-      className="w-28 border border-[#141414] rounded-[6px] px-2 py-1 text-[13px] text-right text-[#141414] focus:outline-none"
+      className="w-28 border border-line-focus rounded-control px-2 py-1 text-base text-right text-ink tabular-nums focus:outline-none"
     />
   )
 }
@@ -68,7 +68,7 @@ export function CashbackPercentCell({
         title="Keshbek foizini tahrirlash (bo'sh = tadbir standarti)"
       >
         <StatusBadge label={`${effective}%`} variant={percent !== null ? "warning" : "neutral"} />
-        {earned > 0 && <span className="text-[11px] text-[#666]">{formatMoney(earned)}</span>}
+        {earned > 0 && <span className="text-xs text-ink-muted tabular-nums">{formatMoney(earned)}</span>}
       </button>
     )
   }
@@ -98,9 +98,9 @@ export function CashbackPercentCell({
           if (e.key === "Enter") commit()
           if (e.key === "Escape") setEditing(false)
         }}
-        className="w-16 border border-[#141414] rounded-[6px] px-2 py-1 pr-5 text-[13px] text-right text-[#141414] focus:outline-none"
+        className="w-16 border border-line-focus rounded-control px-2 py-1 pr-5 text-base text-right text-ink focus:outline-none"
       />
-      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-[#999] pointer-events-none">%</span>
+      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-ink-muted pointer-events-none">%</span>
     </div>
   )
 }

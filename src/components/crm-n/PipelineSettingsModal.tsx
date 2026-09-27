@@ -175,7 +175,7 @@ export function PipelineSettingsModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50"
+            className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-50"
             onClick={onClose}
           />
 
@@ -192,13 +192,13 @@ export function PipelineSettingsModal({
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              className="bg-white rounded-[12px] w-full max-w-md shadow-2xl pointer-events-auto max-h-[80vh] flex flex-col"
+              className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with pipeline name */}
-              <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0] shrink-0">
+              <div className="flex items-center justify-between p-5 pb-4 border-b border-line shrink-0">
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <span id={titleId} className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Pipeline sozlamalari</span>
+                  <span id={titleId} className="text-xs font-bold text-ink-muted uppercase tracking-wider">Pipeline sozlamalari</span>
                   {editingPipelineName ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -211,26 +211,26 @@ export function PipelineSettingsModal({
                           if (e.key === "Escape") { e.preventDefault(); setEditingPipelineName(false); setPipelineNameValue(pipelineName) }
                         }}
                         disabled={pipelineNameSaving}
-                        className="text-[16px] font-bold text-[#141414] border border-[#E0E0E0] rounded-[6px] px-2 py-0.5 focus:outline-none focus:border-[#141414] flex-1"
+                        className="text-md font-bold text-ink border border-line rounded-item px-2 py-0.5 focus:outline-none focus:border-line-focus flex-1"
                       />
                       <button
                         onClick={handleSavePipelineName}
                         disabled={pipelineNameSaving}
                         aria-label="Saqlash"
-                        className="p-1 rounded-[4px] hover:bg-[#F5F5F5] disabled:opacity-50"
+                        className="p-1 rounded-item hover:bg-mute-ghost-hover disabled:opacity-50"
                       >
-                        <Check size={16} className="text-[#141414]" weight="bold" />
+                        <Check size={16} className="text-ink" />
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <h2 className="text-[16px] font-bold text-[#141414] truncate">{pipelineName}</h2>
+                      <h2 className="text-md font-bold text-ink truncate">{pipelineName}</h2>
                       <button
                         onClick={() => setEditingPipelineName(true)}
                         aria-label="Nomni tahrirlash"
-                        className="p-1 rounded-[4px] hover:bg-[#F5F5F5] shrink-0"
+                        className="p-1 rounded-item hover:bg-mute-ghost-hover shrink-0"
                       >
-                        <PencilSimple size={14} className="text-[#999]" weight="bold" />
+                        <PencilSimple size={16} className="text-ink-muted" />
                       </button>
                     </div>
                   )}
@@ -238,22 +238,22 @@ export function PipelineSettingsModal({
                 <button
                   onClick={onClose}
                   aria-label="Yopish"
-                  className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
+                  className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors shrink-0 ml-3"
                 >
-                  <X size={20} className="text-[#999999]" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
               {/* Stages list */}
               <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider mb-1">
+                <span className="text-xs font-bold text-ink-muted uppercase tracking-wider mb-1">
                   Bosqichlar ({stages.length})
                 </span>
 
                 {stages.map((stage, index) => (
                   <div
                     key={stage.id}
-                    className="flex items-center gap-2 bg-[#FBFBFB] rounded-[8px] p-3 group"
+                    className="flex items-center gap-2 bg-surface-sunken rounded-control p-3 group"
                   >
                     {editingId === stage.id ? (
                       <>
@@ -261,7 +261,7 @@ export function PipelineSettingsModal({
                         <div className="flex flex-col gap-2 flex-1">
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-4 h-4 rounded-full shrink-0 cursor-pointer ring-2 ring-offset-1 ring-[#E0E0E0]"
+                              className="w-4 h-4 rounded-full shrink-0 cursor-pointer ring-2 ring-offset-1 ring-line"
                               style={{ backgroundColor: editColor }}
                             />
                             <input
@@ -273,12 +273,12 @@ export function PipelineSettingsModal({
                                 if (e.key === "Escape") { e.preventDefault(); setEditingId(null) }
                               }}
                               autoFocus
-                              className="flex-1 border border-[#E0E0E0] rounded-[6px] px-2 py-1 text-[13px] focus:outline-none focus:border-[#141414]"
+                              className="flex-1 border border-line rounded-item px-2 py-1 text-base focus:outline-none focus:border-line-focus"
                             />
                             <button
                               onClick={() => handleSaveEdit(stage.id)}
                               disabled={saving}
-                              className="px-2 py-1 bg-[#141414] text-white text-[11px] font-bold rounded-[6px] hover:bg-[#333] disabled:opacity-50"
+                              className="px-2 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-item hover:bg-accent-hover disabled:opacity-50"
                             >
                               {saving ? "..." : "OK"}
                             </button>
@@ -290,7 +290,7 @@ export function PipelineSettingsModal({
                                 onClick={() => setEditColor(c)}
                                 aria-label={`Rang: ${c}`}
                                 aria-pressed={editColor === c}
-                                className={`w-5 h-5 rounded-full transition-all ${editColor === c ? "ring-2 ring-offset-1 ring-[#141414] scale-110" : "hover:scale-110"}`}
+                                className={`w-5 h-5 rounded-full transition-all ${editColor === c ? "ring-2 ring-offset-1 ring-line-focus scale-110" : "hover:scale-110"}`}
                                 style={{ backgroundColor: c }}
                               />
                             ))}
@@ -305,7 +305,7 @@ export function PipelineSettingsModal({
                         />
                         <button
                           type="button"
-                          className="flex-1 text-left text-[13px] font-medium text-[#141414] cursor-pointer hover:text-[#666] transition-colors"
+                          className="flex-1 text-left text-base font-medium text-ink cursor-pointer hover:text-ink-muted transition-colors"
                           onClick={() => {
                             setEditingId(stage.id)
                             setEditName(stage.name)
@@ -315,12 +315,12 @@ export function PipelineSettingsModal({
                           {stage.name}
                         </button>
                         {stage.is_won && (
-                          <span className="text-[10px] font-bold text-[#141414] bg-[#F5F5F5] px-1.5 py-0.5 rounded">
+                          <span className="text-xs font-bold text-ink bg-surface-sunken px-1.5 py-0.5 rounded-tag">
                             Yutildi
                           </span>
                         )}
                         {stage.is_lost && (
-                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                          <span className="text-xs font-bold text-danger-text bg-danger-soft px-1.5 py-0.5 rounded-tag">
                             Yutqazildi
                           </span>
                         )}
@@ -329,30 +329,30 @@ export function PipelineSettingsModal({
                             onClick={() => handleMove(index, "up")}
                             disabled={index === 0}
                             aria-label="Yuqoriga siljitish"
-                            className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
+                            className="p-0.5 rounded-item hover:bg-mute-ghost-hover disabled:opacity-30"
                           >
-                            <ArrowUp size={12} className="text-[#999]" weight="bold" />
+                            <ArrowUp size={12} weight="bold" className="text-ink-muted" />
                           </button>
                           <button
                             onClick={() => handleMove(index, "down")}
                             disabled={index === stages.length - 1}
                             aria-label="Pastga siljitish"
-                            className="p-0.5 rounded hover:bg-[#EBEBEB] disabled:opacity-30"
+                            className="p-0.5 rounded-item hover:bg-mute-ghost-hover disabled:opacity-30"
                           >
-                            <ArrowDown size={12} className="text-[#999]" weight="bold" />
+                            <ArrowDown size={12} weight="bold" className="text-ink-muted" />
                           </button>
                           {confirmDeleteStageId === stage.id ? (
                             <div className="flex items-center gap-1 ml-1">
                               <button
                                 onClick={() => handleDelete(stage.id)}
                                 disabled={deletingId === stage.id}
-                                className="px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded hover:bg-red-600 disabled:opacity-50"
+                                className="px-1.5 py-0.5 text-xs font-bold text-white bg-danger rounded-item hover:opacity-90 disabled:opacity-50"
                               >
                                 {deletingId === stage.id ? "..." : "Ha"}
                               </button>
                               <button
                                 onClick={() => setConfirmDeleteStageId(null)}
-                                className="text-[10px] text-[#999] hover:text-[#666]"
+                                className="text-xs text-ink-muted hover:text-ink"
                               >
                                 Yo'q
                               </button>
@@ -361,9 +361,9 @@ export function PipelineSettingsModal({
                             <button
                               onClick={() => setConfirmDeleteStageId(stage.id)}
                               aria-label="O'chirish"
-                              className="p-0.5 rounded hover:bg-red-50"
+                              className="p-0.5 rounded-item hover:bg-danger-soft"
                             >
-                              <Trash size={12} className="text-red-400" weight="bold" />
+                              <Trash size={12} weight="bold" className="text-danger-text" />
                             </button>
                           )}
                         </div>
@@ -373,18 +373,18 @@ export function PipelineSettingsModal({
                 ))}
 
                 {stages.length === 0 && (
-                  <div className="text-center text-[13px] text-[#999] py-8">
+                  <div className="text-center text-base text-ink-muted py-8">
                     Bosqichlar yo'q. Yangi bosqich qo'shing.
                   </div>
                 )}
               </div>
 
               {/* Add new stage */}
-              <div className="px-5 py-3 border-t border-[#F0F0F0] shrink-0">
+              <div className="px-5 py-3 border-t border-line shrink-0">
                 <div className="flex items-center gap-2 mb-2">
                   <button
                     type="button"
-                    className="w-5 h-5 rounded-full shrink-0 cursor-pointer border border-[#E0E0E0]"
+                    className="w-5 h-5 rounded-full shrink-0 cursor-pointer border border-line"
                     style={{ backgroundColor: newStageColor }}
                     onClick={() => {
                       const idx = STAGE_COLORS.indexOf(newStageColor)
@@ -399,14 +399,14 @@ export function PipelineSettingsModal({
                     onChange={(e) => setNewStageName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleAddStage() }}
                     placeholder="Yangi bosqich nomi"
-                    className="flex-1 border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414]"
+                    className="flex-1 border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus"
                   />
                   <button
                     onClick={handleAddStage}
                     disabled={adding || !newStageName.trim()}
-                    className="flex items-center gap-1 px-3 py-2 bg-[#141414] text-white text-[12px] font-bold rounded-[8px] hover:bg-[#333] disabled:bg-[#CCC] disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 bg-accent text-ink-on-accent text-sm font-bold rounded-control hover:bg-accent-hover disabled:bg-mute-soft disabled:text-ink-faint disabled:cursor-not-allowed transition-colors"
                   >
-                    <Plus size={14} weight="bold" />
+                    <Plus size={16} />
                     {adding ? "..." : "Qo'shish"}
                   </button>
                 </div>
@@ -419,7 +419,7 @@ export function PipelineSettingsModal({
                       onClick={() => setNewStageColor(c)}
                       aria-label={`Rang: ${c}`}
                       aria-pressed={newStageColor === c}
-                      className={`w-4 h-4 rounded-full transition-all ${newStageColor === c ? "ring-2 ring-offset-1 ring-[#141414] scale-110" : "hover:scale-110"}`}
+                      className={`w-4 h-4 rounded-full transition-all ${newStageColor === c ? "ring-2 ring-offset-1 ring-line-focus scale-110" : "hover:scale-110"}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
@@ -427,23 +427,23 @@ export function PipelineSettingsModal({
               </div>
 
               {/* Delete pipeline */}
-              <div className="px-5 py-4 border-t border-[#F0F0F0] shrink-0">
+              <div className="px-5 py-4 border-t border-line shrink-0">
                 {showDeletePipeline ? (
                   <div className="flex flex-col gap-2">
-                    <span className="text-[12px] font-medium text-red-600">
+                    <span className="text-sm font-medium text-danger-text">
                       Bu pipeline va undagi barcha lidlar o'chiriladi. Davom etasizmi?
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleDeletePipeline}
                         disabled={deletingPipeline}
-                        className="px-4 py-1.5 bg-red-500 text-white text-[12px] font-bold rounded-[8px] hover:bg-red-600 disabled:opacity-50 transition-colors"
+                        className="px-4 py-1.5 bg-danger text-white text-sm font-bold rounded-control hover:opacity-90 disabled:opacity-50 transition-colors"
                       >
                         {deletingPipeline ? "O'chirilmoqda..." : "Ha, o'chirish"}
                       </button>
                       <button
                         onClick={() => setShowDeletePipeline(false)}
-                        className="text-[12px] text-[#999] hover:text-[#666]"
+                        className="text-sm text-ink-muted hover:text-ink"
                       >
                         Bekor
                       </button>
@@ -452,9 +452,9 @@ export function PipelineSettingsModal({
                 ) : (
                   <button
                     onClick={() => setShowDeletePipeline(true)}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                    className="flex items-center gap-1.5 text-sm font-medium text-danger-text hover:text-danger-dark transition-colors"
                   >
-                    <Trash size={14} weight="bold" />
+                    <Trash size={16} />
                     Pipeline o'chirish
                   </button>
                 )}

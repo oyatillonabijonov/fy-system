@@ -3,104 +3,107 @@ import { useNavigate } from "react-router-dom"
 import { Plus, MagnifyingGlass } from "@phosphor-icons/react"
 import { useUsers } from "@/hooks/useUsers"
 import { CreateUserModal } from "@/components/sozlamalar/CreateUserModal"
-import { ROLE_LABELS, ROLE_BADGE_VARIANT, type UserProfile } from "@/lib/supabase/queries/auth"
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { formatDate, formatPhone } from "@/lib/format"
+import { ROLE_LABELS, type UserProfile, type UserRole } from "@/lib/supabase/queries/auth"
+import { departmentLabel, departmentColor } from "@/lib/constants/employee"
+import { formatPhone } from "@/lib/format"
+import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
 }
+
+const ROLE_FILTERS: { id: UserRole | "all"; label: string }[] = [
+  { id: "all", label: "Hammasi" },
+  { id: "admin", label: "Administrator" },
+  { id: "manager", label: "Menejer" },
+  { id: "xodim", label: "Xodim" },
+]
 
 export function Hodimlar() {
   const navigate = useNavigate()
   const { data: users = [], isLoading } = useUsers()
   const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState("")
+  const [role, setRole] = useState<UserRole | "all">("all")
 
   const filteredUsers = useMemo(() => {
-    if (!search.trim()) return users
-    const q = search.toLowerCase()
+    const q = search.trim().toLowerCase()
     return users.filter(
-      (u) => u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+      (u) =>
+        (role === "all" || u.role === role) &&
+        (!q || u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.position ?? "").toLowerCase().includes(q)),
     )
-  }, [users, search])
+  }, [users, search, role])
+  const paged = usePaged(filteredUsers)
+
+  const count = (id: UserRole | "all") => (id === "all" ? users.length : users.filter((u) => u.role === id).length)
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
-            Hodimlar
-          </h1>
-          <p className="text-[13px] text-[#999999] mt-1">
-            Tizim foydalanuvchilarini boshqarish
-          </p>
+    <div className="flex flex-col gap-4 pb-10">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1">
+          {ROLE_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setRole(f.id)}
+              aria-pressed={role === f.id}
+              className={`flex items-center gap-1.5 px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${role === f.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+            >
+              {f.label}
+              <span className="text-sm text-ink-faint tabular-nums">{count(f.id)}</span>
+            </button>
+          ))}
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-[#000] transition-colors"
-        >
-          <Plus weight="bold" size={16} />
-          Yangi xodim
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-md">
-        <MagnifyingGlass
-          size={16}
-          weight="bold"
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]"
-        />
-        <input
-          type="text"
-          placeholder="Ism yoki email bo'yicha qidirish..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-[#E5E5E5] rounded-[8px] text-[13px] text-[#141414] placeholder:text-[#CCC] focus:border-[#141414] outline-none transition-colors"
-        />
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Jami xodimlar" value={String(users.length)} />
-        <StatCard label="Adminlar" value={String(users.filter((u) => u.role === "admin").length)} />
-        <StatCard label="Faol xodimlar" value={String(users.filter((u) => u.is_active).length)} />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Ism, email yoki lavozim"
+              aria-label="Qidirish"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-64 h-control-md pl-9 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 h-control-md bg-accent text-ink-on-accent rounded-control text-base font-medium hover:bg-accent-hover transition-colors"
+          >
+            <Plus size={16} />
+            Yangi xodim
+          </button>
+        </div>
       </div>
 
       {/* Users table */}
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-[13px] text-[#999]">Yuklanmoqda...</div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-[14px] font-bold text-[#141414] mb-1">
-              {search ? "Mos keluvchi xodim topilmadi" : "Xodim topilmadi"}
-            </p>
-            <p className="text-[12px] text-[#999]">
-              {search ? "Boshqa qidiruv so'zini sinab ko'ring" : "Yangi xodim qo'shish uchun yuqoridagi tugmani bosing"}
-            </p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#FBFBFB] border-b border-[#F0F0F0]">
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-[#999999] uppercase tracking-wide">Xodim</th>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-[#999999] uppercase tracking-wide">Email</th>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-[#999999] uppercase tracking-wide">Rol</th>
-                <th className="px-6 py-4 text-left text-[11px] font-bold text-[#999999] uppercase tracking-wide">Holat</th>
-                <th className="px-6 py-4 text-right text-[11px] font-bold text-[#999999] uppercase tracking-wide">Yaratilgan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F0F0F0]">
-              {filteredUsers.map((user) => (
-                <UserRow key={user.id} user={user} onClick={() => navigate(`/hodimlar/${user.id}`)} />
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className={tbl.scroll}>
+        <table className={tbl.table}>
+          <thead>
+            <tr>
+              <th className={tbl.th}>Xodim</th>
+              <th className={tbl.th}>Bo'lim</th>
+              <th className={tbl.th}>Rol</th>
+              <th className={tbl.th}>Aloqa</th>
+              <th className={tbl.th}>Holat</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={5} className={tbl.empty}>Yuklanmoqda…</td></tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr><td colSpan={5} className={tbl.empty}>{search || role !== "all" ? "Mos keluvchi xodim topilmadi" : "Hali xodim qo'shilmagan"}</td></tr>
+            ) : paged.pageItems.map((user) => (
+              <UserRow key={user.id} user={user} onClick={() => navigate(`/hodimlar/${user.id}`)} />
+            ))}
+          </tbody>
+        </table>
       </div>
+      <Pager page={paged.page} pageCount={paged.pageCount} total={filteredUsers.length} onPage={paged.setPage} />
 
       {/* Create modal stays on the list page */}
       <CreateUserModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
@@ -108,52 +111,44 @@ export function Hodimlar() {
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white border border-[#F0F0F0] rounded-[12px] p-5">
-      <p className="text-[12px] font-medium text-[#999999] mb-2">{label}</p>
-      <p className="text-[22px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
-        {value}
-      </p>
-    </div>
-  )
-}
-
 function UserRow({ user, onClick }: { user: UserProfile; onClick: () => void }) {
-  const initials = getInitials(user.full_name)
-
   return (
     <tr
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick() } }}
-      className="hover:bg-[#F9F9F8] cursor-pointer transition-colors"
+      className={`${tbl.tr} cursor-pointer`}
     >
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          {user.avatar_url ? (
-            <img src={user.avatar_url} alt={user.full_name} className="w-9 h-9 rounded-full object-cover" />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-[#141414] flex items-center justify-center text-[11px] font-bold text-white">
-              {initials}
-            </div>
-          )}
-          <div>
-            <p className="text-[13px] font-bold text-[#141414]">{user.full_name}</p>
-            {user.phone && <p className="text-[11px] text-[#999]">{formatPhone(user.phone)}</p>}
+      <td className={tbl.td}>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="size-9 rounded-full flex-shrink-0 overflow-hidden bg-mute-soft flex items-center justify-center text-sm font-semibold text-ink-muted">
+            {user.avatar_url ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" /> : getInitials(user.full_name)}
+          </span>
+          <div className="min-w-0">
+            <p className="text-base font-medium text-ink truncate">{user.full_name}</p>
+            <p className="text-sm text-ink-muted truncate">{user.position ?? "Lavozim ko'rsatilmagan"}</p>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 text-[13px] text-[#666]">{user.email}</td>
-      <td className="px-6 py-4">
-        <StatusBadge label={ROLE_LABELS[user.role]} variant={ROLE_BADGE_VARIANT[user.role]} />
+      <td className={tbl.td}>
+        {user.department ? (
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            <span className="size-2 rounded-full" style={{ backgroundColor: departmentColor(user.department) }} />
+            {departmentLabel(user.department)}
+          </span>
+        ) : <span className="text-ink-faint">—</span>}
       </td>
-      <td className="px-6 py-4">
-        <StatusBadge label={user.is_active ? "Faol" : "Faol emas"} variant={user.is_active ? 'success' : 'danger'} />
+      <td className={`${tbl.td} whitespace-nowrap`}>{ROLE_LABELS[user.role]}</td>
+      <td className={tbl.td}>
+        <p className="text-ink-muted">{user.email}</p>
+        {user.phone && <p className="text-sm text-ink-faint tabular-nums">{formatPhone(user.phone)}</p>}
       </td>
-      <td className="px-6 py-4 text-right text-[12px] text-[#999]">
-        {formatDate(user.created_at)}
+      <td className={tbl.td}>
+        <span className={`flex items-center gap-2 whitespace-nowrap ${user.is_active ? "" : "text-ink-muted"}`}>
+          <span className={`size-2 rounded-full ${user.is_active ? "bg-success" : "bg-mute-soft-hover"}`} />
+          {user.is_active ? "Faol" : "Faol emas"}
+        </span>
       </td>
     </tr>
   )

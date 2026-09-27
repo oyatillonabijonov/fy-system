@@ -103,7 +103,7 @@ export function ImageCropModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
           />
           <motion.div
             ref={panelRef}
@@ -114,24 +114,24 @@ export function ImageCropModal({
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-white rounded-[12px] shadow-2xl w-full max-w-lg relative overflow-hidden flex flex-col"
+            className="bg-surface-raised rounded-overlay w-full max-w-lg relative overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="p-5 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 id={titleId} className="text-[16px] font-bold text-[#141414]">
+            <div className="p-5 border-b border-line flex items-center justify-between">
+              <h3 id={titleId} className="text-md font-bold text-ink">
                 Rasmni kesish
               </h3>
               <button
                 onClick={onClose}
                 aria-label="Yopish"
-                className="p-1 hover:bg-[#F5F5F5] rounded-full transition-all"
+                className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all"
               >
-                <X size={20} className="text-[#999999]" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
             {/* Crop area */}
-            <div className="p-5 flex items-center justify-center bg-[#F5F5F5] max-h-[60vh] overflow-hidden">
+            <div className="p-5 flex items-center justify-center bg-surface-sunken max-h-[60vh] overflow-hidden">
               <ReactCrop
                 crop={crop}
                 onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -153,13 +153,13 @@ export function ImageCropModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 bg-[#F5F5F5] text-[#141414] rounded-[8px] text-[13px] font-bold hover:bg-[#EAEAEA] transition-all"
+                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleDone}
-                className="flex-1 px-4 py-2.5 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-black transition-all shadow-md active:scale-95"
+                className="flex-1 px-4 py-2.5 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
               >
                 Tasdiqlash
               </button>

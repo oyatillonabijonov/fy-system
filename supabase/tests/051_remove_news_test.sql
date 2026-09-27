@@ -1,4 +1,4 @@
--- Behavioural test for migration 049 (news removal).
+-- Behavioural test for migration 051 (news removal).
 -- THROWAWAY DB only (recipe: CLAUDE.md §5 "Tests"). Run:
 --   docker exec fy-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/t.sql
 
@@ -22,5 +22,5 @@ BEGIN
     RAISE EXCEPTION 'FAIL: "news-images all" policy hali mavjud';
   END IF;
 
-  RAISE NOTICE 'PASS: 049 — yangiliklar to''liq olib tashlangan';
+  RAISE NOTICE 'PASS: 051 — yangiliklar to''liq olib tashlangan';
 END $$;

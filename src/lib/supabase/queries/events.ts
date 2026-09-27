@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 
-// ponytail: untyped client for columns added in 050 (tariff_id, seller_id) until
+// ponytail: untyped client for columns added in 052 (tariff_id, seller_id) until
 // `bun run gen:types`; drop once types.ts is regenerated.
 const db = supabase as unknown as SupabaseClient
 
@@ -159,28 +159,6 @@ export async function deleteEvent(id: string): Promise<void> {
     .eq("id", id)
 
   if (error) throw error
-}
-
-// ─── Event Cover Upload ─────────────────────────────────
-
-export async function uploadEventCover(
-  file: File,
-  eventId: string
-): Promise<string> {
-  const ext = file.name.split(".").pop() ?? "jpg"
-  const path = `${eventId}/cover.${ext}`
-
-  const { error } = await supabase.storage
-    .from("event-covers")
-    .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" })
-
-  if (error) throw error
-
-  const { data } = supabase.storage
-    .from("event-covers")
-    .getPublicUrl(path)
-
-  return data.publicUrl
 }
 
 // ─── Participants ────────────────────────────────────────

@@ -99,7 +99,7 @@ export function CreateCrmLeadModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50"
+            className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-50"
             onClick={handleClose}
           />
 
@@ -117,40 +117,40 @@ export function CreateCrmLeadModal({
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              className="bg-white rounded-[12px] w-full max-w-lg shadow-2xl pointer-events-auto"
+              className="bg-surface-raised rounded-overlay w-full max-w-lg pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-5 pb-4 border-b border-[#F0F0F0]">
+              <div className="flex items-center justify-between p-5 pb-4 border-b border-line">
                 <div className="flex items-center gap-2">
-                  <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">
+                  <h2 id={titleId} className="text-md font-bold text-ink">
                     Yangi lid yaratish
                   </h2>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-tag text-xs font-bold bg-surface-sunken text-ink">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                     CRM-N
                   </span>
                 </div>
                 <button
                   onClick={handleClose}
-                  className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors"
+                  className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
                   aria-label="Yopish"
                 >
-                  <X size={20} className="text-[#999999]" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
               {/* Form */}
               <div className="p-5 flex flex-col gap-4">
                 {error && (
-                  <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+                  <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                     {error}
                   </div>
                 )}
 
                 {/* Ism */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={contactNameFieldId} className="text-[12px] font-medium text-[#999999]">Ism *</label>
+                  <label htmlFor={contactNameFieldId} className="text-sm font-medium text-ink-muted">Ism *</label>
                   <input
                     id={contactNameFieldId}
                     type="text"
@@ -158,45 +158,45 @@ export function CreateCrmLeadModal({
                     onChange={(e) => setContactName(e.target.value)}
                     placeholder="Kontakt ismi"
                     autoFocus
-                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                    className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
                   />
                 </div>
 
                 {/* Telefon */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={contactPhoneFieldId} className="text-[12px] font-medium text-[#999999]">Telefon</label>
+                  <label htmlFor={contactPhoneFieldId} className="text-sm font-medium text-ink-muted">Telefon</label>
                   <input
                     id={contactPhoneFieldId}
                     type="tel"
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
                     placeholder="+998 90 123 45 67"
-                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                    className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
                   />
                 </div>
 
                 {/* Lead nomi */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={leadNameFieldId} className="text-[12px] font-medium text-[#999999]">Lead nomi</label>
+                  <label htmlFor={leadNameFieldId} className="text-sm font-medium text-ink-muted">Lead nomi</label>
                   <input
                     id={leadNameFieldId}
                     type="text"
                     value={leadName}
                     onChange={(e) => setLeadName(e.target.value)}
                     placeholder={contactName ? `${contactName} — Yangi lid` : "Avtomatik to'ldiriladi"}
-                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                    className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
                   />
                 </div>
 
                 {/* Bosqich + Summa */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor={stageFieldId} className="text-[12px] font-medium text-[#999999]">Bosqich</label>
+                    <label htmlFor={stageFieldId} className="text-sm font-medium text-ink-muted">Bosqich</label>
                     <select
                       id={stageFieldId}
                       value={stageId}
                       onChange={(e) => setStageId(e.target.value)}
-                      className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+                      className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
                     >
                       {stages
                         .filter((s) => !s.is_won && !s.is_lost)
@@ -206,26 +206,26 @@ export function CreateCrmLeadModal({
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor={priceFieldId} className="text-[12px] font-medium text-[#999999]">Summa</label>
+                    <label htmlFor={priceFieldId} className="text-sm font-medium text-ink-muted">Summa</label>
                     <input
                       id={priceFieldId}
                       type="number"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="0"
-                      className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#141414] transition-colors"
+                      className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
                     />
                   </div>
                 </div>
 
                 {/* Mas'ul */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={responsibleFieldId} className="text-[12px] font-medium text-[#999999]">Mas'ul</label>
+                  <label htmlFor={responsibleFieldId} className="text-sm font-medium text-ink-muted">Mas'ul</label>
                   <select
                     id={responsibleFieldId}
                     value={responsibleUserId}
                     onChange={(e) => setResponsibleUserId(e.target.value)}
-                    className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+                    className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
                   >
                     <option value="">Tanlanmagan</option>
                     {users.map((u) => (
@@ -236,26 +236,26 @@ export function CreateCrmLeadModal({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#F0F0F0]">
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
                 <button
                   onClick={handleClose}
                   disabled={saving}
-                  className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                  className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving || !contactName.trim()}
-                  className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
+                  className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
                     saving || !contactName.trim()
-                      ? "bg-[#CCCCCC] cursor-not-allowed"
-                      : "bg-[#141414] hover:bg-[#333333]"
+                      ? "bg-mute-soft text-ink-faint cursor-not-allowed"
+                      : "bg-accent text-ink-on-accent hover:bg-accent-hover"
                   }`}
                 >
                   {saving ? (
                     <div className="flex items-center gap-1.5">
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-ink-on-accent border-t-transparent rounded-full animate-spin" />
                       Yaratilmoqda...
                     </div>
                   ) : (

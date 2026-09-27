@@ -34,7 +34,7 @@ function PermissionsForm({ onClose, user, onSuccess }: InnerProps) {
   if (permsQuery.isLoading || !permsQuery.data) {
     return (
       <PermissionsShell user={user} onClose={onClose} loading>
-        <div className="text-[12px] text-[#999] italic py-4">Yuklanmoqda...</div>
+        <div className="text-sm text-ink-muted italic py-4">Yuklanmoqda...</div>
       </PermissionsShell>
     )
   }
@@ -63,7 +63,7 @@ function PermissionsShell({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
         onClick={() => !loading && onClose()}
       />
       <motion.div
@@ -79,29 +79,29 @@ function PermissionsShell({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-white rounded-[12px] w-full max-w-lg shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
-            <h2 id={titleId} className="text-[16px] font-bold text-[#141414]">Foydalanuvchi sozlamalari</h2>
-            <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors">
-              <X size={20} className="text-[#999]" weight="bold" />
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+            <h2 id={titleId} className="text-md font-bold text-ink">Foydalanuvchi sozlamalari</h2>
+            <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
           <div className="p-5 flex flex-col gap-4">
-            <div className="flex items-center gap-3 p-3 bg-[#F9F9F9] rounded-[10px]">
-              <div className="w-12 h-12 rounded-full bg-[#141414] flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="flex items-center gap-3 p-3 bg-surface-sunken rounded-control">
+              <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center overflow-hidden flex-shrink-0">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[14px] font-bold text-white">{initials}</span>
+                  <span className="text-base font-bold text-ink-on-accent">{initials}</span>
                 )}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[14px] font-bold text-[#141414] truncate">{user.full_name}</span>
-                <span className="text-[12px] text-[#999] truncate">{user.email}</span>
+                <span className="text-base font-bold text-ink truncate">{user.full_name}</span>
+                <span className="text-sm text-ink-muted truncate">{user.email}</span>
                 {!user.is_active && (
-                  <span className="mt-1 inline-flex w-fit px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-red-50 text-red-700">
+                  <span className="mt-1 inline-flex w-fit px-1.5 py-0.5 rounded-tag text-xs font-bold bg-danger-soft text-danger-dark">
                     Faolsiz
                   </span>
                 )}
@@ -180,20 +180,20 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
     <PermissionsShell user={user} onClose={onClose} loading={saving}>
       <>
         {error && (
-              <div className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-red-50 text-red-700 border border-red-200">
+              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                 {error}
               </div>
             )}
 
             {/* Role */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={roleId} className="text-[12px] font-medium text-[#999]">Rol</label>
+              <label htmlFor={roleId} className="text-sm font-medium text-ink-muted">Rol</label>
               <select
                 id={roleId}
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 disabled={saving}
-                className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
               >
                 {(Object.keys(ROLE_LABELS) as UserRole[]).map((r) => (
                   <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -203,48 +203,48 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
 
             {/* Modules */}
             <div className="flex flex-col gap-2">
-              <span className="text-[12px] font-medium text-[#999]">Modullar</span>
+              <span className="text-sm font-medium text-ink-muted">Modullar</span>
               <div className="grid grid-cols-2 gap-2">
                 {MODULES.map((m) => (
                   <label
                     key={m.id}
-                    className="flex items-center gap-2 px-3 py-2 border border-[#E0E0E0] rounded-[8px] cursor-pointer hover:bg-[#F9F9F9] transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 border border-line rounded-control cursor-pointer hover:bg-mute-ghost-hover transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={modules.has(m.id)}
                       onChange={() => toggleModule(m.id)}
                       disabled={saving}
-                      className="w-4 h-4 rounded accent-[#141414] cursor-pointer"
+                      className="w-4 h-4 rounded-checkbox accent-accent cursor-pointer"
                     />
-                    <span className="text-[13px] text-[#141414]">{m.label}</span>
+                    <span className="text-base text-ink">{m.label}</span>
                   </label>
                 ))}
               </div>
               {role === "admin" && (
-                <span className="text-[11px] text-[#999] italic">
+                <span className="text-xs text-ink-muted italic">
                   Administrator har bir bo'limga avtomatik kirish huquqiga ega — modullar tanlash shart emas.
                 </span>
               )}
             </div>
 
             {/* Deactivate / Activate confirmation */}
-            <div className="border-t border-[#F0F0F0] pt-4">
+            <div className="border-t border-line pt-4">
               {user.is_active ? (
                 confirmDeactivate ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[#666] flex-1">Aniqmi?</span>
+                    <span className="text-sm text-ink-muted flex-1">Aniqmi?</span>
                     <button
                       onClick={() => setConfirmDeactivate(false)}
                       disabled={saving}
-                      className="px-3 py-1.5 rounded-[6px] text-[12px] font-medium text-[#999] hover:text-[#666]"
+                      className="px-3 py-1.5 rounded-item text-sm font-medium text-ink-muted hover:text-ink"
                     >
                       Yo'q
                     </button>
                     <button
                       onClick={handleDeactivate}
                       disabled={saving}
-                      className="px-3 py-1.5 rounded-[6px] text-[12px] font-bold text-white bg-red-600 hover:bg-red-700"
+                      className="px-3 py-1.5 rounded-item text-sm font-bold text-white bg-danger hover:bg-danger/90"
                     >
                       Ha, faolsizlantir
                     </button>
@@ -253,7 +253,7 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
                   <button
                     onClick={() => setConfirmDeactivate(true)}
                     disabled={saving}
-                    className="text-[12px] font-bold text-red-600 hover:text-red-700 transition-colors"
+                    className="text-sm font-bold text-danger-text hover:text-danger-dark transition-colors"
                   >
                     Faolsizlantirish
                   </button>
@@ -262,26 +262,26 @@ function LoadedPermissionsForm({ onClose, user, onSuccess, initialModules }: For
                 <button
                   onClick={handleActivate}
                   disabled={saving}
-                  className="text-[12px] font-bold text-[#141414] hover:text-[#141414] transition-colors"
+                  className="text-sm font-bold text-ink hover:text-ink transition-colors"
                 >
                   Qayta faollashtirish
                 </button>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F0F0F0]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                  saving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+                className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+                  saving ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
                 }`}
               >
                 {saving ? "Saqlanmoqda..." : "Saqlash"}

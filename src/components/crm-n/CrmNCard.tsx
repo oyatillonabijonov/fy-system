@@ -48,21 +48,21 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
     <div
       onClick={() => onClick?.(lead)}
       style={{ letterSpacing: "-0.4px" }}
-      className={`bg-white border border-[#e5e5e5] rounded-[10px] px-3.5 py-3 flex flex-col gap-1 hover:border-[#c0c0c0] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all duration-150 cursor-pointer ${isLost ? "opacity-50" : ""}`}
+      className={`bg-surface border border-line rounded-surface px-3.5 py-3 flex flex-col gap-1 hover:bg-mute-ghost-hover transition-all duration-150 cursor-pointer ${isLost ? "opacity-50" : ""}`}
     >
       {/* LINE 1: Avatar + DisplayName */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
             style={{ backgroundColor: contactColor }}
           >
             {contactInitials}
           </div>
-          <span className="text-[13px] font-semibold text-[#141414] leading-tight truncate">
+          <span className="text-base font-semibold text-ink leading-tight truncate">
             {displayName}
             {contact?.company && (
-              <span className="text-[12px] font-normal text-[#999]">
+              <span className="text-sm font-normal text-ink-muted">
                 , {contact.company}
               </span>
             )}
@@ -72,28 +72,28 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
 
       {/* LINE 2: Lead name */}
       <div className="pl-9">
-        <span className="text-[11px] text-[#999] truncate block">
+        <span className="text-xs text-ink-muted truncate block">
           {lead.name}
         </span>
       </div>
 
       {/* LINE 3: Tags */}
       <div className="flex items-center gap-1.5 flex-wrap pl-9 mt-1">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5F5F5] text-[#141414]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
           CRM-N
         </span>
-        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] text-[#666]">
+        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink-muted">
           {sourceLabel}
         </span>
         {lead.price > 0 && (
-          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] ${isLost ? "line-through text-[#999]" : "text-[#666]"}`}>
+          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken ${isLost ? "line-through text-ink-muted" : "text-ink-muted"}`}>
             {formatNumber(lead.price)} so'm
           </span>
         )}
         {contact?.phone && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f5] text-[#666]">
-            <Phone size={10} className="text-[#bbb]" weight="bold" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink-muted">
+            <Phone size={10} weight="bold" className="text-ink-faint" />
             {contact.phone}
           </span>
         )}
@@ -101,7 +101,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
 
       {/* LINE 4: Date/time */}
       <div className="pl-9 mt-0.5">
-        <span className="text-[11px] text-[#999] font-medium">
+        <span className="text-xs text-ink-muted font-medium">
           {formatDate(lead.created_at)}
         </span>
       </div>

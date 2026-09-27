@@ -4,7 +4,7 @@ import { useFinanceFilters } from "@/hooks/useFinanceFilters"
 import { PERIOD_LABELS, type Period } from "@/lib/period"
 
 const SELECT =
-  "border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] bg-white focus:outline-none focus:border-[#141414] transition-colors"
+  "h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
 
 export function FinanceFilterBar() {
   const { period, get, set } = useFinanceFilters()
@@ -37,7 +37,7 @@ export function FinanceFilterBar() {
             onChange={(e) => set({ from: e.target.value || null })}
             className={SELECT}
           />
-          <span className="text-[#999] text-[12px]">—</span>
+          <span className="text-ink-muted text-sm">—</span>
           <input
             type="date"
             aria-label="Tugash sanasi"
@@ -74,7 +74,7 @@ export function FinanceFilterBar() {
       {active && (
         <button
           onClick={() => set({ period: null, from: null, to: null, event: null, seller: null, method: null })}
-          className="px-3 py-2 text-[12px] font-semibold text-[#666] hover:text-[#141414] transition-colors"
+          className="px-3 h-control-md text-sm font-semibold text-ink-muted hover:text-ink transition-colors"
         >
           Filtrlarni tozalash
         </button>

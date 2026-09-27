@@ -30,10 +30,10 @@ export function Sozlamalar() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <div className="flex flex-col gap-1">
-        <h1 className="text-[22px] font-bold text-[#141414]" style={{ letterSpacing: "-0.4px" }}>
+        <h1 className="text-lg font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
           Profilim
         </h1>
-        <p className="text-[13px] text-[#999999]">
+        <p className="text-base text-ink-muted">
           Shaxsiy ma'lumotlar va parolingizni boshqaring
         </p>
       </div>
@@ -46,10 +46,10 @@ export function Sozlamalar() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-[8px] text-[12px] font-bold shadow-lg ${
+            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-surface text-sm font-bold ${
               toast.type === "success"
-                ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
-                : "bg-red-50 text-red-700 border border-red-200"
+                ? "bg-surface-sunken text-ink border border-line"
+                : "bg-danger-soft text-danger-dark border border-danger-soft"
             }`}
           >
             {toast.message}
@@ -169,24 +169,24 @@ function ProfileTab({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           aria-label="Rasmni o'zgartirish"
-          className="relative w-20 h-20 rounded-full bg-[#141414] flex items-center justify-center overflow-hidden cursor-pointer group"
+          className="relative w-20 h-20 rounded-full bg-accent flex items-center justify-center overflow-hidden cursor-pointer group"
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt={user.full_name} className="w-full h-full object-cover" />
           ) : (
-            <UserIcon size={32} weight="bold" className="text-white" />
+            <UserIcon size={32} weight="thin" className="text-ink-on-accent" />
           )}
-          <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <Camera size={20} weight="bold" className="text-white" />
+          <span className="absolute inset-0 bg-surface-overlay opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <Camera size={20} className="text-ink-on-accent" />
           </span>
         </button>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-bold text-[#141414]">{user.full_name}</span>
-          <span className="text-[12px] text-[#999]">{ROLE_LABELS[user.role]}</span>
+          <span className="text-base font-bold text-ink">{user.full_name}</span>
+          <span className="text-sm text-ink-muted">{ROLE_LABELS[user.role]}</span>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="mt-1 text-[12px] font-bold text-[#141414] hover:text-[#333] underline w-fit transition-colors"
+            className="mt-1 text-sm font-bold text-ink hover:text-ink-muted underline w-fit transition-colors"
           >
             {uploading ? "Yuklanmoqda..." : "Rasmni yangilash"}
           </button>
@@ -203,37 +203,37 @@ function ProfileTab({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-full-name`} className="text-[12px] font-medium text-[#999]">Ism Familiya</label>
+          <label htmlFor={`${uid}-full-name`} className="text-sm font-medium text-ink-muted">Ism Familiya</label>
           <input
             id={`${uid}-full-name`}
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+            className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-email`} className="text-[12px] font-medium text-[#999]">Email</label>
+          <label htmlFor={`${uid}-email`} className="text-sm font-medium text-ink-muted">Email</label>
           <input
             id={`${uid}-email`}
             type="email"
             value={user.email}
             disabled
-            className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#999] bg-[#F9F9F9] cursor-not-allowed"
+            className="border border-line rounded-control px-3 py-2 text-base text-ink-muted bg-surface-sunken cursor-not-allowed"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-phone`} className="text-[12px] font-medium text-[#999]">Telefon</label>
+          <label htmlFor={`${uid}-phone`} className="text-sm font-medium text-ink-muted">Telefon</label>
           <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${uid}-role`} className="text-[12px] font-medium text-[#999]">Rol</label>
+          <label htmlFor={`${uid}-role`} className="text-sm font-medium text-ink-muted">Rol</label>
           <input
             id={`${uid}-role`}
             type="text"
             value={ROLE_LABELS[user.role]}
             disabled
-            className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#999] bg-[#F9F9F9] cursor-not-allowed"
+            className="border border-line rounded-control px-3 py-2 text-base text-ink-muted bg-surface-sunken cursor-not-allowed"
           />
         </div>
       </div>
@@ -242,8 +242,8 @@ function ProfileTab({
         <button
           onClick={handleSave}
           disabled={saving || !dirty}
-          className={`px-5 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-            saving || !dirty ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+          className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+            saving || !dirty ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
           }`}
         >
           {saving ? "Saqlanmoqda..." : "Saqlash"}
@@ -251,7 +251,7 @@ function ProfileTab({
         {!showPasswordForm && (
           <button
             onClick={() => setShowPasswordForm(true)}
-            className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#666] hover:text-[#141414] transition-colors"
+            className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
           >
             Parolni o'zgartirish
           </button>
@@ -260,30 +260,30 @@ function ProfileTab({
 
       {/* Password form */}
       {showPasswordForm && (
-        <div className="border border-[#F0F0F0] rounded-[10px] p-4 flex flex-col gap-3">
-          <h3 className="text-[14px] font-bold text-[#141414]">Yangi parol</h3>
+        <div className="border border-line rounded-surface p-4 flex flex-col gap-3">
+          <h3 className="text-base font-bold text-ink">Yangi parol</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Yangi parol (kamida 6 belgi)"
-              className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+              className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
             />
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Parolni tasdiqlang"
-              className="border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] focus:outline-none focus:border-[#141414] transition-colors"
+              className="border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
             />
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePasswordChange}
               disabled={pwdSaving}
-              className={`px-4 py-2 rounded-[8px] text-[13px] font-bold text-white transition-colors ${
-                pwdSaving ? "bg-[#CCC] cursor-not-allowed" : "bg-[#141414] hover:bg-[#333]"
+              className={`px-4 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+                pwdSaving ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >
               {pwdSaving ? "..." : "O'zgartirish"}
@@ -295,7 +295,7 @@ function ProfileTab({
                 setConfirmPassword("")
               }}
               disabled={pwdSaving}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-[#999] hover:text-[#666]"
+              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink-muted"
             >
               Bekor qilish
             </button>

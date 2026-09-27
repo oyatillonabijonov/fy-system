@@ -1,4 +1,4 @@
--- 049: remove the news feature (web page + mobile tab removed in the same release).
+-- 051: remove the news feature (web page + mobile tab removed in the same release).
 -- ⚠️ Apply to production ONLY after the mobile build without the News tab is
 -- live — older installed builds still query news_posts.
 -- Image files stay on the storage container's disk (/var/lib/storage/stub/news-images/);

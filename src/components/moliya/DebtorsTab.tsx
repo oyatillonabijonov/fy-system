@@ -8,6 +8,8 @@ import type { DebtorRow, DebtStatus, FinanceFilters, ParticipantFinancePatch } f
 import { ApplyCashbackModal } from "@/components/cashback/ApplyCashbackModal"
 import { CashbackPercentCell, PriceCell } from "@/components/moliya/cells"
 import { StatusBadge } from "@/components/ui/StatusBadge"
+import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 import { tashkentToday } from "@/lib/period"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
@@ -20,13 +22,13 @@ const STATUS_LABEL: Record<DebtStatus, string> = {
 }
 
 const SELECT =
-  "border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[13px] text-[#141414] bg-white focus:outline-none focus:border-[#141414] transition-colors"
+  "h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
 
 // Receivables aging, counted from the enrolment day.
-function aging(days: number): { label: string; color: string } {
-  if (days <= 30) return { label: "0–30 kun", color: "#999999" }
-  if (days <= 60) return { label: "31–60 kun", color: "#B7791F" }
-  return { label: "60+ kun", color: "#D13328" }
+function aging(days: number): { label: string; variant: "neutral" | "warning" | "danger" } {
+  if (days <= 30) return { label: "0–30 kun", variant: "neutral" }
+  if (days <= 60) return { label: "31–60 kun", variant: "warning" }
+  return { label: "60+ kun", variant: "danger" }
 }
 
 interface SellerOption {
@@ -39,6 +41,7 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
   const raw = get("status")
   const status: DebtStatus = raw === "overdue" || raw === "paid" || raw === "all" ? raw : "debt"
   const { data: rows = [], isLoading } = useDebtors(filters, status)
+  const paged = usePaged(rows)
   const { data: users = [] } = useUsers()
   const sellers: SellerOption[] = users
     .filter((u) => u.is_active && u.department === "sotuv")
@@ -59,43 +62,44 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
             <option key={s} value={s}>{STATUS_LABEL[s]}</option>
           ))}
         </select>
-        {!isLoading && <span className="text-[12px] text-[#999]">{rows.length} ta</span>}
+        {!isLoading && <span className="text-sm text-ink-muted tabular-nums">{rows.length} ta</span>}
       </div>
 
-      <div className="bg-white border border-[#F0F0F0] rounded-[12px] overflow-hidden">
-        {isLoading ? (
-          <div className="py-10 flex items-center justify-center">
-            <ThinkingOrb state="searching" size={20} theme="light" />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="py-10 text-center text-[13px] text-[#999]">Bu filtrlar bo'yicha ishtirokchi yo'q</div>
-        ) : (
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left">
+      {isLoading ? (
+        <div className="py-10 flex items-center justify-center">
+          <ThinkingOrb state="searching" size={20} theme="light" />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="py-10 text-center text-base text-ink-muted">Bu filtrlar bo'yicha ishtirokchi yo'q</div>
+      ) : (
+        <>
+          <div className={tbl.scroll}>
+            <table className={tbl.table}>
               <thead>
-                <tr className="text-[11px] font-bold text-[#999] border-b border-[#F0F0F0]">
-                  <th className="px-4 py-2.5 font-bold">Mijoz</th>
-                  <th className="px-4 py-2.5 font-bold">Tadbir</th>
-                  <th className="px-4 py-2.5 font-bold">Sotuvchi</th>
-                  <th className="px-4 py-2.5 font-bold">Tarif</th>
-                  <th className="px-4 py-2.5 font-bold text-right">Kelishuv</th>
-                  <th className="px-4 py-2.5 font-bold text-right">To'langan</th>
-                  <th className="px-4 py-2.5 font-bold text-right">Qoldiq</th>
-                  <th className="px-4 py-2.5 font-bold">Keyingi to'lov</th>
-                  <th className="px-4 py-2.5 font-bold">Qarz yoshi</th>
-                  <th className="px-4 py-2.5 font-bold text-right">Keshbek</th>
-                  {canEdit && <th className="px-4 py-2.5 font-bold text-right">Amal</th>}
+                <tr>
+                  <th className={tbl.th}>Mijoz</th>
+                  <th className={tbl.th}>Tadbir</th>
+                  <th className={tbl.th}>Sotuvchi</th>
+                  <th className={tbl.th}>Tarif</th>
+                  <th className={`${tbl.th} text-right`}>Kelishuv</th>
+                  <th className={`${tbl.th} text-right`}>To'langan</th>
+                  <th className={`${tbl.th} text-right`}>Qoldiq</th>
+                  <th className={tbl.th}>Keyingi to'lov</th>
+                  <th className={tbl.th}>Qarz yoshi</th>
+                  <th className={`${tbl.th} text-right`}>Keshbek</th>
+                  {canEdit && <th className={`${tbl.th} text-right`}>Amal</th>}
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {paged.pageItems.map((r) => (
                   <DebtorTableRow key={r.participant_id} r={r} sellers={sellers} today={today} canEdit={canEdit} onPay={onPay} onSpend={setSpending} />
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+          <Pager page={paged.page} pageCount={paged.pageCount} total={rows.length} onPage={paged.setPage} />
+        </>
+      )}
 
       {spending && (
         <ApplyCashbackModal
@@ -148,19 +152,19 @@ function DebtorTableRow({
   }
 
   return (
-    <tr className="border-b border-[#F7F7F7] last:border-0 hover:bg-[#FBFBFB] transition-colors">
-      <td className="px-4 py-2.5 whitespace-nowrap">
-        <div className="text-[13px] font-medium text-[#141414]">{r.full_name}</div>
-        <div className="text-[11px] text-[#999]">{formatPhone(r.phone)}</div>
+    <tr className={tbl.tr}>
+      <td className={`${tbl.td} whitespace-nowrap`}>
+        <div className="font-medium text-ink">{r.full_name}</div>
+        <div className="text-xs text-ink-muted">{formatPhone(r.phone)}</div>
       </td>
-      <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{r.event_name}</td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
+      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{r.event_name}</td>
+      <td className={`${tbl.td} whitespace-nowrap`}>
         {canEdit ? (
           <select
             aria-label={`${r.full_name} sotuvchisi`}
             value={r.seller_id ?? ""}
             onChange={(e) => patch({ seller_id: e.target.value || null })}
-            className="border border-transparent hover:border-[#E0E0E0] rounded-[6px] px-1.5 py-1 text-[13px] text-[#666] bg-transparent focus:outline-none focus:border-[#141414]"
+            className="border border-transparent hover:border-line rounded-item px-1.5 py-1 text-base text-ink-muted bg-transparent focus:outline-none focus:border-line-focus"
           >
             <option value="">Belgilanmagan</option>
             {sellerOptions.map((s) => (
@@ -168,39 +172,40 @@ function DebtorTableRow({
             ))}
           </select>
         ) : (
-          <span className="text-[13px] text-[#666]">{r.seller_name ?? "Belgilanmagan"}</span>
+          <span className="text-ink-muted">{r.seller_name ?? "Belgilanmagan"}</span>
         )}
       </td>
-      <td className="px-4 py-2.5 text-[13px] text-[#666] whitespace-nowrap">{r.tariff_name ?? "Individual"}</td>
-      <td className="px-4 py-2.5 text-right whitespace-nowrap">
-        {canEdit ? <PriceCell value={r.price} onSave={(price) => patch({ price })} /> : <span className="text-[13px] text-[#141414]">{formatMoney(r.price)}</span>}
+      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{r.tariff_name ?? "Individual"}</td>
+      <td className={`${tbl.td} text-right whitespace-nowrap`}>
+        {canEdit ? <PriceCell value={r.price} onSave={(price) => patch({ price })} /> : <span className="text-ink">{formatMoney(r.price)}</span>}
       </td>
-      <td className="px-4 py-2.5 text-[13px] text-[#141414] text-right whitespace-nowrap">{formatMoney(r.paid)}</td>
-      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+      <td className={`${tbl.td} text-ink text-right tabular-nums whitespace-nowrap`}>{formatMoney(r.paid)}</td>
+      <td className={`${tbl.td} text-right whitespace-nowrap`}>
         {inDebt ? (
-          <span className="text-[13px] font-bold" style={{ color: "#D13328" }}>{formatMoney(r.debt)}</span>
+          <span className="font-bold text-danger-text tabular-nums">{formatMoney(r.debt)}</span>
         ) : (
           <span className="inline-flex justify-end"><StatusBadge label="To'langan" variant="success" dot /></span>
         )}
       </td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
+      <td className={`${tbl.td} whitespace-nowrap`}>
         {canEdit && inDebt ? (
           <input
             type="date"
             aria-label={`${r.full_name} keyingi to'lov sanasi`}
             value={r.next_due_date ?? ""}
             onChange={(e) => patch({ next_due_date: e.target.value || null })}
-            className="border border-[#E0E0E0] rounded-[6px] px-2 py-1 text-[12px] bg-white focus:outline-none focus:border-[#141414]"
-            style={{ color: overdue ? "#D13328" : "#141414" }}
+            className={`border rounded-item px-2 py-1 text-sm bg-surface focus:outline-none focus:border-line-focus ${
+              overdue ? "border-danger-text text-danger-text" : "border-line text-ink"
+            }`}
           />
         ) : (
-          <span className="text-[12px]" style={{ color: overdue ? "#D13328" : "#999" }}>{r.next_due_date ? formatDate(r.next_due_date) : "—"}</span>
+          <span className={`text-sm ${overdue ? "text-danger-text" : "text-ink-muted"}`}>{r.next_due_date ? formatDate(r.next_due_date) : "—"}</span>
         )}
       </td>
-      <td className="px-4 py-2.5 whitespace-nowrap text-[12px] font-semibold" style={{ color: inDebt ? age.color : "#CCCCCC" }}>
-        {inDebt ? age.label : "—"}
+      <td className={`${tbl.td} whitespace-nowrap`}>
+        {inDebt ? <StatusBadge label={age.label} variant={age.variant} /> : <span className="text-ink-faint">—</span>}
       </td>
-      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+      <td className={`${tbl.td} text-right whitespace-nowrap`}>
         {canEdit ? (
           <CashbackPercentCell
             percent={r.cashback_percent}
@@ -215,13 +220,13 @@ function DebtorTableRow({
         )}
       </td>
       {canEdit && (
-        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+        <td className={`${tbl.td} text-right whitespace-nowrap`}>
           <span className="inline-flex items-center gap-1.5 justify-end">
             {r.client_id && r.cashback_balance > 0 && inDebt && (
               <button
                 onClick={() => onSpend(r)}
                 title={`Keshbek balansi: ${formatMoney(r.cashback_balance)}`}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-semibold text-[#141414] bg-[#F5F5F5] hover:bg-[#EBEBEB] transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag text-xs font-semibold text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
               >
                 Keshbek
               </button>
@@ -231,9 +236,9 @@ function DebtorTableRow({
                 onClick={() => onPay(r)}
                 disabled={!r.client_id}
                 title={r.client_id ? "To'lov qo'shish" : "Mijoz kartasi bog'lanmagan — to'lovni kiritib bo'lmaydi"}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-semibold text-[#141414] border border-[#E0E0E0] hover:bg-[#F5F5F5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-tag text-xs font-semibold text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Coins size={13} weight="bold" /> To'lov
+                <Coins size={16} /> To'lov
               </button>
             )}
           </span>

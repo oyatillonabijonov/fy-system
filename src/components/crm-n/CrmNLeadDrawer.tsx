@@ -36,7 +36,7 @@ import { useDialog } from "@/hooks/useDialog"
 
 function SectionHeader({ children }: { children: string }) {
   return (
-    <h3 className="text-[11px] font-bold text-[#999999] uppercase tracking-wider">
+    <h3 className="text-xs font-bold text-ink-muted uppercase tracking-wider">
       {children}
     </h3>
   )
@@ -45,10 +45,10 @@ function SectionHeader({ children }: { children: string }) {
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-[12px] text-[#999999] font-medium shrink-0" style={{ maxWidth: "45%" }}>
+      <span className="text-sm text-ink-muted font-medium shrink-0" style={{ maxWidth: "45%" }}>
         {label}
       </span>
-      <span className="text-[13px] text-[#141414] font-medium text-right overflow-hidden" style={{ maxWidth: "55%", wordBreak: "break-word" }}>
+      <span className="text-base text-ink font-medium text-right overflow-hidden" style={{ maxWidth: "55%", wordBreak: "break-word" }}>
         {children}
       </span>
     </div>
@@ -61,10 +61,10 @@ function ActionToast({ message, type }: { message: string; type: "success" | "er
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className={`px-3 py-2 rounded-[8px] text-[12px] font-medium ${
+      className={`px-3 py-2 rounded-surface text-sm font-medium ${
         type === "success"
-          ? "bg-[#F5F5F5] text-[#141414] border border-[#E0E0E0]"
-          : "bg-red-50 text-red-700 border border-red-200"
+          ? "bg-surface-sunken text-ink border border-line"
+          : "bg-danger-soft text-danger-dark"
       }`}
     >
       {message}
@@ -131,7 +131,7 @@ function InlineEdit({
           if (e.key === "Escape") { e.preventDefault(); setEditValue(value); setEditing(false) }
         }}
         disabled={saving}
-        className={`border border-[#141414] rounded-[4px] px-1.5 py-0.5 focus:outline-none ${saving ? "opacity-50" : ""} ${inputClassName ?? ""}`}
+        className={`border border-line-focus rounded-control-sm px-1.5 py-0.5 focus:outline-none ${saving ? "opacity-50" : ""} ${inputClassName ?? ""}`}
       />
     )
   }
@@ -141,7 +141,7 @@ function InlineEdit({
       type="button"
       id={id}
       onClick={() => setEditing(true)}
-      className={`text-left cursor-pointer hover:bg-[#F0F0F0] rounded-[4px] px-1 -mx-1 transition-colors ${className ?? ""}`}
+      className={`text-left cursor-pointer hover:bg-mute-ghost-hover rounded-control-sm px-1 -mx-1 transition-colors ${className ?? ""}`}
       title="Bosib tahrirlang"
     >
       {value}
@@ -390,7 +390,7 @@ export function CrmNLeadDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/30 z-40"
+            className="fixed inset-0 bg-surface-overlay z-40"
             onClick={onClose}
           />
 
@@ -405,21 +405,21 @@ export function CrmNLeadDrawer({
             animate={{ x: 0 }}
             exit={{ x: 420 }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 w-[420px] bg-white border-l border-[#F0F0F0] z-50 flex flex-col shadow-xl"
+            className="fixed top-0 right-0 bottom-0 w-[420px] bg-surface-raised border-l border-line z-50 flex flex-col "
           >
             {/* Header */}
-            <div className="flex items-start justify-between p-5 pb-4 border-b border-[#F0F0F0]">
+            <div className="flex items-start justify-between p-5 pb-4 border-b border-line">
               <div className="flex flex-col gap-2 flex-1 min-w-0">
                 <InlineEdit
                   id={titleId}
                   value={lead.name}
                   onSave={handleNameSave}
-                  className="text-[18px] font-bold text-[#141414] leading-tight truncate"
-                  inputClassName="text-[18px] font-bold text-[#141414] w-full"
+                  className="text-md font-bold text-ink leading-tight truncate"
+                  inputClassName="text-md font-bold text-ink w-full"
                 />
                 {stage && (
                   <span
-                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[11px] font-bold w-fit bg-[#f5f5f5] text-[#141414]"
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-tag text-xs font-bold w-fit bg-surface-sunken text-ink"
                   >
                     <span
                       className="w-1.5 h-1.5 rounded-full"
@@ -432,9 +432,9 @@ export function CrmNLeadDrawer({
               <button
                 onClick={onClose}
                 aria-label="Yopish"
-                className="p-1.5 rounded-[6px] hover:bg-[#F5F5F5] transition-colors shrink-0 ml-3"
+                className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors shrink-0 ml-3"
               >
-                <X size={20} className="text-[#999999]" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
@@ -458,16 +458,16 @@ export function CrmNLeadDrawer({
                   {/* Asosiy ma'lumotlar */}
                   <div className="flex flex-col gap-3">
                     <SectionHeader>Asosiy ma'lumotlar</SectionHeader>
-                    <div className="flex flex-col gap-2.5 bg-[#FBFBFB] rounded-[8px] p-4">
+                    <div className="flex flex-col gap-2.5 bg-surface-sunken rounded-surface p-4">
                       <InfoRow label="Summa">
                         <InlineEdit
                           value={String(lead.price)}
                           onSave={handlePriceSave}
                           type="number"
                           className="font-bold"
-                          inputClassName="font-bold text-[13px] w-24 text-right"
+                          inputClassName="font-bold text-base w-24 text-right"
                         />
-                        <span className="text-[#999999] font-medium text-[11px] ml-1">so'm</span>
+                        <span className="text-ink-muted font-medium text-xs ml-1">so'm</span>
                       </InfoRow>
 
                       <InfoRow label="Mas'ul">
@@ -479,7 +479,7 @@ export function CrmNLeadDrawer({
                                 if (e.target.value) handleResponsibleChange(e.target.value)
                               }}
                               disabled={responsibleSaving}
-                              className={`appearance-none bg-transparent text-[13px] font-medium text-[#141414] pr-5 cursor-pointer focus:outline-none ${
+                              className={`appearance-none bg-transparent text-base font-medium text-ink pr-5 cursor-pointer focus:outline-none ${
                                 responsibleSaving ? "opacity-50" : ""
                               }`}
                             >
@@ -501,8 +501,8 @@ export function CrmNLeadDrawer({
                       <InfoRow label="Yaratilgan">{formatDate(lead.created_at)}</InfoRow>
                       <InfoRow label="Yangilangan">{formatDate(lead.updated_at)}</InfoRow>
                       <InfoRow label="Manba">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F5F5F5] text-[#141414]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#141414]" />
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-tag text-xs font-bold bg-surface-sunken text-ink">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                           CRM-N
                         </span>
                       </InfoRow>
@@ -512,11 +512,11 @@ export function CrmNLeadDrawer({
                   {/* Kontakt */}
                   <div className="flex flex-col gap-3">
                     <SectionHeader>Kontakt ma'lumotlari</SectionHeader>
-                    <div className="flex flex-col gap-3 bg-[#FBFBFB] rounded-[8px] p-4">
+                    <div className="flex flex-col gap-3 bg-surface-sunken rounded-surface p-4">
                       {contact ? (
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[13px] font-bold text-[#141414]">
+                            <span className="text-base font-bold text-ink">
                               {contact.name}
                             </span>
                             {!editingContact && (
@@ -527,9 +527,9 @@ export function CrmNLeadDrawer({
                                   setContactEditPhone(contact.phone ?? "")
                                 }}
                                 aria-label="Kontaktni tahrirlash"
-                                className="p-1 rounded-[4px] hover:bg-[#EBEBEB] transition-colors"
+                                className="p-1 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
                               >
-                                <PencilSimple size={12} className="text-[#999]" weight="bold" />
+                                <PencilSimple size={12} weight="bold" className="text-ink-muted" />
                               </button>
                             )}
                           </div>
@@ -541,26 +541,26 @@ export function CrmNLeadDrawer({
                                 value={contactEditName}
                                 onChange={(e) => setContactEditName(e.target.value)}
                                 placeholder="Ism"
-                                className="w-full border border-[#E0E0E0] rounded-[6px] px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#141414]"
+                                className="w-full border border-line rounded-control-sm px-2.5 py-1.5 text-sm focus:outline-none focus:border-line-focus"
                               />
                               <input
                                 type="tel"
                                 value={contactEditPhone}
                                 onChange={(e) => setContactEditPhone(e.target.value)}
                                 placeholder="Telefon"
-                                className="w-full border border-[#E0E0E0] rounded-[6px] px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#141414]"
+                                className="w-full border border-line rounded-control-sm px-2.5 py-1.5 text-sm focus:outline-none focus:border-line-focus"
                               />
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={handleContactSave}
                                   disabled={contactSaving}
-                                  className="px-3 py-1 bg-[#141414] text-white text-[11px] font-bold rounded-[6px] hover:bg-[#333] disabled:opacity-50"
+                                  className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:opacity-50"
                                 >
                                   {contactSaving ? "..." : "Saqlash"}
                                 </button>
                                 <button
                                   onClick={() => setEditingContact(false)}
-                                  className="text-[11px] text-[#999] hover:text-[#666]"
+                                  className="text-xs text-ink-muted hover:text-ink"
                                 >
                                   Bekor
                                 </button>
@@ -570,37 +570,37 @@ export function CrmNLeadDrawer({
                             <>
                               {contact.phone && (
                                 <div className="flex items-center gap-2">
-                                  <Phone size={14} className="text-[#999999]" weight="bold" />
-                                  <a href={`tel:${contact.phone}`} className="text-[12px] text-[#141414] hover:underline">
+                                  <Phone size={16} className="text-ink-muted" />
+                                  <a href={`tel:${contact.phone}`} className="text-sm text-ink hover:underline">
                                     {contact.phone}
                                   </a>
                                 </div>
                               )}
                               {contact.email && (
                                 <div className="flex items-center gap-2">
-                                  <Envelope size={14} className="text-[#999999]" weight="bold" />
-                                  <a href={`mailto:${contact.email}`} className="text-[12px] text-[#141414] hover:underline">
+                                  <Envelope size={16} className="text-ink-muted" />
+                                  <a href={`mailto:${contact.email}`} className="text-sm text-ink hover:underline">
                                     {contact.email}
                                   </a>
                                 </div>
                               )}
                               {contact.company && (
                                 <div className="flex items-center gap-2">
-                                  <Buildings size={14} className="text-[#999999]" weight="bold" />
-                                  <span className="text-[12px] text-[#141414]">{contact.company}</span>
+                                  <Buildings size={16} className="text-ink-muted" />
+                                  <span className="text-sm text-ink">{contact.company}</span>
                                 </div>
                               )}
                               {contact.notes && (
-                                <div className="mt-1 px-3 py-2 bg-white rounded-[6px] border border-[#F0F0F0]">
-                                  <div className="text-[10px] font-bold text-[#999] uppercase mb-1">Qo'shimcha</div>
-                                  <p className="text-[12px] text-[#141414] whitespace-pre-line">{contact.notes}</p>
+                                <div className="mt-1 px-3 py-2 bg-surface rounded-control-sm border border-line">
+                                  <div className="text-xs font-bold text-ink-muted uppercase mb-1">Qo'shimcha</div>
+                                  <p className="text-sm text-ink whitespace-pre-line">{contact.notes}</p>
                                 </div>
                               )}
                             </>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[12px] text-[#999]">Kontakt mavjud emas</span>
+                        <span className="text-sm text-ink-muted">Kontakt mavjud emas</span>
                       )}
                     </div>
                   </div>
@@ -614,12 +614,12 @@ export function CrmNLeadDrawer({
                         onChange={(e) => setNoteText(e.target.value)}
                         placeholder="Izoh yozing..."
                         rows={2}
-                        className="w-full border border-[#E0E0E0] rounded-[8px] px-3 py-2 text-[12px] text-[#141414] placeholder:text-[#CCC] focus:outline-none focus:border-[#141414] resize-none"
+                        className="w-full border border-line rounded-control px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus resize-none"
                       />
                       <button
                         onClick={handleAddNote}
                         disabled={noteSaving || !noteText.trim()}
-                        className="self-end px-3 py-1.5 bg-[#141414] text-white text-[11px] font-bold rounded-[6px] hover:bg-[#333] disabled:bg-[#CCC] disabled:cursor-not-allowed transition-colors"
+                        className="self-end px-3 py-1.5 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed transition-colors"
                       >
                         {noteSaving ? "..." : "Qo'shish"}
                       </button>
@@ -628,9 +628,9 @@ export function CrmNLeadDrawer({
                     {notes.length > 0 && (
                       <div className="flex flex-col gap-2 mt-1">
                         {notes.map((note) => (
-                          <div key={note.id} className="bg-[#FBFBFB] rounded-[8px] p-3 flex flex-col gap-1">
-                            <p className="text-[12px] text-[#141414] whitespace-pre-wrap">{note.text}</p>
-                            <span className="text-[10px] text-[#999]">{formatDate(note.created_at)}</span>
+                          <div key={note.id} className="bg-surface-sunken rounded-surface p-3 flex flex-col gap-1">
+                            <p className="text-sm text-ink whitespace-pre-wrap">{note.text}</p>
+                            <span className="text-xs text-ink-muted">{formatDate(note.created_at)}</span>
                           </div>
                         ))}
                       </div>
@@ -644,7 +644,7 @@ export function CrmNLeadDrawer({
                       <button
                         onClick={() => setShowTaskForm(true)}
                         aria-expanded={showTaskForm}
-                        className="flex items-center gap-1 text-[11px] font-medium text-[#999] hover:text-[#666] transition-colors"
+                        className="flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
                       >
                         <Plus size={12} weight="bold" />
                         Qo'shish
@@ -652,31 +652,31 @@ export function CrmNLeadDrawer({
                     </div>
 
                     {showTaskForm && (
-                      <div className="flex flex-col gap-2 bg-[#FBFBFB] rounded-[8px] p-3">
+                      <div className="flex flex-col gap-2 bg-surface-sunken rounded-surface p-3">
                         <input
                           type="text"
                           value={taskText}
                           onChange={(e) => setTaskText(e.target.value)}
                           placeholder="Vazifa matni"
-                          className="w-full border border-[#E0E0E0] rounded-[6px] px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#141414]"
+                          className="w-full border border-line rounded-control-sm px-2.5 py-1.5 text-sm focus:outline-none focus:border-line-focus"
                         />
                         <input
                           type="datetime-local"
                           value={taskDueDate}
                           onChange={(e) => setTaskDueDate(e.target.value)}
-                          className="w-full border border-[#E0E0E0] rounded-[6px] px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-[#141414]"
+                          className="w-full border border-line rounded-control-sm px-2.5 py-1.5 text-sm focus:outline-none focus:border-line-focus"
                         />
                         <div className="flex items-center gap-2">
                           <button
                             onClick={handleCreateTask}
                             disabled={taskSaving || !taskText.trim()}
-                            className="px-3 py-1 bg-[#141414] text-white text-[11px] font-bold rounded-[6px] hover:bg-[#333] disabled:bg-[#CCC] disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed"
                           >
                             {taskSaving ? "..." : "Saqlash"}
                           </button>
                           <button
                             onClick={() => { setShowTaskForm(false); setTaskText(""); setTaskDueDate("") }}
-                            className="text-[11px] text-[#999] hover:text-[#666]"
+                            className="text-xs text-ink-muted hover:text-ink"
                           >
                             Bekor
                           </button>
@@ -689,7 +689,7 @@ export function CrmNLeadDrawer({
                         {tasks.map((task) => (
                           <div
                             key={task.id}
-                            className="flex items-start gap-2 bg-[#FBFBFB] rounded-[8px] p-3"
+                            className="flex items-start gap-2 bg-surface-sunken rounded-surface p-3"
                           >
                             <button
                               onClick={() => handleToggleTask(task.id, !task.is_done)}
@@ -699,21 +699,21 @@ export function CrmNLeadDrawer({
                             >
                               <CheckCircle
                                 size={16}
-                                className={task.is_done ? "text-[#141414]" : "text-[#D0D0D0]"}
-                                weight="bold"
+                                className={task.is_done ? "text-ink" : "text-ink-faint"}
+                               
                               />
                             </button>
                             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                              <span className={`text-[12px] ${task.is_done ? "line-through text-[#999]" : "text-[#141414]"}`}>
+                              <span className={`text-sm ${task.is_done ? "line-through text-ink-muted" : "text-ink"}`}>
                                 {task.text}
                               </span>
                               {task.due_date && (
                                 <div className="flex items-center gap-1">
-                                  <Clock size={12} className="text-[#999]" weight="bold" />
-                                  <span className="text-[10px] text-[#999]">{formatDate(task.due_date)}</span>
+                                  <Clock size={12} weight="bold" className="text-ink-muted" />
+                                  <span className="text-xs text-ink-muted">{formatDate(task.due_date)}</span>
                                 </div>
                               )}
-                              <span className="text-[10px] text-[#CCC]">{formatDate(task.created_at)}</span>
+                              <span className="text-xs text-ink-faint">{formatDate(task.created_at)}</span>
                             </div>
                           </div>
                         ))}
@@ -726,8 +726,8 @@ export function CrmNLeadDrawer({
                     <div className="flex flex-col gap-3">
                       <SectionHeader>Leadni yopish</SectionHeader>
                       {showCloseConfirm ? (
-                        <div className="flex flex-col gap-2 bg-[#FBFBFB] rounded-[8px] p-4">
-                          <span className="text-[13px] font-medium text-[#141414]">
+                        <div className="flex flex-col gap-2 bg-surface-sunken rounded-surface p-4">
+                          <span className="text-base font-medium text-ink">
                             {showCloseConfirm === "won"
                               ? "Leadni yutilgan deb yopishni tasdiqlaysizmi?"
                               : "Leadni yutqazilgan deb yopishni tasdiqlaysizmi?"}
@@ -736,15 +736,15 @@ export function CrmNLeadDrawer({
                             <button
                               onClick={() => handleCloseLead(showCloseConfirm)}
                               disabled={closingSaving}
-                              className={`px-4 py-1.5 rounded-[6px] text-[12px] font-bold text-white transition-colors disabled:opacity-50 ${
-                                showCloseConfirm === "won" ? "bg-[#141414] hover:bg-[#141414]" : "bg-red-500 hover:bg-red-600"
+                              className={`px-4 py-1.5 rounded-control-sm text-sm font-bold transition-colors disabled:opacity-50 ${
+                                showCloseConfirm === "won" ? "bg-accent text-ink-on-accent hover:bg-accent-hover" : "bg-danger text-white hover:bg-danger"
                               }`}
                             >
                               {closingSaving ? "..." : "Tasdiqlash"}
                             </button>
                             <button
                               onClick={() => setShowCloseConfirm(null)}
-                              className="text-[12px] text-[#999] hover:text-[#666]"
+                              className="text-sm text-ink-muted hover:text-ink"
                             >
                               Bekor
                             </button>
@@ -754,13 +754,13 @@ export function CrmNLeadDrawer({
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setShowCloseConfirm("won")}
-                            className="flex-1 py-2 rounded-[8px] text-[12px] font-bold text-[#141414] bg-[#F5F5F5] hover:bg-[#EBEBEB] border border-[#E0E0E0] transition-colors"
+                            className="flex-1 py-2 rounded-control text-sm font-bold text-ink bg-surface-sunken hover:bg-surface-sunken-hover border border-line transition-colors"
                           >
                             Yutildi
                           </button>
                           <button
                             onClick={() => setShowCloseConfirm("lost")}
-                            className="flex-1 py-2 rounded-[8px] text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
+                            className="flex-1 py-2 rounded-control text-sm font-bold text-danger-dark bg-danger-soft transition-colors"
                           >
                             Yutqazildi
                           </button>
@@ -770,15 +770,15 @@ export function CrmNLeadDrawer({
                   )}
 
                   {lead.is_won && (
-                    <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-[8px] p-3">
-                      <Calendar size={16} className="text-[#141414]" weight="bold" />
-                      <span className="text-[12px] font-medium text-[#141414]">Bu lead yutilgan</span>
+                    <div className="flex items-center gap-2 bg-surface-sunken rounded-surface p-3">
+                      <Calendar size={16} className="text-ink" />
+                      <span className="text-sm font-medium text-ink">Bu lead yutilgan</span>
                     </div>
                   )}
                   {lead.is_lost && (
-                    <div className="flex items-center gap-2 bg-red-50 rounded-[8px] p-3">
-                      <Calendar size={16} className="text-red-500" weight="bold" />
-                      <span className="text-[12px] font-medium text-red-700">
+                    <div className="flex items-center gap-2 bg-danger-soft rounded-surface p-3">
+                      <Calendar size={16} className="text-danger-text" />
+                      <span className="text-sm font-medium text-danger-dark">
                         Bu lead yutqazilgan{lead.loss_reason ? `: ${lead.loss_reason}` : ""}
                       </span>
                     </div>

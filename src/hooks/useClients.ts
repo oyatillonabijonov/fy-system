@@ -6,7 +6,6 @@ import {
   deleteClient,
   deleteClients,
   uploadClientImage,
-  createMemberAccount,
   getClientEventHistory,
   getClientJourney,
   getClientsLastEventDates,
@@ -90,15 +89,6 @@ export function useDeleteClients() {
       if (context?.previous) qc.setQueryData(CLIENTS_KEY, context.previous)
     },
     onSettled: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
-  })
-}
-
-export function useCreateMemberAccount() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (input: { client_id: string; email: string; password: string }) =>
-      createMemberAccount(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
   })
 }
 

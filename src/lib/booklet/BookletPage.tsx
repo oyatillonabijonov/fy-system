@@ -1,128 +1,99 @@
 import type { Event, Participant } from "../supabase/queries/events"
-import { BookletCard } from "./BookletCard"
+import { formatDate } from "../format"
+import { BookletCard, BOOKLET, BOOKLET_CARD_GAP } from "./BookletCard"
 
 interface BookletPageProps {
   event: Event
   participants: Participant[]
   pageNumber: number
-  isFirstPage: boolean
+  totalPages: number
+  totalParticipants: number
+  cardsPerPage: number
 }
+
+// A4 at 96dpi. Fixed height (not min-height) so a page can never grow past A4
+// and get squashed when it's placed onto the 210×297mm PDF page.
+const PAGE_W = 794
+const PAGE_H = 1123
 
 export function BookletPage({
   event,
   participants,
   pageNumber,
-  isFirstPage,
+  totalPages,
+  totalParticipants,
+  cardsPerPage,
 }: BookletPageProps) {
+  const isFirstPage = pageNumber === 1
+  const dateLabel = event.date
+    ? event.end_date && event.end_date !== event.date
+      ? `${formatDate(event.date)} — ${formatDate(event.end_date)}`
+      : formatDate(event.date)
+    : null
+  const meta = [dateLabel, event.location, `${totalParticipants} ishtirokchi`].filter(Boolean).join("  ·  ")
+
   return (
     <div
       style={{
-        width: "794px",
-        minHeight: "1123px",
+        width: `${PAGE_W}px`,
+        height: `${PAGE_H}px`,
+        overflow: "hidden",
         backgroundColor: "#ffffff",
-        padding: "48px 40px",
+        padding: "48px 48px 40px",
         boxSizing: "border-box",
-        fontFamily: "'Geist Variable', system-ui, sans-serif",
+        fontFamily: BOOKLET.font,
+        color: BOOKLET.ink,
         display: "flex",
         flexDirection: "column",
-        gap: "0",
       }}
     >
-      {/* Header — first page only */}
-      {isFirstPage && (
-        <div style={{ marginBottom: "36px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              marginBottom: "12px",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: "26px",
-                  fontWeight: "700",
-                  color: "#141414",
-                  letterSpacing: "-0.6px",
-                  lineHeight: "1.2",
-                  marginBottom: "6px",
-                }}
-              >
-                Ishtirokchilar haqida ma'lumot
-              </div>
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#999999",
-                  letterSpacing: "-0.2px",
-                }}
-              >
-                {event.name}
-                {event.location ? ` · ${event.location}` : ""}
-              </div>
-            </div>
+      {isFirstPage ? (
+        <div style={{ paddingBottom: "20px", borderBottom: `1px solid ${BOOKLET.line}` }}>
+          <div style={{ fontSize: "13px", fontWeight: 500, color: BOOKLET.muted, marginBottom: "10px" }}>
+            Ishtirokchilar
           </div>
-          {/* Divider */}
-          <div
-            style={{
-              height: "1px",
-              backgroundColor: "#E5E5E5",
-              width: "100%",
-              marginTop: "16px",
-            }}
-          />
+          <div style={{ fontSize: "30px", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "10px" }}>
+            {event.name}
+          </div>
+          <div style={{ fontSize: "14px", color: BOOKLET.muted }}>{meta}</div>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "14px",
+            borderBottom: `1px solid ${BOOKLET.line}`,
+            fontSize: "13px",
+          }}
+        >
+          <span style={{ fontWeight: 500 }}>{event.name}</span>
+          <span style={{ color: BOOKLET.muted }}>Ishtirokchilar</span>
         </div>
       )}
 
-      {/* Cards */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-          flex: 1,
-        }}
-      >
+      {/* Cards — fixed height each, so a short last page just leaves white space */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: `${BOOKLET_CARD_GAP}px`, paddingTop: "20px" }}>
         {participants.map((p, i) => (
-          <BookletCard
-            key={p.id}
-            participant={p}
-            index={(pageNumber - 1) * 4 + i + 1}
-          />
+          <BookletCard key={p.id} participant={p} index={(pageNumber - 1) * cardsPerPage + i + 1} />
         ))}
       </div>
 
-      {/* Footer */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginTop: "32px",
-          paddingTop: "16px",
-          borderTop: "1px solid #F0F0F0",
+          paddingTop: "14px",
+          borderTop: `1px solid ${BOOKLET.line}`,
+          fontSize: "12px",
+          color: BOOKLET.muted,
         }}
       >
-        <span
-          style={{
-            fontSize: "13px",
-            fontWeight: "600",
-            color: "#999999",
-            letterSpacing: "-0.3px",
-          }}
-        >
-          Fikr Yetakchilar
-        </span>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "#CCCCCC",
-            letterSpacing: "-0.2px",
-          }}
-        >
-          {event.name}
+        <span style={{ fontWeight: 500, color: BOOKLET.ink }}>Fikr Yetakchilari</span>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>
+          Sahifa {pageNumber} / {totalPages}
         </span>
       </div>
     </div>

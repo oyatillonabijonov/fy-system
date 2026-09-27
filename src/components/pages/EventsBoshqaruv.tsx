@@ -43,8 +43,8 @@ export function EventsBoshqaruv() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6 h-full">
-        <div className="animate-pulse bg-[#F0F0F0] rounded-[6px] h-6 w-32" />
+      <div className="flex flex-col gap-6 min-h-full pb-10">
+        <div className="animate-pulse bg-surface-sunken rounded-item h-6 w-32" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <EventCardSkeleton key={i} />
@@ -55,14 +55,14 @@ export function EventsBoshqaruv() {
   }
 
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-5 min-h-full pb-10">
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4">
-          <CalendarBlank size={64} className="text-[#E0E0E0]" weight="bold" />
-          <p className="text-[14px] text-[#999]">Hozircha tadbirlar yo'q</p>
+          <CalendarBlank size={64} weight="thin" className="text-ink-faint" />
+          <p className="text-base text-ink-muted">Hozircha tadbirlar yo'q</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="px-4 py-2 bg-[#141414] text-white rounded-[8px] text-[13px] font-bold hover:bg-[#333] transition-colors"
+            className="px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
           >
             Birinchi tadbirni yarating
           </button>
@@ -84,7 +84,7 @@ export function EventsBoshqaruv() {
               onDelete={() => handleDelete(selected.id)}
             />
           ) : (
-            <div className="py-16 text-center text-[13px] text-[#999]">Tadbirni tanlang</div>
+            <div className="py-16 text-center text-base text-ink-muted">Tadbirni tanlang</div>
           )}
         </>
       )}
