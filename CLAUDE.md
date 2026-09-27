@@ -20,7 +20,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Database | Supabase Postgres (migrations `001`–`047`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
-| External APIs | Meta/Framer/Tilda lead webhooks |
+| External APIs | Meta/Framer/Tilda lead webhooks; **AmoCRM (read-only)** via the `amo-sync` service → `amo_*` tables (Dashboard) |
 
 Package manager: **bun** (not npm).
 
@@ -49,9 +49,10 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–047, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–049, sequential — NEVER edit existing ones
 │   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
+├── amo-sync/                 # Bun service: AmoCRM → amo_* tables every 10 min (only AmoCRM client; own Dockerfile)
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
 └── vite.config.ts            # Port 5001, @ alias
@@ -77,6 +78,16 @@ META_PAGE_ACCESS_TOKEN=       # meta-webhook: fetch lead details
 META_WEBHOOK_VERIFY_TOKEN=    # meta-webhook: GET verification
 CRM_DEFAULT_PIPELINE_ID=      # webhooks: where new leads land
 CRM_DEFAULT_STAGE_ID=
+```
+
+`amo-sync` service (container env, never in the frontend):
+
+```bash
+DATABASE_URL=       # postgres://postgres:…@<db host>:5432/postgres (writes amo_* as table owner)
+AMO_SUBDOMAIN=      # fikryetakchilari
+AMO_TOKEN=          # AmoCRM long-lived token (Doppler fy-system: VITE_AMO_ACCESS_TOKEN — the name is legacy; it must NOT be read by Vite code)
+SYNC_INTERVAL_MIN=10
+EVENTS_FROM=2025-01-01  # first backfill of lead status history
 ```
 
 Never create `.env*` files with real values.
@@ -215,6 +226,15 @@ cat supabase/migrations/0XX_name.sql | ssh -i ~/.ssh/heons_key ubuntu@141.147.11
 
 Migration history note: the VM's `supabase_migrations.schema_migrations` may lag the repo (files were applied by direct SQL without always recording the row). The numbered files in `supabase/migrations/` are the real source of truth; record new versions as you apply them.
 
+**amo-sync (AmoCRM → `amo_*`) runs as a plain Docker container on the VM, outside Coolify** (like the Supabase stack): container `fy-amo-sync`, image `fy-amo-sync:latest`, network `supabase_supabase-net` (talks to `supabase-db-1` directly), `--restart unless-stopped`, env in `~/amo-sync/.env` (chmod 600; built from Doppler — never commit it). Logs: `docker logs --tail 50 fy-amo-sync` (one line per pass). Redeploy after changing `amo-sync/`:
+
+```bash
+tar czf - --exclude node_modules amo-sync | ssh -i ~/.ssh/heons_key ubuntu@141.147.119.131 \
+  'tar xzf - -C ~ && cd ~/amo-sync && docker build -q -t fy-amo-sync:latest . \
+   && docker rm -f fy-amo-sync && docker run -d --name fy-amo-sync --restart unless-stopped \
+      --network supabase_supabase-net --env-file ~/amo-sync/.env fy-amo-sync:latest'
+```
+
 **Types after a schema change:** `bun run gen:types` uses `--local`, which won't work without a local stack. Either run a local Supabase, point gen:types at the Oracle DB URL, or use the **Stale types workaround** (§6) until types can be regenerated.
 
 ---
@@ -247,8 +267,8 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 
 ## 7. Important Notes
 
-- **CRM-N is the only sales pipeline** (`/sotuv/crm-n`): native full-CRUD, `queries/crm.ts` + `components/crm-n/`, shown in the sidebar as "Sotuv bo'limi". The AmoCRM integration was removed in migration `044` — don't reintroduce `src/lib/amocrm/`, the `/api/amo` proxy, or the `amocrm_*` cache tables. `crm_leads.responsible_user_id` is a `profiles.id` (it used to be an AmoCRM user id).
-- **Dashboard reads CRM-N** (`queries/dashboard.ts`): server-side counts over `crm_leads`, not row fetches — an unbounded select is capped by PostgREST `max_rows` and would silently undercount.
+- **CRM-N** (`/sotuv/crm-n`) is the native lead board: full-CRUD, `queries/crm.ts` + `components/crm-n/`, sidebar "Sotuv bo'limi". `crm_leads.responsible_user_id` is a `profiles.id`. The OLD AmoCRM integration (`src/lib/amocrm/`, `/api/amo` proxy, `amocrm_*` tables) was removed in `044` — don't bring that back.
+- **Dashboard = AmoCRM analytics** (migration `049`, decided 2026-09-27): the `amo-sync/` service is the ONLY thing that calls AmoCRM; it copies pipelines, statuses, users, leads, open tasks and lead status changes into `amo_*` tables (incremental every 10 min, full pass daily that also drops deleted leads). The web reads everything through **one** RPC, `amo_dashboard(p_from, p_to, p_pipeline)` (`queries/amoDashboard.ts` / `useAmoDashboard`) — all numbers are SQL, nothing summed in the browser, the AmoCRM token never reaches the frontend. `amo_*` tables are readable only with the `dashboard` module. Data-quality rules inside the function (measured on the live account): **>10 leads closed in the same minute = bulk clean-up**, excluded from won/lost/conversion and reported as `bulk_closed`; **revenue / average check come from our own `payments`**, because AmoCRM deal amounts are almost never filled; wins are split by pipeline, not source (lead source isn't recorded in AmoCRM).
 - **Never modify existing migration files** — always add a new numbered one.
 - **Payments are the source of truth for event money** (migration `035`): the `payments` table holds each installment; `event_participants.paid` is a DERIVED total kept in sync by the `sync_participant_paid` trigger (`paid = SUM(payments.amount) + cashback_used`). Never write `paid` directly — insert a `payments` row (via `queries/payments.ts` / `usePayments`). That UPDATE then fires `auto_award_cashback`, so the whole chain (paid → cashback award/clawback → balance) flows from one insert. Debt shown anywhere = `price - paid`.
 - **Events UI is two sibling tab-based pages** (migration `047`, split from the old single `Events.tsx`, which is gone — no separate detail route): both live under the sidebar's "Tadbirlar" submenu and share the selected-event tab via `useEventTab` (localStorage `fy_last_event_tab`), so picking an event on one page lands on it on the other. The tab bar itself is the shared `EventTabs` component.
@@ -262,7 +282,7 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.
 - Storage buckets: `event-covers` (`013/014`), `client-images` (`016`), `profile-avatars` (`021`), `news-images` (`029`); upsert policies fixed in `025`. On self-hosted Supabase, files live at `/var/lib/storage/stub/<bucket>/` inside the storage container (TENANT_ID=`stub`). **The bucket ROWS can be missing even when the RLS policies exist** — production had all the policies but zero `storage.buckets` rows, so every upload failed with `"Bucket not found"` and images never appeared; migration `048` backfills them (`INSERT … ON CONFLICT DO NOTHING`, additive). On a clean redeploy re-check `select * from storage.buckets` — the storage service reads bucket rows live (no restart needed to see new rows). CORS for uploads is a separate gateway concern — see the "Gateway CORS" note in §5.
 - `localStorage` keys: `fy_theme`, `fy_lang`, `fy_sidebar_collapsed`, `fy_last_crm_pipeline_id`.
-- **No scheduled jobs run.** `004` created a pg_cron entry for the AmoCRM sync; `044` unscheduled it and production has zero `cron.job` rows. Nothing else uses pg_cron/pg_net.
+- **Scheduled work = the `amo-sync` container only.** No pg_cron/pg_net (`044` removed the old AmoCRM cron entry). If the Dashboard shows the "sinxronizatsiya yangilanmagan" banner, check that container's logs and `amo_sync_state` (`last_success_at`, `last_error`).
 
 ---
 
