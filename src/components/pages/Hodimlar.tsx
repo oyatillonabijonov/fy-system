@@ -7,6 +7,7 @@ import { ROLE_LABELS, ROLE_BADGE_VARIANT, type UserProfile } from "@/lib/supabas
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { formatDate, formatPhone } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -25,6 +26,7 @@ export function Hodimlar() {
       (u) => u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
     )
   }, [users, search])
+  const paged = usePaged(filteredUsers)
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
@@ -84,6 +86,7 @@ export function Hodimlar() {
             </p>
           </div>
         ) : (
+          <>
           <div className={tbl.scroll}>
           <table className={tbl.table}>
             <thead>
@@ -96,12 +99,14 @@ export function Hodimlar() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {paged.pageItems.map((user) => (
                 <UserRow key={user.id} user={user} onClick={() => navigate(`/hodimlar/${user.id}`)} />
               ))}
             </tbody>
           </table>
           </div>
+          <Pager page={paged.page} pageCount={paged.pageCount} total={filteredUsers.length} onPage={paged.setPage} />
+          </>
         )}
       </div>
 

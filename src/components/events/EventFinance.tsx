@@ -14,12 +14,14 @@ import { eventTint } from "@/lib/eventTint"
 import { formatMoney, formatDate, formatNumber } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 
 export function EventFinance({ event }: { event: Event }) {
   const [payTarget, setPayTarget] = useState<Participant | null>(null)
   const [payKey, setPayKey] = useState(0)
 
   const { data: participants = [], isLoading } = useParticipants(event.id)
+  const paged = usePaged(participants)
 
   const updatePart = useUpdateParticipant(event.id)
   const setEventCb = useSetEventCashbackPercent()
@@ -99,7 +101,8 @@ export function EventFinance({ event }: { event: Event }) {
         ) : participants.length === 0 ? (
           <div className="py-10 text-center text-base text-ink-muted">Hali ishtirokchi qo'shilmagan</div>
         ) : (
-          <div className={tbl.scroll}>
+          <>
+            <div className={tbl.scroll}>
             <table className={tbl.table}>
               <thead>
                 <tr>
@@ -112,7 +115,7 @@ export function EventFinance({ event }: { event: Event }) {
                 </tr>
               </thead>
               <tbody>
-                {participants.map((p) => {
+                {paged.pageItems.map((p) => {
                   const debt = (p.price ?? 0) - (p.paid ?? 0)
                   return (
                     <tr key={p.id} className={tbl.tr}>
@@ -152,7 +155,9 @@ export function EventFinance({ event }: { event: Event }) {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+            <Pager page={paged.page} pageCount={paged.pageCount} total={participants.length} onPage={paged.setPage} />
+          </>
         )}
       </div>
 

@@ -3,6 +3,7 @@ import {
   getParticipantPayments,
   getEventPayments,
   getRecentPayments,
+  getPaymentsCount,
   getClientParticipations,
   getFinanceTotals,
   addPayment,
@@ -46,10 +47,19 @@ export function useEventPayments(eventId: string) {
   })
 }
 
-export function useRecentPayments(limit = 50) {
+export function useRecentPayments(limit = 50, offset = 0) {
   return useQuery({
-    queryKey: [...RECENT_PAYMENTS_KEY, limit] as const,
-    queryFn:  () => getRecentPayments(limit),
+    queryKey: [...RECENT_PAYMENTS_KEY, limit, offset] as const,
+    queryFn:  () => getRecentPayments(limit, offset),
+    placeholderData: (prev) => prev, // keep the current page visible while the next loads
+  })
+}
+
+// Under RECENT_PAYMENTS_KEY so every invalidation of the log refreshes the total too
+export function usePaymentsCount() {
+  return useQuery({
+    queryKey: [...RECENT_PAYMENTS_KEY, "count"] as const,
+    queryFn:  getPaymentsCount,
   })
 }
 

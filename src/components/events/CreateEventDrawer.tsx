@@ -1,16 +1,13 @@
 import { useState, useRef, useEffect, useId } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, UploadSimple, CaretDown, MagnifyingGlass, Check, Image as ImageIcon } from "@phosphor-icons/react"
+import { X, CaretDown, MagnifyingGlass, Check } from "@phosphor-icons/react"
 import {
   createEvent,
   updateEvent,
-  uploadEventCover,
   type Event,
 } from "@/lib/supabase/queries/events"
 import { useUsers } from "@/hooks/useUsers"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
-import { ImageCropModal } from "@/components/ui/ImageCropModal"
-import { EventBanner } from "@/components/events/EventBanner"
 import { useDialog } from "@/hooks/useDialog"
 import { formatNumber, formatDate } from "@/lib/format"
 
@@ -167,11 +164,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [managerId, setManagerId] = useState<string | null>(null)
   const [hasTariffs, setHasTariffs] = useState(false)
 
-  const [bannerBlob, setBannerBlob] = useState<Blob | null>(null)
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
-  const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const panelRef = useDialog<HTMLDivElement>(() => { if (!cropSrc) onClose() }, isOpen)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -188,7 +181,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setTotalValue(editEvent.total_value ? String(Math.round(editEvent.total_value)) : "")
       setManagerId(editEvent.manager_id)
       setHasTariffs(editEvent.has_tariffs)
-      setBannerPreview(editEvent.cover_image ?? null)
     } else {
       setName("")
       setStartDate("")
@@ -198,31 +190,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setTotalValue("")
       setManagerId(null)
       setHasTariffs(false)
-      setBannerPreview(null)
     }
-    setBannerBlob(null)
     setError(null)
     setTouched(false)
   }, [editEvent, isOpen])
-
-  function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Rasm hajmi 5MB dan oshmasligi kerak")
-      return
-    }
-    const reader = new FileReader()
-    reader.onloadend = () => setCropSrc(reader.result as string)
-    reader.readAsDataURL(file)
-    e.target.value = ""
-  }
-
-  function handleCropped(blob: Blob) {
-    setBannerBlob(blob)
-    setBannerPreview(URL.createObjectURL(blob))
-    setCropSrc(null)
-  }
 
   const cbValue = Number(cashbackPercent)
   const cbValid = Number.isFinite(cbValue) && cbValue >= 0 && cbValue <= 100
@@ -268,16 +239,9 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           manager_id: managerId,
           has_tariffs: hasTariffs,
         }
-        if (bannerBlob) {
-          updates.cover_image = await uploadEventCover(blobToFile(bannerBlob), editEvent.id)
-        }
         await updateEvent(editEvent.id, updates)
       } else {
-        const event = await createEvent(fields)
-        if (bannerBlob) {
-          const url = await uploadEventCover(blobToFile(bannerBlob), event.id)
-          await updateEvent(event.id, { cover_image: url })
-        }
+        await createEvent(fields)
       }
 
       onCreated()
@@ -330,31 +294,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                   <div className="px-3 py-2 rounded-surface text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                     {error}
                   </div>
-                )}
-
-                {/* 1. Banner */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative w-full h-[140px] rounded-surface overflow-hidden cursor-pointer border border-line group"
-                >
-                  {bannerPreview ? (
-                    <img src={bannerPreview} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <EventBanner name={name} coverImage={null} className="absolute inset-0" />
-                  )}
-                  <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-surface-raised/90 text-sm font-bold text-ink opacity-0 group-hover:opacity-100 transition-opacity">
-                      {bannerPreview ? <ImageIcon size={16} /> : <UploadSimple size={16} />}
-                      {bannerPreview ? "Rasmni o'zgartirish" : "Banner yuklash"}
-                    </span>
-                  </span>
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePickFile} />
-                {!bannerPreview && (
-                  <span className="text-xs text-ink-muted -mt-2">
-                    Rasm yuklamasangiz, tadbir nomidan avtomatik banner yaratiladi
-                  </span>
                 )}
 
                 {/* 2. Name */}
@@ -499,16 +438,6 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         )}
       </AnimatePresence>
 
-      <ImageCropModal
-        isOpen={!!cropSrc}
-        imageSrc={cropSrc ?? ""}
-        onClose={() => setCropSrc(null)}
-        onCropped={handleCropped}
-        aspect={16 / 9}
-        circular={false}
-        outputWidth={1280}
-        outputHeight={720}
-      />
     </>
   )
 }
@@ -532,8 +461,4 @@ function Field({
       {children}
     </div>
   )
-}
-
-function blobToFile(blob: Blob): File {
-  return new File([blob], "cover.jpg", { type: "image/jpeg" })
 }

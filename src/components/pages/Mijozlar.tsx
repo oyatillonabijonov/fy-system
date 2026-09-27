@@ -3,7 +3,8 @@ import {
     UserPlus,
     Ticket,
     Funnel,
-    UploadSimple,
+    CaretUp,
+    CaretDown,
     Plus,
     PencilSimple,
     Trash,
@@ -22,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { useDialog } from "@/hooks/useDialog"
 import { useClients, useDeleteClient, useDeleteClients, useUpdateClient, CLIENTS_KEY, useClientJourney, useClientsLastEventDates } from "@/hooks/useClients"
-import { getClientActivityStatus, ACTIVITY_STATUS_META } from "@/lib/constants/clientStatus"
+import { getClientActivityStatus, ACTIVITY_STATUS_META, type ClientActivityStatus } from "@/lib/constants/clientStatus"
 import {
     createColumnHelper,
     flexRender,
@@ -30,13 +31,17 @@ import {
     useReactTable,
     getSortedRowModel,
     getFilteredRowModel,
+    getPaginationRowModel,
     type SortingState,
+    type Column,
+    type Table,
 } from '@tanstack/react-table'
 import { useSetCommunityApproved } from "@/hooks/useCommunity"
 import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { ThinkingOrb } from "thinking-orbs"
 import { tbl } from "@/components/ui/table"
+import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 
 
 
@@ -59,7 +64,6 @@ interface Customer {
     communityApproved: boolean;
 }
 
-type MijozlarTab = "all" | "members"
 
 const columnHelper = createColumnHelper<Customer>()
 
@@ -101,7 +105,6 @@ export function Mijozlar() {
 
     const error = queryError ? (queryError instanceof Error ? queryError.message : "Ma'lumotlarni yuklashda xatolik") : null
 
-    const [activeTab, setActiveTab] = useState<MijozlarTab>("all")
     const [selectedMijozlar, setSelectedMijozlar] = useState<string[]>([])
     const [sorting, setSorting] = useState<SortingState>([])
     const [globalFilter, setGlobalFilter] = useState('')
@@ -286,7 +289,9 @@ export function Mijozlar() {
             ),
         }),
         columnHelper.accessor('name', {
-            header: 'Mijoz',
+            header: ({ column }) => <SortHeader column={column} label="Mijoz" />,
+            // Trim + locale compare: some names carry leading spaces and Cyrillic, which the default sort mis-orders
+            sortingFn: (a, b, id) => a.getValue<string>(id).trim().localeCompare(b.getValue<string>(id).trim(), "uz"),
             cell: info => (
                 <div className="flex items-center gap-3">
                     <div className="size-9 rounded-full overflow-hidden flex-shrink-0 bg-mute-soft flex items-center justify-center">
@@ -310,18 +315,20 @@ export function Mijozlar() {
             header: 'Faoliyati',
             cell: info => <div className="text-ink-muted leading-tight line-clamp-1">{info.getValue()}</div>,
         }),
-        columnHelper.display({
-            id: 'holat',
-            header: 'Holat',
-            cell: (info) => {
-                const as = getClientActivityStatus({
-                    events_count: info.row.original.eventsCount,
-                    days_since_last_event: info.row.original.daysSinceLastEvent,
-                })
-                const m = ACTIVITY_STATUS_META[as]
-                return <StatusBadge label={m.label} variant={m.variant} dot />
+        columnHelper.accessor(
+            (c) => getClientActivityStatus({ events_count: c.eventsCount, days_since_last_event: c.daysSinceLastEvent }),
+            {
+                id: 'holat',
+                enableSorting: false,
+                enableGlobalFilter: false,
+                filterFn: (row, id, value: ClientActivityStatus | undefined) => !value || row.getValue(id) === value,
+                header: ({ column, table }) => <StatusFilterHeader column={column} table={table} />,
+                cell: (info) => {
+                    const m = ACTIVITY_STATUS_META[info.getValue()]
+                    return <StatusBadge label={m.label} variant={m.variant} dot />
+                },
             },
-        }),
+        ),
         columnHelper.display({
             id: 'actions',
             header: () => <div className="text-right pr-6">Amallar</div>,
@@ -355,27 +362,17 @@ export function Mijozlar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ], [])
 
-    const pendingMembersCount = useMemo(
-        () => customers.filter(c => c.authUserId !== null && !c.communityApproved).length,
-        [customers]
-    )
-
-    const tabData = useMemo(
-        () => activeTab === "members" ? customers.filter(c => c.authUserId !== null) : customers,
-        [activeTab, customers]
-    )
-
     const rowSelection = useMemo(
         () => selectedMijozlar.reduce((acc, id) => {
-            const idx = tabData.findIndex(c => c.id === id)
+            const idx = customers.findIndex(c => c.id === id)
             if (idx !== -1) acc[idx] = true
             return acc
         }, {} as Record<string, boolean>),
-        [selectedMijozlar, tabData]
+        [selectedMijozlar, customers]
     )
 
     const table = useReactTable({
-        data: tabData,
+        data: customers,
         columns,
         state: { sorting, globalFilter, rowSelection },
         onSortingChange: setSorting,
@@ -383,11 +380,13 @@ export function Mijozlar() {
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        initialState: { pagination: { pageIndex: 0, pageSize: PAGE_SIZE } },
         onRowSelectionChange: (updater) => {
             const newSel = typeof updater === 'function' ? updater(rowSelection) : updater
             const ids = Object.keys(newSel)
                 .filter(k => newSel[Number(k)])
-                .map(k => tabData[Number(k)]?.id)
+                .map(k => customers[Number(k)]?.id)
                 .filter((id): id is string => Boolean(id))
             setSelectedMijozlar(ids)
         },
@@ -530,7 +529,7 @@ export function Mijozlar() {
     const bulkDeletePanelRef = useDialog<HTMLDivElement>(closeBulkDeleteConfirm, bulkDeleteConfirm)
 
     return (
-        <div className="flex flex-col gap-6 h-full animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+        <div className="flex flex-col gap-6 min-h-full pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
             {loading && (
                 <div className="flex items-center justify-center py-20">
                     <ThinkingOrb state="searching" size={64} theme="light" />
@@ -561,27 +560,6 @@ export function Mijozlar() {
 
             {/* Table Area */}
             <div className="flex flex-col gap-3">
-                {/* Tabs */}
-                <div className="flex items-center gap-1">
-                    {([
-                        { id: "all",     label: "Barcha mijozlar",  count: customers.length },
-                        { id: "members", label: "A'zolar",          count: customers.filter(c => c.authUserId !== null).length, badge: pendingMembersCount },
-                    ] as { id: MijozlarTab; label: string; count: number; badge?: number }[]).map(tab => (
-                        <button key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-1.5 px-3 h-control-md rounded-full text-base font-medium transition-colors relative ${activeTab === tab.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}>
-                            {tab.label}
-                            <span className="px-1.5 rounded-full text-sm font-medium tabular-nums text-ink-muted">
-                                {tab.count}
-                            </span>
-                            {tab.badge != null && tab.badge > 0 && (
-                                <span className="absolute -top-0.5 -right-1 w-4 h-4 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                    {tab.badge}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
                 {/* Search & Actions */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -616,14 +594,6 @@ export function Mijozlar() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-mute-ghost-hover rounded-control text-base font-bold text-ink transition-colors">
-                            <Funnel size={16} />
-                            Filtrlar
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-2 hover:bg-mute-ghost-hover rounded-control text-base font-bold text-ink transition-colors">
-                            <UploadSimple size={16} />
-                            Eksport
-                        </button>
                         <button 
                             onClick={() => setIsAddModalOpen(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
@@ -676,6 +646,12 @@ export function Mijozlar() {
                         </tbody>
                     </table>
                 </div>
+                <Pager
+                    page={table.getState().pagination.pageIndex}
+                    pageCount={table.getPageCount()}
+                    total={table.getFilteredRowModel().rows.length}
+                    onPage={table.setPageIndex}
+                />
             </div>
 
             {/* Details Modal */}
@@ -1409,5 +1385,101 @@ export function Mijozlar() {
             </AnimatePresence>
             </>}
         </div>
+    )
+}
+
+function SortHeader({ column, label }: { column: Column<Customer, unknown>; label: string }) {
+    const dir = column.getIsSorted()
+    return (
+        <button
+            type="button"
+            onClick={column.getToggleSortingHandler()}
+            className="inline-flex items-center gap-1 hover:text-ink transition-colors"
+        >
+            {label}
+            {dir === "asc" ? <CaretUp size={12} weight="bold" /> : dir === "desc" ? <CaretDown size={12} weight="bold" /> : null}
+        </button>
+    )
+}
+
+/** "Holat" header that opens a status filter menu (fixed-positioned so the table's scroll box can't clip it). */
+function StatusFilterHeader({ column, table }: { column: Column<Customer, unknown>; table: Table<Customer> }) {
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+    const btnRef = useRef<HTMLButtonElement>(null)
+    const menuRef = useRef<HTMLDivElement>(null)
+    const value = column.getFilterValue() as ClientActivityStatus | undefined
+
+    useEffect(() => {
+        if (!pos) return
+        function onDown(e: MouseEvent) {
+            const t = e.target as Node
+            if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t)) setPos(null)
+        }
+        function onKey(e: KeyboardEvent) { if (e.key === "Escape") setPos(null) }
+        function onScroll() { setPos(null) }
+        document.addEventListener("mousedown", onDown)
+        document.addEventListener("keydown", onKey)
+        window.addEventListener("scroll", onScroll, true)
+        return () => {
+            document.removeEventListener("mousedown", onDown)
+            document.removeEventListener("keydown", onKey)
+            window.removeEventListener("scroll", onScroll, true)
+        }
+    }, [pos])
+
+    const counts = new Map<ClientActivityStatus, number>()
+    for (const r of table.getCoreRowModel().rows) {
+        const st = r.getValue<ClientActivityStatus>("holat")
+        counts.set(st, (counts.get(st) ?? 0) + 1)
+    }
+    const options: { value: ClientActivityStatus | undefined; label: string; count: number }[] = [
+        { value: undefined, label: "Barchasi", count: table.getCoreRowModel().rows.length },
+        ...(Object.keys(ACTIVITY_STATUS_META) as ClientActivityStatus[]).map((k) => ({
+            value: k, label: ACTIVITY_STATUS_META[k].label, count: counts.get(k) ?? 0,
+        })),
+    ]
+
+    function toggle() {
+        if (pos) return setPos(null)
+        const r = btnRef.current?.getBoundingClientRect()
+        if (r) setPos({ top: r.bottom + 6, left: r.left })
+    }
+
+    return (
+        <>
+            <button
+                ref={btnRef}
+                type="button"
+                onClick={toggle}
+                aria-haspopup="true"
+                aria-expanded={!!pos}
+                className={`inline-flex items-center gap-1.5 hover:text-ink transition-colors ${value ? "text-ink" : ""}`}
+            >
+                {value ? ACTIVITY_STATUS_META[value].label : "Holat"}
+                <Funnel size={12} weight={value ? "fill" : "bold"} />
+            </button>
+            {pos && (
+                <div
+                    ref={menuRef}
+                    style={{ position: "fixed", top: pos.top, left: pos.left }}
+                    className="z-50 w-48 p-1 rounded-menu bg-surface-raised border border-line text-base font-normal"
+                >
+                    {options.map((o) => (
+                        <button
+                            key={o.label}
+                            type="button"
+                            onClick={() => { column.setFilterValue(o.value); setPos(null) }}
+                            className={`w-full flex items-center justify-between gap-3 px-2.5 h-control-sm rounded-item text-left transition-colors ${value === o.value ? "bg-surface-sunken text-ink" : "text-ink hover:bg-mute-ghost-hover"}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                {value === o.value && <Check size={12} weight="bold" />}
+                                {o.label}
+                            </span>
+                            <span className="text-sm text-ink-muted tabular-nums">{o.count}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </>
     )
 }
