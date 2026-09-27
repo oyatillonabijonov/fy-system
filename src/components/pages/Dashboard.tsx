@@ -181,7 +181,7 @@ function DashboardBody({ d, pipelineChosen }: { d: AmoDashboard; pipelineChosen:
                 )}
             </Section>
 
-            {/* ── 2. Voronka va voronkalar kesimi ──────────────────────── */}
+            {/* ── 2. Voronka, voronkalar va manbalar kesimi ──────────────────────── */}
             <Section title="Sotuv voronkasi" desc="Ochiq bosqichlar — hozirgi holat; yutildi / yo'qotildi — davr ichida">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <Card className="lg:col-span-2">
@@ -191,21 +191,14 @@ function DashboardBody({ d, pipelineChosen }: { d: AmoDashboard; pipelineChosen:
                             </div>
                         )}
                     </Card>
-                    <Card title="Voronkalar bo'yicha">
-                        {d.by_pipeline.length === 0 ? <Empty text="Davrda harakat yo'q" /> : (
-                            <div className="flex flex-col">
-                                {d.by_pipeline.map((p) => (
-                                    <div key={p.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-line last:border-0">
-                                        <span className="text-base text-ink truncate">{p.name}</span>
-                                        <span className="flex items-center gap-3 text-sm tabular-nums shrink-0">
-                                            <span className="text-ink-muted">{formatNumber(p.new_leads)} lid</span>
-                                            <span className="text-success-text">{formatNumber(p.won)} sotuv</span>
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </Card>
+                    <div className="flex flex-col gap-4">
+                        <Card title="Voronkalar bo'yicha">
+                            <CountList rows={d.by_pipeline.map((p) => ({ key: String(p.id), label: p.name, leads: p.new_leads, won: p.won }))} />
+                        </Card>
+                        <Card title="Manbalar bo'yicha">
+                            <CountList rows={d.by_source.map((r) => ({ key: r.source, label: r.source, leads: r.new_leads, won: r.won }))} />
+                        </Card>
+                    </div>
                 </div>
             </Section>
 
@@ -358,6 +351,23 @@ function Tile({ label, icon, value, hint, delta: d, tone }: { label: string; ico
                 {d !== undefined && <DeltaBadge value={d} />}
             </div>
             {hint && <span className="text-xs text-ink-faint">{hint}</span>}
+        </div>
+    )
+}
+
+function CountList({ rows }: { rows: { key: string; label: string; leads: number; won: number }[] }) {
+    if (rows.length === 0) return <Empty text="Davrda harakat yo'q" />
+    return (
+        <div className="flex flex-col">
+            {rows.map((r) => (
+                <div key={r.key} className="flex items-center justify-between gap-3 py-2.5 border-b border-line last:border-0">
+                    <span className="text-base text-ink truncate">{r.label}</span>
+                    <span className="flex items-center gap-3 text-sm tabular-nums shrink-0">
+                        <span className="text-ink-muted">{formatNumber(r.leads)} lid</span>
+                        <span className="text-success-text">{formatNumber(r.won)} sotuv</span>
+                    </span>
+                </div>
+            ))}
         </div>
     )
 }

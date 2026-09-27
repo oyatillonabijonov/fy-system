@@ -34,6 +34,7 @@ export interface AmoFunnelRow {
 }
 
 export interface AmoPipelineRow { id: number; name: string; won: number; lost: number; new_leads: number }
+export interface AmoSourceRow { source: string; new_leads: number; won: number; lost: number }
 export interface AmoDayRow { day: string; new_leads: number; won: number }
 export interface AmoManagerRow { id: number | null; name: string; new_leads: number; active: number; won: number; lost: number; stale: number }
 export interface AmoLossRow { reason: string; count: number }
@@ -44,6 +45,7 @@ export interface AmoDashboard {
   tasks: { overdue: number; no_task: number }
   funnel: AmoFunnelRow[]
   by_pipeline: AmoPipelineRow[]
+  by_source: AmoSourceRow[]
   daily: AmoDayRow[]
   managers: AmoManagerRow[]
   losses: AmoLossRow[]
