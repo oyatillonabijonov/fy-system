@@ -192,7 +192,7 @@ export function PipelineSettingsModal({
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto max-h-[80vh] flex flex-col"
+              className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with pipeline name */}

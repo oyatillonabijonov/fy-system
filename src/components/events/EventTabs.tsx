@@ -68,7 +68,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
             aria-current={selectedId === UMUMIY ? "true" : undefined}
             className={`relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px shrink-0 whitespace-nowrap bg-accent transition-colors ${
               selectedId === UMUMIY
-                ? "text-ink-on-accent border border-accent shadow-sm"
+                ? "text-ink-on-accent border border-accent "
                 : "text-ink-on-accent/55 border border-transparent hover:text-ink-on-accent"
             }`}
           >
@@ -87,7 +87,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
               aria-current={isSel ? "true" : undefined}
               className={`group relative flex items-center gap-2 h-9 px-3.5 rounded-t-[10px] -mb-px max-w-[210px] whitespace-nowrap transition-colors ${
                 isSel
-                  ? "bg-surface border border-line border-b-surface text-ink shadow-sm"
+                  ? "bg-surface border border-line border-b-surface text-ink "
                   : "bg-surface-sunken border border-transparent text-ink-muted hover:bg-surface-sunken-hover hover:text-ink"
               }`}
             >
@@ -131,7 +131,7 @@ export function EventTabs({ events, selectedId, onSelect, showUmumiy, onCreate }
           )}
         </button>
         {archiveOpen && (
-          <div className="absolute right-0 top-full mt-1.5 bg-surface-raised border border-line rounded-menu shadow-md z-20 overflow-hidden min-w-[240px] max-h-[300px] overflow-y-auto no-scrollbar">
+          <div className="absolute right-0 top-full mt-1.5 bg-surface-raised border border-line rounded-menu z-20 overflow-hidden min-w-[240px] max-h-[300px] overflow-y-auto no-scrollbar">
             <div className="px-3 py-2 border-b border-line text-xs font-bold text-ink-muted">
               O'tgan tadbirlar
             </div>

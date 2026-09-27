@@ -97,7 +97,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-line">

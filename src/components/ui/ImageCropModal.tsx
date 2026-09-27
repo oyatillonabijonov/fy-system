@@ -114,7 +114,7 @@ export function ImageCropModal({
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-surface-raised rounded-overlay shadow-lg w-full max-w-lg relative overflow-hidden flex flex-col"
+            className="bg-surface-raised rounded-overlay w-full max-w-lg relative overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-5 border-b border-line flex items-center justify-between">
@@ -159,7 +159,7 @@ export function ImageCropModal({
               </button>
               <button
                 onClick={handleDone}
-                className="flex-1 px-4 py-2.5 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all shadow-md active:scale-95"
+                className="flex-1 px-4 py-2.5 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
               >
                 Tasdiqlash
               </button>

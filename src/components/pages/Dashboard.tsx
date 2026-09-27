@@ -54,10 +54,9 @@ export function Dashboard() {
     const axisTick = { fontSize: 12, fill: 'var(--ds-color-text-muted)', fontFamily: 'var(--ds-font-body)' }
     const tooltipStyle = {
         borderRadius: 'var(--ds-radius-menu)',
-        border: 'none',
         background: 'var(--ds-color-surface-raised)',
         color: 'var(--ds-color-text-default)',
-        boxShadow: 'var(--ds-shadow-md)',
+        border: '1px solid var(--ds-color-border-default)',
         fontFamily: 'var(--ds-font-body)',
         fontSize: 12,
     }

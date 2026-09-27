@@ -46,7 +46,7 @@ export function Sozlamalar() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-surface text-sm font-bold shadow-lg ${
+            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-surface text-sm font-bold ${
               toast.type === "success"
                 ? "bg-surface-sunken text-ink border border-line"
                 : "bg-danger-soft text-danger-dark border border-danger-soft"

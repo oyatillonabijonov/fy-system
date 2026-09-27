@@ -117,7 +117,7 @@ export function CreateCrmLeadModal({
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              className="bg-surface-raised rounded-overlay w-full max-w-lg shadow-lg pointer-events-auto"
+              className="bg-surface-raised rounded-overlay w-full max-w-lg pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

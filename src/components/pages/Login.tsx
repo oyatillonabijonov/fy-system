@@ -28,7 +28,7 @@ export function Login() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div
-          className="bg-surface-raised rounded-overlay p-10 shadow-lg"
+          className="bg-surface-raised rounded-overlay p-10 "
         >
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">

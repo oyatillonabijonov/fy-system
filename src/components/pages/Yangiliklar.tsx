@@ -118,7 +118,7 @@ function PostFormModal({ editPost, onClose }: PostFormProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md shadow-lg pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-line">
@@ -388,7 +388,7 @@ export function Yangiliklar() {
                 aria-modal="true"
                 aria-labelledby={deleteTitleId}
                 tabIndex={-1}
-                className="bg-surface-raised rounded-overlay w-full max-w-sm shadow-lg pointer-events-auto p-5 flex flex-col gap-4"
+                className="bg-surface-raised rounded-overlay w-full max-w-sm pointer-events-auto p-5 flex flex-col gap-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id={deleteTitleId} className="text-base font-bold text-ink">Postni o'chirish</h3>
