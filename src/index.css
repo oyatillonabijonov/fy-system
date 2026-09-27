@@ -10,6 +10,12 @@
 :root {
   --ds-font-display: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --ds-font-body: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  /* One light stroke for every shape (lighter than Plexus' 12%) */
+  --ds-color-border-default: #1c1c1c12;
+}
+
+[data-theme="dark"] {
+  --ds-color-border-default: #ffffff17;
 }
 
 @layer base {
@@ -519,6 +525,38 @@
 @layer base {
   :focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 2px; }
   b, strong, th { font-weight: 600; }
+  th { text-align: left; }
+
+  /* Checkbox drawn by us: the native one ignores border colour and renders a dark stroke.
+     Rest = sunken fill + the one light stroke; checked = accent fill with an on-accent tick. */
+  input[type="checkbox"] {
+    appearance: none;
+    flex-shrink: 0;
+    display: inline-grid;
+    place-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--ds-color-border-default);
+    border-radius: var(--ds-radius-checkbox);
+    background: var(--ds-color-surface-sunken);
+    cursor: pointer;
+    transition: background-color 120ms, border-color 120ms;
+  }
+  input[type="checkbox"]::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: var(--ds-color-text-on-accent);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat;
+    transform: scale(0);
+    transition: transform 120ms;
+  }
+  input[type="checkbox"]:checked {
+    background: var(--ds-color-accent-default);
+    border-color: var(--ds-color-accent-default);
+  }
+  input[type="checkbox"]:checked::before { transform: scale(1); }
+  input[type="checkbox"]:disabled { opacity: 0.5; cursor: not-allowed; }
   ::selection { background: var(--ds-color-accent-default); color: var(--ds-color-text-on-accent); }
 }
 

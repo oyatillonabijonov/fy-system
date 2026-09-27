@@ -136,7 +136,7 @@ export function CreateCrmLeadModal({
                   className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
                   aria-label="Yopish"
                 >
-                  <X size={20} className="text-ink-muted" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 

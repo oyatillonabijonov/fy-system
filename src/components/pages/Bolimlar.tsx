@@ -52,25 +52,25 @@ export function Bolimlar() {
       {/* Top stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <TopStatCard
-          icon={<Buildings size={18} weight="bold" />}
+          icon={<Buildings size={18} />}
           label="Bo'limlar"
           value={String(stats.filter((s) => s.total_employees > 0).length)}
           subtitle={`Jami ${DEPARTMENTS.length} ta bo'lim`}
         />
         <TopStatCard
-          icon={<UsersIcon size={18} weight="bold" />}
+          icon={<UsersIcon size={18} />}
           label="Jami hodimlar"
           value={String(totalEmployees)}
           subtitle={`${totalActive} ta faol`}
         />
         <TopStatCard
-          icon={<Crown size={18} weight="bold" />}
+          icon={<Crown size={18} />}
           label="Bo'lim boshliqlari"
           value={String(headsAssigned)}
           subtitle={`${stats.length - headsAssigned} ta tayinlanmagan`}
         />
         <TopStatCard
-          icon={<Target size={18} weight="bold" />}
+          icon={<Target size={18} />}
           label="Joriy davr"
           value={monthName}
           subtitle="KPI hisobotlari"
@@ -155,7 +155,7 @@ function DepartmentCard({
             className="w-10 h-10 rounded-control flex items-center justify-center"
             style={{ backgroundColor: color + "15" }}
           >
-            <Buildings size={18} weight="bold" style={{ color }} />
+            <Buildings size={18} style={{ color }} />
           </div>
           <div>
             <h3 className="text-base font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
@@ -433,7 +433,7 @@ function AssignHeadForm({
               <span className="text-xs text-ink-faint">{departmentLabel(department)} bo'limi</span>
             </div>
             <button onClick={onClose} disabled={saving} aria-label="Yopish" className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors">
-              <X size={20} className="text-ink-faint" weight="bold" />
+              <X size={20} className="text-ink-faint" />
             </button>
           </div>
 

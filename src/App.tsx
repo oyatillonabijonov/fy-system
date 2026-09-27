@@ -113,7 +113,7 @@ function AppShell() {
             <div className="relative w-[280px]">
               <MagnifyingGlass
                 size={16}
-                weight="bold"
+               
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
               />
               <input
@@ -134,7 +134,7 @@ function AppShell() {
                 aria-expanded={isNotifOpen}
                 className={`${iconBtn} ${isNotifOpen ? "bg-mute-ghost-hover" : ""}`}
               >
-                <Bell size={20} weight="bold" />
+                <Bell size={20} />
                 <span className="absolute top-2 right-2 size-2 rounded-full bg-danger" />
               </button>
 
@@ -180,7 +180,7 @@ function AppShell() {
                 <span className="text-base font-medium uppercase">{currentLang}</span>
                 <CaretDown
                   size={14}
-                  weight="bold"
+                 
                   className={`text-ink-muted transition-transform ${isLangOpen ? 'rotate-180' : ''}`}
                 />
               </button>
@@ -214,7 +214,7 @@ function AppShell() {
 
             {/* Settings */}
             <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Sozlamalar" className={iconBtn}>
-              <Gear size={20} weight="bold" />
+              <Gear size={20} />
             </button>
           </div>
         </header>

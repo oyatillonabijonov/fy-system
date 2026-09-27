@@ -102,7 +102,7 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
               aria-label="Yopish"
               className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-muted" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
@@ -115,7 +115,7 @@ function CreateForm({ onClose, clientId, clientName, clientEmail, onSuccess }: C
             )}
 
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-control bg-surface-sunken border border-line">
-              <DeviceMobile size={18} className="text-ink-muted mt-0.5 flex-shrink-0" weight="bold" />
+              <DeviceMobile size={18} className="text-ink-muted mt-0.5 flex-shrink-0" />
               <span className="text-sm text-ink-muted leading-snug">
                 A'zo shu email va parol bilan mobil ilovaga kiradi. Parolni a'zoga o'zingiz yetkazasiz.
               </span>

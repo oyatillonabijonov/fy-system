@@ -5,6 +5,7 @@ import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { AddPaymentModal } from "@/components/events/AddPaymentModal"
 import { formatMoney, formatPhone, formatDate } from "@/lib/format"
+import { tbl } from "@/components/ui/table"
 import { ThinkingOrb } from "thinking-orbs"
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
@@ -28,18 +29,18 @@ export function PaymentsLog() {
       {/* Section header */}
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-md font-semibold text-ink">
-          <Receipt size={18} weight="bold" /> To'lovlar tarixi
+          <Receipt size={18} /> To'lovlar tarixi
         </span>
         <button
           onClick={() => { setOpenKey((k) => k + 1); setShowAdd(true) }}
           className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
         >
-          <Plus size={15} weight="bold" />
+          <Plus size={15} />
           To'lov qo'shish
         </button>
       </div>
 
-      <div className="bg-surface border border-line rounded-surface overflow-hidden">
+      <div>
         {isLoading ? (
           <div className="py-10 flex items-center justify-center">
             <ThinkingOrb state="searching" size={20} theme="light" />
@@ -48,33 +49,33 @@ export function PaymentsLog() {
           <div className="py-10 text-center text-base text-ink-muted">Hali to'lov qilinmagan</div>
         ) : (
           <>
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left">
+            <div className={tbl.scroll}>
+              <table className={tbl.table}>
                 <thead>
-                  <tr className="text-xs font-medium text-ink-muted border-b border-line">
-                    <th className="px-4 py-2.5 font-medium">Ism / familiya</th>
-                    <th className="px-4 py-2.5 font-medium">Telefon</th>
-                    <th className="px-4 py-2.5 font-medium text-right">To'lov summasi</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Kelishilgan summa</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Qolgan qarz</th>
-                    <th className="px-4 py-2.5 font-medium">Tadbir</th>
-                    <th className="px-4 py-2.5 font-medium">To'lov turi</th>
-                    <th className="px-4 py-2.5 font-medium">Mas'ul</th>
-                    <th className="px-4 py-2.5 font-medium">Sana</th>
+                  <tr>
+                    <th className={tbl.th}>Ism / familiya</th>
+                    <th className={tbl.th}>Telefon</th>
+                    <th className={`${tbl.th} text-right`}>To'lov summasi</th>
+                    <th className={`${tbl.th} text-right`}>Kelishilgan summa</th>
+                    <th className={`${tbl.th} text-right`}>Qolgan qarz</th>
+                    <th className={tbl.th}>Tadbir</th>
+                    <th className={tbl.th}>To'lov turi</th>
+                    <th className={tbl.th}>Mas'ul</th>
+                    <th className={tbl.th}>Sana</th>
                   </tr>
                 </thead>
                 <tbody>
                   {payments.map((p) => (
-                    <tr key={p.id} className="border-b border-line last:border-0 hover:bg-mute-ghost-hover transition-colors">
-                      <td className="px-4 py-2.5 text-base font-medium text-ink whitespace-nowrap">
+                    <tr key={p.id} className={tbl.tr}>
+                      <td className={`${tbl.td} font-medium whitespace-nowrap`}>
                         {p.client_name ?? p.participant_name ?? "—"}
                       </td>
-                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{formatPhone(p.client_phone)}</td>
-                      <td className="px-4 py-2.5 text-base font-bold text-right tabular-nums whitespace-nowrap text-success-text">
+                      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{formatPhone(p.client_phone)}</td>
+                      <td className={`${tbl.td} font-medium text-right tabular-nums whitespace-nowrap text-success-text`}>
                         +{formatMoney(p.amount)}
                       </td>
-                      <td className="px-4 py-2.5 text-base text-ink text-right tabular-nums whitespace-nowrap">{formatMoney(p.price)}</td>
-                      <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                      <td className={`${tbl.td} text-right tabular-nums whitespace-nowrap`}>{formatMoney(p.price)}</td>
+                      <td className={`${tbl.td} text-right whitespace-nowrap`}>
                         {p.debt <= 0 ? (
                           <span className="inline-flex justify-end">
                             <StatusBadge label="To'langan" variant="success" dot />
@@ -83,12 +84,12 @@ export function PaymentsLog() {
                           <span className="text-base font-bold text-danger-text tabular-nums">{formatMoney(p.debt)}</span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{p.event_name ?? "—"}</td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">
+                      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{p.event_name ?? "—"}</td>
+                      <td className={`${tbl.td} whitespace-nowrap`}>
                         <StatusBadge label={METHOD_LABEL[p.method]} variant="neutral" />
                       </td>
-                      <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{p.recorded_by_name ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-sm text-ink-muted whitespace-nowrap">{formatDate(p.created_at)}</td>
+                      <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{p.recorded_by_name ?? "—"}</td>
+                      <td className={`${tbl.td} text-sm text-ink-muted whitespace-nowrap`}>{formatDate(p.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -96,10 +97,10 @@ export function PaymentsLog() {
             </div>
 
             {canLoadMore && (
-              <div className="p-3 border-t border-line flex justify-center">
+              <div className="pt-3 flex justify-center">
                 <button
                   onClick={() => setLimit((l) => l + PAGE)}
-                  className="px-4 py-1.5 rounded-control text-sm font-semibold text-ink-muted border border-line hover:bg-mute-ghost-hover transition-colors"
+                  className="px-4 h-control-sm rounded-control-sm text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
                 >
                   Ko'proq yuklash
                 </button>

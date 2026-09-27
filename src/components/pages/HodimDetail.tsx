@@ -160,7 +160,7 @@ export function HodimDetail() {
         onClick={() => navigate("/hodimlar")}
         className="flex items-center gap-2 text-base text-ink-muted hover:text-ink w-fit transition-colors"
       >
-        <ArrowLeft size={16} weight="bold" />
+        <ArrowLeft size={16} />
         Hodimlar
       </button>
 
@@ -186,17 +186,17 @@ export function HodimDetail() {
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          icon={<ChartBar size={20} weight="bold" />}
+          icon={<ChartBar size={20} />}
           label="CRM-N lidlar"
           value={stats?.leads_handled.toString() ?? "—"}
         />
         <StatCard
-          icon={<Ticket size={20} weight="bold" />}
+          icon={<Ticket size={20} />}
           label="Tadbirlar"
           value={stats?.events_organized.toString() ?? "0"}
         />
         <StatCard
-          icon={<Briefcase size={20} weight="bold" />}
+          icon={<Briefcase size={20} />}
           label="Mijozlar"
           value={stats?.clients_added.toString() ?? "0"}
         />
@@ -217,18 +217,18 @@ export function HodimDetail() {
         <div className="bg-surface border border-line rounded-surface p-6">
           <h2 className="text-base font-bold text-ink mb-4">Ish ma'lumotlari</h2>
           <div className="flex flex-col gap-3">
-            <InfoRow icon={<Buildings size={14} weight="bold" />} label="Bo'lim" value={departmentLabel(user.department)} />
-            <InfoRow icon={<Briefcase size={14} weight="bold" />} label="Lavozim" value={user.position} />
-            <InfoRow icon={<Calendar size={14} weight="bold" />} label="Ish boshlangan" value={formatDate(user.hire_date)} />
+            <InfoRow icon={<Buildings size={14} />} label="Bo'lim" value={departmentLabel(user.department)} />
+            <InfoRow icon={<Briefcase size={14} />} label="Lavozim" value={user.position} />
+            <InfoRow icon={<Calendar size={14} />} label="Ish boshlangan" value={formatDate(user.hire_date)} />
           </div>
         </div>
 
         <div className="bg-surface border border-line rounded-surface p-6">
           <h2 className="text-base font-bold text-ink mb-4">Shaxsiy ma'lumotlar</h2>
           <div className="flex flex-col gap-3">
-            <InfoRow icon={<Calendar size={14} weight="bold" />} label="Tug'ilgan sana" value={formatDate(user.birth_date)} />
-            <InfoRow icon={<MapPin size={14} weight="bold" />} label="Manzil" value={user.address} />
-            <InfoRow icon={<Phone size={14} weight="bold" />} label="Favqulodda kontakt" value={user.emergency_contact} />
+            <InfoRow icon={<Calendar size={14} />} label="Tug'ilgan sana" value={formatDate(user.birth_date)} />
+            <InfoRow icon={<MapPin size={14} />} label="Manzil" value={user.address} />
+            <InfoRow icon={<Phone size={14} />} label="Favqulodda kontakt" value={user.emergency_contact} />
           </div>
         </div>
       </div>
@@ -351,7 +351,7 @@ function ProfileHeader({
             )}
             {canEditAvatar && (
               <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
-                <Camera size={20} weight="bold" className="text-white" />
+                <Camera size={20} className="text-white" />
               </span>
             )}
             {uploading && (
@@ -398,11 +398,11 @@ function ProfileHeader({
           )}
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted">
-            <ContactItem icon={<Envelope size={14} weight="bold" />} value={user.email} />
-            {user.phone && <ContactItem icon={<Phone size={14} weight="bold" />} value={formatPhone(user.phone)} />}
+            <ContactItem icon={<Envelope size={14} />} value={user.email} />
+            {user.phone && <ContactItem icon={<Phone size={14} />} value={formatPhone(user.phone)} />}
             {user.telegram && (
               <ContactItem
-                icon={<PaperPlaneRight size={14} weight="bold" />}
+                icon={<PaperPlaneRight size={14} />}
                 value={user.telegram.startsWith("@") ? user.telegram : `@${user.telegram}`}
               />
             )}
@@ -415,14 +415,14 @@ function ProfileHeader({
             onClick={onEdit}
             className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
           >
-            <PencilSimple size={14} weight="bold" />
+            <PencilSimple size={14} />
             Tahrirlash
           </button>
           <button
             onClick={onPermissions}
             className="flex items-center gap-2 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
           >
-            <Gear size={14} weight="bold" />
+            <Gear size={14} />
             Ruxsatlar
           </button>
         </div>
@@ -531,7 +531,7 @@ function DangerZone({
                 busy ? "bg-mute-soft text-ink-faint cursor-not-allowed" : user.is_active ? "bg-danger text-white" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
-              <Power size={14} weight="bold" />
+              <Power size={14} />
               {busy ? "..." : user.is_active ? "Ha, faolsizlantir" : "Ha, faollashtir"}
             </button>
           </>
@@ -544,7 +544,7 @@ function DangerZone({
                 : "border border-line text-ink hover:bg-surface-sunken"
             }`}
           >
-            <Power size={14} weight="bold" />
+            <Power size={14} />
             {user.is_active ? "Faolsizlantirish" : "Qayta faollashtirish"}
           </button>
         )}
@@ -581,7 +581,7 @@ function KpiSection({
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-control-sm bg-surface-sunken flex items-center justify-center">
-            <Target size={18} weight="bold" className="text-ink" />
+            <Target size={18} className="text-ink" />
           </div>
           <div>
             <h2 className="text-md font-bold text-ink" style={{ letterSpacing: "-0.4px" }}>
@@ -598,7 +598,7 @@ function KpiSection({
               onClick={onEdit}
               className="flex items-center gap-1.5 px-3 h-control-sm border border-line rounded-control text-sm font-bold hover:bg-mute-ghost-hover transition-colors"
             >
-              <PencilSimple size={12} weight="bold" />
+              <PencilSimple size={12} />
               {kpi?.target ? "Maqsadlarni tahrirlash" : "Maqsad belgilash"}
             </button>
           )}
@@ -611,7 +611,7 @@ function KpiSection({
 
       {!loading && !kpi?.target && (
         <div className="py-8 text-center">
-          <Target size={32} className="mx-auto text-ink-faint mb-3" weight="bold" />
+          <Target size={32} className="mx-auto text-ink-faint mb-3" />
           <p className="text-base font-bold text-ink mb-1">Maqsadlar belgilanmagan</p>
           <p className="text-sm text-ink-muted">
             {canEdit
@@ -624,7 +624,7 @@ function KpiSection({
       {!loading && kpi?.target && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <KpiProgressCard
-            icon={<TrendUp size={18} weight="bold" />}
+            icon={<TrendUp size={18} />}
             label="Tushum"
             target={kpi.target.revenue_target}
             actual={kpi.actual.revenue_actual}
@@ -633,7 +633,7 @@ function KpiSection({
             formatNumber={formatNumber}
           />
           <KpiProgressCard
-            icon={<Target size={18} weight="bold" />}
+            icon={<Target size={18} />}
             label="Yopilgan lidlar"
             target={kpi.target.leads_target}
             actual={kpi.actual.leads_closed}
@@ -641,7 +641,7 @@ function KpiSection({
             unit="ta"
           />
           <KpiProgressCard
-            icon={<Calendar size={18} weight="bold" />}
+            icon={<Calendar size={18} />}
             label="Tadbirlar"
             target={kpi.target.events_target}
             actual={kpi.actual.events_managed}
@@ -743,7 +743,7 @@ function PeriodSelector({
         title="Oldingi oy"
         aria-label="Oldingi oy"
       >
-        <CaretLeft size={12} weight="bold" className="text-ink-muted" />
+        <CaretLeft size={12} className="text-ink-muted" />
       </button>
       <span className="px-2 text-sm font-bold text-ink min-w-[110px] text-center">
         {MONTH_NAMES[period.month - 1]} {period.year}
@@ -754,7 +754,7 @@ function PeriodSelector({
         title="Keyingi oy"
         aria-label="Keyingi oy"
       >
-        <CaretRight size={12} weight="bold" className="text-ink-muted" />
+        <CaretRight size={12} className="text-ink-muted" />
       </button>
     </div>
   )

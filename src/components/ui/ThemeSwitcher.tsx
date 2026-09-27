@@ -15,7 +15,7 @@ export function ThemeSwitcher() {
             aria-label={label}
             className="h-control-md w-9 flex items-center justify-center rounded-control text-ink transition-colors hover:bg-mute-ghost-hover"
         >
-            {isDark ? <Sun size={20} weight="bold" /> : <Moon size={20} weight="bold" />}
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
         </button>
     )
 }

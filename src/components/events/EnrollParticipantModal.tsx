@@ -110,7 +110,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
             <div className="p-5 border-b border-line flex items-center justify-between">
               <h3 id={titleId} className="text-md font-bold text-ink">Ishtirokchi qo'shish</h3>
               <button onClick={onClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
-                <X size={20} className="text-ink-muted" weight="bold" />
+                <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
@@ -126,7 +126,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor={clientSearchId} className="text-sm font-medium text-ink-muted">Mijoz *</label>
                   <div className="relative">
-                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" weight="bold" />
+                    <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                     <input
                       id={clientSearchId}
                       value={query}
@@ -187,7 +187,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                       onClick={() => setClient(null)}
                       className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
                     >
-                      <CaretLeft size={12} weight="bold" /> O'zgartirish
+                      <CaretLeft size={12} /> O'zgartirish
                     </button>
                   </div>
                 </div>

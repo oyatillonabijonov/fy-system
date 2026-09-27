@@ -27,6 +27,7 @@ import { EnrollParticipantModal } from "@/components/events/EnrollParticipantMod
 import { eventTint } from "@/lib/eventTint"
 import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
+import { tbl } from "@/components/ui/table"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -91,14 +92,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-lg font-bold text-white leading-tight line-clamp-2 drop-shadow">{event.name}</h2>
               <div className="flex items-center gap-1.5 shrink-0">
-                <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></IconBtn>
-                <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></IconBtn>
-                <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish" expanded={bannerOpen}><CaretUp size={15} weight="bold" /></IconBtn>
+                <IconBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} /></IconBtn>
+                <IconBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} /></IconBtn>
+                <IconBtn onClick={() => setBannerOpen(false)} title="Yig'ish" expanded={bannerOpen}><CaretUp size={15} /></IconBtn>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <MetaChip icon={<CalendarBlank size={13} weight="bold" />}>{dateLabel}</MetaChip>
-              {event.location && <MetaChip icon={<MapPin size={13} weight="bold" />}>{event.location}</MetaChip>}
+              <MetaChip icon={<CalendarBlank size={13} />}>{dateLabel}</MetaChip>
+              {event.location && <MetaChip icon={<MapPin size={13} />}>{event.location}</MetaChip>}
               {manager && (
                 <MetaChip>
                   <span className="inline-flex items-center gap-1.5">
@@ -124,9 +125,9 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <span className="text-sm text-ink-muted whitespace-nowrap hidden sm:inline">· {dateLabel}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} weight="bold" /></CompactBtn>
-            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} weight="bold" /></CompactBtn>
-            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={15} weight="bold" /></CompactBtn>
+            <CompactBtn onClick={onEdit} title="Tahrirlash"><PencilSimple size={15} /></CompactBtn>
+            <CompactBtn onClick={onDelete} title="O'chirish" danger><Trash size={15} /></CompactBtn>
+            <CompactBtn onClick={() => setBannerOpen(true)} title="Ochish" expanded={bannerOpen}><CaretDown size={15} /></CompactBtn>
           </div>
         </div>
       )}
@@ -135,7 +136,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
       <div className="bg-surface border border-line rounded-surface p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-bold text-ink-muted">
-            <UsersThree size={15} weight="bold" /> Ro'yxatdan o'tish
+            <UsersThree size={15} /> Ro'yxatdan o'tish
           </span>
           <span className="text-md font-bold text-ink tabular-nums">{participants.length}</span>
         </div>
@@ -157,8 +158,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
       </div>
 
       {/* Participants table */}
-      <div className="bg-surface border border-line rounded-surface overflow-hidden">
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2 px-1">
           <span className="text-base font-bold text-ink">Ishtirokchilar ({participants.length})</span>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -166,14 +167,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
               disabled={exporting || participants.length === 0}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-semibold border border-line text-ink-muted hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Export size={14} weight="bold" />
+              <Export size={14} />
               {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
             </button>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
             >
-              <Plus size={14} weight="bold" />
+              <Plus size={14} />
               Ishtirokchi qo'shish
             </button>
           </div>
@@ -185,31 +186,32 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         ) : participants.length === 0 ? (
           <div className="py-10 text-center text-base text-ink-muted">Hali ishtirokchi qo'shilmagan</div>
         ) : (
-          <div className="overflow-x-auto no-scrollbar">
-            <table className="w-full text-left">
+          <div className={tbl.scroll}>
+            <table className={tbl.table}>
               <thead>
-                <tr className="text-xs font-bold text-ink-muted border-b border-line">
-                  <th className="px-4 py-2.5 font-bold">Rasmi</th>
-                  <th className="px-4 py-2.5 font-bold">Mijoz ismi</th>
-                  <th className="px-4 py-2.5 font-bold">Telefon</th>
-                  <th className="px-4 py-2.5 font-bold text-right">Amal</th>
+                <tr>
+                  <th className={tbl.th}>Mijoz</th>
+                  <th className={tbl.th}>Telefon</th>
+                  <th className={`${tbl.th} text-right`}>Amal</th>
                 </tr>
               </thead>
               <tbody>
                 {participants.map((p) => (
-                  <tr key={p.id} className="border-b border-line last:border-0 hover:bg-mute-ghost-hover transition-colors">
-                    <td className="px-4 py-2.5">
-                      {p.photo_url ? (
-                        <img src={p.photo_url} alt={p.full_name} className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <span className="w-8 h-8 rounded-full bg-mute-soft text-ink-muted text-xs font-bold flex items-center justify-center">
-                          {initials(p.full_name)}
-                        </span>
-                      )}
+                  <tr key={p.id} className={tbl.tr}>
+                    <td className={tbl.td}>
+                      <div className="flex items-center gap-3">
+                        <div className="size-9 rounded-full overflow-hidden flex-shrink-0 bg-mute-soft flex items-center justify-center">
+                          {p.photo_url ? (
+                            <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
+                          ) : (
+                            <span className="text-sm font-medium text-ink-muted">{initials(p.full_name)}</span>
+                          )}
+                        </div>
+                        <span className="font-medium whitespace-nowrap">{p.full_name}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5 text-base font-medium text-ink whitespace-nowrap">{p.full_name}</td>
-                    <td className="px-4 py-2.5 text-base text-ink-muted whitespace-nowrap">{formatPhone(p.phone)}</td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    <td className={`${tbl.td} text-ink-muted whitespace-nowrap`}>{formatPhone(p.phone)}</td>
+                    <td className={`${tbl.td} text-right whitespace-nowrap`}>
                       {confirmingId === p.id ? (
                         <span className="inline-flex items-center gap-2">
                           {p.paid > 0 && (
@@ -236,7 +238,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                           aria-label="O'chirish"
                           className="text-ink-faint hover:text-danger-text transition-colors"
                         >
-                          <Trash size={15} weight="bold" />
+                          <Trash size={15} />
                         </button>
                       )}
                     </td>

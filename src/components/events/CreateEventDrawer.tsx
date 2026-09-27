@@ -84,13 +84,13 @@ function ManagerSelect({
         ) : (
           <span className="text-ink-faint">Menejer tanlang</span>
         )}
-        <CaretDown size={14} className="text-ink-muted shrink-0" weight="bold" />
+        <CaretDown size={14} className="text-ink-muted shrink-0" />
       </button>
 
       {open && (
         <div className="absolute z-20 mt-1 w-full bg-surface-raised border border-line rounded-menu overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
-            <MagnifyingGlass size={14} className="text-ink-muted" weight="bold" />
+            <MagnifyingGlass size={14} className="text-ink-muted" />
             <input
               autoFocus
               value={query}
@@ -119,7 +119,7 @@ function ManagerSelect({
                     <span className="text-sm font-medium text-ink truncate">{m.full_name}</span>
                     {m.position && <span className="text-xs text-ink-muted truncate">{m.position}</span>}
                   </span>
-                  {m.id === value && <Check size={14} className="text-ink ml-auto" weight="bold" />}
+                  {m.id === value && <Check size={14} className="text-ink ml-auto" />}
                 </button>
               ))
             )}
@@ -320,7 +320,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                   {isEdit ? "Tadbirni tahrirlash" : "Yangi tadbir"}
                 </h2>
                 <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
-                  <X size={20} className="text-ink-muted" weight="bold" />
+                  <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
@@ -345,7 +345,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                   )}
                   <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-surface-raised/90 text-sm font-bold text-ink opacity-0 group-hover:opacity-100 transition-opacity">
-                      {bannerPreview ? <ImageIcon size={14} weight="bold" /> : <UploadSimple size={14} weight="bold" />}
+                      {bannerPreview ? <ImageIcon size={14} /> : <UploadSimple size={14} />}
                       {bannerPreview ? "Rasmni o'zgartirish" : "Banner yuklash"}
                     </span>
                   </span>
@@ -464,7 +464,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       hasTariffs ? "bg-accent border-accent" : "border-line"
                     }`}
                   >
-                    {hasTariffs && <Check size={12} className="text-ink-on-accent" weight="bold" />}
+                    {hasTariffs && <Check size={12} className="text-ink-on-accent" />}
                   </span>
                   <span className="text-base text-ink">Tadbir uchun tariflar mavjudmi?</span>
                 </button>

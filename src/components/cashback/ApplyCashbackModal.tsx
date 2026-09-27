@@ -111,7 +111,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
               aria-label="Yopish"
               className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-muted" weight="bold" />
+              <X size={20} className="text-ink-muted" />
             </button>
           </div>
 

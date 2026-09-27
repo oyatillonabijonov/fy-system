@@ -222,7 +222,7 @@ export function Sidebar() {
                 <div className="relative mb-4">
                     <MagnifyingGlass
                         size={16}
-                        weight="bold"
+                       
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
                     />
                     <input
@@ -276,7 +276,7 @@ export function Sidebar() {
                                                 {hasSubItems && (
                                                     <CaretDown
                                                         size={14}
-                                                        weight="bold"
+                                                       
                                                         className={`text-ink-faint transition-transform ${isExpanded ? "rotate-180" : ""}`}
                                                     />
                                                 )}
@@ -285,7 +285,7 @@ export function Sidebar() {
                                     </button>
 
                                     {hasSubItems && isExpanded && !isCollapsed && (
-                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                        <div className="flex flex-col gap-0.5 mt-0.5 ml-[21px] pl-3 border-l border-line">
                                             {item.subItems?.map((subItem) => {
                                                 const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
                                                 return (
@@ -294,7 +294,7 @@ export function Sidebar() {
                                                         type="button"
                                                         onClick={() => handleNavigate(subItem)}
                                                         aria-current={isSubActive ? "page" : undefined}
-                                                        className={`flex items-center gap-3 h-control-sm rounded-full pl-10 pr-3 text-base font-medium transition-colors ${isSubActive ? "bg-surface text-ink " : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+                                                        className={`relative flex items-center gap-3 h-control-sm px-2 text-base font-medium transition-colors before:absolute before:-left-[13px] before:top-1/2 before:-translate-y-1/2 before:h-4 before:w-px before:transition-colors ${isSubActive ? "text-ink before:bg-ink" : "text-ink-muted hover:text-ink before:bg-transparent"}`}
                                                     >
                                                         <subItem.icon size={16} className="flex-shrink-0" />
                                                         <span className="flex-1 text-left truncate">{subItem.name}</span>
@@ -322,7 +322,7 @@ export function Sidebar() {
                     ) : displayName ? (
                         <span className="text-sm font-semibold">{userInitials}</span>
                     ) : (
-                        <User size={18} weight="bold" />
+                        <User size={18} />
                     )}
                 </div>
                 {!isCollapsed && (
@@ -342,7 +342,7 @@ export function Sidebar() {
                             title="Chiqish"
                             className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink-muted transition-colors hover:bg-mute-ghost-hover hover:text-ink"
                         >
-                            <SignOut size={18} weight="bold" />
+                            <SignOut size={18} />
                         </button>
                     </>
                 )}

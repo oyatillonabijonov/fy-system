@@ -48,7 +48,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
     <div
       onClick={() => onClick?.(lead)}
       style={{ letterSpacing: "-0.4px" }}
-      className={`bg-surface border border-line rounded-surface px-3.5 py-3 flex flex-col gap-1 hover:border-line-strong transition-all duration-150 cursor-pointer ${isLost ? "opacity-50" : ""}`}
+      className={`bg-surface border border-line rounded-surface px-3.5 py-3 flex flex-col gap-1 hover:bg-mute-ghost-hover transition-all duration-150 cursor-pointer ${isLost ? "opacity-50" : ""}`}
     >
       {/* LINE 1: Avatar + DisplayName */}
       <div className="flex items-center justify-between gap-2">
@@ -93,7 +93,7 @@ export function CrmNCard({ lead, isLost, onClick }: CrmNCardProps) {
         )}
         {contact?.phone && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink-muted">
-            <Phone size={10} className="text-ink-faint" weight="bold" />
+            <Phone size={10} className="text-ink-faint" />
             {contact.phone}
           </span>
         )}
