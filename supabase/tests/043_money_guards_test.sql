@@ -34,9 +34,10 @@ BEGIN
   RAISE NOTICE 'fixture: staff=is_staff true, member=is_staff false';
 END $$;
 
-INSERT INTO public.events (id, name, cashback_percent) VALUES
-  ('e0000000-0000-0000-0000-000000000001', 'Event 1', 5),
-  ('e0000000-0000-0000-0000-000000000002', 'Event 2', 5);
+-- Already over: since 061 cashback is credited after the event (settle_event_cashback)
+INSERT INTO public.events (id, name, cashback_percent, date) VALUES
+  ('e0000000-0000-0000-0000-000000000001', 'Event 1', 5, now() - interval '3 days'),
+  ('e0000000-0000-0000-0000-000000000002', 'Event 2', 5, now() - interval '3 days');
 
 CREATE OR REPLACE FUNCTION pg_temp.as_staff()  RETURNS void LANGUAGE sql AS
   $$ SELECT set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false)::void $$;
@@ -159,6 +160,8 @@ INSERT INTO public.payments (id, participant_id, amount, method) VALUES
   ('9a000000-0000-0000-0000-0000000000b1','40000000-0000-0000-0000-0000000000b1',1000000,'naqd'),
   ('9a000000-0000-0000-0000-0000000000b2','40000000-0000-0000-0000-0000000000b2',1000000,'naqd');
 
+SELECT public.settle_event_cashback();
+
 DO $$
 DECLARE v_bal numeric; v_e1 numeric; v_e2 numeric;
 BEGIN
@@ -174,6 +177,7 @@ END $$;
 -- Raise participant 2's percent AFTER the award, then refund it
 UPDATE public.event_participants SET cashback_percent = 10 WHERE id='40000000-0000-0000-0000-0000000000b2';
 DELETE FROM public.payments WHERE id='9a000000-0000-0000-0000-0000000000b2';
+SELECT public.settle_event_cashback();
 
 DO $$
 DECLARE v_bal numeric; v_e2 numeric;

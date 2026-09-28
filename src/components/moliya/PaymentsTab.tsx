@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { ArrowUUpLeft, Prohibit } from "@phosphor-icons/react"
+import { ArrowUUpLeft, Prohibit, UserMinus } from "@phosphor-icons/react"
 import { usePaymentsList, usePaymentsCount } from "@/hooks/useFinance"
 import type { FinanceFilters, PaymentRow } from "@/lib/supabase/queries/finance"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { StatusBadge } from "@/components/ui/StatusBadge"
-import { RefundModal, VoidPaymentModal } from "@/components/moliya/PaymentActionModals"
+import { NoShowModal, RefundModal, VoidPaymentModal } from "@/components/moliya/PaymentActionModals"
 import { ReceiptCell } from "@/components/moliya/Receipt"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
@@ -30,6 +30,7 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
 
   const [voiding, setVoiding] = useState<PaymentRow | null>(null)
   const [refunding, setRefunding] = useState<PaymentRow | null>(null)
+  const [noShow, setNoShow] = useState<PaymentRow | null>(null)
 
   return (
     <div className="flex flex-col gap-3">
@@ -96,6 +97,9 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
                               {p.kind === "payment" && p.participant_cash_paid > 0 && (
                                 <RowAction onClick={() => setRefunding(p)} label="Qaytarish" icon={<ArrowUUpLeft size={16} />} />
                               )}
+                              {p.kind === "payment" && !p.participant_no_show && (
+                                <RowAction onClick={() => setNoShow(p)} label="Qatnashmadi" icon={<UserMinus size={16} />} />
+                              )}
                               <RowAction onClick={() => setVoiding(p)} label="Bekor qilish" icon={<Prohibit size={16} />} danger />
                             </span>
                           )}
@@ -113,6 +117,7 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
 
       {voiding && <VoidPaymentModal payment={voiding} onClose={() => setVoiding(null)} />}
       {refunding && <RefundModal payment={refunding} onClose={() => setRefunding(null)} />}
+      {noShow && <NoShowModal payment={noShow} onClose={() => setNoShow(null)} />}
     </div>
   )
 }

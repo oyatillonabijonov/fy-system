@@ -9,7 +9,7 @@
 //                                          (a full pass also drops leads deleted in AmoCRM)
 //   lead status changes (events)           incremental by created_at
 //   open tasks                             full replace
-//   + expire_cashback() (not AmoCRM — see expireCashback below)
+//   + settle_event_cashback() and expire_cashback() (not AmoCRM — see expireCashback below)
 // Alongside the loop: Telegram payment receipts (src/telegram.ts), event-driven.
 //
 // Env: DATABASE_URL, AMO_SUBDOMAIN, AMO_TOKEN (long-lived), SYNC_INTERVAL_MIN (10),
@@ -253,10 +253,12 @@ async function runOnce(): Promise<void> {
 }
 
 // Not AmoCRM, but this is the system's only scheduled worker (CLAUDE.md): cashback
-// older than 12 months expires here (migration 059). Kept apart so it never marks
-// the AmoCRM sync as failed.
+// is credited the day after an event (061) and expires after 12 months (059).
+// Kept apart so it never marks the AmoCRM sync as failed.
 async function expireCashback(): Promise<void> {
   try {
+    const [award] = await sql<{ n: number }[]>`select public.settle_event_cashback() as n`
+    if (award && award.n > 0) console.log(`[amo-sync] keshbek: ${award.n} ta ishtirokchida tadbirdan keyingi keshbek yangilandi`)
     const [row] = await sql<{ n: number }[]>`select public.expire_cashback() as n`
     if (row && row.n > 0) console.log(`[amo-sync] keshbek: ${row.n} ta mijozda muddati tugagan qism yechildi`)
   } catch (err) {

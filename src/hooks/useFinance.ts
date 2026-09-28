@@ -7,6 +7,7 @@ import {
   recordPayment,
   voidPayment,
   refundPayment,
+  settleNoShow,
   updateParticipantFinance,
   listExpenses,
   countExpenses,
@@ -131,6 +132,7 @@ export const useRecordPayment = () =>
 export const useVoidPayment = () =>
   useMoneyMutation((v: { id: string; reason: string }) => voidPayment(v.id, v.reason))
 export const useRefundPayment = () => useMoneyMutation(refundPayment)
+export const useSettleNoShow = () => useMoneyMutation(settleNoShow)
 export const useUpdateParticipantFinance = () =>
   useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch))
 

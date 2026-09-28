@@ -13,7 +13,7 @@ interface OutboxRow { id: number; kind: ReceiptKind; payment_id: string | null; 
 
 interface DetailRow {
   ref: string; participant: string; amount: string; at: Date; method: string | null; staff: string | null; reason: string | null
-  client: string; phone: string | null; event: string; price: string; paid: string
+  client: string; phone: string | null; event: string; price: string; paid: string; no_show: boolean
 }
 
 /** Paid by participant `ep` at moment `op.t`: live payments then + cashback spent by then */
@@ -34,7 +34,7 @@ export async function loadReceipt(sql: Sql, row: OutboxRow): Promise<ReceiptData
                case when ${row.kind} = 'void' then p.voided_at else p.created_at end as at,
                case when ${row.kind} = 'void' then vb.full_name else rb.full_name end as staff,
                ep.full_name as client, coalesce(ep.phone, c.phone) as phone, e.name as event, ep.price,
-               ${paidAt(sql)} as paid
+               ${paidAt(sql)} as paid, ep.no_show_at is not null as no_show
         from op, payments p
         join event_participants ep on ep.id = p.participant_id
         join events e on e.id = ep.event_id
@@ -46,7 +46,7 @@ export async function loadReceipt(sql: Sql, row: OutboxRow): Promise<ReceiptData
         with op as (select created_at as t from cashback_transactions where id = ${row.cashback_id})
         select t.id::text as ref, ep.id::text as participant, t.amount, t.created_at as at, null as method, null as staff, null as reason,
                ep.full_name as client, coalesce(ep.phone, c.phone) as phone, e.name as event, ep.price,
-               ${paidAt(sql)} as paid
+               ${paidAt(sql)} as paid, false as no_show
         from op, cashback_transactions t
         join event_participants ep on ep.id = t.participant_id
         join events e on e.id = ep.event_id
@@ -63,7 +63,8 @@ export async function loadReceipt(sql: Sql, row: OutboxRow): Promise<ReceiptData
     event: d.event,
     method: d.method,
     staff: d.staff,
-    reason: row.kind === "void" ? d.reason : null,
+    // A no-show refund (settle_no_show) says so on the receipt
+    reason: row.kind === "void" ? d.reason : row.kind === "refund" && d.no_show ? "Qatnashmadi" : null,
     price: Number(d.price),
     paid: Number(d.paid),
   }

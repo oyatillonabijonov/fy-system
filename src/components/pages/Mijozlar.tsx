@@ -813,7 +813,7 @@ export function Mijozlar() {
                                                     {formatNumber(expiryQuery.data.amount)} so'm {formatDate(expiryQuery.data.expires_on)} da kuyadi
                                                 </span>
                                             )}
-                                            <span className="text-xs text-ink-faint">Keshbek 12 oy amal qiladi, avval eskisi ishlatiladi</span>
+                                            <span className="text-xs text-ink-faint">Keshbek tadbirdan so'ng tushadi va 12 oy amal qiladi</span>
                                         </div>
                                         {canEdit("tadbirlar-moliya") && (
                                             <button
