@@ -39,6 +39,7 @@ import {
 import { useSetCommunityApproved } from "@/hooks/useCommunity"
 import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { PhoneInput } from "@/components/ui/PhoneInput"
+import { normalizePhone } from "@/lib/utils"
 import { ThinkingOrb } from "thinking-orbs"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
@@ -162,6 +163,7 @@ export function Mijozlar() {
                     setSelectedCustomer({ ...selectedCustomer, [editingField]: editValue.trim() })
                     setEditingField(null)
                 },
+                onError: showSaveError,
             }
         )
     }
@@ -209,7 +211,15 @@ export function Mijozlar() {
                     })
                     setEditAllMode(false)
                 },
+                onError: showSaveError,
             }
+        )
+    }
+
+    function showSaveError(err: unknown) {
+        showToast(
+            (err as { code?: string }).code === '23505' ? "Bu telefon raqam boshqa mijozda band" : "Saqlab bo'lmadi",
+            "error",
         )
     }
 
@@ -223,6 +233,13 @@ export function Mijozlar() {
         joinDate: new Date().toISOString().split('T')[0],
         image: ''
     });
+
+    // Same phone already in the base? (the DB rejects it too — migration 057 — this just says so while typing)
+    const duplicateClient = useMemo(() => {
+        const p = normalizePhone(newCustomer.phone)
+        if (!p || !/^\+998\d{9}$/.test(p)) return null
+        return customers.find(c => normalizePhone(c.phone) === p) ?? null
+    }, [newCustomer.phone, customers])
 
     useEffect(() => {
         setDrawerTab('malumotlar')
@@ -1161,6 +1178,20 @@ export function Mijozlar() {
                                             <label htmlFor={`${addFormId}-phone`} className="text-sm font-bold text-ink">TELEFON RAQAMI *</label>
                                             <PhoneInput id={`${addFormId}-phone`} value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
+                                        {duplicateClient && (
+                                            <div role="alert" className="col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
+                                                <span className="flex-1 min-w-0">
+                                                    Bu raqam bilan mijoz allaqachon bor: <span className="font-semibold">{duplicateClient.name}</span>
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { closeAddModal(); setSelectedCustomer(duplicateClient) }}
+                                                    className="flex-shrink-0 font-semibold underline underline-offset-2"
+                                                >
+                                                    Ochish
+                                                </button>
+                                            </div>
+                                        )}
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-email`} className="text-sm font-bold text-ink">EMAIL (IXTIYORIY)</label>
                                             <input
@@ -1203,9 +1234,9 @@ export function Mijozlar() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={savingNewCustomer || !newCustomer.name.trim()}
+                                        disabled={savingNewCustomer || !newCustomer.name.trim() || !!duplicateClient}
                                         className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-ink-on-accent transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                                            savingNewCustomer || !newCustomer.name.trim()
+                                            savingNewCustomer || !newCustomer.name.trim() || duplicateClient
                                                 ? "bg-mute-soft cursor-not-allowed"
                                                 : "bg-accent hover:bg-accent-hover"
                                         }`}
