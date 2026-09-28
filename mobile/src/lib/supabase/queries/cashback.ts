@@ -4,7 +4,7 @@ import type { Database } from "../types"
 export type CashbackTransactionRow =
   Database["public"]["Tables"]["cashback_transactions"]["Row"]
 
-export type CashbackType = "earned" | "used" | "manual_add" | "manual_subtract"
+export type CashbackType = "earned" | "used" | "manual_add" | "manual_subtract" | "clawback" | "expired"
 
 /** The member's own cashback history (RLS limits to own client). */
 export async function getMyCashbackHistory(): Promise<CashbackTransactionRow[]> {

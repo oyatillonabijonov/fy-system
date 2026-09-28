@@ -41,6 +41,10 @@ import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { normalizePhone } from "@/lib/utils"
 import { ThinkingOrb } from "thinking-orbs"
+import { useAuth } from "@/context/AuthContext"
+import { useCashbackNextExpiry } from "@/hooks/useCashback"
+import { AdjustCashbackModal } from "@/components/cashback/AdjustCashbackModal"
+import type { CashbackTransaction } from "@/lib/supabase/queries/cashback"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 
@@ -67,6 +71,15 @@ interface Customer {
 
 
 const columnHelper = createColumnHelper<Customer>()
+
+const CASHBACK_TYPE: Record<CashbackTransaction["type"], { label: string; credit: boolean }> = {
+    earned: { label: "Tadbirdan", credit: true },
+    manual_add: { label: "Qo'lda qo'shildi", credit: true },
+    used: { label: "Qarzga ishlatildi", credit: false },
+    manual_subtract: { label: "Qo'lda ayirildi", credit: false },
+    clawback: { label: "To'lov qaytgani uchun olindi", credit: false },
+    expired: { label: "Muddati tugadi", credit: false },
+}
 
 export function Mijozlar() {
     const qc = useQueryClient()
@@ -137,6 +150,9 @@ export function Mijozlar() {
 
 
     const journeyQuery = useClientJourney(selectedCustomer?.id ?? null)
+    const expiryQuery = useCashbackNextExpiry(selectedCustomer?.id ?? null)
+    const { canEdit } = useAuth()
+    const [adjustOpen, setAdjustOpen] = useState(false)
 
     // Inline edit state for sidebar
     const [editingField, setEditingField] = useState<"name" | "activity" | "phone" | "email" | null>(null)
@@ -785,46 +801,68 @@ export function Mijozlar() {
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (
                                 <div className="px-8 py-6 flex flex-col gap-4">
-                                    {/* Balance row */}
-                                    <div className="flex items-center justify-between py-2">
-                                        <div>
-                                            <span className="text-xs text-ink-muted">Joriy balans</span>
-                                            <div className="text-lg font-semibold text-ink mt-0.5">
+                                    {/* Balance + next expiry */}
+                                    <div className="flex items-start justify-between gap-4 p-4 rounded-surface bg-surface-sunken">
+                                        <div className="flex flex-col gap-1 min-w-0">
+                                            <span className="text-sm text-ink-muted">Joriy balans</span>
+                                            <span className="text-xl font-semibold text-ink tabular-nums">
                                                 {formatMoney(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
-                                            </div>
+                                            </span>
+                                            {expiryQuery.data && (
+                                                <span className="text-sm text-warning-text">
+                                                    {formatNumber(expiryQuery.data.amount)} so'm {formatDate(expiryQuery.data.expires_on)} da kuyadi
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-ink-faint">Keshbek 12 oy amal qiladi, avval eskisi ishlatiladi</span>
                                         </div>
+                                        {canEdit("tadbirlar-moliya") && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAdjustOpen(true)}
+                                                className="flex-shrink-0 px-3.5 h-control-md rounded-control bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
+                                            >
+                                                O'zgartirish
+                                            </button>
+                                        )}
                                     </div>
 
-                                    {/* Per-event cashback log */}
+                                    {/* Ledger */}
                                     {journeyQuery.isLoading ? (
                                         <div className="flex items-center gap-2 py-4 justify-center">
                                             <ThinkingOrb state="weaving" size={20} theme="light" />
                                         </div>
-                                    ) : (() => {
-                                        const earned = journeyQuery.data?.events.filter(ev => ev.cashback_earned > 0) ?? []
-                                        if (earned.length === 0) return (
-                                            <p className="text-sm text-ink-muted py-4 text-center">Hali cashback olinmagan</p>
-                                        )
-                                        return (
-                                            <div className="flex flex-col divide-y divide-line">
-                                                {earned.map(ev => {
-                                                    const pct = ev.paid > 0 ? Math.round(ev.cashback_earned / ev.paid * 100) : 0
-                                                    return (
-                                                        <div key={ev.participant_id} className="flex items-center justify-between py-2.5">
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <span className="text-base text-ink">{ev.event_name}</span>
-                                                                <span className="text-xs text-ink-muted">{formatDate(ev.event_date)}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                                <span className="text-xs text-ink-muted">{pct}%</span>
-                                                                <span className="text-base font-semibold text-ink">{formatNumber(ev.cashback_earned)} UZS</span>
-                                                            </div>
+                                    ) : (journeyQuery.data?.cashback_history.length ?? 0) === 0 ? (
+                                        <p className="text-sm text-ink-muted py-4 text-center">Hali keshbek harakati yo'q</p>
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            {journeyQuery.data!.cashback_history.map(t => {
+                                                const meta = CASHBACK_TYPE[t.type]
+                                                const value = Math.abs(Number(t.amount))
+                                                return (
+                                                    <div key={t.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-line last:border-0">
+                                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                                            <span className="text-base text-ink">{meta.label}</span>
+                                                            <span className="text-xs text-ink-muted truncate">
+                                                                {formatDate(t.created_at)}{t.description ? ` · ${t.description}` : ''}
+                                                            </span>
                                                         </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        )
-                                    })()}
+                                                        <span className={`text-base font-semibold tabular-nums flex-shrink-0 ${meta.credit ? 'text-success-text' : 'text-ink-muted'}`}>
+                                                            {meta.credit ? '+' : '−'}{formatNumber(value)}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+
+                                    <AdjustCashbackModal
+                                        isOpen={adjustOpen}
+                                        onClose={() => setAdjustOpen(false)}
+                                        clientId={selectedCustomer.id}
+                                        clientName={selectedCustomer.name}
+                                        currentBalance={journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance}
+                                        onSuccess={() => showToast("Keshbek balansi o'zgartirildi", "success")}
+                                    />
                                 </div>
                             )}
 

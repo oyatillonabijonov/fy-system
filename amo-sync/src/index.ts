@@ -9,6 +9,7 @@
 //                                          (a full pass also drops leads deleted in AmoCRM)
 //   lead status changes (events)           incremental by created_at
 //   open tasks                             full replace
+//   + expire_cashback() (not AmoCRM — see expireCashback below)
 //
 // Env: DATABASE_URL, AMO_SUBDOMAIN, AMO_TOKEN (long-lived), SYNC_INTERVAL_MIN (10),
 //      EVENTS_FROM (2025-01-01, first backfill of status history).
@@ -245,6 +246,19 @@ async function runOnce(): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err)
     await setState("last_error", msg).catch(() => {})
     console.error(`[amo-sync] xatolik: ${msg}`)
+  }
+  await expireCashback()
+}
+
+// Not AmoCRM, but this is the system's only scheduled worker (CLAUDE.md): cashback
+// older than 12 months expires here (migration 059). Kept apart so it never marks
+// the AmoCRM sync as failed.
+async function expireCashback(): Promise<void> {
+  try {
+    const [row] = await sql<{ n: number }[]>`select public.expire_cashback() as n`
+    if (row && row.n > 0) console.log(`[amo-sync] keshbek: ${row.n} ta mijozda muddati tugagan qism yechildi`)
+  } catch (err) {
+    console.error(`[amo-sync] keshbek muddati: ${err instanceof Error ? err.message : String(err)}`)
   }
 }
 

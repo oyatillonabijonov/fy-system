@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getClientCashbackHistory,
   adjustCashback,
+  getCashbackNextExpiry,
   spendCashback,
   setParticipantCashbackPercent,
   setEventCashbackPercent,
@@ -33,8 +34,19 @@ export function useAdjustCashback() {
       qc.invalidateQueries({ queryKey: [...CASHBACK_HISTORY_KEY, vars.clientId] })
       qc.invalidateQueries({ queryKey: CLIENTS_KEY })
       qc.invalidateQueries({ queryKey: ['client-journey', vars.clientId] })
+      qc.invalidateQueries({ queryKey: [...CASHBACK_EXPIRY_KEY, vars.clientId] })
       qc.invalidateQueries({ queryKey: FINANCE_KEY })
     },
+  })
+}
+
+export const CASHBACK_EXPIRY_KEY = ["cashback", "expiry"] as const
+
+export function useCashbackNextExpiry(clientId: string | null | undefined) {
+  return useQuery({
+    queryKey: [...CASHBACK_EXPIRY_KEY, clientId],
+    queryFn: () => getCashbackNextExpiry(clientId!),
+    enabled: !!clientId,
   })
 }
 
