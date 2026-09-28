@@ -39,6 +39,9 @@ interface NavItem {
     path?: string
     module?: ModuleName
     adminOnly?: boolean
+    /** Parent with a page of its own: click opens `path` and expands the submenu;
+     *  with no visible sub-items it's a plain link */
+    opensPage?: boolean
     subItems?: NavItem[]
 }
 
@@ -72,7 +75,7 @@ const navigationSections: NavSection[] = [
                 name: "Sozlamalar",
                 icon: Gear,
                 path: "/sozlamalar",
-                module: "sozlamalar",
+                opensPage: true,
                 subItems: [
                     { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
                 ],
@@ -137,7 +140,7 @@ export function Sidebar() {
     function filterItem(item: NavItem): NavItem | null {
         if (item.subItems && item.subItems.length > 0) {
             const visibleSubs = item.subItems.filter(isItemVisible)
-            if (visibleSubs.length === 0) return null
+            if (visibleSubs.length === 0) return item.opensPage && isItemVisible(item) ? { ...item, subItems: undefined } : null
             return { ...item, subItems: visibleSubs }
         }
         if (!isItemVisible(item)) return null
@@ -245,7 +248,10 @@ export function Sidebar() {
                                 <div key={item.name} className="flex flex-col">
                                     <button
                                         onClick={() => {
-                                            if (hasSubItems && !isCollapsed) {
+                                            if (hasSubItems && !isCollapsed && item.opensPage) {
+                                                handleNavigate(item)
+                                                if (!isExpanded) toggleExpand(item.name)
+                                            } else if (hasSubItems && !isCollapsed) {
                                                 toggleExpand(item.name)
                                             } else {
                                                 handleNavigate(item)

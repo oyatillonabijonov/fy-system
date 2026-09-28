@@ -3,6 +3,7 @@ import { PhoneInput } from "@/components/ui/PhoneInput"
 import { motion, AnimatePresence } from "framer-motion"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
+import { useTheme, type ThemeId, type LangId } from "@/context/ThemeContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
@@ -31,6 +32,7 @@ export function Sozlamalar() {
     <div className="flex flex-col pb-10 max-w-[960px]">
 
       {user && <ProfileTab key={user.id} user={user} showToast={showToast} />}
+      <PreferencesRows />
 
       <AnimatePresence>
         {toast && (
@@ -203,7 +205,7 @@ function ProfileTab({
       </SettingsRow>
 
       {/* Password */}
-      <SettingsRow id="parol" title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning." last>
+      <SettingsRow id="parol" title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning.">
         {user.must_change_password && (
           <p role="alert" className="mb-4 px-3.5 py-2.5 rounded-control bg-danger-soft text-base text-danger-text">
             Siz administrator bergan vaqtincha parol bilan kirdingiz. Iltimos, o'zingizning parolingizni o'rnating.
@@ -252,6 +254,66 @@ function ProfileTab({
         onCropped={handleCropped}
       />
     </div>
+  )
+}
+
+// ─── Appearance + language (device preferences, not saved to the profile) ───
+
+const THEME_OPTIONS: { id: ThemeId; label: string; ground: string; card: string }[] = [
+  { id: "light",    label: "Yorug'",   ground: "#f2f2f2", card: "#ffffff" },
+  { id: "contrast", label: "Kontrast", ground: "#0b0b0c", card: "#ffffff" },
+  { id: "dark",     label: "Qorong'i", ground: "#0b0b0c", card: "#141416" },
+]
+
+const LANG_OPTIONS: { id: LangId; label: string }[] = [
+  { id: "uz", label: "O'zbekcha" },
+  { id: "ru", label: "Русский" },
+  { id: "en", label: "English" },
+]
+
+function PreferencesRows() {
+  const { themeId, setThemeId, lang, setLang } = useTheme()
+  return (
+    <>
+      <SettingsRow title="Ko'rinish" desc="Tizim mavzusi. Tanlov shu qurilmada saqlanadi.">
+        <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-3 gap-3 max-w-[480px]">
+          {THEME_OPTIONS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={themeId === t.id}
+              onClick={() => setThemeId(t.id)}
+              className={`flex flex-col gap-2 p-2 rounded-surface border transition-colors ${themeId === t.id ? "border-line-focus" : "border-line hover:bg-mute-ghost-hover"}`}
+            >
+              {/* mini preview: ground + sidebar strip + main card (fixed colours on purpose) */}
+              <span className="h-14 rounded-control flex gap-1 p-1" style={{ background: t.ground }}>
+                <span className="w-1/4 rounded-sm" style={{ background: t.id === "light" ? "#e4e4e4" : "#1c1c1f" }} />
+                <span className="flex-1 rounded-sm" style={{ background: t.card }} />
+              </span>
+              <span className="text-base font-medium text-ink">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </SettingsRow>
+
+      <SettingsRow title="Til" desc="Interfeys tili. Hozircha tarjimalar tayyorlanmoqda — matnlar o'zbekcha qoladi." last>
+        <div role="radiogroup" aria-label="Til" className="inline-grid grid-cols-3 gap-1 p-1 rounded-control bg-surface-sunken">
+          {LANG_OPTIONS.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              role="radio"
+              aria-checked={lang === l.id}
+              onClick={() => setLang(l.id)}
+              className={`h-8 px-4 rounded-item text-base font-medium transition-colors ${lang === l.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </SettingsRow>
+    </>
   )
 }
 

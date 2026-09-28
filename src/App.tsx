@@ -12,7 +12,7 @@ import { HodimDetail } from "./components/pages/HodimDetail"
 import { Faollik } from "./components/pages/Faollik"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
-import { ThemeProvider } from "./context/ThemeContext"
+import { ThemeProvider, useTheme } from "./context/ThemeContext"
 import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -23,13 +23,6 @@ import {
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
 
-const LANG_KEY = 'fy_lang'
-
-function getSaved(key: string, fallback: string): string {
-  try {
-    return localStorage.getItem(key) ?? fallback
-  } catch { return fallback }
-}
 
 interface PageMeta {
   title: string
@@ -69,12 +62,8 @@ function AppShell() {
   const { user } = useAuth()
   const meta = pageMetaFor(location.pathname)
 
-  const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
+  const { lang: currentLang, setLang: setCurrentLang } = useTheme()
   const [isLangOpen, setIsLangOpen] = useState(false)
-
-  useEffect(() => {
-    try { localStorage.setItem(LANG_KEY, currentLang) } catch { /* private browsing */ }
-  }, [currentLang])
 
   // Escape closes the language popover
   useEffect(() => {
@@ -160,7 +149,7 @@ function AppShell() {
                     transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
                     className="absolute top-full right-0 mt-2 w-[96px] p-1 rounded-menu bg-surface-raised border border-line z-50"
                   >
-                    {['uz', 'ru', 'en'].map((lang) => (
+                    {(['uz', 'ru', 'en'] as const).map((lang) => (
                       <button
                         key={lang}
                         type="button"

@@ -4,14 +4,28 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 /** contrast = light main card on a dark ground and sidebar */
 export type ThemeId = 'light' | 'dark' | 'contrast'
 
+/** Interface language — stored only; the copy is Uzbek until translations exist */
+export type LangId = 'uz' | 'ru' | 'en'
+
 interface ThemeContextValue {
     themeId: ThemeId
     setThemeId: (id: ThemeId) => void
+    lang: LangId
+    setLang: (l: LangId) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const THEME_KEY = 'fy_theme'
+const LANG_KEY = 'fy_lang'
+
+function getInitialLang(): LangId {
+    try {
+        const saved = localStorage.getItem(LANG_KEY)
+        if (saved === 'ru' || saved === 'en') return saved
+    } catch { /* private browsing */ }
+    return 'uz'
+}
 
 function getInitialTheme(): ThemeId {
     try {
@@ -24,6 +38,11 @@ function getInitialTheme(): ThemeId {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [themeId, setThemeId] = useState<ThemeId>(getInitialTheme)
+    const [lang, setLang] = useState<LangId>(getInitialLang)
+
+    useEffect(() => {
+        try { localStorage.setItem(LANG_KEY, lang) } catch { /* private browsing */ }
+    }, [lang])
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', themeId)
@@ -31,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, [themeId])
 
     return (
-        <ThemeContext.Provider value={{ themeId, setThemeId }}>
+        <ThemeContext.Provider value={{ themeId, setThemeId, lang, setLang }}>
             {children}
         </ThemeContext.Provider>
     )
