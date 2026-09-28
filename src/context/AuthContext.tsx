@@ -32,7 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUser = useCallback(async () => {
     setLoading(true)
     try {
-      const profile = await getCurrentProfile()
+      let profile = await getCurrentProfile()
+      // A session that outlived its account's deactivation is ended here (RLS already blocks the data)
+      if (profile && !profile.is_active) {
+        await supabase.auth.signOut()
+        profile = null
+      }
       setUser(profile)
       currentUserIdRef.current = profile?.id ?? null
       if (profile) {

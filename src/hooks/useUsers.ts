@@ -10,7 +10,7 @@ import {
   deactivateUser,
   activateUser,
   getUserPermissions,
-  type ModuleName,
+  type ModuleGrants,
   type UserRole,
   type UserProfile,
   type UserPermission,
@@ -78,8 +78,8 @@ export function useUpdateUserProfile() {
 export function useUpdateUserPermissions() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (vars: { userId: string; modules: ModuleName[] }) =>
-      updateUserPermissions(vars.userId, vars.modules),
+    mutationFn: (vars: { userId: string; grants: ModuleGrants }) =>
+      updateUserPermissions(vars.userId, vars.grants),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: USERS_KEY })
       qc.invalidateQueries({ queryKey: [...USER_PERMISSIONS_KEY, vars.userId] })

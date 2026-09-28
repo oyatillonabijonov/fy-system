@@ -12,14 +12,20 @@ export type ModuleName =
   | "tadbirlar-moliya"
   | "sozlamalar"
 
-export const MODULES: { id: ModuleName; label: string }[] = [
-  { id: "dashboard",        label: "Dashboard" },
-  { id: "sotuv-crmn",       label: "Sotuv (CRM-N)" },
-  { id: "mijozlar",         label: "Mijozlar" },
-  { id: "tadbirlar",        label: "Tadbirlar (Boshqaruv)" },
-  { id: "tadbirlar-moliya", label: "Tadbirlar (Moliya)" },
-  { id: "sozlamalar",       label: "Sozlamalar" },
+/** Modules an admin can grant. "sotuv-crmn" (detached CRM-N) and "sozlamalar"
+ *  (Profilim is open to everyone) stay valid ids in the DB but aren't offered. */
+export const MODULES: { id: ModuleName; label: string; desc: string }[] = [
+  { id: "dashboard",        label: "Dashboard",  desc: "AmoCRM sotuv analitikasi" },
+  { id: "mijozlar",         label: "Mijozlar",   desc: "Mijozlar bazasi" },
+  { id: "tadbirlar",        label: "Tadbirlar",  desc: "Tadbirlar va ishtirokchilar" },
+  { id: "tadbirlar-moliya", label: "Moliya",     desc: "To'lovlar, qarzdorlar, xarajatlar" },
 ]
+
+/** The only module whose UI distinguishes view from edit (canEdit) */
+export const EDITABLE_MODULE: ModuleName = "tadbirlar-moliya"
+
+/** What an admin grants: module → can_edit */
+export type ModuleGrants = Partial<Record<ModuleName, boolean>>
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
@@ -44,11 +50,13 @@ export interface UserProfile {
   telegram: string | null
   emergency_contact: string | null
   notes: string | null
+  /** account made with a temporary password — ask for a new one (migration 056) */
+  must_change_password: boolean
   created_at: string
 }
 
 const PROFILE_COLUMNS =
-  "id, full_name, email, phone, avatar_url, role, is_active, department, position, hire_date, birth_date, address, bio, telegram, emergency_contact, notes, created_at"
+  "id, full_name, email, phone, avatar_url, role, is_active, department, position, hire_date, birth_date, address, bio, telegram, emergency_contact, notes, must_change_password, created_at"
 
 interface ProfileRow {
   id: string
@@ -67,6 +75,7 @@ interface ProfileRow {
   telegram: string | null
   emergency_contact: string | null
   notes: string | null
+  must_change_password: boolean | null
   created_at: string | null
 }
 
@@ -88,6 +97,7 @@ function mapProfileRow(row: ProfileRow): UserProfile {
     telegram: row.telegram,
     emergency_contact: row.emergency_contact,
     notes: row.notes,
+    must_change_password: row.must_change_password ?? false,
     created_at: row.created_at ?? new Date().toISOString(),
   }
 }
@@ -102,6 +112,12 @@ export interface UserPermission {
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
+  // A deactivated account has valid credentials but must not get in
+  const { data: profile } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle()
+  if (profile && profile.is_active === false) {
+    await supabase.auth.signOut()
+    throw new Error("Hisobingiz faolsizlantirilgan. Administratorga murojaat qiling")
+  }
   return data
 }
 
@@ -231,6 +247,8 @@ export async function createUser(input: {
   full_name: string
   role: UserRole
   modules: ModuleName[]
+  /** subset of modules with can_edit */
+  edit_modules: ModuleName[]
   phone?: string
   department?: Department
   position?: string
@@ -327,8 +345,9 @@ export async function deleteUserAvatar(
 
 export async function updateUserPermissions(
   userId: string,
-  modules: ModuleName[],
+  grants: ModuleGrants,
 ): Promise<void> {
+  const modules = Object.keys(grants) as ModuleName[]
   const { error: delErr } = await supabase
     .from("user_permissions")
     .delete()
@@ -340,7 +359,7 @@ export async function updateUserPermissions(
       user_id: userId,
       module,
       can_view: true,
-      can_edit: false,
+      can_edit: grants[module] === true,
       can_delete: false,
     }))
     const { error } = await supabase.from("user_permissions").insert(permissions)
@@ -383,6 +402,7 @@ export async function updateMyProfile(updates: {
   full_name?: string
   phone?: string | null
   avatar_url?: string | null
+  must_change_password?: false
 }): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Tizimga kirilmagan")
@@ -393,9 +413,11 @@ export async function updateMyProfile(updates: {
   if (error) throw error
 }
 
+/** Changes the signed-in user's password and clears the first-login reminder */
 export async function updatePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
   if (error) throw error
+  await updateMyProfile({ must_change_password: false })
 }
 
 export async function uploadAvatar(file: Blob, userId: string): Promise<string> {

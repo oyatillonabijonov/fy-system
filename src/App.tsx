@@ -18,7 +18,9 @@ import {
   MagnifyingGlass,
   CaretDown,
   Gear,
+  Warning,
 } from "@phosphor-icons/react"
+import { useAuth } from "./context/AuthContext"
 
 const LANG_KEY = 'fy_lang'
 
@@ -57,6 +59,7 @@ function pageMetaFor(pathname: string): PageMeta {
 function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const meta = pageMetaFor(location.pathname)
 
   const [currentLang, setCurrentLang] = useState(() => getSaved(LANG_KEY, "uz"))
@@ -84,6 +87,21 @@ function AppShell() {
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
       <div className="flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
+        {/* First login with an admin-issued temporary password */}
+        {user?.must_change_password && location.pathname !== "/sozlamalar" && (
+          <div role="alert" className="flex items-center gap-3 px-6 py-2.5 bg-danger text-white text-base flex-shrink-0">
+            <Warning size={18} className="flex-shrink-0" />
+            <span className="flex-1 min-w-0">Siz vaqtincha parol bilan kirdingiz. Xavfsizlik uchun parolingizni o'zgartiring.</span>
+            <button
+              type="button"
+              onClick={() => navigate("/sozlamalar#parol")}
+              className="h-control-sm px-3 rounded-control bg-white/15 hover:bg-white/25 font-medium whitespace-nowrap transition-colors"
+            >
+              Parolni o'zgartirish
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <header className="h-16 px-6 flex items-center justify-between gap-6 flex-shrink-0 border-b border-line">
           {/* Left: page title */}
@@ -222,7 +240,7 @@ function App() {
           } />
 
           <Route path="/sozlamalar" element={
-            <ProtectedRoute module="sozlamalar"><Sozlamalar /></ProtectedRoute>
+            <ProtectedRoute><Sozlamalar /></ProtectedRoute>
           } />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

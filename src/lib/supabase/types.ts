@@ -884,6 +884,7 @@ export type Database = {
           hire_date: string | null
           id: string
           is_active: boolean | null
+          must_change_password: boolean
           notes: string | null
           phone: string | null
           position: string | null
@@ -904,6 +905,7 @@ export type Database = {
           hire_date?: string | null
           id: string
           is_active?: boolean | null
+          must_change_password?: boolean
           notes?: string | null
           phone?: string | null
           position?: string | null
@@ -924,6 +926,7 @@ export type Database = {
           hire_date?: string | null
           id?: string
           is_active?: boolean | null
+          must_change_password?: boolean
           notes?: string | null
           phone?: string | null
           position?: string | null

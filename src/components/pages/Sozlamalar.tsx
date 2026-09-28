@@ -68,7 +68,8 @@ function ProfileTab({
   const [saving, setSaving] = useState(false)
 
   // Password change
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  // Opened straight away when coming from the "change your temporary password" banner
+  const [showPasswordForm, setShowPasswordForm] = useState(() => user.must_change_password || window.location.hash === "#parol")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [pwdSaving, setPwdSaving] = useState(false)
@@ -139,6 +140,7 @@ function ProfileTab({
     setPwdSaving(true)
     try {
       await updatePassword(newPassword)
+      await refreshProfile()  // clears the first-login banner
       setNewPassword("")
       setConfirmPassword("")
       setShowPasswordForm(false)
@@ -201,7 +203,12 @@ function ProfileTab({
       </SettingsRow>
 
       {/* Password */}
-      <SettingsRow title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning." last>
+      <SettingsRow id="parol" title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning." last>
+        {user.must_change_password && (
+          <p role="alert" className="mb-4 px-3.5 py-2.5 rounded-control bg-danger-soft text-base text-danger-text">
+            Siz administrator bergan vaqtincha parol bilan kirdingiz. Iltimos, o'zingizning parolingizni o'rnating.
+          </p>
+        )}
         {showPasswordForm ? (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -218,7 +225,7 @@ function ProfileTab({
               <button
                 type="button"
                 onClick={() => { setShowPasswordForm(false); setNewPassword(""); setConfirmPassword("") }}
-                disabled={pwdSaving}
+                disabled={pwdSaving || user.must_change_password}
                 className={softBtn}
               >
                 Bekor qilish
@@ -259,9 +266,9 @@ const primaryBtn =
   "px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
 
 /** One settings group: title + hint on the left, controls on the right, hairline between groups */
-function SettingsRow({ title, desc, last, children }: { title: string; desc: string; last?: boolean; children: React.ReactNode }) {
+function SettingsRow({ id, title, desc, last, children }: { id?: string; title: string; desc: string; last?: boolean; children: React.ReactNode }) {
   return (
-    <section className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"}`}>
+    <section id={id} className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"}`}>
       <div className="flex flex-col gap-1">
         <h2 className="text-base font-semibold text-ink">{title}</h2>
         <p className="text-sm text-ink-muted leading-relaxed">{desc}</p>
