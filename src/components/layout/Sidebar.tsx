@@ -11,7 +11,6 @@ import {
     CaretDown,
     SquaresFour,
     Coins,
-    Terminal,
     ClockCounterClockwise,
     type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
@@ -52,7 +51,7 @@ const navigationSections: NavSection[] = [
     {
         title: "Asosiy",
         items: [
-            { name: "Dashboard", icon: House, path: "/dashboard", module: "dashboard" },
+            { name: "Dashboard", icon: House, path: "/dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
             {
                 name: "Menejment",
@@ -75,7 +74,6 @@ const navigationSections: NavSection[] = [
                 path: "/sozlamalar",
                 module: "sozlamalar",
                 subItems: [
-                    { name: "API", icon: Terminal },
                     { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
                 ],
             },
