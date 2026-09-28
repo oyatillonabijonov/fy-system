@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + Broom Plexus tokens + shadcn/ui (`base-nova`), framer-motion, DM Sans font (`@fontsource-variable/dm-sans`) |
-| Database | Supabase Postgres (migrations `001`–`056`) |
+| Database | Supabase Postgres (migrations `001`–`057`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | Meta/Framer/Tilda lead webhooks; **AmoCRM (read-only)** via the `amo-sync` service → `amo_*` tables (Dashboard) |
@@ -49,7 +49,7 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–056, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–057, sequential — NEVER edit existing ones
 │   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── amo-sync/                 # Bun service: AmoCRM → amo_* tables every 10 min (only AmoCRM client; own Dockerfile)
@@ -281,6 +281,7 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
   - Don't reintroduce a `/tadbirlar/:id` route or the removed `EventDetail`/`Events.tsx`.
 - **Cashback is trigger-driven** (migrations `017`, `023`, `038`, `043`): `auto_award_cashback` awards on any `paid` increase and claws back on any decrease (capped by that participant's `cashback_earned`); spending cashback must set `skip_cashback_award = true` on that update (`queries/cashback.ts` relies on it). `clients.cashback_balance` is **recomputed from the `cashback_transactions` ledger** by a trigger on every insert/update/delete — the ledger is the source of truth; never write the balance directly. `spend_cashback` is staff-only and rejects amounts ≤ 0 or above the participant's debt (`043`).
 - **AuthContext ignores `SIGNED_IN` echoes** Supabase fires on tab refocus (compares user id). Don't "simplify" that away — it prevents full reloads on every tab switch.
+- **One client per phone (migration `057`):** `clients_phone_unique` + a BEFORE trigger that stores every phone as `+998XXXXXXXXX` (`clean_client_phone()` → `normalize_phone()`; junk like `""`/`+998` becomes NULL), so a number typed in any format by any writer (web, webhooks, mobile, RPCs) collides with the existing client. The Mijozlar add form also warns live and links to the existing client; a `23505` on `clients` means "phone taken".
 - **Staff access rules (migration `056`, keep them):** non-admins may update only `full_name`, `phone`, `avatar_url` on their own `profiles` row (trigger `guard_profile_self_update` — before it, anyone could PATCH themselves to `role='admin'`); `is_admin()` / `has_permission()` return false for `is_active = false`, and the web signs such sessions out. `profiles.must_change_password` is set by `admin-create-user` (the admin hands out a temporary password); the shell shows a red banner until the user changes it in Profilim (`updatePassword` clears it — the only change of that column a user may make).
 - **User creation only via edge functions** (service role) — `admin-create-user` for staff (served in prod by the `supabase-functions-1` container — after editing, copy `supabase/functions/admin-create-user/` to `~/supabase/functions/` on the VM and `docker restart supabase-functions-1`), `admin-create-member` for club members (no web UI entry any more — see Member auth). Never client-side signup.
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.
