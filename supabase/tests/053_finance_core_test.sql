@@ -16,10 +16,11 @@ INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_de
   ('51000000-0000-0000-0000-000000000001', 'tadbirlar-moliya', true, true,  false),
   ('51000000-0000-0000-0000-000000000002', 'tadbirlar-moliya', true, false, false);
 
-INSERT INTO public.events (id, name, cashback_percent) VALUES
-  ('e5100000-0000-0000-0000-000000000001', 'Event 1', 10),
-  ('e5100000-0000-0000-0000-000000000002', 'Event 2', 0),
-  ('e5100000-0000-0000-0000-000000000003', 'Event 3', 0);
+-- Already over: since 061 cashback is credited after the event (settle_event_cashback)
+INSERT INTO public.events (id, name, cashback_percent, date) VALUES
+  ('e5100000-0000-0000-0000-000000000001', 'Event 1', 10, now() - interval '3 days'),
+  ('e5100000-0000-0000-0000-000000000002', 'Event 2', 0,  now() - interval '3 days'),
+  ('e5100000-0000-0000-0000-000000000003', 'Event 3', 0,  now() - interval '3 days');
 INSERT INTO public.event_tariffs (id, event_id, name, price) VALUES
   ('7b000000-0000-0000-0000-000000000001', 'e5100000-0000-0000-0000-000000000001', 'Standart', 10000000),
   ('7b000000-0000-0000-0000-000000000002', 'e5100000-0000-0000-0000-000000000002', 'Standart',  5000000),
@@ -48,6 +49,7 @@ BEGIN
     p_tariff_id => '7b000000-0000-0000-0000-000000000001',
     p_seller_id => '51000000-0000-0000-0000-000000000004',
     p_next_due_date => '2026-10-10', p_note => 'birinchi');
+  PERFORM public.settle_event_cashback();
   SELECT ep.price, ep.paid, ep.next_due_date, ep.cashback_earned, p.recorded_by, p.kind, p.note
     INTO r
   FROM public.payments p JOIN public.event_participants ep ON ep.id = p.participant_id
@@ -102,6 +104,7 @@ BEGIN
   PERFORM public.record_payment(
     p_event_id => 'e5100000-0000-0000-0000-000000000001', p_amount => 6000000, p_method => 'karta',
     p_client_id => v_client);
+  PERFORM public.settle_event_cashback();
   SELECT paid, next_due_date, cashback_earned INTO r
   FROM public.event_participants
   WHERE contact_id = v_client AND event_id = 'e5100000-0000-0000-0000-000000000001';
@@ -130,6 +133,7 @@ BEGIN
   END;
 
   PERFORM public.void_payment(v_pay, 'Xato summa');
+  PERFORM public.settle_event_cashback();
   SELECT ep.paid, ep.cashback_earned, p.voided_by, p.void_reason INTO r
   FROM public.payments p JOIN public.event_participants ep ON ep.id = p.participant_id
   WHERE p.id = v_pay;

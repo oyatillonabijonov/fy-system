@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import type { PaymentRow } from "@/lib/supabase/queries/finance"
-import { useRefundPayment, useVoidPayment } from "@/hooks/useFinance"
+import { useRefundPayment, useSettleNoShow, useVoidPayment } from "@/hooks/useFinance"
 import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatNumber } from "@/lib/format"
 
@@ -192,6 +192,83 @@ export function RefundModal({ payment, onClose }: { payment: PaymentRow; onClose
       <div className="flex flex-col gap-1.5">
         <label htmlFor={noteId} className={LABEL}>Izoh</label>
         <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Masalan: tadbirga kela olmadi" />
+      </div>
+    </ModalShell>
+  )
+}
+
+/** "Qatnashmadi": keep part of the cash, refund the rest, close the debt — one call (settle_no_show). */
+export function NoShowModal({ payment, onClose }: { payment: PaymentRow; onClose: () => void }) {
+  const settle = useSettleNoShow()
+  const keepId = useId()
+  const noteId = useId()
+  const cash = Math.max(payment.participant_cash_paid, 0)
+  const [keep, setKeep] = useState("")
+  const [method, setMethod] = useState<PaymentMethod>(payment.method)
+  const [note, setNote] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const keepNum = keep ? Number(keep) : 0
+  const refund = cash - keepNum
+  const valid = keep !== "" && keepNum >= 0 && keepNum <= cash
+
+  return (
+    <ModalShell
+      title="Qatnashmadi — pulni qaytarish"
+      error={error}
+      submitLabel={refund > 0 ? `${formatMoney(refund)} qaytarish` : "Tasdiqlash"}
+      canSubmit={valid}
+      pending={settle.isPending}
+      onClose={onClose}
+      onSubmit={() =>
+        settle.mutate(
+          { participantId: payment.participant_id, keep: keepNum, method, note: note.trim() },
+          { onSuccess: onClose, onError: (e) => setError(e.message) },
+        )
+      }
+    >
+      <p className="text-sm text-ink-muted">
+        <span className="font-semibold text-ink">{payment.client_name}</span> · {payment.event_name ?? "—"} uchun{" "}
+        {formatMoney(cash)} to'lagan. Ushlab qolinadigan summani yozing — qolgani qaytariladi, kelishuv shu summaga
+        tushadi (qarz qolmaydi) va keshbek berilmaydi.
+      </p>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={keepId} className={LABEL}>Ushlab qolinadi *</label>
+        <input
+          id={keepId}
+          inputMode="numeric"
+          autoFocus
+          value={keep ? formatNumber(Number(keep)) : ""}
+          onChange={(e) => setKeep(e.target.value.replace(/\D/g, ""))}
+          aria-invalid={keepNum > cash}
+          placeholder="0"
+          className={`${INPUT} ${keepNum > cash ? "border-danger-text" : ""}`}
+        />
+      </div>
+      <div className="flex items-center justify-between px-3.5 py-2.5 rounded-control bg-surface-sunken text-base">
+        <span className="text-ink-muted">Qaytariladi</span>
+        <span className={`font-semibold tabular-nums ${keepNum > cash ? "text-danger-text" : "text-ink"}`}>
+          {keepNum > cash ? "To'langandan ko'p" : formatMoney(Math.max(refund, 0))}
+        </span>
+      </div>
+      {refund > 0 && (
+        <div className="flex gap-2">
+          {METHODS.map((m) => (
+            <button
+              key={m.value}
+              onClick={() => setMethod(m.value)}
+              aria-pressed={method === m.value}
+              className={`flex-1 py-2 rounded-control text-sm font-semibold border transition-colors ${
+                method === m.value ? "bg-accent text-ink-on-accent border-transparent" : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={noteId} className={LABEL}>Izoh</label>
+        <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Masalan: oxirgi kuni bekor qildi" />
       </div>
     </ModalShell>
   )

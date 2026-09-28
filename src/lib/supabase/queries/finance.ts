@@ -36,6 +36,7 @@ const FINANCE_ERRORS: Record<string, string> = {
   invalid_amount: "Summa 0 dan katta bo'lishi kerak",
   invalid_price: "Kelishuv summasi manfiy bo'lishi mumkin emas",
   enroll_required: "Mijoz bu tadbirda yo'q — tarif va sotuvchini tanlang",
+  already_no_show: "Bu mijoz allaqachon \"Qatnashmadi\" deb belgilangan",
   reason_required: "Bekor qilish sababini yozing",
   already_voided: "Bu yozuv allaqachon bekor qilingan",
   expense_not_found: "Xarajat topilmadi",
@@ -54,6 +55,8 @@ function financeError(e: { message: string; code?: string }): Error {
   if (exists) return new ClientExistsError(exists[1], exists[2])
   const debt = /^amount_exceeds_debt \(debt=([\d.]+)\)$/.exec(e.message)
   if (debt) return new Error(`To'lov qarzdan ko'p. Qolgan qarz: ${formatMoney(Number(debt[1]))}`)
+  const keep = /^invalid_keep \(cash=([\d.]+)\)$/.exec(e.message)
+  if (keep) return new Error(`Ushlab qolinadigan summa 0 dan ${formatMoney(Number(keep[1]))} gacha bo'lishi kerak`)
   const cash = /^refund_exceeds_paid \(paid=([\d.]+)\)$/.exec(e.message)
   if (cash) return new Error(`Qaytarish to'langan puldan ko'p. Ko'pi bilan: ${formatMoney(Number(cash[1]))}`)
   if (e.code === "23505") return new Error("Bu telefon raqam boshqa mijozda band")
@@ -109,6 +112,7 @@ export interface PaymentRow {
   event_name: string | null
   seller_name: string | null
   participant_cash_paid: number   // paid − cashback_used: the most that can be refunded
+  participant_no_show: boolean     // settled with settle_no_show (061)
 }
 
 interface PaymentJoin {
@@ -128,6 +132,7 @@ interface PaymentJoin {
     phone: string | null
     paid: number | string
     cashback_used: number | string | null
+    no_show_at: string | null
     event: { name: string } | null
     seller: { full_name: string } | null
   } | null
@@ -139,7 +144,7 @@ export async function listPayments(f: FinanceFilters, page: number): Promise<Pay
     .select(
       "id, participant_id, amount, kind, method, paid_at, note, voided_at, void_reason, receipt_path, " +
         "recorder:recorded_by(full_name), " +
-        "participant:participant_id!inner(full_name, phone, paid, cashback_used, event_id, seller_id, " +
+        "participant:participant_id!inner(full_name, phone, paid, cashback_used, no_show_at, event_id, seller_id, " +
         "event:event_id(name), seller:seller_id(full_name))",
     )
     .order("paid_at", { ascending: false })
@@ -170,6 +175,7 @@ export async function listPayments(f: FinanceFilters, page: number): Promise<Pay
     event_name: r.participant?.event?.name ?? null,
     seller_name: r.participant?.seller?.full_name ?? null,
     participant_cash_paid: Number(r.participant?.paid ?? 0) - Number(r.participant?.cashback_used ?? 0),
+    participant_no_show: !!r.participant?.no_show_at,
   }))
 }
 
@@ -270,6 +276,18 @@ export async function recordPayment(i: RecordPaymentInput): Promise<string> {
 
 export async function voidPayment(id: string, reason: string): Promise<void> {
   const { error } = await db.rpc("void_payment", { p_payment_id: id, p_reason: reason })
+  if (error) throw financeError(error)
+}
+
+/** Client didn't come: keep `keep` of the cash paid, refund the rest, lower the
+ *  agreed price to what's kept, mark the no-show (no cashback) — one transaction (061). */
+export async function settleNoShow(v: { participantId: string; keep: number; method: PaymentMethod; note: string }): Promise<void> {
+  const { error } = await db.rpc("settle_no_show", {
+    p_participant_id: v.participantId,
+    p_keep: v.keep,
+    p_method: v.method,
+    p_note: v.note || null,
+  })
   if (error) throw financeError(error)
 }
 
