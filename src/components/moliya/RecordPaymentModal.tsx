@@ -47,7 +47,7 @@ function ClientAvatar({ c }: { c: PickedClient }) {
   )
 }
 
-function MoneyInput({ id, value, onChange, invalid, placeholder }: { id: string; value: string; onChange: (digits: string) => void; invalid?: boolean; placeholder?: string }) {
+export function MoneyInput({ id, value, onChange, invalid, placeholder }: { id: string; value: string; onChange: (digits: string) => void; invalid?: boolean; placeholder?: string }) {
   return (
     <div className="relative">
       <input
@@ -134,7 +134,8 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const overDebt = amountNum > debt
   const remaining = Math.max(debt - amountNum, 0)
   const hasClient = existing ? true : mode === "new" && fullName.trim().length > 0 && onlyDigits(phone).length >= 9
-  const enrollValid = !needsEnroll || (!!tariffId && !!sellerId && price !== "")
+  // Tariff only when the event has some; seller is optional ("Belgilanmagan")
+  const enrollValid = !needsEnroll || ((tariffs.length === 0 || !!tariffId) && price !== "")
   const canSubmit = hasClient && !!eventId && !checking && enrollValid && amountNum > 0 && !overDebt && !record.isPending
 
   function pickTariff(id: string) {
@@ -173,7 +174,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
         // Today → the real moment; a back-dated entry → noon of that Tashkent day.
         paidAt: date === tashkentToday() ? new Date().toISOString() : `${date}T12:00:00+05:00`,
         client: existing ? { clientId: existing.id } : { fullName: fullName.trim(), phone },
-        enroll: needsEnroll ? { tariffId, sellerId, price: Number(price) } : null,
+        enroll: needsEnroll ? { tariffId: tariffId || null, sellerId: sellerId || null, price: Number(price) } : null,
         nextDueDate: remaining > 0 && due ? due : null,
         note: note.trim(),
         receipt,
@@ -349,24 +350,28 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
             {needsEnroll && (
               <div className="flex flex-col gap-3 p-3 rounded-control border border-dashed border-line">
                 <span className="text-xs font-semibold text-ink-muted">Mijoz bu tadbirda yo'q — to'lov bilan birga yoziladi</span>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor={tariffFieldId} className={LABEL}>Tarif *</label>
-                  <select id={tariffFieldId} value={tariffId} onChange={(e) => pickTariff(e.target.value)} disabled={tariffs.length === 0} className={INPUT}>
-                    <option value="" disabled>{tariffs.length === 0 ? "Bu tadbirda tarif yo'q" : "Tarifni tanlang"}</option>
-                    {tariffs.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name} — {formatMoney(t.price)}</option>
-                    ))}
-                  </select>
-                </div>
+                {tariffs.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor={tariffFieldId} className={LABEL}>Tarif *</label>
+                    <select id={tariffFieldId} value={tariffId} onChange={(e) => pickTariff(e.target.value)} className={INPUT}>
+                      <option value="" disabled>Tarifni tanlang</option>
+                      {tariffs.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name} — {formatMoney(t.price)}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor={priceId} className={LABEL}>Kelishuv summasi *</label>
                   <MoneyInput id={priceId} value={price} onChange={setPrice} placeholder="17,000,000" />
-                  <span className="text-xs text-ink-muted">Tarif narxi qo'yiladi; chegirma bo'lsa o'zgartiring</span>
+                  <span className="text-xs text-ink-muted">
+                    {tariffs.length > 0 ? "Tarif narxi qo'yiladi; chegirma bo'lsa o'zgartiring" : "Bu tadbirda tarif yo'q — kelishilgan summani yozing"}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor={sellerFieldId} className={LABEL}>Sotuvchi *</label>
+                  <label htmlFor={sellerFieldId} className={LABEL}>Sotuvchi</label>
                   <select id={sellerFieldId} value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={INPUT}>
-                    <option value="" disabled>Sotuvchini tanlang</option>
+                    <option value="">Belgilanmagan</option>
                     {sellers.map((s) => (
                       <option key={s.id} value={s.id}>{s.full_name}</option>
                     ))}

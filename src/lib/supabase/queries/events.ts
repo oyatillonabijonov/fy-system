@@ -339,8 +339,11 @@ export type EnrollClient = { clientId: string } | { fullName: string; phone: str
 
 export interface EnrollInput {
   eventId: string
-  tariffId: string
-  sellerId: string
+  /** null = "Individual kelishuv" — only for events without tariffs, then `price` is required */
+  tariffId: string | null
+  /** null = "Belgilanmagan" */
+  sellerId: string | null
+  price?: number
   client: EnrollClient
 }
 
@@ -359,6 +362,8 @@ export class ClientExistsError extends Error {
 export const ENROLL_ERRORS: Record<string, string> = {
   "forbidden: staff_only": "Bu amal uchun ruxsat yo'q",
   tariff_mismatch: "Tarif bu tadbirga tegishli emas",
+  tariff_required: "Bu tadbirda tariflar bor — tarifni tanlang",
+  price_required: "Kelishilgan narxni kiriting",
   seller_invalid: "Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak",
   client_not_found: "Mijoz topilmadi",
   client_required: "Ism va to'g'ri telefon raqamni kiriting",
@@ -374,6 +379,7 @@ export async function enrollParticipant(input: EnrollInput): Promise<string> {
     p_client_id: "clientId" in c ? c.clientId : null,
     p_full_name: "fullName" in c ? c.fullName : null,
     p_phone: "phone" in c ? c.phone : null,
+    p_price: input.price ?? null,
   })
   if (error) {
     const exists = /^client_exists:([0-9a-f-]{36}):(.*)$/.exec(error.message)

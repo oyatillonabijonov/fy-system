@@ -1,11 +1,12 @@
 import { useState, useEffect, useId, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, MagnifyingGlass, CaretLeft, Plus, Warning } from "@phosphor-icons/react"
+import { X, MagnifyingGlass, CaretLeft, Plus } from "@phosphor-icons/react"
 import { searchContacts, ClientExistsError, type ClientContact } from "@/lib/supabase/queries/events"
 import { useEnrollParticipant, useEventTariffs } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatPhone } from "@/lib/format"
+import { MoneyInput } from "@/components/moliya/RecordPaymentModal"
 
 interface EnrollParticipantModalProps {
   isOpen: boolean
@@ -59,6 +60,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   const [suggestion, setSuggestion] = useState<PickedClient | null>(null)
   const [tariff, setTariff] = useState("")
   const [seller, setSeller] = useState("")
+  const [price, setPrice] = useState("")
   const [error, setError] = useState<string | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -81,8 +83,9 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   const phoneDigits = phone.replace(/\D/g, "")
   const newClientValid = fullName.trim().length > 0 && phoneDigits.length >= 9
   const hasClient = mode === "search" ? !!client : newClientValid
-  const blocked = !loadingTariffs && (tariffs.length === 0 || sellers.length === 0)
-  const canSubmit = hasClient && !!tariff && !!seller && !blocked && !enroll.isPending
+  // No tariffs on the event → "Individual kelishuv" with a typed price; seller is optional
+  const noTariffs = !loadingTariffs && tariffs.length === 0
+  const canSubmit = hasClient && !loadingTariffs && (noTariffs ? price !== "" : !!tariff) && !enroll.isPending
 
   function pick(c: PickedClient) {
     if (existingContactIds.has(c.id)) {
@@ -112,8 +115,9 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
     setSuggestion(null)
     enroll.mutate(
       {
-        tariffId: tariff,
-        sellerId: seller,
+        tariffId: noTariffs ? null : tariff,
+        sellerId: seller || null,
+        price: noTariffs ? Number(price) : undefined,
         client: mode === "search" && client ? { clientId: client.id } : { fullName: fullName.trim(), phone },
       },
       {
@@ -157,15 +161,6 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               {error && (
                 <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                   {error}
-                </div>
-              )}
-
-              {blocked && (
-                <div role="alert" className="flex items-start gap-2 px-3 py-2 rounded-control text-sm font-medium bg-warning-soft text-warning-dark">
-                  <Warning size={16} className="mt-0.5 shrink-0" />
-                  {tariffs.length === 0
-                    ? "Bu tadbirda tarif yo'q. Avval tadbirni tahrirlab, tarif qo'shing."
-                    : "Sotuv bo'limida faol hodim yo'q. Hodimlar bo'limida hodimga \"Sotuv\" bo'limini belgilang."}
                 </div>
               )}
 
@@ -273,22 +268,30 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 </div>
               )}
 
-              {/* 2. Tariff */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor={tariffId} className={LABEL}>Tarif *</label>
-                <select id={tariffId} value={tariff} onChange={(e) => setTariff(e.target.value)} disabled={tariffs.length === 0} className={INPUT}>
-                  <option value="" disabled>Tarifni tanlang</option>
-                  {tariffs.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name} — {formatMoney(t.price)}</option>
-                  ))}
-                </select>
-              </div>
+              {/* 2. Tariff — or the agreed price when the event has no tariffs */}
+              {noTariffs ? (
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor={tariffId} className={LABEL}>Kelishilgan narx *</label>
+                  <MoneyInput id={tariffId} value={price} onChange={setPrice} placeholder="17,000,000" />
+                  <span className="text-xs text-ink-muted">Bu tadbirda tarif yo'q — individual narx yoziladi</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor={tariffId} className={LABEL}>Tarif *</label>
+                  <select id={tariffId} value={tariff} onChange={(e) => setTariff(e.target.value)} className={INPUT}>
+                    <option value="" disabled>Tarifni tanlang</option>
+                    {tariffs.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name} — {formatMoney(t.price)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* 3. Seller */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor={sellerId} className={LABEL}>Sotuvchi *</label>
-                <select id={sellerId} value={seller} onChange={(e) => setSeller(e.target.value)} disabled={sellers.length === 0} className={INPUT}>
-                  <option value="" disabled>Sotuvchini tanlang</option>
+                <label htmlFor={sellerId} className={LABEL}>Sotuvchi</label>
+                <select id={sellerId} value={seller} onChange={(e) => setSeller(e.target.value)} className={INPUT}>
+                  <option value="">Belgilanmagan</option>
                   {sellers.map((s) => (
                     <option key={s.id} value={s.id}>{s.full_name}</option>
                   ))}
