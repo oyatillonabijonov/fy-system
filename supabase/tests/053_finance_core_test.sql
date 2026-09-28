@@ -80,7 +80,7 @@ BEGIN
   RAISE NOTICE 'B ok: amount_exceeds_debt, hech narsa saqlanmadi';
 END $$;
 
--- ─── C: existing client not in the event, no tariff → enroll_required ───────
+-- ─── C: existing client not in the event, no tariff (event has tariffs) → tariff_required (058) ─
 DO $$
 BEGIN
   PERFORM pg_temp.as_user('51000000-0000-0000-0000-000000000001');
@@ -89,8 +89,8 @@ BEGIN
     p_client_id => 'c5100000-0000-0000-0000-000000000001');
   RAISE EXCEPTION 'C FAILED: tarifsiz yozildi';
 EXCEPTION WHEN raise_exception THEN
-  IF SQLERRM <> 'enroll_required' THEN RAISE EXCEPTION 'C FAILED: %', SQLERRM; END IF;
-  RAISE NOTICE 'C ok: enroll_required';
+  IF SQLERRM <> 'tariff_required' THEN RAISE EXCEPTION 'C FAILED: %', SQLERRM; END IF;
+  RAISE NOTICE 'C ok: tariff_required';
 END $$;
 
 -- ─── D: second installment clears the due date once fully paid ──────────────

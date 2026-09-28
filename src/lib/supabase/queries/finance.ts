@@ -243,7 +243,7 @@ export interface RecordPaymentInput {
   paidAt: string
   client: EnrollClient
   // Required when the client isn't in the event yet: enrols them in the same transaction.
-  enroll: { tariffId: string; sellerId: string; price: number } | null
+  enroll: { tariffId: string | null; sellerId: string | null; price: number } | null
   nextDueDate: string | null
   note: string
 }
