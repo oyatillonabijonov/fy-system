@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + Broom Plexus tokens + shadcn/ui (`base-nova`), framer-motion, DM Sans font (`@fontsource-variable/dm-sans`) |
-| Database | Supabase Postgres (migrations `001`–`059`) |
+| Database | Supabase Postgres (migrations `001`–`060`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | Meta/Framer/Tilda lead webhooks; **AmoCRM (read-only)** via the `amo-sync` service → `amo_*` tables (Dashboard) |
@@ -49,7 +49,7 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–059, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–060, sequential — NEVER edit existing ones
 │   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, framer/meta/tilda-webhook
 ├── amo-sync/                 # Bun service: AmoCRM → amo_* tables every 10 min (only AmoCRM client; own Dockerfile)
@@ -88,6 +88,8 @@ AMO_SUBDOMAIN=      # fikryetakchilari
 AMO_TOKEN=          # AmoCRM long-lived token (Doppler fy-system: VITE_AMO_ACCESS_TOKEN — the name is legacy; it must NOT be read by Vite code)
 SYNC_INTERVAL_MIN=10
 EVENTS_FROM=2025-01-01  # first backfill of lead status history
+TELEGRAM_BOT_TOKEN=     # payment receipts bot (Doppler); unset = receipts wait in the queue
+TELEGRAM_CHAT_ID=       # target group id (negative number)
 ```
 
 Never create `.env*` files with real values.
@@ -288,7 +290,8 @@ Member-facing Expo app (SDK 56, expo-router, TypeScript strict) for club members
 - **SECURITY DEFINER functions** were hardened in migration `019` (`SET search_path`) — follow the same pattern in new DB functions.
 - Storage buckets: `event-covers` (`013/014`), `client-images` (`016`), `profile-avatars` (`021`), `receipts` (`055`, private); `news-images` (`029`) removed in `051` (news feature dropped); upsert policies fixed in `025`. On self-hosted Supabase, files live at `/var/lib/storage/stub/<bucket>/` inside the storage container (TENANT_ID=`stub`). **The bucket ROWS can be missing even when the RLS policies exist** — production had all the policies but zero `storage.buckets` rows, so every upload failed with `"Bucket not found"` and images never appeared; migration `048` backfills them (`INSERT … ON CONFLICT DO NOTHING`, additive). On a clean redeploy re-check `select * from storage.buckets` — the storage service reads bucket rows live (no restart needed to see new rows). CORS for uploads is a separate gateway concern — see the "Gateway CORS" note in §5.
 - `localStorage` keys: `fy_theme`, `fy_lang`, `fy_sidebar_collapsed`, `fy_last_crm_pipeline_id`.
-- **Scheduled work = the `amo-sync` container only** (it also calls `expire_cashback()` each pass). No pg_cron/pg_net (`044` removed the old AmoCRM cron entry). If the Dashboard shows the "sinxronizatsiya yangilanmagan" banner, check that container's logs and `amo_sync_state` (`last_success_at`, `last_error`).
+- **Scheduled work = the `amo-sync` container only** (it also calls `expire_cashback()` each pass).
+- **Telegram payment receipts (migration `060`):** triggers queue a `telegram_outbox` row (+ `pg_notify`) for every new payment/refund, every void and every cashback spend; the amo-sync container LISTENs, renders a PNG receipt (`amo-sync/src/receipt.ts`, SVG → resvg, bundled Inter font — names can be Cyrillic — and the web logo in `amo-sync/assets/`) and `sendPhoto`s it with a short caption. The "paid / remaining" figures are computed as of the operation, not send time. 5 retries, rows older than a day are skipped (no flood when the bot is enabled later). Off until `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are in `~/amo-sync/.env`. No pg_cron/pg_net (`044` removed the old AmoCRM cron entry). If the Dashboard shows the "sinxronizatsiya yangilanmagan" banner, check that container's logs and `amo_sync_state` (`last_success_at`, `last_error`).
 
 ---
 

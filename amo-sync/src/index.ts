@@ -10,12 +10,14 @@
 //   lead status changes (events)           incremental by created_at
 //   open tasks                             full replace
 //   + expire_cashback() (not AmoCRM — see expireCashback below)
+// Alongside the loop: Telegram payment receipts (src/telegram.ts), event-driven.
 //
 // Env: DATABASE_URL, AMO_SUBDOMAIN, AMO_TOKEN (long-lived), SYNC_INTERVAL_MIN (10),
 //      EVENTS_FROM (2025-01-01, first backfill of status history).
 // `bun run src/index.ts --once` runs a single pass and exits.
 
 import postgres from "postgres"
+import { startTelegram } from "./telegram"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -266,6 +268,7 @@ if (process.argv.includes("--once")) {
   await runOnce()
   await sql.end()
 } else {
+  await startTelegram(sql)
   for (;;) {
     await runOnce()
     await sleep(INTERVAL_MIN * 60 * 1000)

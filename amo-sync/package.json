@@ -7,6 +7,7 @@
     "once": "bun run src/index.ts --once"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
