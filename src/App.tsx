@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
+import { HomeDashboard } from "./components/pages/HomeDashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
 import { EventsBoshqaruv } from "./components/pages/EventsBoshqaruv"
 import { EventsMoliya } from "./components/pages/EventsMoliya"
@@ -55,6 +56,12 @@ function pageMetaFor(pathname: string): PageMeta {
 // ─── Route adapters that turn callback-based pages into router-aware ones ──
 
 // ─── Shell layout (sidebar + header + outlet) ───────────────────────────
+
+/** AmoCRM analytics for the `dashboard` module; everyone else gets the general home page */
+function DashboardRoute() {
+  const { hasAccess } = useAuth()
+  return hasAccess("dashboard") ? <Dashboard /> : <HomeDashboard />
+}
 
 function AppShell() {
   const location = useLocation()
@@ -212,7 +219,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           <Route path="/dashboard" element={
-            <ProtectedRoute module="dashboard"><Dashboard /></ProtectedRoute>
+            <ProtectedRoute><DashboardRoute /></ProtectedRoute>
           } />
 
           <Route path="/mijozlar" element={
