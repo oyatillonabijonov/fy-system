@@ -342,12 +342,10 @@ export function Sidebar() {
                             role="menu"
                             className={`fixed bottom-20 z-50 w-[232px] p-1 rounded-menu bg-surface-raised border border-line ${isCollapsed ? "left-3" : "left-4"}`}
                         >
-                            {hasAccess("sozlamalar") && (
-                                <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }} className={accountItem}>
-                                    <User size={18} className="text-ink-muted" />
-                                    Profilim
-                                </button>
-                            )}
+                            <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }} className={accountItem}>
+                                <User size={18} className="text-ink-muted" />
+                                Profilim
+                            </button>
                             <div className="px-2.5 pt-2 pb-1.5 flex flex-col gap-2">
                                 <span className="text-sm text-ink-muted">Mavzu</span>
                                 <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-3 gap-1 p-0.5 rounded-control bg-surface-sunken">

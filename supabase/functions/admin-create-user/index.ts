@@ -23,6 +23,8 @@ interface CreateUserRequest {
   full_name: string
   role: UserRole
   modules: string[]
+  /** subset of modules the user may also edit in (can_edit); only Moliya reads it today */
+  edit_modules?: string[]
   phone?: string
   department?: string
   position?: string
@@ -138,9 +140,11 @@ Deno.serve(async (req) => {
     // ── STEP 6: ensure profile reflects role + name + extended fields ──
     // (the auth.users trigger creates the profile from raw_user_meta_data,
     // but we sync explicitly in case the trigger drift or metadata format change)
-    const profileUpdate: Record<string, string | null> = {
+    const profileUpdate: Record<string, string | boolean | null> = {
       role: body.role,
       full_name: body.full_name,
+      // the admin hands out a temporary password — the web asks for a new one on first login
+      must_change_password: true,
     }
     const extendedFields = [
       "phone",
@@ -169,11 +173,12 @@ Deno.serve(async (req) => {
 
     // ── STEP 7: insert permissions ───────────────────────
     if (requestedModules.length > 0) {
+      const editModules = new Set(Array.isArray(body.edit_modules) ? body.edit_modules : [])
       const permissions = requestedModules.map((module) => ({
         user_id: newUserId,
         module,
         can_view: true,
-        can_edit: body.role === "manager",
+        can_edit: editModules.has(module),
         can_delete: false,
       }))
 
