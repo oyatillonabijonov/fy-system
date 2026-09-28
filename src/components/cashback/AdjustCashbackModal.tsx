@@ -51,7 +51,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
       return
     }
     if (!description.trim()) {
-      setError("Tavsif majburiy")
+      setError("Sababini yozing")
       return
     }
     if (type === "subtract" && numericAmount > currentBalance) {
@@ -81,7 +81,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+        className="fixed inset-0 bg-surface-overlay z-[110]"
         onClick={handleClose}
       />
       <motion.div
@@ -89,7 +89,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none"
+        className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
       >
         <div
           ref={panelRef}
@@ -97,43 +97,41 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
+          className="bg-surface-raised border border-line rounded-overlay w-full max-w-md pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-line">
             <div className="flex flex-col gap-0.5">
-              <h2 id={titleId} className="text-md font-bold text-ink">Cashbackni o'zgartirish</h2>
-              <span className="text-xs text-ink-muted">{clientName} · joriy: {formattedBalance} so'm</span>
+              <h2 id={titleId} className="text-md font-semibold text-ink">Keshbekni o'zgartirish</h2>
+              <span className="text-sm text-ink-muted">{clientName} · balans: {formattedBalance} so'm</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
+              className="size-8 rounded-item flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"
             >
-              <X size={20} className="text-ink-muted" />
+              <X size={18} className="text-ink-muted" />
             </button>
           </div>
 
           {/* Body */}
           <div className="p-5 flex flex-col gap-4">
             {error && (
-              <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-text border border-line">
+              <div role="alert" className="px-3.5 py-2.5 rounded-control text-sm font-medium bg-danger-soft text-danger-text">
                 {error}
               </div>
             )}
 
             {/* Type selector */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken">
               <button
                 type="button"
                 onClick={() => setType("add")}
                 aria-pressed={type === "add"}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-control text-base font-bold transition-colors border ${
-                  type === "add"
-                    ? "bg-mute-soft text-ink border-line"
-                    : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
+                className={`flex items-center justify-center gap-2 h-8 rounded-item text-base font-medium transition-colors ${
+                  type === "add" ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
                 <Plus size={16} />
@@ -143,10 +141,8 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 type="button"
                 onClick={() => setType("subtract")}
                 aria-pressed={type === "subtract"}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-control text-base font-bold transition-colors border ${
-                  type === "subtract"
-                    ? "bg-warning-soft text-warning-dark border-line"
-                    : "bg-surface text-ink-muted border-line hover:bg-surface-sunken"
+                className={`flex items-center justify-center gap-2 h-8 rounded-item text-base font-medium transition-colors ${
+                  type === "subtract" ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
                 <Minus size={16} />
@@ -166,13 +162,13 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="10000"
                 autoFocus
-                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+                className="w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={descriptionId} className="text-sm font-medium text-ink-muted">Tavsif *</label>
+              <label htmlFor={descriptionId} className="text-sm font-medium text-ink-muted">Sabab *</label>
               <textarea
                 id={descriptionId}
                 value={description}
@@ -189,18 +185,14 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !amount || !description.trim()}
-              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
-                saving || !amount || !description.trim()
-                  ? "bg-mute-soft cursor-not-allowed"
-                  : "bg-accent hover:bg-accent-hover"
-              }`}
+              className="px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>

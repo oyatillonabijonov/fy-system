@@ -5,7 +5,7 @@ export interface CashbackTransaction {
   client_id: string
   event_id: string | null
   participant_id: string | null
-  type: "earned" | "used" | "manual_add" | "manual_subtract" | "clawback"
+  type: "earned" | "used" | "manual_add" | "manual_subtract" | "clawback" | "expired"
   amount: number
   description: string | null
   created_at: string
@@ -80,20 +80,36 @@ export async function spendCashback(input: {
   }
 }
 
-// Manual adjust (admin)
+// Manual adjust — finance editors only, reason required (RPC adjust_cashback, migration 059)
+type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>
+const rpc = supabase.rpc.bind(supabase) as unknown as Rpc  // stale types: 059 functions aren't in types.ts yet
+
 export async function adjustCashback(
   clientId: string,
   amount: number,
   type: "add" | "subtract",
   description: string,
 ): Promise<void> {
-  const { error } = await supabase.from("cashback_transactions").insert({
-    client_id: clientId,
-    type: type === "add" ? "manual_add" : "manual_subtract",
-    amount: Math.abs(amount),
-    description,
+  const { error } = await rpc("adjust_cashback", {
+    p_client_id: clientId,
+    p_type: type,
+    p_amount: Math.abs(amount),
+    p_reason: description,
   })
-  if (error) throw error
+  if (!error) return
+  const m = error.message
+  if (m.startsWith("cashback_insufficient")) throw new Error("Balansdan ko'p ayirib bo'lmaydi")
+  if (m.startsWith("forbidden")) throw new Error("Keshbekni faqat Moliya muharriri o'zgartira oladi")
+  if (m === "reason_required") throw new Error("Sababini yozing")
+  throw new Error(m)
+}
+
+/** The next portion of the balance to expire (cashback lives 12 months, oldest spent first) */
+export async function getCashbackNextExpiry(clientId: string): Promise<{ amount: number; expires_on: string } | null> {
+  const { data, error } = await rpc("cashback_next_expiry", { p_client: clientId })
+  if (error) throw new Error(error.message)
+  const row = (data as { amount: number; expires_on: string }[] | null)?.[0]
+  return row ? { amount: Number(row.amount), expires_on: row.expires_on } : null
 }
 
 // Set custom cashback percent for a participant (null = inherit event default)

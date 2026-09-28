@@ -16,6 +16,8 @@ const TYPE_META: Record<
   used: { label: "Ishlatildi", sign: "-", icon: "cart-outline" },
   manual_add: { label: "Qo'shildi", sign: "+", icon: "add-outline" },
   manual_subtract: { label: "Ayirildi", sign: "-", icon: "remove-outline" },
+  clawback: { label: "Qaytarib olindi", sign: "-", icon: "remove-outline" },
+  expired: { label: "Muddati tugadi", sign: "-", icon: "remove-outline" },
 }
 
 export default function CashbackScreen() {
@@ -82,7 +84,7 @@ export default function CashbackScreen() {
                 </View>
                 <View style={styles.txRight}>
                   <Text style={[styles.txAmount, { color: positive ? colors.success : colors.danger }]}>
-                    {meta.sign}{formatMoney(Number(item.amount))}
+                    {meta.sign}{formatMoney(Math.abs(Number(item.amount)))}
                   </Text>
                   <Text style={styles.txDate}>{formatDate(item.created_at)}</Text>
                 </View>
