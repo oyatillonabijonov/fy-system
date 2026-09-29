@@ -1,6 +1,9 @@
 -- Behavioural test for migration 060 (Telegram receipt outbox). Throwaway DB only.
 \set ON_ERROR_STOP on
 
+-- TEST 1 reads the whole queue; drop rows queued by earlier test files
+TRUNCATE public.telegram_outbox;
+
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
   ('60000000-0000-0000-0000-000000000001', 'admin60@fy.uz', '{"full_name":"Admin60","role":"admin"}'::jsonb);
 UPDATE public.profiles SET role = 'admin' WHERE id = '60000000-0000-0000-0000-000000000001';

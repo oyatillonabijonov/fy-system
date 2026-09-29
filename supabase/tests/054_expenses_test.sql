@@ -5,6 +5,11 @@
 \set ON_ERROR_STOP on
 
 -- ─── FIXTURES ────────────────────────────────────────────────────────────────
+-- E/F/H assert unfiltered totals, so start from empty money tables — otherwise
+-- fixtures left by an earlier test file (e.g. 053) leak into the sums.
+TRUNCATE public.payments, public.expenses, public.event_participants, public.cashback_transactions,
+         public.events, public.clients CASCADE;
+
 -- F = finance editor, V = finance viewer, S = plain staff, P = Sotuv seller.
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
   ('54000000-0000-0000-0000-000000000001', 'fin54@fy.uz',    '{"full_name":"Moliyachi","role":"xodim"}'::jsonb),
