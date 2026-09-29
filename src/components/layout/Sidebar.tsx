@@ -6,6 +6,7 @@ import { Code,
     Gear,
     SignOut,
     CaretUpDown,
+    CaretRight,
     User,
     SidebarSimple,
     CaretDown,
@@ -98,11 +99,14 @@ export function Sidebar() {
     const scope = useSidebarScope()
     const darkSidebar = scope === "dark" || themeId === "dark"
     const [isAccountOpen, setIsAccountOpen] = useState(false)
+    const [menuPos, setMenuPos] = useState<{ left: number; width: number; bottom: number } | null>(null)
     useEffect(() => {
         if (!isAccountOpen) return
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsAccountOpen(false) }
+        const close = () => setIsAccountOpen(false)   // the anchor moved — reopen places it again
         window.addEventListener("keydown", onKey)
-        return () => window.removeEventListener("keydown", onKey)
+        window.addEventListener("resize", close)
+        return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("resize", close) }
     }, [isAccountOpen])
     const queryClient = useQueryClient()
     const handlePrefetch = (name: string) => {
@@ -304,7 +308,12 @@ export function Sidebar() {
             <div className="relative">
                 <button
                     type="button"
-                    onClick={() => setIsAccountOpen((o) => !o)}
+                    onClick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect()
+                        // collapsed sidebar: the menu grows to the right of the avatar
+                        setMenuPos({ left: r.left, width: isCollapsed ? 248 : r.width, bottom: window.innerHeight - r.top + 8 })
+                        setIsAccountOpen((o) => !o)
+                    }}
                     aria-haspopup="menu"
                     aria-expanded={isAccountOpen}
                     aria-label={isCollapsed ? "Akkaunt menyusi" : undefined}
@@ -331,44 +340,45 @@ export function Sidebar() {
                     )}
                 </button>
 
-                {/* Portal: the glass sidebar (backdrop-filter) would clip a fixed menu inside it */}
-                {isAccountOpen && createPortal(
+                {/* Portal: the glass sidebar (backdrop-filter) would clip a fixed menu inside it.
+                    Anchored to the account row: same width, 8px above it. */}
+                {isAccountOpen && menuPos && createPortal(
                     <div data-theme={scope} className="text-ink">
                         {/* click-away layer */}
                         <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setIsAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                        <div
-                            role="menu"
-                            className={`fixed bottom-20 z-50 w-[264px] p-1 rounded-menu bg-surface-raised border border-line ${isCollapsed ? "left-3" : "left-4"}`}
-                        >
-                            <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }} className={accountItem}>
+                        <div role="menu" className="fixed z-50 p-1.5 rounded-menu bg-surface-raised border border-line flex flex-col gap-1"
+                            style={{ left: menuPos.left, width: menuPos.width, bottom: menuPos.bottom }}>
+                            <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }}
+                                className="w-full flex items-center gap-2.5 h-10 px-2.5 rounded-item bg-surface-sunken text-base font-medium text-ink transition-colors hover:bg-surface-sunken-hover">
                                 <User size={18} className="text-ink-muted" />
-                                Profilim
+                                <span className="flex-1 text-left">Profilim</span>
+                                <CaretRight size={16} className="text-ink-muted" />
                             </button>
-                            <div className="px-2.5 pt-2 pb-2.5 flex flex-col gap-2">
+                            <div className="px-1 pt-1.5 flex flex-col gap-1.5">
                                 <span className="text-sm text-ink-muted">Rejim</span>
                                 <div role="radiogroup" aria-label="Rejim" className="grid grid-cols-3 gap-0.5 p-0.5 rounded-control bg-surface-sunken">
                                     {MODES.map((m) => (
                                         <button key={m.id} type="button" role="radio" aria-checked={themeId === m.id} onClick={() => setThemeId(m.id)}
-                                            className={`h-8 rounded-item text-sm font-medium transition-colors ${themeId === m.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+                                            className={`h-7 rounded-item text-sm font-medium transition-colors ${themeId === m.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
                                             {m.label}
                                         </button>
                                     ))}
                                 </div>
-                                <span className="text-sm text-ink-muted pt-1.5">Fon rasmi</span>
-                                <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-3 gap-1.5">
+                                <span className="text-sm text-ink-muted pt-1">Fon rasmi</span>
+                                <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-4 gap-1.5">
                                     <button type="button" role="radio" aria-checked={!photo} onClick={() => setPhoto(null)}
-                                        className={`h-11 rounded-item bg-surface-sunken text-sm text-ink-muted border border-line ${!photo ? "ring-2 ring-[var(--switch-on)]" : "hover:text-ink"}`}>
+                                        className={`h-9 rounded-item bg-surface-sunken text-sm text-ink-muted ${!photo ? "ring-2 ring-[var(--switch-on)]" : "hover:text-ink"}`}>
                                         Yo'q
                                     </button>
                                     {PHOTOS.map((p) => (
                                         <button key={p.id} type="button" role="radio" aria-checked={photo === p.id} aria-label={p.label} title={p.label}
                                             onClick={() => setPhoto(p.id)}
-                                            className={`h-11 rounded-item border border-line bg-cover bg-center transition-opacity ${photo === p.id ? "ring-2 ring-[var(--switch-on)]" : "hover:opacity-85"}`}
+                                            className={`h-9 rounded-item bg-cover bg-center transition-opacity ${photo === p.id ? "ring-2 ring-[var(--switch-on)]" : "hover:opacity-85"}`}
                                             style={{ backgroundImage: `url(${photoThumb(p.id)})` }} />
                                     ))}
                                 </div>
                             </div>
-                            <div className="h-px bg-line my-1 mx-2" />
+                            <div className="h-px bg-line my-1 mx-1" />
                             <button type="button" role="menuitem" onClick={handleSignOut} className={`${accountItem} text-danger-text`}>
                                 <SignOut size={18} />
                                 Chiqish
