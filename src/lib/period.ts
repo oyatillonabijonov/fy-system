@@ -13,6 +13,11 @@ export function tashkentToday(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(now)
 }
 
+/** Tashkent wall-clock "HH:MM" */
+export function tashkentClock(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit", hour12: false }).format(now)
+}
+
 export function periodRange(
   period: Period,
   customFrom: string | null,

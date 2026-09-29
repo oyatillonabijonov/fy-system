@@ -3,6 +3,7 @@ import { CaretDown, ChatCircle, CheckCircle, Circle, CircleHalf, XCircle, Calend
 import { STATUS_VARIANTS, type StatusVariant } from "@/lib/constants/theme"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { formatDate } from "@/lib/format"
+import { tashkentClock } from "@/lib/period"
 
 export const STATUS_VARIANT: Record<TaskStatus, StatusVariant> = {
   todo: "neutral",
@@ -14,8 +15,10 @@ export const STATUS_VARIANT: Record<TaskStatus, StatusVariant> = {
 export const statusLabel = (s: TaskStatus) => TASK_STATUSES.find((x) => x.id === s)!.label
 
 const isOpen = (t: Pick<Task, "status">) => t.status === "todo" || t.status === "in_progress"
-/** Past its date and still open — shown red; never stored */
-export const isOverdue = (t: Pick<Task, "status" | "due_date">, today: string) => isOpen(t) && !!t.due_date && t.due_date < today
+const hm = (time: string | null) => (time ? time.slice(0, 5) : null)
+/** Past its date (or today, past its time) and still open — shown red; never stored */
+export const isOverdue = (t: Pick<Task, "status" | "due_date" | "due_time">, today: string) =>
+  isOpen(t) && !!t.due_date && (t.due_date < today || (t.due_date === today && !!t.due_time && hm(t.due_time)! < tashkentClock()))
 
 export const ownerName = (t: Pick<Task, "assignee" | "assignee_name">) => t.assignee?.full_name ?? t.assignee_name ?? null
 
@@ -76,7 +79,7 @@ export function DueChip({ task, today }: { task: Task; today: string }) {
   return (
     <span className={`inline-flex items-center gap-1 h-6 px-2 rounded-full text-sm tabular-nums whitespace-nowrap ${cls}`}>
       <CalendarBlank size={12} weight="bold" />
-      {now ? "Bugun" : formatDate(task.due_date)}
+      {now ? "Bugun" : formatDate(task.due_date)}{task.due_time ? ` · ${hm(task.due_time)}` : ""}
     </span>
   )
 }

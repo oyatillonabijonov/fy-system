@@ -23,6 +23,7 @@ export interface Task {
   assignee_id: string | null     // staff owner…
   assignee_name: string | null   // …or an outside person ("Hikmat aka")
   due_date: string | null        // YYYY-MM-DD
+  due_time: string | null        // HH:MM:SS, Tashkent, only with due_date (067)
   sort_order: number
   created_by: string | null
   created_at: string
@@ -40,10 +41,10 @@ export interface TaskComment {
   author: { full_name: string; avatar_url: string | null } | null
 }
 
-export type TaskDraft = Pick<Task, "event_id" | "section" | "title" | "status" | "assignee_id" | "assignee_name" | "due_date">
+export type TaskDraft = Pick<Task, "event_id" | "section" | "title" | "status" | "assignee_id" | "assignee_name" | "due_date" | "due_time">
 
 const SELECT =
-  "id, event_id, section, title, status, assignee_id, assignee_name, due_date, sort_order, created_by, created_at, completed_at, " +
+  "id, event_id, section, title, status, assignee_id, assignee_name, due_date, due_time, sort_order, created_by, created_at, completed_at, " +
   "assignee:assignee_id(full_name, avatar_url), event:event_id(name), task_comments(count)"
 
 type TaskRow = Omit<Task, "comments_count"> & { task_comments: { count: number }[] }
@@ -66,6 +67,7 @@ export async function getMyTasks(userId: string): Promise<Task[]> {
     .eq("assignee_id", userId)
     .in("status", ["todo", "in_progress"])
     .order("due_date", { ascending: true, nullsFirst: false })
+    .order("due_time", { ascending: true, nullsFirst: false })
   if (error) throw error
   return ((data ?? []) as unknown as TaskRow[]).map(toTask)
 }

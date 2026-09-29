@@ -51,7 +51,7 @@ const reply = (to: TgMessage, text: string, buttons?: Button[][]) =>
 // ─── Gemini ──────────────────────────────────────────────────────────────────
 
 export interface Parsed {
-  tasks: { title: string; assignee_username?: string | null; assignee_name?: string | null; due_date?: string | null; event?: string | null; section?: string | null }[]
+  tasks: { title: string; assignee_username?: string | null; assignee_name?: string | null; due_date?: string | null; due_time?: string | null; event?: string | null; section?: string | null }[]
   question?: string | null
 }
 interface Staff { id: string; full_name: string; telegram: string | null; role: string | null }
@@ -65,6 +65,7 @@ const SCHEMA = {
       assignee_username: { type: "STRING", nullable: true },
       assignee_name: { type: "STRING", nullable: true },
       due_date: { type: "STRING", nullable: true },
+      due_time: { type: "STRING", nullable: true },
       event: { type: "STRING", nullable: true },
       section: { type: "STRING", nullable: true },
     }, required: ["title"] } },
@@ -73,16 +74,17 @@ const SCHEMA = {
   required: ["tasks"],
 }
 
-export function buildPrompt(text: string, context: string | null, author: string, today: string, staff: Staff[], events: EventCtx[]): string {
+export function buildPrompt(text: string, context: string | null, author: string, today: string, clock: string, staff: Staff[], events: EventCtx[]): string {
   const weekday = WEEKDAYS[new Date(`${today}T00:00:00Z`).getUTCDay()]
   return `Sen "Fikr Yetakchilari" jamoasining Telegram guruhidagi vazifa yordamchisisan. Xabardan vazifa(lar)ni ajrat.
-Bugun: ${today} (${weekday}), Toshkent vaqti. Xabar muallifi: ${author}.
+Bugun: ${today} (${weekday}), hozir soat ${clock}, Toshkent vaqti. Xabar muallifi: ${author}.
 Hodimlar (ism — telegram): ${staff.map((s) => `${s.full_name} — ${s.telegram ?? "yo'q"}`).join("; ")}
 Tadbirlar: ${JSON.stringify(events.map((e) => ({ name: e.name, start: e.start, end: e.end, sections: e.sections ?? [] })))}
 Qoidalar:
 - title: qisqa, aniq, harakat shaklida (masalan "Resort to'lovlarini qilish"), o'zbek lotinida — kirillda yozilgan bo'lsa lotinga o'gir. Muddat va mas'ulni title'ga yozma.
 - assignee_username: mas'ul hodimlar ro'yxatida bo'lsa (xabardagi @username yoki ismi bo'yicha) — ro'yxatdagi username (@ bilan). Hodimning username'i "yo'q" bo'lsa yoki mas'ul tashqi odam bo'lsa — assignee_name ga to'liq ism. "Men"/"o'zim" — xabar muallifi. Mas'ul aytilmasa ikkalasi null.
 - due_date: YYYY-MM-DD. "bugun" = bugun, "ertaga/ertagacha" = +1 kun, "indinga/indingacha" = +2, hafta kuni = eng yaqin kelayotgan o'sha kun (bugun bo'lsa — bugun), "hafta oxirigacha" = yakshanba, "oy oxirigacha" = oyning oxirgi kuni, "3-oktabrgacha" = o'sha sana. Aytilmasa null.
+- due_time: aniq soat aytilsa "HH:MM" (24 soatlik: "soat 14:00 da" = "14:00", "ertalab 9 da" = "09:00", "kechki 7 da" = "19:00"), aytilmasa null. Soat aytilib kun aytilmasa — soat hali o'tmagan bo'lsa bugun, o'tgan bo'lsa ertaga (due_date ga yoz). Soatni title'ga yozma.
 - event: xabar tadbirlardan biriga taalluqli bo'lsa (tadbir yoki joy nomi, masalan resort nomi) — ro'yxatdagi aniq nom; aks holda null.
 - section: shu tadbirning bo'limlaridan eng mosi; mos kelmasa null.
 - Bir nechta vazifa bo'lsa — har birini alohida (ko'pi bilan ${MAX_TASKS} ta).
@@ -120,7 +122,7 @@ async function askGemini(prompt: string): Promise<Parsed> {
 
 // ─── Resolve → insert ────────────────────────────────────────────────────────
 
-export interface Resolved { title: string; assignee_id: string | null; assignee_name: string | null; due_date: string | null; event: EventCtx | null; section: string | null; owner_label: string | null }
+export interface Resolved { title: string; assignee_id: string | null; assignee_name: string | null; due_date: string | null; due_time: string | null; event: EventCtx | null; section: string | null; owner_label: string | null }
 
 /** Maps the model's names onto real rows; anything unknown becomes plain text or null */
 export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[]): Resolved[] {
@@ -136,6 +138,7 @@ export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[])
       assignee_id: person?.id ?? null,
       assignee_name: outside,
       due_date: due,
+      due_time: due && t.due_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.due_time) ? t.due_time : null,
       event,
       section: event && t.section?.trim() ? t.section.trim() : null,
       owner_label: person ? (person.telegram ? (person.telegram.startsWith("@") ? person.telegram : `@${person.telegram}`) : person.full_name) : outside,
@@ -145,7 +148,7 @@ export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[])
 
 export function confirmation(tasks: Resolved[]): string {
   const line = (t: Resolved) =>
-    [t.owner_label ? `👤 ${esc(t.owner_label)}` : "👤 mas'ul belgilanmagan", t.due_date ? `📅 ${dayLabel(t.due_date)}` : "📅 muddatsiz",
+    [t.owner_label ? `👤 ${esc(t.owner_label)}` : "👤 mas'ul belgilanmagan", t.due_date ? `📅 ${dayLabel(t.due_date)}${t.due_time ? `, ${t.due_time}` : ""}` : "📅 muddatsiz",
      `📌 ${esc(t.event ? t.event.name + (t.section ? ` › ${t.section}` : "") : "Umumiy")}`].join(" · ")
   if (tasks.length === 1) return `✅ <b>Vazifa qo'shildi</b>\n${esc(tasks[0].title)}\n${line(tasks[0])}`
   return `✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
@@ -178,7 +181,8 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     return
   }
 
-  const today = new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10)
+  const now = new Date(Date.now() + 5 * 3600_000).toISOString()
+  const today = now.slice(0, 10)
   const events = await sql<EventCtx[]>`
     select e.id, e.name, (e.date at time zone 'Asia/Tashkent')::date::text as start,
            (e.end_date at time zone 'Asia/Tashkent')::date::text as "end",
@@ -190,7 +194,7 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
 
   let parsed: Parsed
   try {
-    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, staff, events))
+    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, events))
   } catch (err) {
     console.error(`[taskbot] AI: ${err instanceof Error ? err.message : String(err)}`)
     await reply(msg, "⏳ AI hozir band, vazifani qo'sha olmadim. Bir daqiqadan so'ng qayta yuboring.")
@@ -207,8 +211,8 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
   await sql.begin(async (tx) => {
     for (const t of tasks) {
       const [row] = await tx<{ id: string }[]>`
-        insert into tasks (event_id, section, title, assignee_id, assignee_name, due_date, created_by, sort_order)
-        values (${t.event?.id ?? null}, ${t.section}, ${t.title}, ${t.assignee_id}, ${t.assignee_name}, ${t.due_date}, ${author.id},
+        insert into tasks (event_id, section, title, assignee_id, assignee_name, due_date, due_time, created_by, sort_order)
+        values (${t.event?.id ?? null}, ${t.section}, ${t.title}, ${t.assignee_id}, ${t.assignee_name}, ${t.due_date}, ${t.due_time}, ${author.id},
                 (select coalesce(max(sort_order), 0) + 1 from tasks where event_id is not distinct from ${t.event?.id ?? null}))
         returning id`
       ids.push(row.id)

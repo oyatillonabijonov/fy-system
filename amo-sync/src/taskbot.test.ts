@@ -27,8 +27,8 @@ test("confirmation shows owner, date and event › section, escaped", () => {
 })
 
 test("prompt carries today's weekday, staff handles and reply context", () => {
-  const p = buildPrompt("ertagacha qil", "Resort narxlari keldi", "Oyatillo", "2026-09-29", staff, events)
-  expect(p).toContain("Bugun: 2026-09-29 (seshanba)")
+  const p = buildPrompt("ertagacha qil", "Resort narxlari keldi", "Oyatillo", "2026-09-29", "19:40", staff, events)
+  expect(p).toContain("Bugun: 2026-09-29 (seshanba), hozir soat 19:40")
   expect(p).toContain("Hikmat Abdurahmonov — yo'q")
   expect(p).toContain('"""Resort narxlari keldi"""')
 })
@@ -40,4 +40,14 @@ test("trigger: /vazifa@bot or @bot mention; bare /vazifa and other commands are 
   expect(taskText("/vazifa Amirsoy to'lovi", "fymoliyabot")).toBeNull()
   expect(taskText("/start@otherbot @fymoliyabot", "fymoliyabot")).toBeNull()
   expect(taskText("э хазлми бу?", "fymoliyabot")).toBeNull()
+})
+
+test("due time kept only as HH:MM with a date; shown in the confirmation", () => {
+  const r = resolveTasks({ tasks: [
+    { title: "Jamoa bilan video meet", assignee_username: "@Jahongir_Qahramonov", due_date: "2026-09-30", due_time: "14:00" },
+    { title: "Soat noto'g'ri", due_date: "2026-09-30", due_time: "2 da" },
+    { title: "Sanasiz soat", due_time: "09:00" },
+  ] }, staff, events)
+  expect(r.map((t) => t.due_time)).toEqual(["14:00", null, null])
+  expect(confirmation([r[0]])).toContain("📅 30-sentyabr, 14:00")
 })

@@ -8,7 +8,7 @@ test("report: event progress, yesterday, attention per owner with @mention", () 
     [{ title: "Resort <shortlist>", owner: "Jahongir Qahramonov", telegram: "jahongir" }],
     [
       { title: "Mehmonxonani bron qilish", due: "2026-09-28", owner: "Nuriddin Mo'sajonov", telegram: "@nuriddin" },
-      { title: "Target reklama", due: "2026-09-30", owner: "Nuriddin Mo'sajonov", telegram: "@nuriddin" },
+      { title: "Target reklama", due: "2026-09-30", time: "14:00:00", owner: "Nuriddin Mo'sajonov", telegram: "@nuriddin" },
       { title: "Spikerlar", due: "2026-10-01", owner: "Hikmat aka", telegram: null },
     ])
   expect(rest).toHaveLength(0)
@@ -16,7 +16,7 @@ test("report: event progress, yesterday, attention per owner with @mention", () 
   expect(msg).toContain("📌 <b>Tog' safari 7.0 | Amirsoy</b> · 23 kun qoldi\n<code>▰▰▰▰▱▱▱▱▱▱</code> 42%")
   expect(msg).toContain("✅ 23 bajarildi · 🔄 13 jarayonda\n⏳ 17 boshlanmagan · ❌ 2 bajarilmadi")
   expect(msg).toContain("<b>Kecha bajarildi (1)</b>\n✅ Resort &lt;shortlist&gt; — @jahongir")
-  expect(msg).toContain("<blockquote>@nuriddin\n🔴 Mehmonxonani bron qilish · 2 kun kechikdi\n🟡 Target reklama · bugun</blockquote>")
+  expect(msg).toContain("<blockquote>@nuriddin\n🔴 Mehmonxonani bron qilish · 2 kun kechikdi\n🟡 Target reklama · bugun 14:00</blockquote>")
   expect(msg).toContain("<blockquote><b>Hikmat aka</b>\n🔵 Spikerlar · ertaga</blockquote>")
 })
 
