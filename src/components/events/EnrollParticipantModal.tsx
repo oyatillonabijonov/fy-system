@@ -5,7 +5,6 @@ import { searchContacts, ClientExistsError, type ClientContact } from "@/lib/sup
 import { useEnrollParticipant, useEventTariffs } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
-import { useAuth } from "@/context/AuthContext"
 import { formatMoney, formatPhone } from "@/lib/format"
 import { MoneyInput } from "@/components/moliya/RecordPaymentModal"
 
@@ -40,7 +39,6 @@ function ClientAvatar({ c }: { c: PickedClient }) {
 // State lives here; the parent remounts this modal (via key) on each open.
 export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded }: EnrollParticipantModalProps) {
   const enroll = useEnrollParticipant(eventId)
-  const canSetPrice = useAuth().canEdit("tadbirlar-moliya")
   const { data: tariffs = [], isLoading: loadingTariffs } = useEventTariffs(eventId)
   const { data: users = [] } = useUsers()
   const sellers = users.filter((u) => u.is_active && u.department === "sotuv")
@@ -87,8 +85,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   const hasClient = mode === "search" ? !!client : newClientValid
   // No tariffs on the event → "Individual kelishuv" with a typed price; seller is optional
   const noTariffs = !loadingTariffs && tariffs.length === 0
-  // Individual price only for finance editors (063); others need a tariff on the event
-  const canSubmit = hasClient && !loadingTariffs && (noTariffs ? canSetPrice && price !== "" : !!tariff) && !enroll.isPending
+  const canSubmit = hasClient && !loadingTariffs && (noTariffs ? price !== "" : !!tariff) && !enroll.isPending
 
   function pick(c: PickedClient) {
     if (existingContactIds.has(c.id)) {
@@ -272,12 +269,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               )}
 
               {/* 2. Tariff — or the agreed price when the event has no tariffs */}
-              {noTariffs && !canSetPrice ? (
-                <p role="alert" className="px-3 py-2 rounded-control bg-surface-sunken text-sm text-ink-muted">
-                  Bu tadbirda tarif yo'q. Individual narx bilan faqat Moliya huquqi borlar qo'sha oladi — Moliya bo'limidan
-                  tarif qo'shishni yoki mijozni yozishni so'rang.
-                </p>
-              ) : noTariffs ? (
+              {noTariffs ? (
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor={tariffId} className={LABEL}>Kelishilgan narx *</label>
                   <MoneyInput id={tariffId} value={price} onChange={setPrice} placeholder="17,000,000" />

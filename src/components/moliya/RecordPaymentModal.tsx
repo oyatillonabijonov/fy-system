@@ -6,6 +6,7 @@ import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import { useEvents, useEventTariffs } from "@/hooks/useEvents"
 import { useClientParticipations } from "@/hooks/usePayments"
 import { useRecordPayment } from "@/hooks/useFinance"
+import { useClientCashbackBalance } from "@/hooks/useCashback"
 import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
 import { tashkentToday } from "@/lib/period"
@@ -82,6 +83,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const priceId = useId()
   const sellerFieldId = useId()
   const amountId = useId()
+  const cashbackId = useId()
   const dateId = useId()
   const dueId = useId()
   const noteId = useId()
@@ -98,6 +100,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const [price, setPrice] = useState("")
   const [sellerId, setSellerId] = useState("")
   const [amount, setAmount] = useState("")
+  const [cashback, setCashback] = useState("")
   const [method, setMethod] = useState<PaymentMethod>("naqd")
   const [date, setDate] = useState(() => tashkentToday())
   const [due, setDue] = useState("")
@@ -133,10 +136,16 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const amountNum = amount ? Number(amount) : 0
   const overDebt = amountNum > debt
   const remaining = Math.max(debt - amountNum, 0)
+  // Part of the payment taken from the client's cashback balance; the rest is cash (065)
+  const { data: balance = 0 } = useClientCashbackBalance(existing?.id)
+  const cashbackNum = cashback ? Number(cashback) : 0
+  const cashbackMax = Math.min(balance, amountNum)
+  const overCashback = cashbackNum > cashbackMax
+  const cashPart = Math.max(amountNum - cashbackNum, 0)
   const hasClient = existing ? true : mode === "new" && fullName.trim().length > 0 && onlyDigits(phone).length >= 9
   // Tariff only when the event has some; seller is optional ("Belgilanmagan")
   const enrollValid = !needsEnroll || ((tariffs.length === 0 || !!tariffId) && price !== "")
-  const canSubmit = hasClient && !!eventId && !checking && enrollValid && amountNum > 0 && !overDebt && !record.isPending
+  const canSubmit = hasClient && !!eventId && !checking && enrollValid && amountNum > 0 && !overDebt && !overCashback && !record.isPending
 
   function pickTariff(id: string) {
     setTariffId(id)
@@ -177,7 +186,8 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
         enroll: needsEnroll ? { tariffId: tariffId || null, sellerId: sellerId || null, price: Number(price) } : null,
         nextDueDate: remaining > 0 && due ? due : null,
         note: note.trim(),
-        receipt,
+        cashback: cashbackNum,
+        receipt: cashPart > 0 ? receipt : null,
       },
       {
         onSuccess: (attached) => {
@@ -386,6 +396,23 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
               <MoneyInput id={amountId} value={amount} onChange={setAmount} invalid={overDebt} placeholder="17,000,000" />
               {overDebt && <span className="text-xs text-danger-text">Qarzdan ko'p. Qolgan qarz: {formatMoney(debt)}</span>}
             </div>
+
+            {balance > 0 && (
+              <div className="flex flex-col gap-1.5 p-3 rounded-control bg-surface-sunken">
+                <label htmlFor={cashbackId} className={LABEL}>Keshbekdan ishlatish</label>
+                <MoneyInput id={cashbackId} value={cashback} onChange={setCashback} invalid={overCashback} placeholder="0" />
+                <span className={`text-xs ${overCashback ? "text-danger-text" : "text-ink-muted"}`}>
+                  Balans: {formatMoney(balance)}
+                  {amountNum > 0 && ` · ko'pi bilan ${formatMoney(cashbackMax)}`}
+                </span>
+                {cashbackNum > 0 && !overCashback && (
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="text-ink-muted">Mijoz to'laydi</span>
+                    <span className="font-bold tabular-nums text-ink">{formatMoney(cashPart)}</span>
+                  </div>
+                )}
+              </div>
+            )}
   
             <div className="flex gap-2" role="group" aria-label="To'lov usuli">
               {METHODS.map((m) => (
@@ -420,7 +447,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
               <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Ixtiyoriy" />
             </div>
 
-            <ReceiptInput file={receipt} onChange={setReceipt} />
+            {cashPart > 0 && <ReceiptInput file={receipt} onChange={setReceipt} />}
   
             {amountNum > 0 && !overDebt && (
               <div className="flex items-center justify-between px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
