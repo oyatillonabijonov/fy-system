@@ -241,8 +241,9 @@ export function Sidebar() {
                                     <button
                                         onClick={() => {
                                             if (hasSubItems && !isCollapsed && item.opensPage) {
-                                                handleNavigate(item)
-                                                if (!isExpanded) toggleExpand(item.name)
+                                                // first click opens the page and the submenu, the next one folds it back
+                                                if (!isExpanded) handleNavigate(item)
+                                                toggleExpand(item.name)
                                             } else if (hasSubItems && !isCollapsed) {
                                                 toggleExpand(item.name)
                                             } else {
