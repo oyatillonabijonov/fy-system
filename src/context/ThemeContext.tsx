@@ -1,8 +1,21 @@
 /* eslint-disable react-refresh/only-export-components -- useTheme hook is part of the theme context module */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
-/** contrast = light main card on a dark ground and sidebar; photo = the same on the login photo */
-export type ThemeId = 'light' | 'dark' | 'contrast' | 'photo'
+/** contrast = light main card on a dark ground and sidebar; photo* = the same on a photo */
+export type ThemeId = 'light' | 'dark' | 'contrast' | 'photo' | 'photo-sky' | 'photo-car' | 'photo-city'
+
+/** Every theme, for the pickers. `swatch` is a CSS background for the little preview;
+ *  photo themes also get data-photo=<id> on <html>, which picks the image in index.css. */
+export const THEMES: { id: ThemeId; label: string; swatch: string; photo?: true }[] = [
+    { id: 'light', label: "Yorug'", swatch: 'linear-gradient(135deg, #f2f2f2 50%, #ffffff 50%)' },
+    { id: 'contrast', label: 'Kontrast', swatch: 'linear-gradient(135deg, #0b0b0c 50%, #ffffff 50%)' },
+    { id: 'dark', label: "Qorong'i", swatch: 'linear-gradient(135deg, #0b0b0c 50%, #202024 50%)' },
+    { id: 'photo', label: 'Dengiz', swatch: 'url(/images/thumb-sea.jpg) center / cover', photo: true },
+    { id: 'photo-sky', label: 'Bulut', swatch: 'url(/images/thumb-sky.jpg) center / cover', photo: true },
+    { id: 'photo-car', label: 'Avto', swatch: 'url(/images/thumb-car.jpg) center / cover', photo: true },
+    { id: 'photo-city', label: 'Shahar', swatch: 'url(/images/thumb-city.jpg) center / cover', photo: true },
+]
+export const isPhotoTheme = (id: ThemeId) => id.startsWith('photo')
 
 /** Interface language — stored only; the copy is Uzbek until translations exist */
 export type LangId = 'uz' | 'ru' | 'en'
@@ -31,7 +44,8 @@ function getInitialTheme(): ThemeId {
     try {
         // Old values (neutral / black-orange / light-orange) fall back to light
         const saved = localStorage.getItem(THEME_KEY)
-        if (saved === 'dark' || saved === 'contrast' || saved === 'photo') return saved
+        const known = THEMES.find((t) => t.id === saved)
+        if (known) return known.id
     } catch { /* private browsing */ }
     return 'light'
 }
@@ -45,7 +59,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, [lang])
 
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', themeId)
+        // All photo themes share one look (data-theme="photo"); data-photo picks the image
+        const root = document.documentElement
+        root.setAttribute('data-theme', isPhotoTheme(themeId) ? 'photo' : themeId)
+        if (isPhotoTheme(themeId)) root.setAttribute('data-photo', themeId)
+        else root.removeAttribute('data-photo')
         try { localStorage.setItem(THEME_KEY, themeId) } catch { /* private browsing */ }
     }, [themeId])
 

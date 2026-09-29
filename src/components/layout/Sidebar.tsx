@@ -18,19 +18,12 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useNavigate } from "react-router-dom"
-import { useTheme, type ThemeId } from "@/context/ThemeContext"
+import { useTheme, THEMES, isPhotoTheme } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
-
-const THEMES: { id: ThemeId; label: string }[] = [
-    { id: "light", label: "Yorug'" },
-    { id: "contrast", label: "Kontrast" },
-    { id: "dark", label: "Qorong'i" },
-    { id: "photo", label: "Manzara" },
-]
 
 const accountItem = "w-full flex items-center gap-2.5 h-control-md px-2.5 rounded-item text-base font-medium text-ink transition-colors hover:bg-mute-ghost-hover"
 
@@ -184,7 +177,7 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-            data-theme={themeId === "contrast" || themeId === "photo" ? "dark" : undefined}
+            data-theme={themeId === "contrast" || isPhotoTheme(themeId) ? "dark" : undefined}
             className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
         >
             {/* Top: Logo + Collapse button */}
@@ -346,20 +339,25 @@ export function Sidebar() {
                                 <User size={18} className="text-ink-muted" />
                                 Profilim
                             </button>
-                            <div className="px-2.5 pt-2 pb-1.5 flex flex-col gap-2">
-                                <span className="text-sm text-ink-muted">Mavzu</span>
-                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-2 gap-1 p-0.5 rounded-control bg-surface-sunken">
+                            <div className="px-2.5 pt-2 pb-2 flex flex-col gap-2.5">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="text-sm text-ink-muted">Mavzu</span>
+                                    <span className="text-sm font-medium text-ink">{THEMES.find((t) => t.id === themeId)?.label}</span>
+                                </div>
+                                {/* One tap per theme: colour swatches, then the photos */}
+                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-4 gap-2 justify-items-center">
                                     {THEMES.map((t) => (
                                         <button
                                             key={t.id}
                                             type="button"
                                             role="radio"
                                             aria-checked={themeId === t.id}
+                                            aria-label={t.label}
+                                            title={t.label}
                                             onClick={() => setThemeId(t.id)}
-                                            className={`h-8 rounded-item text-sm font-medium transition-colors ${themeId === t.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
-                                        >
-                                            {t.label}
-                                        </button>
+                                            className={`size-10 rounded-full border border-line transition-shadow ${themeId === t.id ? "ring-2 ring-[var(--switch-on)] ring-offset-2 ring-offset-[var(--ds-color-surface-raised)]" : "hover:scale-105"}`}
+                                            style={{ background: t.swatch }}
+                                        />
                                     ))}
                                 </div>
                             </div>
