@@ -1,11 +1,10 @@
 import { useSyncExternalStore } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { CheckCircle, WarningCircle, Info } from "@phosphor-icons/react"
+import { CheckCircle, WarningCircle, Info, X } from "@phosphor-icons/react"
 import { toastStore, dismiss, type ToastKind } from "@/lib/toast"
 
-// A compact pill that drops from the top centre like Apple's Dynamic Island: it grows
-// out of a narrow pill and lifts back into it. Width follows the message. Tokens, so it
-// follows the theme; the one soft shadow is --toast-shadow (index.css).
+// A system card (same radius/fill/hairline as the app's cards) dropping in at the
+// top centre. Tokens, so it follows the theme; the one soft shadow is --toast-shadow.
 const ICON: Record<ToastKind, { Icon: typeof CheckCircle; tone: string }> = {
   success: { Icon: CheckCircle, tone: "text-success-text" },
   error: { Icon: WarningCircle, tone: "text-danger-text" },
@@ -25,19 +24,20 @@ export function Toaster() {
               type="button"
               layout
               onClick={() => dismiss(t.id)}
-              initial={{ opacity: 0, y: -32, scaleX: 0.45, scaleY: 0.6 }}
-              animate={{ opacity: 1, y: 0, scaleX: 1, scaleY: 1 }}
-              exit={{ opacity: 0, y: -28, scaleX: 0.5, scaleY: 0.6, transition: { duration: 0.22 } }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              initial={{ opacity: 0, y: -16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.97, transition: { duration: 0.18 } }}
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
               role={t.kind === "error" ? "alert" : "status"}
-              className="pointer-events-auto max-w-[min(92vw,420px)] flex items-center gap-2.5 py-2 pl-4 pr-5 rounded-full bg-surface-raised border border-line text-left"
+              className="group pointer-events-auto w-[min(92vw,340px)] flex items-start gap-2.5 px-3.5 py-3 rounded-surface bg-surface-raised border border-line text-left"
               style={{ boxShadow: "var(--toast-shadow)" }}
             >
               <Icon size={20} className={`shrink-0 ${tone}`} />
-              <span className="min-w-0 flex flex-col">
-                <span className="text-[15px] font-semibold text-ink leading-snug">{t.title}</span>
+              <span className="min-w-0 flex-1 flex flex-col gap-0.5">
+                <span className="text-base font-semibold text-ink leading-snug">{t.title}</span>
                 {t.detail && <span className="text-sm text-ink-muted leading-snug break-words">{t.detail}</span>}
               </span>
+              <X size={12} weight="bold" className="shrink-0 mt-1 text-ink-faint group-hover:text-ink" aria-hidden="true" />
             </motion.button>
           )
         })}
