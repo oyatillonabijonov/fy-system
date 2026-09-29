@@ -251,6 +251,7 @@ export async function startTaskBot(sql: Sql): Promise<void> {
         const updates = await tg<TgUpdate[]>("getUpdates", { offset, timeout: 50, allowed_updates: ["message", "callback_query"] })
         for (const u of updates) {
           offset = u.update_id + 1
+          try {
             if (u.message && String(u.message.chat.id) === CHAT_ID) await handleMessage(sql, u.message, me.username)
             else if (u.callback_query && String(u.callback_query.message?.chat.id) === CHAT_ID) await handleCallback(sql, u.callback_query)
           } catch (err) {
