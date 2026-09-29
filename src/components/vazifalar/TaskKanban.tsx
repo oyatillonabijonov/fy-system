@@ -2,7 +2,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { Plus } from "@phosphor-icons/react"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { useUpdateTask } from "@/hooks/useTasks"
-import { Avatar, DueChip, CommentCount, sectionColor } from "./taskUi"
+import { Avatar, DueChip, CommentCount, AttachCount, sectionColor } from "./taskUi"
 
 /** Trello-style board: one column per status; dropping a card on another column changes its status */
 export function TaskKanban({
@@ -61,10 +61,11 @@ export function TaskKanban({
                               </span>
                             )}
                             <span className={`text-base leading-snug line-clamp-3 ${t.status === "done" ? "text-ink-muted" : "text-ink"}`}>{t.title}</span>
-                            {(t.due_date || t.comments_count > 0 || t.assignee_id || t.assignee_name) && (
+                            {(t.due_date || t.comments_count > 0 || t.attachments_count > 0 || t.assignee_id || t.assignee_name) && (
                               <span className="flex items-center justify-between gap-2">
                                 <span className="flex items-center gap-2">
                                   <DueChip task={t} today={today} />
+                                  <AttachCount n={t.attachments_count} />
                                   <CommentCount n={t.comments_count} />
                                 </span>
                                 <Avatar task={t} />

@@ -9,7 +9,7 @@ import { tashkentToday } from "@/lib/period"
 import { TaskCreate } from "@/components/vazifalar/TaskCreate"
 import { TaskPanel } from "@/components/vazifalar/TaskPanel"
 import { TaskKanban } from "@/components/vazifalar/TaskKanban"
-import { StatusSelect, StatusMark, Owner, DueChip, CommentCount, SectionChip, sectionColor } from "@/components/vazifalar/taskUi"
+import { StatusSelect, StatusMark, Owner, DueChip, CommentCount, AttachCount, SectionChip, sectionColor } from "@/components/vazifalar/taskUi"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 
@@ -230,7 +230,7 @@ function TaskRow({ task: t, today, onOpen, context }: { task: Task; today: strin
       </span>
       <span className="hidden md:flex min-w-0"><Owner task={t} /></span>
       <span className="hidden md:block"><DueChip task={t} today={today} /></span>
-      <span className="hidden md:block"><CommentCount n={t.comments_count} /></span>
+      <span className="hidden md:flex items-center gap-3"><AttachCount n={t.attachments_count} /><CommentCount n={t.comments_count} /></span>
       <span className="justify-self-end">
         <StatusSelect value={t.status} label={`${t.title} holati`} onChange={setStatus} />
       </span>

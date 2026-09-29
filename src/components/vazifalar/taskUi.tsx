@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- small shared pieces of the Vazifalar page */
-import { CaretDown, ChatCircle, CheckCircle, Circle, CircleHalf, XCircle, CalendarBlank } from "@phosphor-icons/react"
+import { CaretDown, ChatCircle, CheckCircle, Circle, CircleHalf, XCircle, CalendarBlank, Paperclip } from "@phosphor-icons/react"
 import { STATUS_VARIANTS, type StatusVariant } from "@/lib/constants/theme"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { formatDate } from "@/lib/format"
@@ -89,6 +89,16 @@ export function CommentCount({ n }: { n: number }) {
   return (
     <span className="flex items-center gap-1 text-sm text-ink-muted tabular-nums">
       <ChatCircle size={16} />{n}
+    </span>
+  )
+}
+
+/** How many yo'riqnoma a task has (071) */
+export function AttachCount({ n }: { n: number }) {
+  if (!n) return null
+  return (
+    <span className="flex items-center gap-1 text-sm text-ink-muted tabular-nums" title="Yo'riqnoma">
+      <Paperclip size={16} />{n}
     </span>
   )
 }
