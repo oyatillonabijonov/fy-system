@@ -155,12 +155,10 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
               <label htmlFor={amountId} className="text-sm font-medium text-ink-muted">Summa (so'm) *</label>
               <input
                 id={amountId}
-                type="number"
-                min={0}
-                step={500}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="10000"
+                inputMode="numeric"
+                value={amount ? formatNumber(Number(amount)) : ""}
+                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+                placeholder="10,000"
                 autoFocus
                 className="w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />

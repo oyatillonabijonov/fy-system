@@ -138,15 +138,9 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
               <label htmlFor={amountId} className="text-sm font-medium text-ink-muted">Qo'llanadigan summa (so'm)</label>
               <input
                 id={amountId}
-                type="number"
-                min={0}
-                max={maxApplicable}
-                step={500}
-                value={amount}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  setAmount(Math.max(0, Math.min(v, maxApplicable)))
-                }}
+                inputMode="numeric"
+                value={amount ? formatNumber(amount) : ""}
+                onChange={(e) => setAmount(Math.min(Number(e.target.value.replace(/\D/g, "")), maxApplicable))}
                 autoFocus
                 className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
               />
