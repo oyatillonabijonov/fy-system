@@ -15,10 +15,11 @@ import { Code,
     type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useNavigate } from "react-router-dom"
-import { useTheme, THEMES, isPhotoTheme } from "@/context/ThemeContext"
+import { useTheme, useSidebarScope, MODES, PHOTOS, photoThumb } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
@@ -93,7 +94,9 @@ export function Sidebar() {
         try { localStorage.setItem('fy_sidebar_collapsed', String(isCollapsed)) } catch { /* private browsing */ }
     }, [isCollapsed])
 
-    const { themeId, setThemeId } = useTheme()
+    const { themeId, setThemeId, photo, setPhoto } = useTheme()
+    const scope = useSidebarScope()
+    const darkSidebar = scope === "dark" || themeId === "dark"
     const [isAccountOpen, setIsAccountOpen] = useState(false)
     useEffect(() => {
         if (!isAccountOpen) return
@@ -177,14 +180,14 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-            data-theme={themeId === "contrast" || isPhotoTheme(themeId) ? "dark" : undefined}
-            className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
+            data-theme={scope}
+            className="sidebar h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
         >
             {/* Top: Logo + Collapse button */}
             <div className={`flex items-center h-control-md mb-6 ${isCollapsed ? "justify-center" : "justify-between pl-1"}`}>
                 {!isCollapsed && (
                     <img
-                        src={themeId === 'light' ? "/Sidebar/Logo.svg" : "/Sidebar/Logo-white.svg"}
+                        src={darkSidebar ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
                         alt="Biznes Klub Logo"
                         className="w-auto h-7"
                     />
@@ -327,37 +330,40 @@ export function Sidebar() {
                     )}
                 </button>
 
-                {isAccountOpen && (
-                    <>
+                {/* Portal: the glass sidebar (backdrop-filter) would clip a fixed menu inside it */}
+                {isAccountOpen && createPortal(
+                    <div data-theme={scope} className="text-ink">
                         {/* click-away layer */}
                         <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setIsAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                         <div
                             role="menu"
-                            className={`fixed bottom-20 z-50 w-[232px] p-1 rounded-menu bg-surface-raised border border-line ${isCollapsed ? "left-3" : "left-4"}`}
+                            className={`fixed bottom-20 z-50 w-[264px] p-1 rounded-menu bg-surface-raised border border-line ${isCollapsed ? "left-3" : "left-4"}`}
                         >
                             <button type="button" role="menuitem" onClick={() => { setIsAccountOpen(false); navigate("/sozlamalar") }} className={accountItem}>
                                 <User size={18} className="text-ink-muted" />
                                 Profilim
                             </button>
-                            <div className="px-2.5 pt-2 pb-2 flex flex-col gap-2.5">
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-sm text-ink-muted">Mavzu</span>
-                                    <span className="text-sm font-medium text-ink">{THEMES.find((t) => t.id === themeId)?.label}</span>
+                            <div className="px-2.5 pt-2 pb-2.5 flex flex-col gap-2">
+                                <span className="text-sm text-ink-muted">Rejim</span>
+                                <div role="radiogroup" aria-label="Rejim" className="grid grid-cols-3 gap-0.5 p-0.5 rounded-control bg-surface-sunken">
+                                    {MODES.map((m) => (
+                                        <button key={m.id} type="button" role="radio" aria-checked={themeId === m.id} onClick={() => setThemeId(m.id)}
+                                            className={`h-8 rounded-item text-sm font-medium transition-colors ${themeId === m.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+                                            {m.label}
+                                        </button>
+                                    ))}
                                 </div>
-                                {/* One tap per theme: colour swatches, then the photos */}
-                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-4 gap-2 justify-items-center">
-                                    {THEMES.map((t) => (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={themeId === t.id}
-                                            aria-label={t.label}
-                                            title={t.label}
-                                            onClick={() => setThemeId(t.id)}
-                                            className={`size-10 rounded-full border border-line transition-shadow ${themeId === t.id ? "ring-2 ring-[var(--switch-on)] ring-offset-2 ring-offset-[var(--ds-color-surface-raised)]" : "hover:scale-105"}`}
-                                            style={{ background: t.swatch }}
-                                        />
+                                <span className="text-sm text-ink-muted pt-1.5">Fon rasmi</span>
+                                <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-3 gap-1.5">
+                                    <button type="button" role="radio" aria-checked={!photo} onClick={() => setPhoto(null)}
+                                        className={`h-11 rounded-item bg-surface-sunken text-sm text-ink-muted border border-line ${!photo ? "ring-2 ring-[var(--switch-on)]" : "hover:text-ink"}`}>
+                                        Yo'q
+                                    </button>
+                                    {PHOTOS.map((p) => (
+                                        <button key={p.id} type="button" role="radio" aria-checked={photo === p.id} aria-label={p.label} title={p.label}
+                                            onClick={() => setPhoto(p.id)}
+                                            className={`h-11 rounded-item border border-line bg-cover bg-center transition-opacity ${photo === p.id ? "ring-2 ring-[var(--switch-on)]" : "hover:opacity-85"}`}
+                                            style={{ backgroundImage: `url(${photoThumb(p.id)})` }} />
                                     ))}
                                 </div>
                             </div>
@@ -367,7 +373,8 @@ export function Sidebar() {
                                 Chiqish
                             </button>
                         </div>
-                    </>
+                    </div>,
+                    document.body,
                 )}
             </div>
         </motion.aside>

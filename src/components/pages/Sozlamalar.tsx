@@ -4,7 +4,7 @@ import { soundOn, setSoundOn } from "@/lib/sound"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
-import { useTheme, THEMES, type ThemeId, type LangId } from "@/context/ThemeContext"
+import { useTheme, MODES, PHOTOS, photoThumb, type ThemeId, type LangId } from "@/context/ThemeContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
@@ -250,12 +250,12 @@ function ProfileTab({
 
 // ─── Appearance + language (device preferences, not saved to the profile) ───
 
-const PREVIEW: Partial<Record<ThemeId, { ground: string; card: string }>> = {
+const PREVIEW: Record<ThemeId, { ground: string; card: string }> = {
   light:    { ground: "#f2f2f2", card: "#ffffff" },
   contrast: { ground: "#0b0b0c", card: "#ffffff" },
   dark:     { ground: "#0b0b0c", card: "#141416" },
 }
-const THEME_OPTIONS = THEMES.map((t) => ({ ...t, ...(PREVIEW[t.id] ?? { ground: t.swatch, card: "#ffffff" }) }))
+const THEME_OPTIONS = MODES.map((m) => ({ ...m, ...PREVIEW[m.id] }))
 
 const LANG_OPTIONS: { id: LangId; label: string }[] = [
   { id: "uz", label: "O'zbekcha" },
@@ -264,12 +264,12 @@ const LANG_OPTIONS: { id: LangId; label: string }[] = [
 ]
 
 function PreferencesRows() {
-  const { themeId, setThemeId, lang, setLang } = useTheme()
+  const { themeId, setThemeId, photo, setPhoto, lang, setLang } = useTheme()
   const [sound, setSound] = useState(soundOn)
   return (
     <>
-      <SettingsRow title="Ko'rinish" desc="Tizim mavzusi. Tanlov shu qurilmada saqlanadi.">
-        <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px]">
+      <SettingsRow title="Ko'rinish" desc="Rejim va ixtiyoriy fon rasmi. Tanlov shu qurilmada saqlanadi.">
+        <div role="radiogroup" aria-label="Rejim" className="grid grid-cols-3 gap-3 max-w-[480px]">
           {THEME_OPTIONS.map((t) => (
             <button
               key={t.id}
@@ -285,6 +285,20 @@ function PreferencesRows() {
                 <span className="flex-1 rounded-sm" style={{ background: t.card }} />
               </span>
               <span className="text-base font-medium text-ink">{t.label}</span>
+            </button>
+          ))}
+        </div>
+        <span className="block text-sm font-medium text-ink-muted mt-5 mb-2">Fon rasmi</span>
+        <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-3 sm:grid-cols-5 gap-3 max-w-[640px]">
+          <button type="button" role="radio" aria-checked={!photo} onClick={() => setPhoto(null)}
+            className={`h-16 rounded-control bg-surface-sunken border text-base text-ink-muted transition-colors ${!photo ? "border-line-focus text-ink" : "border-line hover:text-ink"}`}>
+            Yo'q
+          </button>
+          {PHOTOS.map((p) => (
+            <button key={p.id} type="button" role="radio" aria-checked={photo === p.id} onClick={() => setPhoto(p.id)}
+              className={`relative h-16 rounded-control border bg-cover bg-center overflow-hidden ${photo === p.id ? "border-line-focus ring-2 ring-[var(--switch-on)]" : "border-line"}`}
+              style={{ backgroundImage: `url(${photoThumb(p.id)})` }}>
+              <span className="absolute inset-x-0 bottom-0 px-2 py-1 text-sm font-medium text-white bg-black/35 text-left">{p.label}</span>
             </button>
           ))}
         </div>
