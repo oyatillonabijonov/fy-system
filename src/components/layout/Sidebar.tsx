@@ -1,4 +1,4 @@
-import { PlugsConnected,
+import { Code,
     MagnifyingGlass,
     House,
     Users,
@@ -80,7 +80,7 @@ const navigationSections: NavSection[] = [
                 path: "/sozlamalar",
                 opensPage: true,
                 subItems: [
-                    { name: "Integratsiyalar", icon: PlugsConnected, path: "/sozlamalar/integratsiyalar", module: "integratsiyalar" },
+                    { name: "Integratsiyalar", icon: Code, path: "/sozlamalar/integratsiyalar", module: "integratsiyalar" },
                     { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
                 ],
             },

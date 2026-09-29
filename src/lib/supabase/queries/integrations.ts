@@ -7,12 +7,12 @@ const db = supabase as unknown as SupabaseClient
 /** What the bot does in a group — one switch per message kind (migration 070) */
 export type GroupRole = "payments" | "expenses" | "task_digest" | "task_reminders" | "task_bot"
 
-export const GROUP_ROLES: { id: GroupRole; label: string; desc: string }[] = [
-  { id: "payments", label: "To'lov cheklari", desc: "Kirim, qaytarish, bekor qilish, keshbek" },
-  { id: "expenses", label: "Xarajatlar", desc: "Yangi va bekor qilingan chiqimlar" },
-  { id: "task_digest", label: "Ertalabki hisobot", desc: "Har kuni 9:00 da vazifalar holati" },
-  { id: "task_reminders", label: "Muddat eslatmalari", desc: "1 soat oldin, vaqtida, kechikkanda" },
-  { id: "task_bot", label: "Chatdan vazifa", desc: "@bot yoki /vazifa bilan vazifa qo'shish" },
+export const GROUP_ROLES: { id: GroupRole; label: string; short: string; desc: string }[] = [
+  { id: "payments", label: "To'lov cheklari", short: "To'lovlar", desc: "Kirim, qaytarish, bekor qilish va keshbek cheklari" },
+  { id: "expenses", label: "Xarajat cheklari", short: "Xarajatlar", desc: "Yangi va bekor qilingan chiqimlar cheki" },
+  { id: "task_digest", label: "Ertalabki hisobot", short: "Hisobot 9:00", desc: "Har kuni 9:00 da vazifalar holati" },
+  { id: "task_reminders", label: "Muddat eslatmalari", short: "Eslatmalar", desc: "1 soat oldin, vaqtida va kechikkanda — mas'ul belgilanadi" },
+  { id: "task_bot", label: "Chatdan vazifa", short: "Chatdan vazifa", desc: "@bot yoki /vazifa bilan yozilgan xabar vazifa bo'ladi" },
 ]
 
 export type TelegramGroup = {
