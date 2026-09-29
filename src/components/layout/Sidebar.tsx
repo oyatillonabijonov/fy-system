@@ -9,8 +9,7 @@ import { Code,
     User,
     SidebarSimple,
     CaretDown,
-    SquaresFour,
-    Coins,
+    Wallet,
     ClockCounterClockwise,
     ListChecks,
     type Icon as PhosphorIcon,
@@ -59,15 +58,8 @@ const navigationSections: NavSection[] = [
             { name: "Dashboard", icon: House, path: "/dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
             { name: "Vazifalar", icon: ListChecks, path: "/vazifalar" },
-            {
-                name: "Menejment",
-                icon: CalendarBlank,
-                path: "/tadbirlar",
-                subItems: [
-                    { name: "Tadbirlar", icon: SquaresFour, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
-                    { name: "Moliya", icon: Coins, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
-                ],
-            },
+            { name: "Tadbirlar", icon: CalendarBlank, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
+            { name: "Moliya", icon: Wallet, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
         ],
     },
     {
@@ -90,7 +82,7 @@ const navigationSections: NavSection[] = [
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
-    Menejment: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
+    Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
 export function Sidebar() {
