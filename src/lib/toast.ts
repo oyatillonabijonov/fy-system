@@ -24,7 +24,7 @@ function push(kind: ToastKind, title: string, detail?: string) {
   const t: Toast = { id: ++seq, kind, title, detail }
   items = [...items, t].slice(-MAX)
   emit()
-  cue(kind === "info" ? "ready" : kind, { emphasis: "subtle" })
+  cue(kind === "info" ? "ready" : kind)
   setTimeout(() => dismiss(t.id), LIFETIME[kind])
 }
 

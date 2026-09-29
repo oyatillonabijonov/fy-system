@@ -290,7 +290,7 @@ function PreferencesRows() {
         </div>
       </SettingsRow>
 
-      <SettingsRow title="Ovozlar" desc="Bosish, oyna ochilishi, saqlash va xatolik uchun yumshoq ovozlar. Tanlov shu qurilmada saqlanadi.">
+      <SettingsRow title="Ovozlar" desc="Vazifa, mijoz, hodim qo'shilganda yoki xatolik bo'lganda yumshoq ovoz. Tanlov shu qurilmada saqlanadi.">
         <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken">
           {[true, false].map((v) => (
             <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
