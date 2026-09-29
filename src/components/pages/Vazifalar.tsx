@@ -7,7 +7,8 @@ import { useUsers } from "@/hooks/useUsers"
 import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks } from "@/hooks/useTasks"
 import type { Task, TaskStatus } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
-import { TaskModal } from "@/components/vazifalar/TaskModal"
+import { TaskCreate } from "@/components/vazifalar/TaskCreate"
+import { TaskPanel } from "@/components/vazifalar/TaskPanel"
 import { TaskKanban } from "@/components/vazifalar/TaskKanban"
 import { StatusSelect, StatusMark, Owner, DueChip, CommentCount, SectionChip, sectionColor } from "@/components/vazifalar/taskUi"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
@@ -118,15 +119,16 @@ function EventTasks() {
         <SectionList tasks={shown} sections={sections} today={today} onOpen={(t) => setEditing({ task: t })} onAdd={(section) => setEditing({ task: null, section })} />
       )}
 
-      {editing && (
-        <TaskModal
-          task={editing.task}
+      {editing && (editing.task ? (
+        <TaskPanel task={editing.task} sections={sections} onClose={() => setEditing(null)} />
+      ) : (
+        <TaskCreate
           defaults={{ event_id: eventId, section: editing.section, status: editing.status }}
           sections={sections}
           nextSortOrder={nextSort}
           onClose={() => setEditing(null)}
         />
-      )}
+      ))}
       {copying && eventId && <CopyModal toEventId={eventId} onClose={() => setCopying(false)} />}
     </div>
   )
@@ -265,7 +267,7 @@ function MyTasks() {
           {rows.map((t) => <TaskRow key={t.id} task={t} today={today} onOpen={setEditing} context />)}
         </section>
       ))}
-      {editing && <TaskModal task={editing} sections={[]} nextSortOrder={0} onClose={() => setEditing(null)} />}
+      {editing && <TaskPanel task={editing} sections={[]} onClose={() => setEditing(null)} />}
     </div>
   )
 }
