@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { resolveTasks, confirmation, buildPrompt } from "./taskbot"
+import { resolveTasks, confirmation, buildPrompt, taskText } from "./taskbot"
 
 const staff = [
   { id: "s1", full_name: "Jahongir Qahramonov", telegram: "@Jahongir_Qahramonov", role: "xodim" },
@@ -31,4 +31,13 @@ test("prompt carries today's weekday, staff handles and reply context", () => {
   expect(p).toContain("Bugun: 2026-09-29 (seshanba)")
   expect(p).toContain("Hikmat Abdurahmonov — yo'q")
   expect(p).toContain('"""Resort narxlari keldi"""')
+})
+
+test("trigger: /vazifa@bot or @bot mention; bare /vazifa and other commands are left alone", () => {
+  expect(taskText("/vazifa@fymoliyabot Resort to'lovi, @Jahongir_Qahramonov, ertaga", "fymoliyabot")).toBe("Resort to'lovi, @Jahongir_Qahramonov, ertaga")
+  expect(taskText("/VAZIFA@FYmoliyabot  menyu", "fymoliyabot")).toBe("menyu")
+  expect(taskText("@fymoliyabot banner tayyorlash", "fymoliyabot")).toBe("banner tayyorlash")
+  expect(taskText("/vazifa Amirsoy to'lovi", "fymoliyabot")).toBeNull()
+  expect(taskText("/start@otherbot @fymoliyabot", "fymoliyabot")).toBeNull()
+  expect(taskText("э хазлми бу?", "fymoliyabot")).toBeNull()
 })
