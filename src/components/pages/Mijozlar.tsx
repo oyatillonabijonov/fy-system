@@ -15,6 +15,7 @@ import {
     Camera,
     Check,
 } from "@phosphor-icons/react"
+import { toast as notify } from "@/lib/toast"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 
 import { motion, AnimatePresence } from "framer-motion"
@@ -136,17 +137,11 @@ export function Mijozlar() {
     const [addError, setAddError] = useState<string | null>(null)
     const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
 
-    // Cashback adjust modal + toast
-    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
-    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    // App-wide notification (components/ui/Toaster)
     function showToast(message: string, type: "success" | "error") {
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-        setToast({ message, type })
-        toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+        if (type === "success") notify.success(message)
+        else notify.error(message)
     }
-    useEffect(() => () => {
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    }, [])
 
 
     const journeyQuery = useClientJourney(selectedCustomer?.id ?? null)
@@ -1083,24 +1078,6 @@ export function Mijozlar() {
             </AnimatePresence>
 
 
-
-            {/* Toast */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-bold ${
-                            toast.type === "success"
-                                ? "bg-surface-sunken text-ink border border-line"
-                                : "bg-danger-soft text-danger-text border border-line"
-                        }`}
-                    >
-                        {toast.message}
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Add Customer Modal */}
             <AnimatePresence>

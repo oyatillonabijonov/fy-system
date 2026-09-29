@@ -29,6 +29,7 @@ export function useClients() {
 export function useCreateClient() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Mijoz qo'shildi", silent: true },
     mutationFn: (data: ClientInsert) => createClient(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
   })
@@ -37,6 +38,7 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Mijoz saqlandi", silent: true },
     mutationFn: ({ id, data }: { id: string; data: ClientUpdate & { location?: string | null } }) =>
       updateClient(id, data),
     onMutate: async ({ id, data }) => {
@@ -57,6 +59,7 @@ export function useUpdateClient() {
 export function useDeleteClient() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Mijoz o'chirildi" },
     mutationFn: (id: string) => deleteClient(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: CLIENTS_KEY })
@@ -76,6 +79,7 @@ export function useDeleteClient() {
 export function useDeleteClients() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: (_d, ids) => `${(ids as string[]).length} ta mijoz o'chirildi` },
     mutationFn: (ids: string[]) => deleteClients(ids),
     onMutate: async (ids) => {
       await qc.cancelQueries({ queryKey: CLIENTS_KEY })
@@ -95,6 +99,7 @@ export function useDeleteClients() {
 export function useUploadClientImage() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { silent: true },
     mutationFn: ({ file, clientId }: { file: Blob; clientId: string }) =>
       uploadClientImage(file, clientId),
     onSettled: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),

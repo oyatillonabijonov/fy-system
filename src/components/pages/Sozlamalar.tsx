@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useId } from "react"
+import { useState, useRef, useId } from "react"
+import { toast as notify } from "@/lib/toast"
 import { PhoneInput } from "@/components/ui/PhoneInput"
-import { motion, AnimatePresence } from "framer-motion"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useTheme, type ThemeId, type LangId } from "@/context/ThemeContext"
@@ -15,40 +15,17 @@ import {
 
 export function Sozlamalar() {
   const { user } = useAuth()
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
+  // App-wide notification (components/ui/Toaster)
   function showToast(message: string, type: "success" | "error" = "success") {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    setToast({ message, type })
-    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+    if (type === "success") notify.success(message)
+    else notify.error(message)
   }
-
-  useEffect(() => () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-  }, [])
 
   return (
     <div className="flex flex-col pb-10 max-w-[960px]">
 
       {user && <ProfileTab key={user.id} user={user} showToast={showToast} />}
       <PreferencesRows />
-
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            role="status"
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-medium border border-line ${
-              toast.type === "success" ? "bg-surface-raised text-ink" : "bg-danger-soft text-danger-text"
-            }`}
-          >
-            {toast.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

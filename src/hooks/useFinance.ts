@@ -109,9 +109,10 @@ export function useEventProfit(f: FinanceFilters) {
   })
 }
 
-function useMoneyMutation<V, R>(fn: (vars: V) => Promise<R>) {
+// Money modals show the RPC's error inline, so only the success is announced here
+function useMoneyMutation<V, R>(fn: (vars: V) => Promise<R>, success?: string) {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: fn, onSuccess: () => invalidateMoney(qc) })
+  return useMutation({ mutationFn: fn, onSuccess: () => invalidateMoney(qc), meta: { success, silent: true } })
 }
 
 // A receipt that fails to upload never undoes the money: the row stays saved and the
@@ -128,17 +129,17 @@ async function saveThenAttach(kind: ReceiptKind, save: () => Promise<string | nu
 }
 
 export const useRecordPayment = () =>
-  useMoneyMutation((v: RecordPaymentInput & { receipt: File | null }) => saveThenAttach("payment", () => recordPayment(v), v.receipt))
+  useMoneyMutation((v: RecordPaymentInput & { receipt: File | null }) => saveThenAttach("payment", () => recordPayment(v), v.receipt), "To'lov saqlandi")
 export const useVoidPayment = () =>
-  useMoneyMutation((v: { id: string; reason: string }) => voidPayment(v.id, v.reason))
-export const useRefundPayment = () => useMoneyMutation(refundPayment)
-export const useSettleNoShow = () => useMoneyMutation(settleNoShow)
+  useMoneyMutation((v: { id: string; reason: string }) => voidPayment(v.id, v.reason), "To'lov bekor qilindi")
+export const useRefundPayment = () => useMoneyMutation(refundPayment, "Pul qaytarildi")
+export const useSettleNoShow = () => useMoneyMutation(settleNoShow, "Qatnashmadi — hisob yopildi")
 export const useUpdateParticipantFinance = () =>
-  useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch))
+  useMoneyMutation((v: { id: string; patch: ParticipantFinancePatch }) => updateParticipantFinance(v.id, v.patch), "Saqlandi")
 
 export const useAddExpense = () =>
-  useMoneyMutation((v: AddExpenseInput & { receipt: File | null }) => saveThenAttach("expense", () => addExpense(v), v.receipt))
+  useMoneyMutation((v: AddExpenseInput & { receipt: File | null }) => saveThenAttach("expense", () => addExpense(v), v.receipt), "Xarajat qo'shildi")
 export const useAttachReceipt = () =>
-  useMoneyMutation((v: { kind: ReceiptKind; id: string; file: File }) => attachReceipt(v.kind, v.id, v.file))
+  useMoneyMutation((v: { kind: ReceiptKind; id: string; file: File }) => attachReceipt(v.kind, v.id, v.file), "Chek biriktirildi")
 export const useVoidExpense = () =>
-  useMoneyMutation((v: { id: string; reason: string }) => voidExpense(v.id, v.reason))
+  useMoneyMutation((v: { id: string; reason: string }) => voidExpense(v.id, v.reason), "Xarajat bekor qilindi")

@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
+import { toast as notify } from "@/lib/toast"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
@@ -77,17 +77,11 @@ export function HodimDetail() {
   const [showCrop, setShowCrop] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  // Toast
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // App-wide notification (components/ui/Toaster)
   function showToast(message: string, type: "success" | "error" = "success") {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    setToast({ message, type })
-    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+    if (type === "success") notify.success(message)
+    else notify.error(message)
   }
-  useEffect(() => () => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-  }, [])
 
   function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -284,24 +278,6 @@ export function HodimDetail() {
         onClose={() => setShowCrop(false)}
         onCropped={handleAvatarCrop}
       />
-
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`fixed top-6 right-6 z-[200] px-4 py-2.5 rounded-control text-sm font-semibold ${
-              toast.type === "success"
-                ? "bg-surface-sunken text-ink border border-line"
-                : "bg-danger-soft text-danger-dark border border-line"
-            }`}
-          >
-            {toast.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

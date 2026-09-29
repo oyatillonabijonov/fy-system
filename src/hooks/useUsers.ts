@@ -58,6 +58,7 @@ export function useUserPermissions(userId: string | null | undefined) {
 export function useCreateUser() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Hodim qo'shildi", silent: true },
     mutationFn: (input: Parameters<typeof createUser>[0]) => createUser(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })
@@ -66,6 +67,7 @@ export function useCreateUser() {
 export function useUpdateUserProfile() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Saqlandi" },
     mutationFn: (vars: { userId: string; data: Partial<UserProfile> }) =>
       updateUserProfile(vars.userId, vars.data),
     onSuccess: (_data, vars) => {
@@ -78,6 +80,7 @@ export function useUpdateUserProfile() {
 export function useUpdateUserPermissions() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Ruxsatlar saqlandi" },
     mutationFn: (vars: { userId: string; grants: ModuleGrants }) =>
       updateUserPermissions(vars.userId, vars.grants),
     onSuccess: (_data, vars) => {
@@ -90,6 +93,7 @@ export function useUpdateUserPermissions() {
 export function useUpdateUserRole() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Rol o'zgartirildi" },
     mutationFn: (vars: { userId: string; role: UserRole }) =>
       updateUserRole(vars.userId, vars.role),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
@@ -99,6 +103,7 @@ export function useUpdateUserRole() {
 export function useDeactivateUser() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Hodim faolsizlantirildi" },
     mutationFn: (userId: string) => deactivateUser(userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })
@@ -107,6 +112,7 @@ export function useDeactivateUser() {
 export function useActivateUser() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Hodim faollashtirildi" },
     mutationFn: (userId: string) => activateUser(userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })

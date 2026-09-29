@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useId } from "react"
+import { toast } from "@/lib/toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, CaretDown, MagnifyingGlass, Check, Plus, Trash } from "@phosphor-icons/react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -279,6 +280,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
 
       qc.invalidateQueries({ queryKey: TARIFFS_KEY })
 
+      toast.success(isEdit ? "Tadbir saqlandi" : "Tadbir yaratildi")
       onCreated()
       onClose()
     } catch (err) {

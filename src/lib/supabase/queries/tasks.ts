@@ -59,6 +59,20 @@ export async function getEventTasks(eventId: string | null): Promise<Task[]> {
   return ((data ?? []) as unknown as TaskRow[]).map(toTask)
 }
 
+/** Task counts per event ("umumiy" = no event) for the filter tabs: total and still open */
+export async function getTaskCounts(): Promise<Record<string, { total: number; open: number }>> {
+  // ponytail: counts rows client-side; a SQL group-by once there are thousands of tasks
+  const { data, error } = await db.from("tasks").select("event_id, status")
+  if (error) throw error
+  const out: Record<string, { total: number; open: number }> = {}
+  for (const r of (data ?? []) as { event_id: string | null; status: TaskStatus }[]) {
+    const c = (out[r.event_id ?? "umumiy"] ??= { total: 0, open: 0 })
+    c.total++
+    if (r.status === "todo" || r.status === "in_progress") c.open++
+  }
+  return out
+}
+
 /** Open tasks of one person across all events ("Mening vazifalarim") */
 export async function getMyTasks(userId: string): Promise<Task[]> {
   const { data, error } = await db

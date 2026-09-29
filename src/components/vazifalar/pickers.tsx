@@ -56,6 +56,21 @@ export function Pill({ icon, label, empty, onClick, active }: { icon: ReactNode;
   )
 }
 
+/** Primary property as a card: small label over the value (Mas'ul, Muddat) */
+export function Tile({ label, value, icon, empty, onClick, active, tone }: {
+  label: string; value: ReactNode; icon: ReactNode; empty?: boolean; onClick: (e: ReactMouseEvent<HTMLElement>) => void; active?: boolean
+  tone?: "danger" | "warning"
+}) {
+  const color = empty ? "text-ink-faint" : tone === "danger" ? "text-danger-text" : tone === "warning" ? "text-warning-text" : "text-ink"
+  return (
+    <button type="button" onClick={onClick}
+      className={`w-full text-left rounded-surface px-3.5 py-2.5 transition-colors ${active ? "bg-surface-sunken-hover" : "bg-surface-sunken hover:bg-surface-sunken-hover"}`}>
+      <span className="block text-sm text-ink-muted">{label}</span>
+      <span className={`mt-0.5 flex items-center gap-2 text-base font-medium min-w-0 ${color}`}>{icon}<span className="truncate">{value}</span></span>
+    </button>
+  )
+}
+
 const Option = ({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) => (
   <button type="button" onClick={onClick}
     className="w-full flex items-center gap-2 h-9 px-2.5 rounded-item text-base text-ink text-left hover:bg-mute-ghost-hover transition-colors">
@@ -96,12 +111,18 @@ const QUICK = (today: string) => [
 const chip = (on: boolean) =>
   `h-8 px-3 rounded-control text-sm font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink hover:bg-surface-sunken-hover"}`
 
-export function DuePicker({ date, time, today, onChange }: {
+export function DuePicker({ date, time, today, onChange, tile, open: isOpenTask = true }: {
   date: string | null; time: string | null; today: string
   onChange: (date: string | null, time: string | null) => void
+  tile?: boolean
+  /** the task is still open — only then is a past date shown as late */
+  open?: boolean
 }) {
+  const tone = !date || !isOpenTask ? undefined : date < today ? "danger" : date === today ? "warning" : undefined
   return (
-    <Popover width={300} trigger={(open, toggle) => (
+    <Popover width={300} trigger={(open, toggle) => tile ? (
+      <Tile label="Muddat" icon={<CalendarBlank size={16} />} value={date ? dueLabel(date, time, today) : "Belgilanmagan"} empty={!date} tone={tone} active={open} onClick={toggle} />
+    ) : (
       <Pill icon={<CalendarBlank size={16} />} label={date ? dueLabel(date, time, today) : "Muddat"} empty={!date} active={open} onClick={toggle} />
     )}>
       {(close) => (
@@ -126,12 +147,13 @@ export function DuePicker({ date, time, today, onChange }: {
                 aria-label="Boshqa soat" className="col-span-2 h-8 px-2 rounded-control border border-line bg-surface text-ink text-sm focus:outline-none focus:border-line-focus" />
             </div>
           </div>
-          {date && (
-            <div className="flex justify-between border-t border-line pt-2">
-              <button type="button" onClick={() => onChange(null, null)} className="text-sm text-ink-muted hover:text-danger-text transition-colors">Muddatni olib tashlash</button>
-              <button type="button" onClick={close} className="text-sm font-medium text-ink">Tayyor</button>
-            </div>
-          )}
+          <div className="flex items-center justify-between border-t border-line pt-3">
+            {date
+              ? <button type="button" onClick={() => onChange(null, null)} className="text-sm text-ink-muted hover:text-danger-text transition-colors">Olib tashlash</button>
+              : <span />}
+            <button type="button" onClick={close}
+              className="h-8 px-4 rounded-control bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover transition-colors">Tayyor</button>
+          </div>
         </div>
       )}
     </Popover>
@@ -144,20 +166,24 @@ export interface StaffOption { id: string; full_name: string; avatar_url: string
 export type Owner = { assignee_id: string | null; assignee_name: string | null }
 
 const initials = (n: string) => n.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
-export function PersonDot({ name, url, outside }: { name: string; url?: string | null; outside?: boolean }) {
+export function PersonDot({ name, url, outside, size = 20 }: { name: string; url?: string | null; outside?: boolean; size?: number }) {
+  const box = { width: size, height: size, fontSize: size * 0.42 }
   return url
-    ? <img src={url} alt="" className="size-5 rounded-full object-cover shrink-0" />
-    : <span className={`size-5 rounded-full shrink-0 inline-flex items-center justify-center text-[9px] font-semibold text-ink ${outside ? "border border-dashed border-line" : "bg-mute-soft"}`}>{initials(name)}</span>
+    ? <img src={url} alt="" className="rounded-full object-cover shrink-0" style={box} />
+    : <span className={`rounded-full shrink-0 inline-flex items-center justify-center font-semibold text-ink ${outside ? "border border-dashed border-line bg-surface" : "bg-mute-soft"}`} style={box}>{initials(name)}</span>
 }
 
-export function OwnerPicker({ value, staff, onChange }: { value: Owner; staff: StaffOption[]; onChange: (o: Owner) => void }) {
+export function OwnerPicker({ value, staff, onChange, tile }: { value: Owner; staff: StaffOption[]; onChange: (o: Owner) => void; tile?: boolean }) {
   const [q, setQ] = useState("")
   const person = staff.find((s) => s.id === value.assignee_id)
   const name = person?.full_name ?? value.assignee_name
   const shown = staff.filter((s) => s.full_name.toLowerCase().includes(q.trim().toLowerCase()))
   const pick = (o: Owner, close: () => void) => { onChange(o); setQ(""); close() }
   return (
-    <Popover trigger={(open, toggle) => (
+    <Popover trigger={(open, toggle) => tile ? (
+      <Tile label="Mas'ul" icon={name ? <PersonDot name={name} url={person?.avatar_url} outside={!person} /> : <UserCircle size={16} />}
+        value={name ?? "Belgilanmagan"} empty={!name} active={open} onClick={toggle} />
+    ) : (
       <Pill icon={name ? <PersonDot name={name} url={person?.avatar_url} outside={!person} /> : <UserCircle size={16} />}
         label={name ? name.split(" ")[0] : "Mas'ul"} empty={!name} active={open} onClick={toggle} />
     )}>

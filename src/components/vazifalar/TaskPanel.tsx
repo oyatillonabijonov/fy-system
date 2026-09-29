@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react"
+import { useId, useState } from "react"
 import { motion } from "framer-motion"
 import { X, Trash, PaperPlaneRight } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
@@ -30,7 +30,7 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
   function save(patch: Partial<TaskDraft>) {
     setT((cur) => ({ ...cur, ...patch }))
     setError(null)
-    update.mutate({ id: task.id, patch }, { onError: (e) => setError(e.message) })
+    update.mutate({ id: task.id, patch })   // a failure shows as a toast (and the change rolls back)
   }
   function saveTitle() {
     const v = title.trim()
@@ -51,7 +51,7 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
         className="relative w-full max-w-xl bg-surface-raised rounded-overlay flex flex-col max-h-[84vh]"
       >
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
-          <span id={headingId} className="text-sm text-ink-muted truncate">{t.event?.name ?? "Umumiy vazifalar"}{t.section ? ` › ${t.section}` : ""}</span>
+          <span id={headingId} className="text-xs font-medium uppercase tracking-wide text-ink-faint truncate">{t.event?.name ?? "Umumiy vazifalar"}{t.section ? ` › ${t.section}` : ""}</span>
           <span className="flex items-center gap-1">
             {canDelete && (
               <button onClick={del} aria-label="O'chirish" title="O'chirish" className="p-1.5 rounded-item text-ink-muted hover:text-danger-text hover:bg-danger-soft transition-colors">
@@ -72,19 +72,20 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
 
           {error && <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">{error}</div>}
 
-          <dl className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-y-3 text-base">
-            <Row label="Holat"><StatusPicker value={t.status} onChange={(status) => save({ status })} /></Row>
-            <Row label="Mas'ul">
-              <OwnerPicker value={{ assignee_id: t.assignee_id, assignee_name: t.assignee_name }} staff={users.filter((u) => u.is_active)}
-                onChange={(o) => { save(o); setT((c) => ({ ...c, assignee: o.assignee_id ? { full_name: users.find((u) => u.id === o.assignee_id)?.full_name ?? "", avatar_url: null } : null })) }} />
-            </Row>
-            <Row label="Muddat"><DuePicker date={t.due_date} time={t.due_time?.slice(0, 5) ?? null} today={today} onChange={(d, tm) => save({ due_date: d, due_time: d ? tm : null })} /></Row>
-            <Row label="Tadbir">
-              <EventPicker value={t.event_id} events={events}
-                onChange={(id) => { save({ event_id: id, ...(id !== t.event_id ? { section: null } : {}) }); setT((c) => ({ ...c, event: id ? { name: events.find((e) => e.id === id)?.name ?? "" } : null })) }} />
-            </Row>
-            {t.event_id && <Row label="Bo'lim"><SectionPicker value={t.section} sections={t.event_id === task.event_id ? sections : []} onChange={(section) => save({ section })} /></Row>}
-          </dl>
+          {/* Primary: who and by when */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <OwnerPicker tile value={{ assignee_id: t.assignee_id, assignee_name: t.assignee_name }} staff={users.filter((u) => u.is_active)}
+              onChange={(o) => { save(o); setT((c) => ({ ...c, assignee: o.assignee_id ? { full_name: users.find((u) => u.id === o.assignee_id)?.full_name ?? "", avatar_url: null } : null })) }} />
+            <DuePicker tile date={t.due_date} time={t.due_time?.slice(0, 5) ?? null} today={today} open={t.status === "todo" || t.status === "in_progress"}
+              onChange={(d, tm) => save({ due_date: d, due_time: d ? tm : null })} />
+          </div>
+          {/* Secondary: state and where it belongs */}
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPicker value={t.status} onChange={(status) => save({ status })} />
+            <EventPicker value={t.event_id} events={events}
+              onChange={(id) => { save({ event_id: id, ...(id !== t.event_id ? { section: null } : {}) }); setT((c) => ({ ...c, event: id ? { name: events.find((e) => e.id === id)?.name ?? "" } : null })) }} />
+            {t.event_id && <SectionPicker value={t.section} sections={t.event_id === task.event_id ? sections : []} onChange={(section) => save({ section })} />}
+          </div>
 
           <Comments taskId={task.id} />
         </div>
@@ -92,13 +93,6 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
     </div>
   )
 }
-
-const Row = ({ label, children }: { label: string; children: ReactNode }) => (
-  <>
-    <dt className="text-sm text-ink-muted">{label}</dt>
-    <dd className="min-w-0">{children}</dd>
-  </>
-)
 
 function Comments({ taskId }: { taskId: string }) {
   const { data: comments = [], isLoading } = useTaskComments(taskId)
