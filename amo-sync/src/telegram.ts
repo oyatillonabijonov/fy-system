@@ -1,18 +1,17 @@
 // Telegram receipts: drains public.telegram_outbox (migrations 060, 070) into the
 // groups whose switch is on (telegram_groups.payments for money in, .expenses for
-// expenses). Payments go out as a PNG receipt, expenses as a short text.
+// expenses). Both go out as a PNG receipt with a short caption.
 // Woken by pg_notify on every queued row, plus a 30 s poll as a safety net.
 // Disabled (queue just waits) until TELEGRAM_BOT_TOKEN is set.
 
 import type { Sql } from "postgres"
-import { renderReceipt, receiptCaption, money, tashkentTime, type ReceiptData, type ReceiptKind } from "./receipt"
+import { renderReceipt, receiptCaption, type ReceiptData, type ReceiptKind } from "./receipt"
 import { chatsFor } from "./groups"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
 const MAX_ATTEMPTS = 5
 
-type OutboxKind = ReceiptKind | "expense" | "expense_void"
-interface OutboxRow { id: number; kind: OutboxKind; payment_id: string | null; cashback_id: string | null; expense_id: string | null; sent_chats: string[] }
+interface OutboxRow { id: number; kind: ReceiptKind; payment_id: string | null; cashback_id: string | null; expense_id: string | null; sent_chats: string[] }
 
 interface DetailRow {
   ref: string; participant: string; amount: string; at: Date; method: string | null; staff: string | null; reason: string | null
@@ -26,7 +25,7 @@ const paidAt = (sql: Sql) => sql`
   + coalesce((select sum(y.amount) from cashback_transactions y where y.participant_id = ep.id
             and y.type = 'used' and y.created_at <= op.t), 0)`
 
-export async function loadReceipt(sql: Sql, row: OutboxRow & { kind: ReceiptKind }): Promise<ReceiptData | null> {
+export async function loadReceipt(sql: Sql, row: OutboxRow): Promise<ReceiptData | null> {
   // `paid` is as of this operation, not now — a receipt sent late must still show
   // that moment. Computed in SQL: timestamps lose microseconds in JS Dates.
   const [d] = row.payment_id
@@ -74,38 +73,21 @@ export async function loadReceipt(sql: Sql, row: OutboxRow & { kind: ReceiptKind
 }
 
 const CATEGORY: Record<string, string> = { zal: "Zal", spiker: "Spiker", kofe_brek: "Kofe-brek", reklama: "Reklama", maosh: "Maosh", ofis: "Ofis", boshqa: "Boshqa" }
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
-export interface ExpenseData { amount: number; category: string; event: string | null; note: string | null; reason: string | null; staff: string | null; at: Date }
-
-/** The expense message: amount, category · event, note, who and when */
-export function expenseText(kind: "expense" | "expense_void", d: ExpenseData): string {
-  const lines = kind === "expense"
-    ? [`💸 <b>Chiqim · ${money(d.amount)}</b>`]
-    : [`↩️ <b>Chiqim bekor qilindi · <s>${money(d.amount)}</s></b>`]
-  lines.push(`${esc(CATEGORY[d.category] ?? d.category)} · ${esc(d.event ?? "Umumiy xarajat")}`)
-  if (d.note) lines.push(`Izoh: ${esc(d.note)}`)
-  if (kind === "expense_void" && d.reason) lines.push(`Sabab: ${esc(d.reason)}`)
-  lines.push(`${kind === "expense" ? "Kiritdi" : "Bekor qildi"}: ${esc(d.staff ?? "—")} · ${tashkentTime(d.at)}`)
-  return lines.join("\n")
-}
-
-async function loadExpense(sql: Sql, row: OutboxRow): Promise<ExpenseData | null> {
-  const [d] = await sql<{ amount: string; category: string; event: string | null; note: string | null; reason: string | null; staff: string | null; at: Date }[]>`
-    select x.amount, x.category, e.name as event, nullif(btrim(x.note), '') as note, x.void_reason as reason,
+async function loadExpense(sql: Sql, row: OutboxRow): Promise<ReceiptData | null> {
+  const [d] = await sql<{ ref: string; amount: string; category: string; event: string | null; note: string | null; reason: string | null; staff: string | null; at: Date }[]>`
+    select x.id::text as ref, x.amount, x.category, e.name as event, nullif(btrim(x.note), '') as note, x.void_reason as reason,
            case when ${row.kind} = 'expense_void' then vb.full_name else rb.full_name end as staff,
            case when ${row.kind} = 'expense_void' then x.voided_at else x.created_at end as at
     from expenses x left join events e on e.id = x.event_id
     left join profiles rb on rb.id = x.recorded_by left join profiles vb on vb.id = x.voided_by
     where x.id = ${row.expense_id}`
-  return d ? { ...d, amount: Number(d.amount), at: new Date(d.at) } : null
-}
-
-async function tgPost(method: string, body: FormData | Record<string, unknown>): Promise<void> {
-  const res = body instanceof FormData
-    ? await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, { method: "POST", body })
-    : await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-  if (!res.ok) throw new Error(`Telegram ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  if (!d) return null
+  return {
+    kind: row.kind, number: d.ref.slice(0, 8).toUpperCase(), amount: Number(d.amount), at: new Date(d.at),
+    client: CATEGORY[d.category] ?? d.category, phone: null, event: d.event ?? "Umumiy xarajat",
+    method: null, staff: d.staff, reason: row.kind === "expense_void" ? d.reason : null, note: d.note, price: 0, paid: 0,
+  }
 }
 
 async function sendPhoto(chatId: string, png: Uint8Array<ArrayBuffer>, caption: string): Promise<void> {
@@ -113,7 +95,8 @@ async function sendPhoto(chatId: string, png: Uint8Array<ArrayBuffer>, caption: 
   form.append("chat_id", chatId)
   form.append("caption", caption)
   form.append("photo", new Blob([png], { type: "image/png" }), "chek.png")
-  await tgPost("sendPhoto", form)
+  const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: "POST", body: form })
+  if (!res.ok) throw new Error(`Telegram ${res.status}: ${(await res.text()).slice(0, 200)}`)
 }
 
 /** Send one queued row to every group that wants it; groups already done (sent_chats) are skipped on a retry */
@@ -121,20 +104,11 @@ async function deliver(sql: Sql, row: OutboxRow): Promise<string | null> {
   const isExpense = row.kind === "expense" || row.kind === "expense_void"
   const chats = (await chatsFor(sql, isExpense ? "expenses" : "payments")).filter((c) => !row.sent_chats.includes(c))
   if (!chats.length) return row.sent_chats.length ? null : "no group"
-  let send: (chat: string) => Promise<void>
-  if (isExpense) {
-    const d = await loadExpense(sql, row)
-    if (!d) return "source row gone"
-    const text = expenseText(row.kind as "expense" | "expense_void", d)
-    send = (chat) => tgPost("sendMessage", { chat_id: chat, text, parse_mode: "HTML" })
-  } else {
-    const d = await loadReceipt(sql, row as OutboxRow & { kind: ReceiptKind })
-    if (!d) return "source row gone"
-    const png = renderReceipt(d)
-    send = (chat) => sendPhoto(chat, png, receiptCaption(d))
-  }
+  const d = isExpense ? await loadExpense(sql, row) : await loadReceipt(sql, row)
+  if (!d) return "source row gone"
+  const png = renderReceipt(d)
   for (const chat of chats) {
-    await send(chat)
+    await sendPhoto(chat, png, receiptCaption(d))
     await sql`update telegram_outbox set sent_chats = array_append(sent_chats, ${chat}::bigint) where id = ${row.id}`
   }
   return null

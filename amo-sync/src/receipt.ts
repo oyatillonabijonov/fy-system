@@ -1,23 +1,24 @@
-// Payment receipt as a PNG (SVG template → resvg). Fonts are bundled: the
+// Payment / expense receipt as a PNG (SVG template → resvg). Fonts are bundled: the
 // container has none, and client names can be Cyrillic.
 
 import { Resvg } from "@resvg/resvg-js"
 import { join } from "node:path"
 import { readFileSync } from "node:fs"
 
-export type ReceiptKind = "payment" | "refund" | "void" | "cashback"
+export type ReceiptKind = "payment" | "refund" | "void" | "cashback" | "expense" | "expense_void"
 
 export interface ReceiptData {
   kind: ReceiptKind
   number: string            // short id shown as №
   amount: number            // absolute value
   at: Date
-  client: string
+  client: string            // expenses: the category label
   phone: string | null
   event: string
   method: string | null     // naqd | karta | transfer (null for cashback)
   staff: string | null      // who recorded / voided
   reason: string | null     // void reason
+  note?: string | null      // expenses: the note typed with it
   price: number             // agreed amount
   paid: number              // paid so far (after this operation)
 }
@@ -34,7 +35,10 @@ const KIND: Record<ReceiptKind, { title: string; fg: string; bg: string; icon: "
   refund:   { title: "Pul qaytarildi",       fg: "#b45309", bg: "#fdf3e1", icon: "back" },
   void:     { title: "To'lov bekor qilindi", fg: "#b91c1c", bg: "#fdecec", icon: "cross" },
   cashback: { title: "Keshbek ishlatildi",   fg: "#6d28d9", bg: "#f1ebfd", icon: "check" },
+  expense:      { title: "Xarajat kiritildi",     fg: "#b45309", bg: "#fdf3e1", icon: "check" },
+  expense_void: { title: "Xarajat bekor qilindi", fg: "#b91c1c", bg: "#fdecec", icon: "cross" },
 }
+const isExpense = (k: ReceiptKind) => k === "expense" || k === "expense_void"
 const METHOD: Record<string, string> = { naqd: "Naqd", karta: "Karta", transfer: "O'tkazma" }
 const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr"]
 
@@ -64,7 +68,7 @@ function statusIcon(kind: ReceiptKind, cx: number, cy: number): string {
   return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${k.bg}"/><g stroke="${k.fg}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>`
 }
 
-/** "System card" receipt: white card on the page grey, details block, payment progress. */
+/** "System card" receipt: white card on the page grey, details block, payment progress (payments only). */
 export function renderReceipt(d: ReceiptData): Uint8Array<ArrayBuffer> {
   const k = KIND[d.kind]
   const W = 720, P = 28, X = P + 36, R = W - P - 36
@@ -76,7 +80,7 @@ export function renderReceipt(d: ReceiptData): Uint8Array<ArrayBuffer> {
   // Header: logo + receipt number
   let y = P + 44
   parts.push(`<image href="${LOGO}" x="${X}" y="${y}" width="200" height="40"/>`)
-  text(R, y + 18, "To'lov cheki", 19, 500, "#1c1c1c", "end")
+  text(R, y + 18, isExpense(d.kind) ? "Xarajat cheki" : "To'lov cheki", 19, 500, "#1c1c1c", "end")
   text(R, y + 42, `№ ${d.number}`, 16, 400, "#8f8f8f", "end")
 
   // Status + time
@@ -87,18 +91,22 @@ export function renderReceipt(d: ReceiptData): Uint8Array<ArrayBuffer> {
 
   // Amount
   y += 116
-  const amount = (d.kind === "refund" || d.kind === "void" ? "−" : "") + num(d.amount)
+  const amount = (d.kind === "payment" || d.kind === "cashback" ? "" : "−") + num(d.amount)
   // One <text> with a tspan: "so'm" follows the digits exactly, whatever their width
-  parts.push(`<text x="${X}" y="${y}" font-family="DM Sans, Inter" font-size="66" font-weight="600" letter-spacing="-2" fill="${d.kind === "void" ? "#a3a3a3" : "#1c1c1c"}">${esc(amount)}<tspan dx="14" font-size="30" font-weight="500" letter-spacing="0" fill="#8f8f8f">so'm</tspan></text>`)
+  parts.push(`<text x="${X}" y="${y}" font-family="DM Sans, Inter" font-size="66" font-weight="600" letter-spacing="-2" fill="${d.kind === "void" || d.kind === "expense_void" ? "#a3a3a3" : "#1c1c1c"}">${esc(amount)}<tspan dx="14" font-size="30" font-weight="500" letter-spacing="0" fill="#8f8f8f">so'm</tspan></text>`)
 
   // Details block
-  const rows: [string, string][] = [
-    ["Mijoz", d.client],
-    ["Telefon", d.phone ? d.phone.replace(/^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/, "+998 $1 $2 $3 $4") : "—"],
-    ["Tadbir", d.event],
-  ]
+  const voided = d.kind === "void" || d.kind === "expense_void"
+  const rows: [string, string][] = isExpense(d.kind)
+    ? [["Kategoriya", d.client], ["Tadbir", d.event]]
+    : [
+        ["Mijoz", d.client],
+        ["Telefon", d.phone ? d.phone.replace(/^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/, "+998 $1 $2 $3 $4") : "—"],
+        ["Tadbir", d.event],
+      ]
+  if (d.note) rows.push(["Izoh", d.note])
   if (d.method) rows.push(["To'lov usuli", METHOD[d.method] ?? d.method])
-  if (d.staff) rows.push([d.kind === "void" ? "Bekor qildi" : "Kassir", d.staff])
+  if (d.staff) rows.push([voided ? "Bekor qildi" : isExpense(d.kind) ? "Kiritdi" : "Kassir", d.staff])
   if (d.reason) rows.push(["Sabab", d.reason])
 
   y += 44
@@ -116,19 +124,21 @@ export function renderReceipt(d: ReceiptData): Uint8Array<ArrayBuffer> {
   y += 28
   parts.push(`<rect x="${X}" y="${boxY}" width="${R - X}" height="${y - boxY}" rx="18" fill="#f7f7f7"/>`, ...rowParts)
 
-  // Payment progress
+  // Payment progress (an expense has no debt to show)
   const pct = d.price > 0 ? Math.min(d.paid / d.price, 1) : 0
-  y += 52
-  text(X, y, "To'lov holati", 19, 500, "#1c1c1c")
-  text(R, y, `${Math.round(pct * 100)}%`, 19, 600, "#1c1c1c", "end")
-  y += 20
-  parts.push(`<rect x="${X}" y="${y}" width="${R - X}" height="10" rx="5" fill="#eeeeee"/>`)
-  if (pct > 0) parts.push(`<rect x="${X}" y="${y}" width="${Math.max((R - X) * pct, 10)}" height="10" rx="5" fill="${debt === 0 ? "#15803d" : "#1c1c1c"}"/>`)
-  y += 44
-  text(X, y, `To'langan ${num(d.paid)} / ${money(d.price)}`, 17, 400, "#8f8f8f")
-  y += 40
-  text(X, y, "Qoldiq", 21, 600, "#1c1c1c")
-  text(R, y, debt === 0 ? "To'liq to'langan" : money(debt), 21, 600, debt === 0 ? "#15803d" : "#1c1c1c", "end")
+  if (!isExpense(d.kind)) {
+    y += 52
+    text(X, y, "To'lov holati", 19, 500, "#1c1c1c")
+    text(R, y, `${Math.round(pct * 100)}%`, 19, 600, "#1c1c1c", "end")
+    y += 20
+    parts.push(`<rect x="${X}" y="${y}" width="${R - X}" height="10" rx="5" fill="#eeeeee"/>`)
+    if (pct > 0) parts.push(`<rect x="${X}" y="${y}" width="${Math.max((R - X) * pct, 10)}" height="10" rx="5" fill="${debt === 0 ? "#15803d" : "#1c1c1c"}"/>`)
+    y += 44
+    text(X, y, `To'langan ${num(d.paid)} / ${money(d.price)}`, 17, 400, "#8f8f8f")
+    y += 40
+    text(X, y, "Qoldiq", 21, 600, "#1c1c1c")
+    text(R, y, debt === 0 ? "To'liq to'langan" : money(debt), 21, 600, debt === 0 ? "#15803d" : "#1c1c1c", "end")
+  }
 
   // Footer
   y += 56
@@ -151,8 +161,11 @@ ${parts.join("\n")}
   return new Uint8Array(png)
 }
 
-/** Short caption under the photo: kind, amount, time, client */
+/** Short caption under the photo: kind, amount, time, client (expenses: category · event, then the note) */
 export function receiptCaption(d: ReceiptData): string {
-  const icon = { payment: "🧾", refund: "↩️", void: "❌", cashback: "🎁" }[d.kind]
-  return `${icon} ${KIND[d.kind].title}: ${money(d.amount)}\n${d.client} · ${tashkentTime(d.at)}`
+  const icon = { payment: "🧾", refund: "↩️", void: "❌", cashback: "🎁", expense: "💸", expense_void: "❌" }[d.kind]
+  const head = `${icon} ${KIND[d.kind].title}: ${money(d.amount)}`
+  if (!isExpense(d.kind)) return `${head}\n${d.client} · ${tashkentTime(d.at)}`
+  const why = d.kind === "expense_void" ? d.reason && `Sabab: ${d.reason}` : d.note && `Izoh: ${d.note}`
+  return [head, `${d.client} · ${d.event} · ${tashkentTime(d.at)}`, why].filter(Boolean).join("\n")
 }
