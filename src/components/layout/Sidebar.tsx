@@ -209,7 +209,7 @@ export function Sidebar() {
                     <MagnifyingGlass
                         size={16}
                        
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none"
                     />
                     <input
                         type="text"
@@ -217,7 +217,7 @@ export function Sidebar() {
                         aria-label="Menyudan qidirish"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-control-md rounded-full pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface border border-transparent outline-none transition-colors focus:border-line-focus"
+                        className="w-full h-control-md rounded-full pl-9 pr-3 text-base text-ink placeholder:text-ink-muted bg-surface border border-transparent outline-none transition-colors focus:border-line-focus"
                     />
                 </div>
             )}
