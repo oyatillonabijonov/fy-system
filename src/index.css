@@ -671,26 +671,6 @@
   }
 }
 
-/* Login page — Stripe-style gradient mesh blobs */
-@keyframes blob {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  50% {
-    transform: translate(-20px, 30px) scale(0.95);
-  }
-  75% {
-    transform: translate(40px, 20px) scale(1.05);
-  }
-}
-
-.animate-blob {
-  animation: blob 18s ease-in-out infinite;
-}
-
 /* Keyboard focus ring for controls (text fields show focus through their border colour instead).
    Unlayered on purpose so it wins over the `outline-none` utility. */
 :where(button, a, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
@@ -699,7 +679,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-blob,
   .animate-in {
     animation: none;
   }

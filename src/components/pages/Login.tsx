@@ -14,19 +14,9 @@ export function Login() {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Gradient mesh background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-page-subtle via-page to-page-subtle" />
-
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-40 blur-[100px] animate-blob"
-          style={{ background: "radial-gradient(circle, #635BFF 0%, #00D4FF 100%)", animationDelay: "0s" }} />
-        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full opacity-35 blur-[100px] animate-blob"
-          style={{ background: "radial-gradient(circle, #FF6B9D 0%, #FFA06B 100%)", animationDelay: "2s" }} />
-        <div className="absolute -bottom-32 -left-20 w-[550px] h-[550px] rounded-full opacity-30 blur-[100px] animate-blob"
-          style={{ background: "radial-gradient(circle, #00D4A8 0%, #00B4D8 100%)", animationDelay: "4s" }} />
-        <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full opacity-30 blur-[100px] animate-blob"
-          style={{ background: "radial-gradient(circle, #FFD93D 0%, #FF6B35 100%)", animationDelay: "6s" }} />
-      </div>
+      {/* Club photo background; a light shade keeps the footer text readable */}
+      <img src="/images/login-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-black/25" />
 
       <div className="relative z-10 w-full max-w-[400px]">
         <div className="bg-surface border border-line rounded-overlay p-8 flex flex-col gap-7">
@@ -45,7 +35,7 @@ export function Login() {
           <LoginForm onSuccess={() => navigate("/dashboard", { replace: true })} />
         </div>
 
-        <p className="text-center text-sm text-ink-muted mt-5">
+        <p className="text-center text-sm text-white/85 mt-5">
           © 2026 Fikr Yetakchilari · Biznes Klub
         </p>
       </div>
