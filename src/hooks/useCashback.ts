@@ -28,6 +28,7 @@ export function useCashbackHistory(clientId: string | null | undefined) {
 export function useAdjustCashback() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { silent: true },
     mutationFn: (vars: { clientId: string; amount: number; type: "add" | "subtract"; description: string }) =>
       adjustCashback(vars.clientId, vars.amount, vars.type, vars.description),
     onSuccess: (_data, vars) => {
@@ -53,6 +54,7 @@ export function useCashbackNextExpiry(clientId: string | null | undefined) {
 export function useSetParticipantCashbackPercent(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Keshbek foizi saqlandi" },
     mutationFn: (vars: { participantId: string; percent: number | null }) =>
       setParticipantCashbackPercent(vars.participantId, vars.percent),
     onSuccess: () => {
@@ -65,6 +67,7 @@ export function useSetParticipantCashbackPercent(eventId: string) {
 export function useSetEventCashbackPercent() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Keshbek foizi saqlandi" },
     mutationFn: (vars: { eventId: string; percent: number }) =>
       setEventCashbackPercent(vars.eventId, vars.percent),
     onSuccess: (_data, vars) => {
@@ -77,6 +80,7 @@ export function useSetEventCashbackPercent() {
 export function useSpendCashback() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Keshbek qo'llandi", silent: true },
     mutationFn: spendCashback,
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: CLIENTS_KEY })

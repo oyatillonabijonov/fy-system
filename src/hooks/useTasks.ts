@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getEventTasks,
+  getTaskCounts,
   getMyTasks,
   createTask,
   updateTask,
@@ -23,6 +24,10 @@ export function useEventTasks(eventId: string | null) {
   })
 }
 
+export function useTaskCounts() {
+  return useQuery({ queryKey: [...TASKS_KEY, "counts"], queryFn: getTaskCounts, refetchOnMount: true })
+}
+
 export function useMyTasks(userId: string | undefined) {
   return useQuery<Task[]>({
     queryKey: [...TASKS_KEY, "mine", userId],
@@ -40,21 +45,24 @@ export function useTaskComments(taskId: string | null) {
   })
 }
 
-function useTaskMutation<V>(fn: (v: V) => Promise<unknown>) {
+// silent = the dialog shows the error itself
+function useTaskMutation<V>(fn: (v: V) => Promise<unknown>, success?: (data: unknown, vars: unknown) => string | null, silent = false) {
   const qc = useQueryClient()
-  return useMutation({ mutationFn: fn, onSettled: () => qc.invalidateQueries({ queryKey: TASKS_KEY }) })
+  return useMutation({ mutationFn: fn, onSettled: () => qc.invalidateQueries({ queryKey: TASKS_KEY }), meta: { success, silent } })
 }
 
-export const useCreateTask = () => useTaskMutation((d: TaskDraft & { sort_order: number }) => createTask(d))
-export const useDeleteTask = () => useTaskMutation((id: string) => deleteTask(id))
-export const useCopyEventTasks = () => useTaskMutation((v: { from: string; to: string }) => copyEventTasks(v.from, v.to))
-export const useAddTaskComment = () => useTaskMutation((v: { taskId: string; body: string }) => addTaskComment(v.taskId, v.body))
+export const useCreateTask = () => useTaskMutation((d: TaskDraft & { sort_order: number }) => createTask(d), () => "Vazifa qo'shildi", true)
+export const useDeleteTask = () => useTaskMutation((id: string) => deleteTask(id), () => "Vazifa o'chirildi", true)
+export const useCopyEventTasks = () => useTaskMutation((v: { from: string; to: string }) => copyEventTasks(v.from, v.to), (n) => `${n} ta vazifa ko'chirildi`, true)
+export const useAddTaskComment = () => useTaskMutation((v: { taskId: string; body: string }) => addTaskComment(v.taskId, v.body), () => "Izoh qo'shildi")
 
 /** Optimistic, so a kanban drop or a status pick moves at once */
 export function useUpdateTask() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (v: { id: string; patch: Partial<TaskDraft> }) => updateTask(v.id, v.patch),
+    // Only the finish line is announced — every inline edit would be noise
+    meta: { success: (_d, vars) => ((vars as { patch: Partial<TaskDraft> }).patch.status === "done" ? "Vazifa bajarildi" : null) },
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: TASKS_KEY })
       const snapshot = qc.getQueriesData<Task[]>({ queryKey: TASKS_KEY })

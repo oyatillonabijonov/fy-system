@@ -70,6 +70,7 @@ export function useEventTariffs(eventId: string) {
 export function useCreateEvent() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Tadbir yaratildi" },
     mutationFn: (input: CreateEventInput) => createEvent(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: EVENTS_KEY })
@@ -81,6 +82,7 @@ export function useCreateEvent() {
 export function useDeleteEvent() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Tadbir o'chirildi" },
     mutationFn: (id: string) => deleteEvent(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: EVENTS_KEY })
@@ -108,6 +110,7 @@ export function useDeleteEvent() {
 export function useEnrollParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Ishtirokchi qo'shildi", silent: true },
     mutationFn: (vars: Omit<EnrollInput, "eventId">) => enrollParticipant({ ...vars, eventId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })
@@ -126,6 +129,7 @@ export function useEnrollParticipant(eventId: string) {
 export function useUpdateParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Saqlandi" },
     mutationFn: (vars: { id: string; updates: Parameters<typeof updateParticipant>[1] }) =>
       updateParticipant(vars.id, vars.updates),
     onSuccess: () => {
@@ -142,6 +146,7 @@ export function useUpdateParticipant(eventId: string) {
 export function useDeleteParticipant(eventId: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { success: "Ishtirokchi o'chirildi" },
     mutationFn: (id: string) => deleteParticipant(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: [...PARTICIPANTS_KEY, eventId] })

@@ -1,22 +1,20 @@
 import { useId, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Plus, Copy, Rows, Kanban, CheckCircle, CaretDown } from "@phosphor-icons/react"
+import { Plus, Copy, Rows, Kanban, CheckCircle, CaretDown, CalendarBlank, Tray } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useEvents } from "@/hooks/useEvents"
-import { useUsers } from "@/hooks/useUsers"
-import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks } from "@/hooks/useTasks"
+import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks, useTaskCounts } from "@/hooks/useTasks"
 import type { Task, TaskStatus } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { TaskCreate } from "@/components/vazifalar/TaskCreate"
 import { TaskPanel } from "@/components/vazifalar/TaskPanel"
 import { TaskKanban } from "@/components/vazifalar/TaskKanban"
 import { StatusSelect, StatusMark, Owner, DueChip, CommentCount, SectionChip, sectionColor } from "@/components/vazifalar/taskUi"
+import { PersonDot } from "@/components/vazifalar/pickers"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 
 const GENERAL = "umumiy"
 const VIEW_KEY = "fy_tasks_view"
-// toolbar selects size to their content (INPUT is full-width for forms)
-const PICK = "h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface focus:outline-none focus:border-line-focus transition-colors"
 const NO_SECTION = "Bo'limsiz"
 
 type Editing = { task: Task | null; section?: string | null; status?: TaskStatus } | null
@@ -46,7 +44,6 @@ export function Vazifalar() {
 function EventTasks() {
   const [params, setParams] = useSearchParams()
   const { data: events = [] } = useEvents()
-  const { data: users = [] } = useUsers()
   const today = tashkentToday()
 
   // Default: the nearest event still ahead, else the latest one, else "Umumiy"
@@ -67,24 +64,67 @@ function EventTasks() {
   const [copying, setCopying] = useState(false)
 
   const { data: tasks = [], isLoading } = useEventTasks(eventId)
-  const shown = ownerFilter ? tasks.filter((t) => (ownerFilter === "outside" ? !t.assignee_id && t.assignee_name : t.assignee_id === ownerFilter)) : tasks
+  const { data: counts = {} } = useTaskCounts()
+  // Upcoming events first (soonest first), then past ones (latest first)
+  const isPast = (e: { date: string | null; end_date: string | null }) => !!e.date && (e.end_date ?? e.date).slice(0, 10) < today
+  const ordered = useMemo(() => {
+    const d = (e: { date: string | null }) => e.date ?? "9999"
+    return [...events.filter((e) => !isPast(e)).sort((a, b) => d(a).localeCompare(d(b))), ...events.filter(isPast).sort((a, b) => d(b).localeCompare(d(a)))]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isPast only reads `today`
+  }, [events, today])
+  // People who own tasks in this list — staff by id, outside people by name
+  const owners = useMemo(() => {
+    const m = new Map<string, { key: string; name: string; outside: boolean }>()
+    for (const t of tasks) {
+      if (t.assignee_id && t.assignee) m.set(t.assignee_id, { key: t.assignee_id, name: t.assignee.full_name, outside: false })
+      else if (t.assignee_name) m.set(`x:${t.assignee_name}`, { key: `x:${t.assignee_name}`, name: t.assignee_name, outside: true })
+    }
+    return [...m.values()]
+  }, [tasks])
+  const shown = ownerFilter ? tasks.filter((t) => (t.assignee_id ?? `x:${t.assignee_name}`) === ownerFilter) : tasks
   const sections = useMemo(() => [...new Set(tasks.map((t) => t.section).filter((s): s is string => !!s))], [tasks])
   const done = tasks.filter((t) => t.status === "done").length
   const nextSort = tasks.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <select aria-label="Tadbir" value={selected} onChange={(e) => setEvent(e.target.value)} className={`${PICK} min-w-[220px] max-w-[320px]`}>
-          {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          <option value={GENERAL}>Umumiy vazifalar</option>
-        </select>
-        <select aria-label="Mas'ul" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className={PICK}>
-          <option value="">Barcha mas'ullar</option>
-          {users.filter((u) => u.is_active).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-          <option value="outside">Tashqi mas'ullar</option>
-        </select>
+      {/* Scope: one tab per event (date + open count), "Umumiy" apart */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-0.5" role="tablist" aria-label="Tadbir">
+        {ordered.map((e) => (
+          <ScopeTab key={e.id} active={selected === e.id} onClick={() => setEvent(e.id)} label={e.name}
+            hint={e.date ? shortDate(e.date) : null} count={counts[e.id]?.open} past={isPast(e)} />
+        ))}
+        <span className="w-px h-6 bg-line mx-1.5 shrink-0" />
+        <ScopeTab active={selected === GENERAL} onClick={() => setEvent(GENERAL)} label="Umumiy" icon count={counts[GENERAL]?.open} />
+      </div>
+
+      {/* Filters and actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        {owners.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-ink-muted">Mas'ul:</span>
+            <div className="flex items-center -space-x-1.5">
+              {owners.map((o) => (
+                <button key={o.key} type="button" onClick={() => setOwnerFilter(ownerFilter === o.key ? "" : o.key)}
+                  title={o.name} aria-label={o.name} aria-pressed={ownerFilter === o.key}
+                  className={`rounded-full ring-2 transition-transform hover:-translate-y-0.5 ${ownerFilter === o.key ? "ring-ink z-10" : "ring-surface"}`}>
+                  <PersonDot name={o.name} outside={o.outside} size={28} />
+                </button>
+              ))}
+            </div>
+            {ownerFilter && (
+              <button type="button" onClick={() => setOwnerFilter("")} className="h-7 px-2.5 rounded-full text-sm text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+                {owners.find((o) => o.key === ownerFilter)?.name.split(" ")[0]} · tozalash
+              </button>
+            )}
+          </div>
+        )}
+        <div className="flex-1" />
+        {tasks.length > 0 && (
+          <span className="flex items-center gap-1.5 text-sm text-ink-muted tabular-nums">
+            <CheckCircle size={16} />{done}/{tasks.length} bajarildi
+          </span>
+        )}
         <div role="radiogroup" aria-label="Ko'rinish" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {([["list", "Ro'yxat", Rows], ["kanban", "Kanban", Kanban]] as const).map(([id, label, Icon]) => (
             <button key={id} role="radio" aria-checked={view === id} onClick={() => setView(id)}
@@ -93,12 +133,6 @@ function EventTasks() {
             </button>
           ))}
         </div>
-        <div className="flex-1" />
-        {tasks.length > 0 && (
-          <span className="flex items-center gap-1.5 text-sm text-ink-muted tabular-nums">
-            <CheckCircle size={16} />{done}/{tasks.length} bajarildi
-          </span>
-        )}
         {eventId && (
           <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-control text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors">
             <Copy size={16} />Nusxa olish
@@ -219,7 +253,7 @@ function CopyModal({ toEventId, onClose }: { toEventId: string; onClose: () => v
       pending={copy.isPending}
       onClose={onClose}
       onSubmit={() => copy.mutate({ from, to: toEventId }, {
-        onSuccess: (n) => { window.alert(`${n} ta vazifa ko'chirildi`); onClose() },
+        onSuccess: onClose,
         onError: (e) => setError(e.message),
       })}
     >
@@ -277,6 +311,25 @@ function addDays(day: string, n: number): string {
   const d = new Date(`${day}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
+}
+
+const MONTHS_SHORT = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"]
+const shortDate = (iso: string) => `${Number(iso.slice(8, 10))}-${MONTHS_SHORT[Number(iso.slice(5, 7)) - 1]}`
+
+function ScopeTab({ active, onClick, label, hint, count, icon, past }: {
+  active: boolean; onClick: () => void; label: string; hint?: string | null; count?: number; icon?: boolean; past?: boolean
+}) {
+  return (
+    <button type="button" role="tab" aria-selected={active} onClick={onClick}
+      className={`shrink-0 inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-full text-base font-medium transition-colors ${
+        active ? "bg-accent text-ink-on-accent" : past ? "text-ink-faint hover:text-ink hover:bg-mute-ghost-hover" : "text-ink-muted hover:text-ink hover:bg-mute-ghost-hover"
+      }`}>
+      {icon ? <Tray size={16} /> : <CalendarBlank size={16} />}
+      <span className="max-w-[220px] truncate">{label}</span>
+      {hint && <span className={active ? "opacity-70" : "text-ink-faint"}>{hint}</span>}
+      <span className={`min-w-6 h-6 px-1.5 rounded-full text-sm tabular-nums inline-flex items-center justify-center ${active ? "bg-ink-on-accent/20" : "bg-surface-sunken"}`}>{count ?? 0}</span>
+    </button>
+  )
 }
 
 function Empty({ text }: { text: string }) {

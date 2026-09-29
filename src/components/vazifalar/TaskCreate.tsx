@@ -83,12 +83,16 @@ export function TaskCreate({ defaults, sections, nextSortOrder, onClose }: {
             aria-label="Vazifa nomi"
             className="w-full resize-none bg-transparent text-xl font-medium text-ink placeholder:text-ink-faint focus:outline-none leading-snug"
           />
-          <div className="flex flex-wrap gap-2">
+          {/* Primary: who and by when */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <OwnerPicker tile value={owner} staff={users.filter((u) => u.is_active)} onChange={setOwner} />
+            <DuePicker tile date={date} time={time} today={today} onChange={(d, t) => { setDate(d); setTime(t) }} />
+          </div>
+          {/* Secondary: where it belongs and its state */}
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPicker value={status} onChange={setStatus} />
             <EventPicker value={eventId} events={events} onChange={(id) => { setEventId(id); if (id !== defaults.event_id) setSection(null) }} />
             {eventId && <SectionPicker value={section} sections={sectionList} onChange={setSection} />}
-            <OwnerPicker value={owner} staff={users.filter((u) => u.is_active)} onChange={setOwner} />
-            <DuePicker date={date} time={time} today={today} onChange={(d, t) => { setDate(d); setTime(t) }} />
-            <StatusPicker value={status} onChange={setStatus} />
           </div>
           {error && <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">{error}</div>}
         </div>
