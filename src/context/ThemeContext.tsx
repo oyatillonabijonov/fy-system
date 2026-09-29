@@ -10,15 +10,14 @@ export const MODES: { id: ThemeId; label: string }[] = [
     { id: 'dark', label: "Qorong'i" },
 ]
 
-export type PhotoId = 'sea' | 'red' | 'arch' | 'sand'
+export type PhotoId = 'desert' | 'night' | 'field'
 
-/** Optional photo ground, on top of any mode. The sidebar floats over it as a glass
- *  panel — dark glass on dark photos, light glass on light ones (tone). */
-export const PHOTOS: { id: PhotoId; label: string; tone: 'dark' | 'light' }[] = [
-    { id: 'sea', label: 'Dengiz', tone: 'dark' },
-    { id: 'red', label: 'Qizil', tone: 'dark' },
-    { id: 'arch', label: 'Arxitektura', tone: 'dark' },
-    { id: 'sand', label: 'Qum', tone: 'light' },
+/** Optional photo ground, on top of any mode. It only frames the app: the sidebar
+ *  and the main card stay solid in the mode's own colours, so contrast never drops. */
+export const PHOTOS: { id: PhotoId; label: string }[] = [
+    { id: 'desert', label: 'Sahro' },
+    { id: 'night', label: 'Tun' },
+    { id: 'field', label: 'Dala' },
 ]
 export const photoThumb = (id: PhotoId) => `/images/thumb-${id}.jpg`
 
@@ -60,8 +59,7 @@ function getInitialTheme(): ThemeId {
 function getInitialPhoto(): PhotoId | null {
     try {
         const saved = localStorage.getItem(PHOTO_KEY)
-        if (PHOTOS.some((p) => p.id === saved)) return saved as PhotoId
-        if (localStorage.getItem(THEME_KEY) === 'photo') return 'sea'   // the old "Manzara" theme
+        if (PHOTOS.some((p) => p.id === saved)) return saved as PhotoId   // retired photos fall back to none
     } catch { /* private browsing */ }
     return null
 }
@@ -101,11 +99,7 @@ export function useTheme() {
     return ctx
 }
 
-/** Which token scope the sidebar sits in: dark in dark/contrast, and on a dark photo */
+/** The sidebar's token scope: dark in Kontrast (in Qorong'i the root is dark already) */
 export function useSidebarScope(): 'dark' | undefined {
-    const { themeId, photo } = useTheme()
-    const tone = PHOTOS.find((p) => p.id === photo)?.tone
-    if (themeId === 'dark') return undefined              // the root is dark already
-    if (photo) return tone === 'dark' ? 'dark' : undefined
-    return themeId === 'contrast' ? 'dark' : undefined
+    return useTheme().themeId === 'contrast' ? 'dark' : undefined
 }
