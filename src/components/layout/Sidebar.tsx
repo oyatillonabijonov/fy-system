@@ -12,6 +12,7 @@ import {
     SquaresFour,
     Coins,
     ClockCounterClockwise,
+    ListChecks,
     type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
@@ -57,6 +58,7 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
+            { name: "Vazifalar", icon: ListChecks, path: "/vazifalar" },
             {
                 name: "Menejment",
                 icon: CalendarBlank,

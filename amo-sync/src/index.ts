@@ -10,7 +10,8 @@
 //   lead status changes (events)           incremental by created_at
 //   open tasks                             full replace
 //   + settle_event_cashback() and expire_cashback() (not AmoCRM — see expireCashback below)
-// Alongside the loop: Telegram payment receipts (src/telegram.ts), event-driven.
+// Alongside the loop: Telegram payment receipts (src/telegram.ts), event-driven;
+// and once a day the Vazifalar reminder to the team group (src/tasks.ts).
 //
 // Env: DATABASE_URL, AMO_SUBDOMAIN, AMO_TOKEN (long-lived), SYNC_INTERVAL_MIN (10),
 //      EVENTS_FROM (2025-01-01, first backfill of status history).
@@ -18,6 +19,7 @@
 
 import postgres from "postgres"
 import { startTelegram } from "./telegram"
+import { taskDigest } from "./tasks"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -250,6 +252,7 @@ async function runOnce(): Promise<void> {
     console.error(`[amo-sync] xatolik: ${msg}`)
   }
   await expireCashback()
+  await taskDigest(sql)
 }
 
 // Not AmoCRM, but this is the system's only scheduled worker (CLAUDE.md): cashback

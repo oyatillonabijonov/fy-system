@@ -55,6 +55,12 @@ export function Sozlamalar() {
 
 // ─── Profile Form ───────────────────────────────────────
 
+/** "username", "@username" or a t.me link → "@username"; empty → null */
+function normTelegram(v: string): string | null {
+  const u = v.trim().replace(/^(https?:\/\/)?t\.me\//i, "").replace(/^@/, "")
+  return u ? `@${u}` : null
+}
+
 function ProfileTab({
   user,
   showToast,
@@ -66,6 +72,7 @@ function ProfileTab({
   const uid = useId()
   const [fullName, setFullName] = useState(user.full_name)
   const [phone, setPhone] = useState(user.phone ?? "")
+  const [telegram, setTelegram] = useState(user.telegram ?? "")
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url)
   const [saving, setSaving] = useState(false)
 
@@ -120,6 +127,7 @@ function ProfileTab({
       await updateMyProfile({
         full_name: fullName.trim() || user.full_name,
         phone: phone.trim() || null,
+        telegram: normTelegram(telegram),
       })
       await refreshProfile()
       showToast("Profil saqlandi")
@@ -154,7 +162,7 @@ function ProfileTab({
     }
   }
 
-  const dirty = fullName.trim() !== user.full_name || (phone.trim() || null) !== (user.phone ?? null)
+  const dirty = fullName.trim() !== user.full_name || (phone.trim() || null) !== (user.phone ?? null) || normTelegram(telegram) !== (user.telegram ?? null)
 
   return (
     <div className="flex flex-col">
@@ -184,7 +192,7 @@ function ProfileTab({
       </SettingsRow>
 
       {/* Personal info */}
-      <SettingsRow title="Shaxsiy ma'lumotlar" desc="Ism va telefoningizni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
+      <SettingsRow title="Shaxsiy ma'lumotlar" desc="Ism, telefon va Telegram'ni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${uid}-full-name`} className={labelCls}>Ism familiya</label>
@@ -193,6 +201,11 @@ function ProfileTab({
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${uid}-phone`} className={labelCls}>Telefon</label>
             <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${uid}-telegram`} className={labelCls}>Telegram username</label>
+            <input id={`${uid}-telegram`} type="text" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="@username" className={inputCls} />
+            <span className="text-xs text-ink-muted">Vazifa eslatmalarida guruhda shu username bilan belgilanasiz</span>
           </div>
           <ReadOnly label="Email" value={user.email} />
           <ReadOnly label="Rol" value={ROLE_LABELS[user.role]} />
