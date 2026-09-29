@@ -4,7 +4,7 @@ import { soundOn, setSoundOn } from "@/lib/sound"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
-import { useTheme, type ThemeId, type LangId } from "@/context/ThemeContext"
+import { useTheme, THEMES, type ThemeId, type LangId } from "@/context/ThemeContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
@@ -250,12 +250,12 @@ function ProfileTab({
 
 // ─── Appearance + language (device preferences, not saved to the profile) ───
 
-const THEME_OPTIONS: { id: ThemeId; label: string; ground: string; card: string }[] = [
-  { id: "light",    label: "Yorug'",   ground: "#f2f2f2", card: "#ffffff" },
-  { id: "contrast", label: "Kontrast", ground: "#0b0b0c", card: "#ffffff" },
-  { id: "dark",     label: "Qorong'i", ground: "#0b0b0c", card: "#141416" },
-  { id: "photo",    label: "Manzara",  ground: "url(/images/login-sea.jpg) center / cover", card: "#ffffff" },
-]
+const PREVIEW: Partial<Record<ThemeId, { ground: string; card: string }>> = {
+  light:    { ground: "#f2f2f2", card: "#ffffff" },
+  contrast: { ground: "#0b0b0c", card: "#ffffff" },
+  dark:     { ground: "#0b0b0c", card: "#141416" },
+}
+const THEME_OPTIONS = THEMES.map((t) => ({ ...t, ...(PREVIEW[t.id] ?? { ground: t.swatch, card: "#ffffff" }) }))
 
 const LANG_OPTIONS: { id: LangId; label: string }[] = [
   { id: "uz", label: "O'zbekcha" },

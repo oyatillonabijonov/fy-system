@@ -702,10 +702,15 @@ select:not(.appearance-none):not([multiple]) {
 /* "Contrast" theme: light tokens everywhere except the ground and the sidebar,
    which sits in a data-theme="dark" scope (see Sidebar.tsx). */
 :root[data-theme="contrast"] .app-ground { background-color: #0b0b0c; }
-/* "Manzara": Kontrast with the login photo as the ground; the flat shade keeps the
-   sidebar's light text readable on it. */
+/* Photo themes: Kontrast with a photo as the ground; the flat shade keeps the
+   sidebar's light text readable on it. data-photo (ThemeContext) picks the image
+   and how much shade it needs. */
+:root[data-theme="photo"] { --photo: url("/images/login-sea.jpg"); --photo-shade: 0.55; }
+:root[data-photo="photo-sky"] { --photo: url("/images/bg-sky.jpg"); --photo-shade: 0.45; }
+:root[data-photo="photo-car"] { --photo: url("/images/bg-car.jpg"); --photo-shade: 0.5; }
+:root[data-photo="photo-city"] { --photo: url("/images/bg-city.jpg"); --photo-shade: 0.25; }
 :root[data-theme="photo"] .app-ground {
-  background: linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55)), url("/images/login-sea.jpg") center / cover;
+  background: linear-gradient(rgb(0 0 0 / var(--photo-shade)), rgb(0 0 0 / var(--photo-shade))), var(--photo) center / cover;
 }
 /* On the photo the sidebar's dark fills vanish; make its controls translucent white
    (menus use surface-raised and stay solid). */
