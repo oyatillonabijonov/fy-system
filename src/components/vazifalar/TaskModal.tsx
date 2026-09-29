@@ -42,12 +42,13 @@ export function TaskModal({
   const [outsideName, setOutsideName] = useState(task?.assignee_name ?? "")
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? defaults?.status ?? "todo")
   const [due, setDue] = useState(task?.due_date ?? "")
+  const [dueTime, setDueTime] = useState(task?.due_time?.slice(0, 5) ?? "")
   const [error, setError] = useState<string | null>(null)
 
   const pending = create.isPending || update.isPending || remove.isPending
   const guardedClose = () => !pending && onClose()
   const panelRef = useDialog<HTMLDivElement>(guardedClose, true)
-  const ids = { title: useId(), heading: useId(), event: useId(), section: useId(), sections: useId(), owner: useId(), outside: useId(), due: useId() }
+  const ids = { title: useId(), heading: useId(), event: useId(), section: useId(), sections: useId(), owner: useId(), outside: useId(), due: useId(), dueTime: useId() }
   const canSave = title.trim().length > 0 && (owner !== OUTSIDE || outsideName.trim().length > 0) && !pending
   const canDelete = !!task && (task.created_by === user?.id || user?.role === "admin")
 
@@ -61,6 +62,7 @@ export function TaskModal({
       assignee_id: owner && owner !== OUTSIDE ? owner : null,
       assignee_name: owner === OUTSIDE ? outsideName.trim() : null,
       due_date: due || null,
+      due_time: due && dueTime ? dueTime : null,
     }
     const done = { onSuccess: onClose, onError: (e: Error) => setError(e.message) }
     if (task) update.mutate({ id: task.id, patch: draft }, done)
@@ -125,8 +127,14 @@ export function TaskModal({
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label htmlFor={ids.due} className={LABEL}>Muddat</label>
-                <input id={ids.due} type="date" value={due} onChange={(e) => setDue(e.target.value)} className={INPUT} />
+                <span className={LABEL}>Muddat</span>
+                <div className="flex gap-2">
+                  <label htmlFor={ids.due} className="sr-only">Sana</label>
+                  <input id={ids.due} type="date" value={due} onChange={(e) => { setDue(e.target.value); if (!e.target.value) setDueTime("") }} className={`${INPUT} min-w-0`} />
+                  <label htmlFor={ids.dueTime} className="sr-only">Soat</label>
+                  <input id={ids.dueTime} type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} disabled={!due} title={due ? "Soat (ixtiyoriy)" : "Avval sanani tanlang"}
+                    className={`${INPUT} w-[112px] shrink-0 disabled:opacity-50`} />
+                </div>
               </div>
             </div>
 

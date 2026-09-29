@@ -23,7 +23,7 @@ export interface EventStat {
   done: number; in_progress: number; todo: number; failed: number
 }
 export interface DoneRow { title: string; owner: string | null; telegram: string | null }
-export interface DueRow { title: string; due: string; owner: string | null; telegram: string | null }
+export interface DueRow { title: string; due: string; time?: string | null; owner: string | null; telegram: string | null }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr"]
@@ -67,7 +67,8 @@ export function buildDigest(today: string, events: EventStat[], yesterday: DoneR
     for (const r of due) byOwner.set(who(r), [...(byOwner.get(who(r)) ?? []), r])
     const line = (r: DueRow) => {
       const late = days(r.due, today)
-      return late > 0 ? `🔴 ${esc(r.title)} · ${late} kun kechikdi` : late === 0 ? `🟡 ${esc(r.title)} · bugun` : `🔵 ${esc(r.title)} · ertaga`
+      const at = r.time ? ` ${r.time.slice(0, 5)}` : ""
+      return late > 0 ? `🔴 ${esc(r.title)} · ${late} kun kechikdi` : late === 0 ? `🟡 ${esc(r.title)} · bugun${at}` : `🔵 ${esc(r.title)} · ertaga${at}`
     }
     blocks.push(`<b>Bugun e'tibor (${due.length})</b>`)
     for (const [name, list] of byOwner) blocks.push(`<blockquote>${name}\n${list.map(line).join("\n")}</blockquote>`)
@@ -124,11 +125,11 @@ async function taskDigest(sql: Sql): Promise<void> {
       where t.status = 'done' and (t.completed_at at time zone 'Asia/Tashkent')::date = ${day}::date - 1
       order by t.completed_at`
     const due = await sql<DueRow[]>`
-      select t.title, t.due_date::text as due, coalesce(p.full_name, t.assignee_name) as owner,
+      select t.title, t.due_date::text as due, t.due_time::text as time, coalesce(p.full_name, t.assignee_name) as owner,
              nullif(btrim(p.telegram), '') as telegram
       from tasks t left join profiles p on p.id = t.assignee_id
       where t.status in ('todo', 'in_progress') and t.due_date <= ${day}::date + 1
-      order by owner nulls last, t.due_date, t.sort_order`
+      order by owner nulls last, t.due_date, t.due_time nulls last, t.sort_order`
 
     if (events.length) for (const text of buildDigest(day, events, yesterday, due)) await send(text)
 
