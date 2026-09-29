@@ -15,7 +15,7 @@ export function Login() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Club photo background; a light shade keeps the footer text readable */}
-      <img src="/images/login-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <img src="/images/login-sea.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-black/25" />
 
       <div className="relative z-10 w-full max-w-[400px]">
