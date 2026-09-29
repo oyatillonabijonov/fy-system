@@ -274,8 +274,8 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               {/* 2. Tariff — or the agreed price when the event has no tariffs */}
               {noTariffs && !canSetPrice ? (
                 <p role="alert" className="px-3 py-2 rounded-control bg-surface-sunken text-sm text-ink-muted">
-                  Bu tadbirda tarif yo'q. Individual narx bilan faqat Moliya huquqi borlar qo'sha oladi — tadbirga tarif qo'shing
-                  yoki Moliya bo'limiga murojaat qiling.
+                  Bu tadbirda tarif yo'q. Individual narx bilan faqat Moliya huquqi borlar qo'sha oladi — Moliya bo'limidan
+                  tarif qo'shishni yoki mijozni yozishni so'rang.
                 </p>
               ) : noTariffs ? (
                 <div className="flex flex-col gap-1.5">

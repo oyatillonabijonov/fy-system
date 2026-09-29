@@ -160,8 +160,8 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
 
 export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: CreateEventDrawerProps) {
   const isEdit = !!editEvent
-  // The event's cashback % is a money setting (063): only finance editors change it
-  const canEditCashback = useAuth().canEdit("tadbirlar-moliya")
+  // Cashback % (063) and tariffs (064) are money settings: only finance editors change them
+  const canEditMoney = useAuth().canEdit("tadbirlar-moliya")
   const { data: users = [] } = useUsers()
   const managers = users.filter((u) => u.is_active)
   const titleId = useId()
@@ -236,7 +236,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const startValid = startDate.length > 0
   const managerValid = !!managerId
   const endValid = !endDate || !startDate || endDate >= startDate
-  const tariffsValid = tariffs.length > 0 && tariffs.every((t) => t.name.trim() && t.price !== "")
+  const tariffsValid = !canEditMoney || (tariffs.length > 0 && tariffs.every((t) => t.name.trim() && t.price !== ""))
 
   async function handleSubmit() {
     setTouched(true)
@@ -274,10 +274,10 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           manager_id: managerId,
         }
         await updateEvent(editEvent.id, updates)
-        await saveEventTariffs(editEvent.id, tariffs.map((t) => ({ id: t.id, name: t.name, price: Number(t.price) })))
+        if (canEditMoney) await saveEventTariffs(editEvent.id, tariffs.map((t) => ({ id: t.id, name: t.name, price: Number(t.price) })))
       } else {
         const event = await createEvent(fields)
-        await saveEventTariffs(event.id, tariffs.map((t) => ({ name: t.name, price: Number(t.price) })))
+        if (canEditMoney) await saveEventTariffs(event.id, tariffs.map((t) => ({ name: t.name, price: Number(t.price) })))
       }
 
       qc.invalidateQueries({ queryKey: TARIFFS_KEY })
@@ -385,13 +385,13 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       step={0.5}
                       value={cashbackPercent}
                       onChange={(e) => setCashbackPercent(e.target.value)}
-                      disabled={!canEditCashback}
+                      disabled={!canEditMoney}
                       className={`${INPUT} pr-9 disabled:bg-surface-sunken disabled:text-ink-muted ${touched && !cbValid ? "border-danger" : ""}`}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">%</span>
                   </div>
                   <span className="text-xs text-ink-muted">
-                    {canEditCashback
+                    {canEditMoney
                       ? "Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi"
                       : "Keshbek foizini faqat Moliya huquqi borlar o'zgartiradi"}
                   </span>
@@ -435,7 +435,19 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 </Field>
 
                 {/* 8. Tariffs */}
-                <Field label="Tariflar" required>
+                <Field label="Tariflar" required={canEditMoney}>
+                  {!canEditMoney ? (
+                    <div className="flex flex-col gap-1.5">
+                      {tariffs.filter((t) => t.id).map((t) => (
+                        <div key={t.key} className="flex items-center justify-between gap-3 px-3 py-2 rounded-control bg-surface-sunken text-base">
+                          <span className="text-ink truncate">{t.name}</span>
+                          <span className="text-ink-muted tabular-nums shrink-0">{formatNumber(Number(t.price))} UZS</span>
+                        </div>
+                      ))}
+                      {!tariffs.some((t) => t.id) && <span className="text-base text-ink-muted">Hali tarif yo'q</span>}
+                      <span className="text-xs text-ink-muted">Tariflarni faqat Moliya huquqi borlar qo'shadi va o'zgartiradi</span>
+                    </div>
+                  ) : (
                   <div className="flex flex-col gap-2">
                     {tariffs.map((t, i) => (
                       <div key={t.key} className="flex items-center gap-2">
@@ -479,6 +491,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       Narx mijoz tadbirga yozilganda unga qo'yiladi. Keyin tarif narxini o'zgartirsangiz, avval yozilganlarga ta'sir qilmaydi.
                     </span>
                   </div>
+                  )}
                 </Field>
               </div>
 
