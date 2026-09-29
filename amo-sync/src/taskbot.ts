@@ -151,11 +151,21 @@ export function confirmation(tasks: Resolved[]): string {
   return `✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
 }
 
+/** The task text when the message is for us — "/vazifa@bot …" (always delivered, even in
+ *  privacy mode) or a plain "@bot …" mention; null otherwise. A bare "/vazifa" is left to
+ *  any other bot in the group (one there has the same command), so tasks aren't doubled. */
+export function taskText(raw: string, botUsername: string): string | null {
+  const cmd = new RegExp(`^/vazifa@${botUsername}\\b`, "i")
+  const mention = new RegExp(`@${botUsername}\\b`, "gi")
+  if (cmd.test(raw)) return raw.replace(cmd, "").replace(mention, "").trim()
+  if (/^\//.test(raw)) return null   // someone else's command
+  return mention.test(raw) ? raw.replace(mention, "").trim() : null
+}
+
 async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Promise<void> {
   const raw = (msg.text ?? msg.caption ?? "").trim()
-  const mention = new RegExp(`@${botUsername}\\b`, "i")
-  if (!mention.test(raw)) return
-  const text = raw.replace(new RegExp(`@${botUsername}\\b`, "gi"), "").trim()
+  const text = taskText(raw, botUsername)
+  if (text === null) return
 
   const staff = await sql<Staff[]>`select id, full_name, nullif(btrim(telegram), '') as telegram, role from profiles where coalesce(is_active, true)`
   const author = staff.find((s) => msg.from?.username && handle(s.telegram) === handle(msg.from.username))
@@ -164,7 +174,7 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     return
   }
   if (!text) {
-    await reply(msg, "Vazifani yozing, masalan:\n<i>@" + botUsername + " Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>")
+    await reply(msg, `Vazifani yozing, masalan:\n<i>/vazifa@${botUsername} Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>`)
     return
   }
 
@@ -240,6 +250,8 @@ export async function startTaskBot(sql: Sql): Promise<void> {
     return
   }
   const me = await tg<{ username: string }>("getMe", {})
+  // Command menu in groups: picking it inserts "/vazifa@<bot>", which only this bot receives
+  await tg("setMyCommands", { commands: [{ command: "vazifa", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" }], scope: { type: "all_group_chats" } })
   // Skip whatever piled up while the bot wasn't listening — never act on old chat
   const backlog = await tg<TgUpdate[]>("getUpdates", { offset: -1, timeout: 0 })
   let offset = backlog.length ? backlog[backlog.length - 1].update_id + 1 : 0
