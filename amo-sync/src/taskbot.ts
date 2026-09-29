@@ -4,15 +4,17 @@
 // Cyrillic Uzbek, several tasks per message, relative dates), we resolve the
 // owner / event against the DB, insert, and reply with a confirmation carrying a
 // "Bekor qilish" button per task (the author or an admin may undo).
-// Only messages in TELEGRAM_TASKS_CHAT_ID that mention the bot are read; the rest
-// of the chat (e.g. replies to payment receipts) is ignored and never sent to AI.
+// Only messages that mention the bot, in a group whose "task_bot" switch is on
+// (telegram_groups, migration 070), are read; the rest of the chat is ignored and
+// never sent to AI. The same loop lists a group in telegram_groups when the bot
+// is added to it (my_chat_member), so it shows up in Sozlamalar → Integratsiyalar.
 // Long polling (getUpdates) — this is the bot's only update consumer.
-// Off until TELEGRAM_BOT_TOKEN, TELEGRAM_TASKS_CHAT_ID and GEMINI_API_KEY are set.
+// Off until TELEGRAM_BOT_TOKEN is set; without GEMINI_API_KEY only groups are listed.
 
 import type { Sql } from "postgres"
+import { chatsFor, registerChat } from "./groups"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
-const CHAT_ID = process.env.TELEGRAM_TASKS_CHAT_ID ?? ""
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? ""
 // Free-tier models are often "high demand" (503): try them in order
 const MODELS = (process.env.GEMINI_MODELS ?? "gemini-3.5-flash-lite,gemini-2.5-flash-lite,gemini-flash-lite-latest,gemini-2.5-flash").split(",")
@@ -30,7 +32,8 @@ const handle = (u: string | null | undefined) => (u ?? "").trim().replace(/^@/, 
 interface TgUser { id: number; username?: string; first_name?: string }
 interface TgMessage { message_id: number; date: number; chat: { id: number }; from?: TgUser; text?: string; caption?: string; reply_to_message?: TgMessage }
 interface TgCallback { id: string; from: TgUser; data?: string; message?: TgMessage }
-interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback }
+interface TgMemberUpdate { chat: { id: number; title?: string }; new_chat_member: { status: string } }
+interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate }
 type Button = { text: string; callback_data?: string; url?: string }
 
 async function tg<T>(method: string, body: Record<string, unknown>): Promise<T> {
@@ -169,6 +172,11 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
   const raw = (msg.text ?? msg.caption ?? "").trim()
   const text = taskText(raw, botUsername)
   if (text === null) return
+  if (!GEMINI_KEY) return
+  if (!(await chatsFor(sql, "task_bot")).includes(String(msg.chat.id))) {
+    await reply(msg, "Bu guruhda vazifa qabul qilish o'chirilgan. Yoqish: tizimda Sozlamalar → Integratsiyalar.")
+    return
+  }
 
   const staff = await sql<Staff[]>`select id, full_name, nullif(btrim(telegram), '') as telegram, role from profiles where coalesce(is_active, true)`
   const author = staff.find((s) => msg.from?.username && handle(s.telegram) === handle(msg.from.username))
@@ -249,10 +257,11 @@ async function handleCallback(sql: Sql, cb: TgCallback): Promise<void> {
 // ─── Loop ────────────────────────────────────────────────────────────────────
 
 export async function startTaskBot(sql: Sql): Promise<void> {
-  if (!TOKEN || !CHAT_ID || !GEMINI_KEY) {
-    console.log("[taskbot] GEMINI_API_KEY / TELEGRAM_TASKS_CHAT_ID yo'q — guruhdan vazifa qo'shish o'chiq")
+  if (!TOKEN) {
+    console.log("[taskbot] TELEGRAM_BOT_TOKEN yo'q — bot o'chiq")
     return
   }
+  if (!GEMINI_KEY) console.log("[taskbot] GEMINI_API_KEY yo'q — guruhdan vazifa qo'shish o'chiq (guruhlar ro'yxatga olinadi)")
   const me = await tg<{ username: string }>("getMe", {})
   // Command menu in groups: picking it inserts "/vazifa@<bot>", which only this bot receives
   await tg("setMyCommands", { commands: [{ command: "vazifa", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" }], scope: { type: "all_group_chats" } })
@@ -264,12 +273,16 @@ export async function startTaskBot(sql: Sql): Promise<void> {
   void (async () => {
     for (;;) {
       try {
-        const updates = await tg<TgUpdate[]>("getUpdates", { offset, timeout: 50, allowed_updates: ["message", "callback_query"] })
+        const updates = await tg<TgUpdate[]>("getUpdates", { offset, timeout: 50, allowed_updates: ["message", "callback_query", "my_chat_member"] })
         for (const u of updates) {
           offset = u.update_id + 1
           try {
-            if (u.message && String(u.message.chat.id) === CHAT_ID) await handleMessage(sql, u.message, me.username)
-            else if (u.callback_query && String(u.callback_query.message?.chat.id) === CHAT_ID) await handleCallback(sql, u.callback_query)
+            if (u.my_chat_member) {
+              const m = u.my_chat_member
+              await registerChat(sql, m.chat.id, m.chat.title ?? "", m.new_chat_member.status)
+              console.log(`[taskbot] guruh ${m.chat.id} (${m.chat.title ?? ""}): ${m.new_chat_member.status}`)
+            } else if (u.message) await handleMessage(sql, u.message, me.username)
+            else if (u.callback_query) await handleCallback(sql, u.callback_query)
           } catch (err) {
             console.error(`[taskbot] #${u.update_id}: ${err instanceof Error ? err.message : String(err)}`)
           }

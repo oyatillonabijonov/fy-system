@@ -22,6 +22,7 @@ import postgres from "postgres"
 import { startTelegram } from "./telegram"
 import { startTaskDigest } from "./tasks"
 import { startTaskBot } from "./taskbot"
+import { seedGroups } from "./groups"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -274,6 +275,7 @@ if (process.argv.includes("--once")) {
   await runOnce()
   await sql.end()
 } else {
+  await seedGroups(sql).catch((e) => console.error(`[groups] ${e instanceof Error ? e.message : e}`))
   await startTelegram(sql)
   startTaskDigest(sql)
   await startTaskBot(sql).catch((e) => console.error(`[taskbot] ${e instanceof Error ? e.message : e}`))

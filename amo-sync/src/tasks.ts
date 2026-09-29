@@ -11,12 +11,13 @@
 // Reminders (migration 069), on the same timer, only for open tasks with a due date
 // AND time: 1 h before, at the time, then once a day at that time while overdue —
 // the owner @mentioned. task_reminders records each one so none repeats.
-// Off until TELEGRAM_BOT_TOKEN and TELEGRAM_TASKS_CHAT_ID are set.
+// Each goes to the groups with its switch on (telegram_groups.task_digest /
+// .task_reminders, migration 070). Off until TELEGRAM_BOT_TOKEN is set.
 
 import type { Sql } from "postgres"
+import { chatsFor } from "./groups"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
-const CHAT_ID = process.env.TELEGRAM_TASKS_CHAT_ID ?? ""
 const HOUR = Number(process.env.TASKS_DIGEST_HOUR ?? "9")
 const LIMIT = 3900        // Telegram caps a message at 4096 chars
 const YESTERDAY_MAX = 10  // "Kecha bajarildi" list length
@@ -128,13 +129,27 @@ export function buildDigest(today: string, events: EventStat[], yesterday: DoneR
   return out
 }
 
-async function send(text: string): Promise<void> {
+async function send(chat: string, text: string): Promise<void> {
   const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML", disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true }),
   })
   if (!res.ok) throw new Error(`Telegram ${res.status}: ${(await res.text()).slice(0, 200)}`)
+}
+
+/** Every message to every chat; one group failing doesn't stop the others. Returns how many chats got it all. */
+async function sendAll(chats: string[], texts: string[]): Promise<number> {
+  let ok = 0
+  for (const chat of chats) {
+    try {
+      for (const t of texts) await send(chat, t)
+      ok++
+    } catch (err) {
+      console.error(`[tasks] ${chat}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+  return ok
 }
 
 let busy = false
@@ -171,7 +186,8 @@ async function taskDigest(sql: Sql): Promise<void> {
       where t.status in ('todo', 'in_progress') and t.due_date <= ${day}::date + 1
       order by owner nulls last, t.due_date, t.due_time nulls last, t.sort_order`
 
-    if (events.length) for (const text of buildDigest(day, events, yesterday, due)) await send(text)
+    // ponytail: a group that fails here misses that day's report (logged) — the others still get theirs
+    if (events.length) await sendAll(await chatsFor(sql, "task_digest"), buildDigest(day, events, yesterday, due))
 
     await sql`insert into amo_sync_state (key, value, updated_at) values ('tasks_digest_date', ${day}, now())
               on conflict (key) do update set value = excluded.value, updated_at = now()`
@@ -189,6 +205,8 @@ async function taskReminders(sql: Sql): Promise<void> {
   if (reminding) return
   reminding = true
   try {
+    const chats = await chatsFor(sql, "task_reminders")
+    if (!chats.length) return
     const { day, minute } = tashkentNow()
     const rows = await sql<ReminderRow[]>`
       select t.id, t.title, t.due_date::text as due, t.due_time::text as time,
@@ -207,12 +225,10 @@ async function taskReminders(sql: Sql): Promise<void> {
       if (won) items.push({ row, ...r })
     }
     if (!items.length) return
-    try {
-      await send(buildReminders(day, items))
-    } catch (err) {
-      // not sent — release the claims so the next minute retries
+    if (!(await sendAll(chats, [buildReminders(day, items)]))) {
+      // reached no group — release the claims so the next minute retries
       for (const i of items) await sql`delete from task_reminders where task_id = ${i.row.id} and kind = ${i.kind} and key = ${i.key}`
-      throw err
+      return
     }
     console.log(`[tasks] eslatma: ${items.map((i) => `${i.kind}:${i.row.title}`).join(", ")}`)
   } catch (err) {
@@ -224,8 +240,8 @@ async function taskReminders(sql: Sql): Promise<void> {
 
 /** Minute timer, alongside the sync loop */
 export function startTaskDigest(sql: Sql): void {
-  if (!TOKEN || !CHAT_ID) {
-    console.log("[tasks] TELEGRAM_TASKS_CHAT_ID yo'q — vazifalar hisoboti o'chiq")
+  if (!TOKEN) {
+    console.log("[tasks] TELEGRAM_BOT_TOKEN yo'q — vazifalar hisoboti o'chiq")
     return
   }
   const tick = () => { void taskDigest(sql); void taskReminders(sql) }

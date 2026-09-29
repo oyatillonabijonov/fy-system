@@ -11,6 +11,7 @@ import { Hodimlar } from "./components/pages/Hodimlar"
 import { HodimDetail } from "./components/pages/HodimDetail"
 import { Faollik } from "./components/pages/Faollik"
 import { Vazifalar } from "./components/pages/Vazifalar"
+import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
@@ -39,6 +40,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
   '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash." },
+  '/sozlamalar/integratsiyalar': { title: 'Integratsiyalar', desc: "Telegram guruhlar — bot qaysi guruhda nima qiladi." },
 }
 
 function pageMetaFor(pathname: string): PageMeta {
@@ -242,6 +244,9 @@ function App() {
 
           <Route path="/sozlamalar" element={
             <ProtectedRoute><Sozlamalar /></ProtectedRoute>
+          } />
+          <Route path="/sozlamalar/integratsiyalar" element={
+            <ProtectedRoute module="integratsiyalar"><Integratsiyalar /></ProtectedRoute>
           } />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
