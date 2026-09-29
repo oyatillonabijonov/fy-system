@@ -377,6 +377,13 @@ export async function deactivateUser(userId: string): Promise<void> {
   if (error) throw error
 }
 
+/** Admin only (068): login + profile go; payments, sales, tasks keep their rows with "who" emptied */
+export async function deleteUser(userId: string): Promise<void> {
+  // ponytail: rpc not in the generated types yet — regenerate after 068
+  const { error } = await (supabase.rpc as unknown as (fn: string, args: object) => Promise<{ error: Error | null }>)("admin_delete_user", { p_user: userId })
+  if (error) throw error
+}
+
 export async function activateUser(userId: string): Promise<void> {
   const { error } = await supabase.from("profiles").update({ is_active: true }).eq("id", userId)
   if (error) throw error

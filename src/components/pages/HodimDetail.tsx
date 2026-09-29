@@ -16,6 +16,7 @@ import {
   PaperPlaneRight,
   Gear,
   Power,
+  Trash,
   Camera,
   Target,
   TrendUp,
@@ -27,6 +28,7 @@ import {
   useUserStats,
   useDeactivateUser,
   useActivateUser,
+  useDeleteUser,
   USERS_KEY,
 } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
@@ -247,7 +249,7 @@ export function HodimDetail() {
 
       {/* Danger zone — admin only, not self */}
       {adminUser && !isSelf && (
-        <DangerZone user={user} onSuccess={(msg) => showToast(msg)} onError={(msg) => showToast(msg, "error")} />
+        <DangerZone user={user} onSuccess={(msg) => showToast(msg)} onError={(msg) => showToast(msg, "error")} onDeleted={() => navigate("/hodimlar")} />
       )}
 
       {/* Modals */}
@@ -430,11 +432,15 @@ function DangerZone({
   user,
   onSuccess,
   onError,
+  onDeleted,
 }: {
   user: UserProfile
   onSuccess: (msg: string) => void
   onError: (msg: string) => void
+  onDeleted: () => void
 }) {
+  const remove = useDeleteUser()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const deactivate = useDeactivateUser()
   const activate = useActivateUser()
   const [confirm, setConfirm] = useState(false)
@@ -457,6 +463,7 @@ function DangerZone({
   }
 
   return (
+    <div className="flex flex-col gap-3">
     <div className="bg-surface-sunken rounded-surface p-5 flex flex-wrap items-center justify-between gap-4">
       <div>
       <h2 className="text-base font-semibold text-ink mb-1">Hisobni {user.is_active ? "faolsizlantirish" : "qayta faollashtirish"}</h2>
@@ -497,6 +504,34 @@ function DangerZone({
           </button>
         )}
       </div>
+    </div>
+
+    <div className="bg-surface-sunken rounded-surface p-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="max-w-xl">
+        <h2 className="text-base font-semibold text-ink mb-1">Hodimni o'chirish</h2>
+        <p className="text-sm text-ink-muted">
+          {user.full_name} va uning login'i butunlay o'chadi, qaytarib bo'lmaydi. Qabul qilgan to'lovlari, sotuvlari va vazifalari saqlanadi — ularda muallif "—" bo'lib ko'rinadi, vazifalari "Belgilanmagan"ga o'tadi.
+        </p>
+        {remove.error && <p role="alert" className="mt-2 text-sm font-medium text-danger-text">{remove.error.message}</p>}
+      </div>
+      <div className="flex gap-2">
+        {confirmDelete ? (
+          <>
+            <button onClick={() => setConfirmDelete(false)} disabled={remove.isPending} className={softBtn}>Bekor qilish</button>
+            <button onClick={() => remove.mutate(user.id, { onSuccess: onDeleted })} disabled={remove.isPending}
+              className="flex items-center gap-2 px-4 h-control-md rounded-control text-base font-medium bg-danger text-white transition-colors disabled:opacity-50">
+              <Trash size={16} />
+              {remove.isPending ? "O'chirilmoqda…" : "Ha, butunlay o'chir"}
+            </button>
+          </>
+        ) : (
+          <button onClick={() => setConfirmDelete(true)} className={`${softBtn} text-danger-text`}>
+            <Trash size={16} />
+            O'chirish
+          </button>
+        )}
+      </div>
+    </div>
     </div>
   )
 }

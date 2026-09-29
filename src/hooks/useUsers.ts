@@ -9,6 +9,7 @@ import {
   updateUserProfile,
   deactivateUser,
   activateUser,
+  deleteUser,
   getUserPermissions,
   type ModuleGrants,
   type UserRole,
@@ -106,6 +107,18 @@ export function useDeactivateUser() {
     meta: { success: "Hodim faolsizlantirildi" },
     mutationFn: (userId: string) => deactivateUser(userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+  })
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { success: "Hodim o'chirildi", silent: true },
+    mutationFn: (userId: string) => deleteUser(userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: USERS_KEY, refetchType: "all" })
+      qc.invalidateQueries({ queryKey: ["tasks"], refetchType: "all" })
+    },
   })
 }
 
