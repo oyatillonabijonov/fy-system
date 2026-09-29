@@ -702,3 +702,8 @@ select:not(.appearance-none):not([multiple]) {
 /* "Contrast" theme: light tokens everywhere except the ground and the sidebar,
    which sits in a data-theme="dark" scope (see Sidebar.tsx). */
 :root[data-theme="contrast"] .app-ground { background-color: #0b0b0c; }
+/* "Manzara": Kontrast with the login photo as the ground; the flat shade keeps the
+   sidebar's light text readable on it. */
+:root[data-theme="photo"] .app-ground {
+  background: linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55)), url("/images/login-sea.jpg") center / cover;
+}

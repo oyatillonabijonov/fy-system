@@ -29,6 +29,7 @@ const THEMES: { id: ThemeId; label: string }[] = [
     { id: "light", label: "Yorug'" },
     { id: "contrast", label: "Kontrast" },
     { id: "dark", label: "Qorong'i" },
+    { id: "photo", label: "Manzara" },
 ]
 
 const accountItem = "w-full flex items-center gap-2.5 h-control-md px-2.5 rounded-item text-base font-medium text-ink transition-colors hover:bg-mute-ghost-hover"
@@ -188,7 +189,7 @@ export function Sidebar() {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-            data-theme={themeId === "contrast" ? "dark" : undefined}
+            data-theme={themeId === "contrast" || themeId === "photo" ? "dark" : undefined}
             className="h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
         >
             {/* Top: Logo + Collapse button */}
@@ -352,7 +353,7 @@ export function Sidebar() {
                             </button>
                             <div className="px-2.5 pt-2 pb-1.5 flex flex-col gap-2">
                                 <span className="text-sm text-ink-muted">Mavzu</span>
-                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-3 gap-1 p-0.5 rounded-control bg-surface-sunken">
+                                <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-2 gap-1 p-0.5 rounded-control bg-surface-sunken">
                                     {THEMES.map((t) => (
                                         <button
                                             key={t.id}
