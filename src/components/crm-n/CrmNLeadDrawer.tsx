@@ -432,7 +432,7 @@ export function CrmNLeadDrawer({
               <button
                 onClick={onClose}
                 aria-label="Yopish"
-                className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors shrink-0 ml-3"
+                className="p-1.5 rounded-full hover:bg-mute-ghost-hover transition-colors shrink-0 ml-3"
               >
                 <X size={20} className="text-ink-muted" />
               </button>
@@ -527,7 +527,7 @@ export function CrmNLeadDrawer({
                                   setContactEditPhone(contact.phone ?? "")
                                 }}
                                 aria-label="Kontaktni tahrirlash"
-                                className="p-1 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
+                                className="p-1 rounded-full hover:bg-mute-ghost-hover transition-colors"
                               >
                                 <PencilSimple size={12} weight="bold" className="text-ink-muted" />
                               </button>
@@ -554,7 +554,7 @@ export function CrmNLeadDrawer({
                                 <button
                                   onClick={handleContactSave}
                                   disabled={contactSaving}
-                                  className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:opacity-50"
+                                  className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-full hover:bg-accent-hover disabled:opacity-50"
                                 >
                                   {contactSaving ? "..." : "Saqlash"}
                                 </button>
@@ -619,7 +619,7 @@ export function CrmNLeadDrawer({
                       <button
                         onClick={handleAddNote}
                         disabled={noteSaving || !noteText.trim()}
-                        className="self-end px-3 py-1.5 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed transition-colors"
+                        className="self-end px-3 py-1.5 bg-accent text-ink-on-accent text-xs font-bold rounded-full hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed transition-colors"
                       >
                         {noteSaving ? "..." : "Qo'shish"}
                       </button>
@@ -670,7 +670,7 @@ export function CrmNLeadDrawer({
                           <button
                             onClick={handleCreateTask}
                             disabled={taskSaving || !taskText.trim()}
-                            className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-control-sm hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-accent text-ink-on-accent text-xs font-bold rounded-full hover:bg-accent-hover disabled:bg-mute-soft disabled:cursor-not-allowed"
                           >
                             {taskSaving ? "..." : "Saqlash"}
                           </button>
@@ -736,7 +736,7 @@ export function CrmNLeadDrawer({
                             <button
                               onClick={() => handleCloseLead(showCloseConfirm)}
                               disabled={closingSaving}
-                              className={`px-4 py-1.5 rounded-control-sm text-sm font-bold transition-colors disabled:opacity-50 ${
+                              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors disabled:opacity-50 ${
                                 showCloseConfirm === "won" ? "bg-accent text-ink-on-accent hover:bg-accent-hover" : "bg-danger text-white hover:bg-danger"
                               }`}
                             >
@@ -754,13 +754,13 @@ export function CrmNLeadDrawer({
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setShowCloseConfirm("won")}
-                            className="flex-1 py-2 rounded-control text-sm font-bold text-ink bg-surface-sunken hover:bg-surface-sunken-hover border border-line transition-colors"
+                            className="flex-1 py-2 rounded-full text-sm font-bold text-ink bg-surface-sunken hover:bg-surface-sunken-hover border border-line transition-colors"
                           >
                             Yutildi
                           </button>
                           <button
                             onClick={() => setShowCloseConfirm("lost")}
-                            className="flex-1 py-2 rounded-control text-sm font-bold text-danger-dark bg-danger-soft transition-colors"
+                            className="flex-1 py-2 rounded-full text-sm font-bold text-danger-dark bg-danger-soft transition-colors"
                           >
                             Yutqazildi
                           </button>

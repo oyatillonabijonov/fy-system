@@ -62,7 +62,7 @@ export function EventsBoshqaruv() {
           <p className="text-base text-ink-muted">Hozircha tadbirlar yo'q</p>
           <button
             onClick={() => setShowCreate(true)}
-            className="px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
+            className="px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-colors"
           >
             Birinchi tadbirni yarating
           </button>

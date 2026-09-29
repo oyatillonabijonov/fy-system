@@ -119,7 +119,7 @@ function PermissionsForm({ user, initial, onBusy, onClose, onSuccess }: InnerPro
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+          className="px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
         >
           Bekor qilish
         </button>
@@ -127,7 +127,7 @@ function PermissionsForm({ user, initial, onBusy, onClose, onSuccess }: InnerPro
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+          className="px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
         >
           {saving ? "Saqlanmoqda…" : "Saqlash"}
         </button>

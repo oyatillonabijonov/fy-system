@@ -31,7 +31,7 @@ export function ReceiptInput({ file, onChange }: { file: File | null; onChange: 
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-control border border-dashed border-line text-sm text-ink-muted hover:bg-mute-ghost-hover transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-full border border-dashed border-line text-sm text-ink-muted hover:bg-mute-ghost-hover transition-colors"
         >
           <Paperclip size={16} /> Fayl tanlash — JPG, PNG, PDF, 10 MB gacha
         </button>
@@ -79,7 +79,7 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
         }}
         title="Chekni ochish"
         aria-label="Chekni ochish"
-        className="inline-flex items-center justify-center size-7 rounded-control-sm text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
+        className="inline-flex items-center justify-center size-7 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
       >
         <Paperclip size={16} />
       </button>
@@ -95,7 +95,7 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
         disabled={attach.isPending}
         title="Chek biriktirish"
         aria-label="Chek biriktirish"
-        className="inline-flex items-center justify-center size-7 rounded-control-sm text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"
+        className="inline-flex items-center justify-center size-7 rounded-full text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"
       >
         <UploadSimple size={16} />
       </button>

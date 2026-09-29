@@ -172,7 +172,7 @@ export function CrmN() {
               {selectedPipelineId && (
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
+                  className="p-1.5 rounded-full hover:bg-mute-ghost-hover transition-colors"
                   title="Sozlamalar"
                   aria-label="Sozlamalar"
                 >
@@ -183,7 +183,7 @@ export function CrmN() {
               {/* Add pipeline button */}
               <button
                 onClick={() => setShowCreatePipeline(true)}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-control text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
               >
                 <Plus size={16} />
                 Voronka
@@ -192,7 +192,7 @@ export function CrmN() {
           ) : (
             <button
               onClick={() => setShowCreatePipeline(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold text-ink border border-line hover:bg-mute-ghost-hover transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold text-ink border border-line hover:bg-mute-ghost-hover transition-colors"
             >
               <Plus size={16} />
               Voronka yaratish
@@ -313,7 +313,7 @@ export function CrmN() {
           <span className="text-base text-ink-muted font-medium">Pipeline topilmadi</span>
           <button
             onClick={() => setShowCreatePipeline(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-control text-base font-bold text-ink-on-accent bg-accent hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-bold text-ink-on-accent bg-accent hover:bg-accent-hover transition-colors"
           >
             <Plus size={16} />
             Birinchi voronkani yarating

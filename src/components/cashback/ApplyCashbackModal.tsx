@@ -109,7 +109,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
               onClick={onClose}
               disabled={busy}
               aria-label="Yopish"
-              className="p-1.5 rounded-control-sm hover:bg-mute-ghost-hover transition-colors"
+              className="p-1.5 rounded-full hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
@@ -159,14 +159,14 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
             <button
               onClick={onClose}
               disabled={busy}
-              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleApply}
               disabled={busy || amount <= 0}
-              className={`px-5 py-2 rounded-control text-base font-bold text-ink-on-accent transition-colors ${
+              className={`px-5 py-2 rounded-full text-base font-bold text-ink-on-accent transition-colors ${
                 busy || amount <= 0 ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >

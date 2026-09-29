@@ -183,14 +183,14 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+              className="px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !amount || !description.trim()}
-              className="px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>

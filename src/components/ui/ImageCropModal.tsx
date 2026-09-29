@@ -153,13 +153,13 @@ export function ImageCropModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all"
+                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleDone}
-                className="flex-1 px-4 py-2.5 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
+                className="flex-1 px-4 py-2.5 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
               >
                 Tasdiqlash
               </button>

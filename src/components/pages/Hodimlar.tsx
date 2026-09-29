@@ -72,7 +72,7 @@ export function Hodimlar() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 h-control-md bg-accent text-ink-on-accent rounded-control text-base font-medium hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-2 px-4 h-control-md bg-accent text-ink-on-accent rounded-full text-base font-medium hover:bg-accent-hover transition-colors"
           >
             <Plus size={16} />
             Yangi xodim

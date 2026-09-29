@@ -115,7 +115,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full h-control-lg mt-1 bg-accent text-ink-on-accent rounded-control text-base font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 group">
+        className="w-full h-control-lg mt-1 bg-accent text-ink-on-accent rounded-full text-base font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 group">
         {loading ? (
           <><span className="w-4 h-4 border-2 border-ink-on-accent/30 border-t-ink-on-accent rounded-full animate-spin" />Kirilmoqda...</>
         ) : (

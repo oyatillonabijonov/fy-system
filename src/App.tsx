@@ -78,7 +78,7 @@ function AppShell() {
             <button
               type="button"
               onClick={() => navigate("/sozlamalar#parol")}
-              className="h-control-sm px-3 rounded-control bg-white/15 hover:bg-white/25 font-medium whitespace-nowrap transition-colors"
+              className="h-control-sm px-3 rounded-full bg-white/15 hover:bg-white/25 font-medium whitespace-nowrap transition-colors"
             >
               Parolni o'zgartirish
             </button>

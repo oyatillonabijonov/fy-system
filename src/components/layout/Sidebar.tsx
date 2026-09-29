@@ -197,7 +197,7 @@ export function Sidebar() {
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
                     aria-expanded={!isCollapsed}
-                    className="h-control-md w-9 rounded-control flex items-center justify-center flex-shrink-0 text-ink transition-colors hover:bg-mute-ghost-hover"
+                    className="h-control-md w-9 rounded-full flex items-center justify-center flex-shrink-0 text-ink transition-colors hover:bg-mute-ghost-hover"
                 >
                     <SidebarSimple size={20} />
                 </button>

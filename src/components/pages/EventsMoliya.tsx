@@ -37,13 +37,13 @@ export function EventsMoliya() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAddingExpense(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-colors"
             >
               <Minus size={16} /> Chiqim
             </button>
             <button
               onClick={() => setRecording(null)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-colors"
             >
               <Plus size={16} /> Kirim
             </button>

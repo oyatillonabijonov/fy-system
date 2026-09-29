@@ -134,11 +134,11 @@ function EventTasks() {
           ))}
         </div>
         {eventId && (
-          <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-control text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors">
+          <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-full text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors">
             <Copy size={16} />Nusxa olish
           </button>
         )}
-        <button onClick={() => setEditing({ task: null })} className="h-control-md px-4 flex items-center gap-1.5 rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
+        <button onClick={() => setEditing({ task: null })} className="h-control-md px-4 flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
           <Plus size={16} />Vazifa
         </button>
       </div>

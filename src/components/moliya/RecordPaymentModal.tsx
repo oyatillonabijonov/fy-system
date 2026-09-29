@@ -420,7 +420,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
                   key={m.value}
                   onClick={() => setMethod(m.value)}
                   aria-pressed={method === m.value}
-                  className={`flex-1 py-2 rounded-control text-sm font-semibold border transition-colors ${
+                  className={`flex-1 py-2 rounded-full text-sm font-semibold border transition-colors ${
                     method === m.value ? "bg-accent text-ink-on-accent border-transparent" : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover"
                   }`}
                 >
@@ -461,14 +461,14 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
             <button
               onClick={onClose}
               disabled={record.isPending}
-              className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
                 canSubmit ? "bg-accent text-ink-on-accent hover:bg-accent-hover active:scale-95" : "bg-mute-soft text-ink-muted cursor-not-allowed"
               }`}
             >
