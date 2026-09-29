@@ -86,7 +86,7 @@ function AppShell() {
       <Sidebar />
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
-      <div className="flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
+      <div className="app-main flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
         {/* First login with an admin-issued temporary password */}
         {user?.must_change_password && location.pathname !== "/sozlamalar" && (
           <div role="alert" className="flex items-center gap-3 px-6 py-2.5 bg-danger text-white text-base flex-shrink-0">

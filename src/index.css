@@ -702,36 +702,22 @@ select:not(.appearance-none):not([multiple]) {
 /* "Contrast" theme: light tokens everywhere except the ground and the sidebar,
    which sits in a data-theme="dark" scope (see Sidebar.tsx). */
 :root[data-theme="contrast"] .app-ground { background-color: #0b0b0c; }
-/* Photo ground (data-photo, ThemeContext) — any mode; the photo is shown as is,
-   no shade: the sidebar floats over it as a glass panel instead (Sidebar.tsx). */
-:root[data-photo="sea"]  { --photo: url("/images/login-sea.jpg"); }
-:root[data-photo="red"]  { --photo: url("/images/bg-red.jpg"); }
-:root[data-photo="arch"] { --photo: url("/images/bg-arch.jpg"); }
-:root[data-photo="sand"] { --photo: url("/images/bg-sand.jpg"); }
+/* Photo ground (data-photo, ThemeContext) — any mode. The photo only frames the
+   app: the sidebar becomes a solid card in its own scope's page colour, so every
+   sidebar element keeps exactly the contrast of the plain Yorug' / Kontrast /
+   Qorong'i themes (translucent "glass" sidebars were rejected — unreadable). */
+:root[data-photo="desert"] { --photo: url("/images/bg-desert.jpg"); }
+:root[data-photo="night"]  { --photo: url("/images/bg-night.jpg"); }
+:root[data-photo="field"]  { --photo: url("/images/bg-field.jpg"); }
 :root[data-photo] .app-ground { background: var(--photo) center / cover; }
-/* The glass sidebar: dark glass in a dark scope, light glass otherwise */
 :root[data-photo] aside.sidebar {
-  margin: 8px;
-  height: calc(100% - 16px);
+  margin: 12px;
+  height: calc(100% - 24px);
   border-radius: 16px;
-  background: rgb(255 255 255 / 0.62);
-  border: 1px solid rgb(255 255 255 / 0.7);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  backdrop-filter: blur(24px) saturate(1.4);
+  background: var(--ds-color-bg-default);
 }
-:root[data-photo] aside.sidebar[data-theme="dark"],
-:root[data-photo][data-theme="dark"] aside.sidebar {
-  background: rgb(16 16 18 / 0.58);
-  border-color: rgb(255 255 255 / 0.1);
-  --ds-color-surface-default: rgb(255 255 255 / 0.14);
-  --ds-color-surface-sunken: rgb(255 255 255 / 0.10);
-  --ds-color-surface-sunken-hover: rgb(255 255 255 / 0.16);
-  --ds-color-mute-ghost-hover: rgb(255 255 255 / 0.10);
-}
-:root[data-photo]:not([data-theme="dark"]) aside.sidebar:not([data-theme="dark"]) {
-  --ds-color-surface-default: rgb(255 255 255 / 0.9);
-  --ds-color-mute-ghost-hover: rgb(0 0 0 / 0.05);
-}
+/* a wider frame so the photo reads around both cards */
+:root[data-photo] .app-main { margin: 12px 12px 12px 0; }
 
 /* Switch "on": the brand orange (logo) in light, the white accent in dark */
 :root { --switch-on: #fd5426; }
