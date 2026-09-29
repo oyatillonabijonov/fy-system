@@ -11,6 +11,7 @@ import { saveEventTariffs } from "@/lib/supabase/queries/tariffs"
 import { useUsers } from "@/hooks/useUsers"
 import { useEventTariffs, TARIFFS_KEY } from "@/hooks/useEvents"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
+import { useAuth } from "@/context/AuthContext"
 import { useDialog } from "@/hooks/useDialog"
 import { formatNumber, formatDate } from "@/lib/format"
 
@@ -159,6 +160,8 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
 
 export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: CreateEventDrawerProps) {
   const isEdit = !!editEvent
+  // The event's cashback % is a money setting (063): only finance editors change it
+  const canEditCashback = useAuth().canEdit("tadbirlar-moliya")
   const { data: users = [] } = useUsers()
   const managers = users.filter((u) => u.is_active)
   const titleId = useId()
@@ -382,11 +385,16 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       step={0.5}
                       value={cashbackPercent}
                       onChange={(e) => setCashbackPercent(e.target.value)}
-                      className={`${INPUT} pr-9 ${touched && !cbValid ? "border-danger" : ""}`}
+                      disabled={!canEditCashback}
+                      className={`${INPUT} pr-9 disabled:bg-surface-sunken disabled:text-ink-muted ${touched && !cbValid ? "border-danger" : ""}`}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">%</span>
                   </div>
-                  <span className="text-xs text-ink-muted">Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi</span>
+                  <span className="text-xs text-ink-muted">
+                    {canEditCashback
+                      ? "Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi"
+                      : "Keshbek foizini faqat Moliya huquqi borlar o'zgartiradi"}
+                  </span>
                 </Field>
 
                 {/* 5. Location */}

@@ -32,7 +32,7 @@ function filterParams(f: FinanceFilters) {
 const FINANCE_ERRORS: Record<string, string> = {
   ...ENROLL_ERRORS,
   "forbidden: finance_only": "Moliyani tahrirlash uchun ruxsat yo'q",
-  "forbidden: finance_fields": "Kelishuv summasi va to'lov sanasini faqat Moliya o'zgartiradi",
+  "forbidden: finance_fields": "Kelishuv summasi, to'lov sanasi va keshbek foizini faqat Moliya o'zgartiradi",
   invalid_amount: "Summa 0 dan katta bo'lishi kerak",
   invalid_price: "Kelishuv summasi manfiy bo'lishi mumkin emas",
   enroll_required: "Mijoz bu tadbirda yo'q — tarif va sotuvchini tanlang",
@@ -113,6 +113,7 @@ export interface PaymentRow {
   seller_name: string | null
   participant_cash_paid: number   // paid − cashback_used: the most that can be refunded
   participant_no_show: boolean     // settled with settle_no_show (061)
+  participant_cashback_used: number // returned to the client's balance on a no-show (063)
 }
 
 interface PaymentJoin {
@@ -176,6 +177,7 @@ export async function listPayments(f: FinanceFilters, page: number): Promise<Pay
     seller_name: r.participant?.seller?.full_name ?? null,
     participant_cash_paid: Number(r.participant?.paid ?? 0) - Number(r.participant?.cashback_used ?? 0),
     participant_no_show: !!r.participant?.no_show_at,
+    participant_cashback_used: Number(r.participant?.cashback_used ?? 0),
   }))
 }
 

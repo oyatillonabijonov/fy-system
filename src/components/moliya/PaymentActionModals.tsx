@@ -230,6 +230,9 @@ export function NoShowModal({ payment, onClose }: { payment: PaymentRow; onClose
         <span className="font-semibold text-ink">{payment.client_name}</span> · {payment.event_name ?? "—"} uchun{" "}
         {formatMoney(cash)} to'lagan. Ushlab qolinadigan summani yozing — qolgani qaytariladi, kelishuv shu summaga
         tushadi (qarz qolmaydi) va keshbek berilmaydi.
+        {payment.participant_cashback_used > 0 && (
+          <> Ishlatgan {formatMoney(payment.participant_cashback_used)} keshbeki balansiga qaytadi.</>
+        )}
       </p>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={keepId} className={LABEL}>Ushlab qolinadi *</label>
