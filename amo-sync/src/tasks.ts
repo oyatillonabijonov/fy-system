@@ -7,6 +7,10 @@
 //      block per owner, staff @mentioned by profiles.telegram.
 // A minute timer checks the clock; amo_sync_state.tasks_digest_date makes it once
 // a day (a restart after the hour still sends that day's report).
+//
+// Reminders (migration 069), on the same timer, only for open tasks with a due date
+// AND time: 1 h before, at the time, then once a day at that time while overdue —
+// the owner @mentioned. task_reminders records each one so none repeats.
 // Off until TELEGRAM_BOT_TOKEN and TELEGRAM_TASKS_CHAT_ID are set.
 
 import type { Sql } from "postgres"
@@ -36,10 +40,46 @@ const bar = (done: number, total: number) => {
   return `<code>${"▰".repeat(n)}${"▱".repeat(10 - n)}</code> ${total ? Math.round((done / total) * 100) : 0}%`
 }
 
-/** Tashkent calendar day and hour, without depending on the container's timezone */
-function tashkentNow(): { day: string; hour: number } {
+/** Tashkent calendar day, hour and minute of day, without depending on the container's timezone */
+function tashkentNow(): { day: string; hour: number; minute: number } {
   const t = new Date(Date.now() + 5 * 3600_000)
-  return { day: t.toISOString().slice(0, 10), hour: t.getUTCHours() }
+  return { day: t.toISOString().slice(0, 10), hour: t.getUTCHours(), minute: t.getUTCHours() * 60 + t.getUTCMinutes() }
+}
+
+const SOON_MIN = 60   // "muddatga oz qoldi" — this long before the due time
+
+export type ReminderKind = "soon" | "due" | "late"
+export interface ReminderRow { id: string; title: string; due: string; time: string; owner: string | null; telegram: string | null; event: string | null; section: string | null }
+
+/** Which reminder a task is due for right now (day + minute of day, Tashkent), with its once-only key */
+export function reminderFor(day: string, minute: number, due: string, time: string): { kind: ReminderKind; key: string } | null {
+  const at = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
+  const moment = `${due} ${time.slice(0, 5)}`
+  const d = days(due, day)                       // days since the due day
+  const left = at - minute - d * 1440            // minutes until the due moment
+  if (left > 0) return left <= SOON_MIN ? { kind: "soon", key: moment } : null
+  if (d === 0) return { kind: "due", key: moment }
+  return minute >= at ? { kind: "late", key: day } : null
+}
+
+const HEAD: Record<ReminderKind, string> = { soon: "⏰ <b>Muddatga oz qoldi</b>", due: "🔔 <b>Vazifa vaqti keldi</b>", late: "🔴 <b>Muddati o'tgan</b>" }
+
+/** One message per tick: a heading per kind, one quote block per task */
+export function buildReminders(day: string, items: { row: ReminderRow; kind: ReminderKind }[]): string {
+  const out: string[] = []
+  for (const kind of ["late", "due", "soon"] as ReminderKind[]) {
+    const list = items.filter((i) => i.kind === kind)
+    if (!list.length) continue
+    out.push(HEAD[kind])
+    for (const { row: r } of list) {
+      const at = r.time.slice(0, 5)
+      const late = days(r.due, day)
+      const when = kind === "late" ? `${dayLabel(r.due)} ${at} · ${late} kun kechikdi` : `${r.due === day ? "bugun" : dayLabel(r.due)} ${at}`
+      const where = r.event ? `\n${esc(r.event)}${r.section ? ` › ${esc(r.section)}` : ""}` : ""
+      out.push(`<blockquote>${who(r)}\n${esc(r.title)} · ${when}${where}</blockquote>`)
+    }
+  }
+  return out.join("\n")
 }
 
 /** The report, split between blocks if it outgrows one message */
@@ -143,14 +183,53 @@ async function taskDigest(sql: Sql): Promise<void> {
   }
 }
 
+let reminding = false
+
+async function taskReminders(sql: Sql): Promise<void> {
+  if (reminding) return
+  reminding = true
+  try {
+    const { day, minute } = tashkentNow()
+    const rows = await sql<ReminderRow[]>`
+      select t.id, t.title, t.due_date::text as due, t.due_time::text as time,
+             coalesce(p.full_name, t.assignee_name) as owner, nullif(btrim(p.telegram), '') as telegram,
+             e.name as event, t.section
+      from tasks t left join profiles p on p.id = t.assignee_id left join events e on e.id = t.event_id
+      where t.status in ('todo', 'in_progress') and t.due_time is not null and t.due_date <= ${day}::date + 1
+      order by t.due_date, t.due_time`
+    const items: { row: ReminderRow; kind: ReminderKind; key: string }[] = []
+    for (const row of rows) {
+      const r = reminderFor(day, minute, row.due, row.time)
+      if (!r) continue
+      // claim first: a reminder already recorded is skipped
+      const [won] = await sql`insert into task_reminders (task_id, kind, key) values (${row.id}, ${r.kind}, ${r.key})
+                              on conflict do nothing returning task_id`
+      if (won) items.push({ row, ...r })
+    }
+    if (!items.length) return
+    try {
+      await send(buildReminders(day, items))
+    } catch (err) {
+      // not sent — release the claims so the next minute retries
+      for (const i of items) await sql`delete from task_reminders where task_id = ${i.row.id} and kind = ${i.kind} and key = ${i.key}`
+      throw err
+    }
+    console.log(`[tasks] eslatma: ${items.map((i) => `${i.kind}:${i.row.title}`).join(", ")}`)
+  } catch (err) {
+    console.error(`[tasks] eslatma: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    reminding = false
+  }
+}
+
 /** Minute timer, alongside the sync loop */
 export function startTaskDigest(sql: Sql): void {
   if (!TOKEN || !CHAT_ID) {
     console.log("[tasks] TELEGRAM_TASKS_CHAT_ID yo'q — vazifalar hisoboti o'chiq")
     return
   }
-  const tick = () => { void taskDigest(sql) }
+  const tick = () => { void taskDigest(sql); void taskReminders(sql) }
   setInterval(tick, 60_000)
   tick()
-  console.log(`[tasks] vazifalar hisoboti yoqildi (har kuni ${HOUR}:00)`)
+  console.log(`[tasks] vazifalar hisoboti yoqildi (har kuni ${HOUR}:00) va muddat eslatmalari`)
 }
