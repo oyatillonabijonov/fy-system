@@ -1,21 +1,26 @@
 /* eslint-disable react-refresh/only-export-components -- useTheme hook is part of the theme context module */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
-/** contrast = light main card on a dark ground and sidebar; photo* = the same on a photo */
-export type ThemeId = 'light' | 'dark' | 'contrast' | 'photo' | 'photo-sky' | 'photo-car' | 'photo-city'
+/** The mode sets the tokens: contrast = light main card on a dark ground and sidebar */
+export type ThemeId = 'light' | 'dark' | 'contrast'
 
-/** Every theme, for the pickers. `swatch` is a CSS background for the little preview;
- *  photo themes also get data-photo=<id> on <html>, which picks the image in index.css. */
-export const THEMES: { id: ThemeId; label: string; swatch: string; photo?: true }[] = [
-    { id: 'light', label: "Yorug'", swatch: 'linear-gradient(135deg, #f2f2f2 50%, #ffffff 50%)' },
-    { id: 'contrast', label: 'Kontrast', swatch: 'linear-gradient(135deg, #0b0b0c 50%, #ffffff 50%)' },
-    { id: 'dark', label: "Qorong'i", swatch: 'linear-gradient(135deg, #0b0b0c 50%, #202024 50%)' },
-    { id: 'photo', label: 'Dengiz', swatch: 'url(/images/thumb-sea.jpg) center / cover', photo: true },
-    { id: 'photo-sky', label: 'Bulut', swatch: 'url(/images/thumb-sky.jpg) center / cover', photo: true },
-    { id: 'photo-car', label: 'Avto', swatch: 'url(/images/thumb-car.jpg) center / cover', photo: true },
-    { id: 'photo-city', label: 'Shahar', swatch: 'url(/images/thumb-city.jpg) center / cover', photo: true },
+export const MODES: { id: ThemeId; label: string }[] = [
+    { id: 'light', label: "Yorug'" },
+    { id: 'contrast', label: 'Kontrast' },
+    { id: 'dark', label: "Qorong'i" },
 ]
-export const isPhotoTheme = (id: ThemeId) => id.startsWith('photo')
+
+export type PhotoId = 'sea' | 'red' | 'arch' | 'sand'
+
+/** Optional photo ground, on top of any mode. The sidebar floats over it as a glass
+ *  panel — dark glass on dark photos, light glass on light ones (tone). */
+export const PHOTOS: { id: PhotoId; label: string; tone: 'dark' | 'light' }[] = [
+    { id: 'sea', label: 'Dengiz', tone: 'dark' },
+    { id: 'red', label: 'Qizil', tone: 'dark' },
+    { id: 'arch', label: 'Arxitektura', tone: 'dark' },
+    { id: 'sand', label: 'Qum', tone: 'light' },
+]
+export const photoThumb = (id: PhotoId) => `/images/thumb-${id}.jpg`
 
 /** Interface language — stored only; the copy is Uzbek until translations exist */
 export type LangId = 'uz' | 'ru' | 'en'
@@ -23,6 +28,8 @@ export type LangId = 'uz' | 'ru' | 'en'
 interface ThemeContextValue {
     themeId: ThemeId
     setThemeId: (id: ThemeId) => void
+    photo: PhotoId | null
+    setPhoto: (id: PhotoId | null) => void
     lang: LangId
     setLang: (l: LangId) => void
 }
@@ -30,6 +37,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const THEME_KEY = 'fy_theme'
+const PHOTO_KEY = 'fy_photo'
 const LANG_KEY = 'fy_lang'
 
 function getInitialLang(): LangId {
@@ -42,16 +50,25 @@ function getInitialLang(): LangId {
 
 function getInitialTheme(): ThemeId {
     try {
-        // Old values (neutral / black-orange / light-orange) fall back to light
+        // Old values (neutral / black-orange / light-orange, photo*) fall back to light
         const saved = localStorage.getItem(THEME_KEY)
-        const known = THEMES.find((t) => t.id === saved)
-        if (known) return known.id
+        if (saved === 'dark' || saved === 'contrast') return saved
     } catch { /* private browsing */ }
     return 'light'
 }
 
+function getInitialPhoto(): PhotoId | null {
+    try {
+        const saved = localStorage.getItem(PHOTO_KEY)
+        if (PHOTOS.some((p) => p.id === saved)) return saved as PhotoId
+        if (localStorage.getItem(THEME_KEY) === 'photo') return 'sea'   // the old "Manzara" theme
+    } catch { /* private browsing */ }
+    return null
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [themeId, setThemeId] = useState<ThemeId>(getInitialTheme)
+    const [photo, setPhoto] = useState<PhotoId | null>(getInitialPhoto)
     const [lang, setLang] = useState<LangId>(getInitialLang)
 
     useEffect(() => {
@@ -59,16 +76,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, [lang])
 
     useEffect(() => {
-        // All photo themes share one look (data-theme="photo"); data-photo picks the image
         const root = document.documentElement
-        root.setAttribute('data-theme', isPhotoTheme(themeId) ? 'photo' : themeId)
-        if (isPhotoTheme(themeId)) root.setAttribute('data-photo', themeId)
+        root.setAttribute('data-theme', themeId)
+        // data-photo picks the ground image in index.css
+        if (photo) root.setAttribute('data-photo', photo)
         else root.removeAttribute('data-photo')
-        try { localStorage.setItem(THEME_KEY, themeId) } catch { /* private browsing */ }
-    }, [themeId])
+        try {
+            localStorage.setItem(THEME_KEY, themeId)
+            if (photo) localStorage.setItem(PHOTO_KEY, photo)
+            else localStorage.removeItem(PHOTO_KEY)
+        } catch { /* private browsing */ }
+    }, [themeId, photo])
 
     return (
-        <ThemeContext.Provider value={{ themeId, setThemeId, lang, setLang }}>
+        <ThemeContext.Provider value={{ themeId, setThemeId, photo, setPhoto, lang, setLang }}>
             {children}
         </ThemeContext.Provider>
     )
@@ -78,4 +99,13 @@ export function useTheme() {
     const ctx = useContext(ThemeContext)
     if (!ctx) throw new Error('useTheme must be used within ThemeProvider')
     return ctx
+}
+
+/** Which token scope the sidebar sits in: dark in dark/contrast, and on a dark photo */
+export function useSidebarScope(): 'dark' | undefined {
+    const { themeId, photo } = useTheme()
+    const tone = PHOTOS.find((p) => p.id === photo)?.tone
+    if (themeId === 'dark') return undefined              // the root is dark already
+    if (photo) return tone === 'dark' ? 'dark' : undefined
+    return themeId === 'contrast' ? 'dark' : undefined
 }
