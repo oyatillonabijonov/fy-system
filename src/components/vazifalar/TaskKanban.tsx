@@ -1,11 +1,23 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
+import { Plus } from "@phosphor-icons/react"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { useUpdateTask } from "@/hooks/useTasks"
-import { STATUS_VARIANTS } from "@/lib/constants/theme"
-import { STATUS_VARIANT, Owner, DueDate, CommentCount, isOverdue } from "./taskUi"
+import { Avatar, DueChip, CommentCount, sectionColor } from "./taskUi"
 
-/** One column per status; dropping a card on another column changes its status */
-export function TaskKanban({ tasks, today, onOpen }: { tasks: Task[]; today: string; onOpen: (t: Task) => void }) {
+/** Trello-style board: one column per status; dropping a card on another column changes its status */
+export function TaskKanban({
+  tasks,
+  sections,
+  today,
+  onOpen,
+  onAdd,
+}: {
+  tasks: Task[]
+  sections: string[]
+  today: string
+  onOpen: (t: Task) => void
+  onAdd: (status: TaskStatus) => void
+}) {
   const update = useUpdateTask()
 
   function onDragEnd(r: DropResult) {
@@ -16,25 +28,22 @@ export function TaskKanban({ tasks, today, onOpen }: { tasks: Task[]; today: str
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {TASK_STATUSES.map((s) => {
           const col = tasks.filter((t) => t.status === s.id)
-          const v = STATUS_VARIANTS[STATUS_VARIANT[s.id]]
           return (
-            <Droppable key={s.id} droppableId={s.id}>
-              {(provided, snapshot) => (
-                <div className={`flex flex-col rounded-surface p-2 min-h-[240px] transition-colors ${snapshot.isDraggingOver ? "bg-surface-sunken-hover" : "bg-surface-sunken"}`}>
-                  <div className="flex items-center justify-between px-2 py-1.5 mb-1">
-                    <span className="flex items-center gap-2 text-base font-semibold text-ink">
-                      <span className="size-2 rounded-full" style={{ backgroundColor: v.text }} />
-                      {s.label}
-                    </span>
-                    <span className="text-sm text-ink-muted tabular-nums">{col.length}</span>
-                  </div>
-                  <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-2 flex-1">
+            <div key={s.id} className="w-[280px] shrink-0 flex flex-col rounded-surface bg-surface-sunken p-2">
+              <div className="flex items-center justify-between px-2 pt-1 pb-2">
+                <span className="text-base font-semibold text-ink">{s.label}</span>
+                <span className="text-sm text-ink-muted tabular-nums">{col.length}</span>
+              </div>
+              <Droppable droppableId={s.id}>
+                {(provided, snapshot) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}
+                    className={`flex flex-col gap-2 min-h-[48px] rounded-control transition-colors ${snapshot.isDraggingOver ? "bg-mute-ghost-hover" : ""}`}>
                     {col.map((t, i) => (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
-                        {(drag) => (
+                        {(drag, dragSnap) => (
                           // A div, not a button: Space must reach the drag handle (keyboard drag), Enter opens
                           <div
                             ref={drag.innerRef}
@@ -43,26 +52,37 @@ export function TaskKanban({ tasks, today, onOpen }: { tasks: Task[]; today: str
                             role="button"
                             onClick={() => onOpen(t)}
                             onKeyDown={(e) => { if (e.key === "Enter") onOpen(t) }}
-                            className={`text-left bg-surface rounded-control p-3 flex flex-col gap-2 border ${isOverdue(t, today) ? "border-danger-text/40" : "border-transparent"}`}
+                            className={`bg-surface rounded-control border border-line p-3 flex flex-col gap-2.5 cursor-pointer ${dragSnap.isDragging ? "rotate-1" : ""}`}
                           >
-                            {t.section && <span className="text-xs font-medium text-ink-muted">{t.section}</span>}
-                            <span className="text-base text-ink line-clamp-3">{t.title}</span>
-                            <span className="flex items-center justify-between gap-2">
-                              <Owner task={t} />
-                              <span className="flex items-center gap-2 shrink-0">
-                                <CommentCount n={t.comments_count} />
-                                <DueDate task={t} today={today} />
+                            {t.section && (
+                              <span className="flex items-center gap-2">
+                                <span className="h-1.5 w-10 rounded-full" style={{ backgroundColor: sectionColor(t.section, sections) }} />
+                                <span className="text-xs text-ink-muted truncate">{t.section}</span>
                               </span>
-                            </span>
+                            )}
+                            <span className={`text-base leading-snug line-clamp-3 ${t.status === "done" ? "text-ink-muted" : "text-ink"}`}>{t.title}</span>
+                            {(t.due_date || t.comments_count > 0 || t.assignee_id || t.assignee_name) && (
+                              <span className="flex items-center justify-between gap-2">
+                                <span className="flex items-center gap-2">
+                                  <DueChip task={t} today={today} />
+                                  <CommentCount n={t.comments_count} />
+                                </span>
+                                <Avatar task={t} />
+                              </span>
+                            )}
                           </div>
                         )}
                       </Draggable>
                     ))}
                     {provided.placeholder}
                   </div>
-                </div>
-              )}
-            </Droppable>
+                )}
+              </Droppable>
+              <button type="button" onClick={() => onAdd(s.id)}
+                className="mt-2 flex items-center gap-1.5 h-8 px-2 rounded-control text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+                <Plus size={12} weight="bold" />Kartochka qo'shish
+              </button>
+            </div>
           )
         })}
       </div>

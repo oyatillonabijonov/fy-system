@@ -22,7 +22,7 @@ export function TaskModal({
   onClose,
 }: {
   task: Task | null
-  defaults?: { event_id: string | null; section?: string | null }
+  defaults?: { event_id: string | null; section?: string | null; status?: TaskStatus }
   sections: string[]
   nextSortOrder: number
   onClose: () => void
@@ -40,7 +40,7 @@ export function TaskModal({
   const [section, setSection] = useState(task?.section ?? defaults?.section ?? "")
   const [owner, setOwner] = useState(task?.assignee_id ?? (task?.assignee_name ? OUTSIDE : ""))
   const [outsideName, setOutsideName] = useState(task?.assignee_name ?? "")
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? "todo")
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? defaults?.status ?? "todo")
   const [due, setDue] = useState(task?.due_date ?? "")
   const [error, setError] = useState<string | null>(null)
 
