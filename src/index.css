@@ -707,3 +707,11 @@ select:not(.appearance-none):not([multiple]) {
 :root[data-theme="photo"] .app-ground {
   background: linear-gradient(rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.55)), url("/images/login-sea.jpg") center / cover;
 }
+/* On the photo the sidebar's dark fills vanish; make its controls translucent white
+   (menus use surface-raised and stay solid). */
+:root[data-theme="photo"] aside[data-theme="dark"] {
+  --ds-color-surface-default: rgb(255 255 255 / 0.14);
+  --ds-color-surface-sunken: rgb(255 255 255 / 0.10);
+  --ds-color-surface-sunken-hover: rgb(255 255 255 / 0.16);
+  --ds-color-mute-ghost-hover: rgb(255 255 255 / 0.10);
+}
