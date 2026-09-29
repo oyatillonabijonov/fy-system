@@ -1,5 +1,5 @@
--- Behavioural tests for migration 063 (event cashback % / individual price for
--- finance editors, no-show returns spent cashback, no-show price follows paid).
+-- Behavioural tests for migration 063: no-show returns spent cashback, no-show
+-- price follows paid. (Its finance-only rules 1–2 were reverted by 065.)
 -- THROWAWAY DB only (recipe: CLAUDE.md §5 "Tests").
 \set ON_ERROR_STOP on
 
@@ -20,47 +20,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.events, public.event_participants
 
 SET ROLE authenticated;
 
--- ─── TEST 1: event cashback % — staff can't change it, editor can ───────────
-SELECT set_config('request.jwt.claim.sub', '63000000-0000-0000-0000-000000000002', false);
-DO $$
-DECLARE refused int := 0;
-BEGIN
-  UPDATE public.events SET name = 'Tarifsiz tadbir' WHERE id = 'e6300000-0000-0000-0000-000000000001';  -- normal edit
-  INSERT INTO public.events (name) VALUES ('Staff tadbiri');                                          -- default 5 %
-  UPDATE public.events SET cashback_percent = 5 WHERE id = 'e6300000-0000-0000-0000-000000000001';     -- unchanged
-  BEGIN UPDATE public.events SET cashback_percent = 30 WHERE id = 'e6300000-0000-0000-0000-000000000001';
-  EXCEPTION WHEN raise_exception THEN refused := refused + 1; END;
-  BEGIN INSERT INTO public.events (name, cashback_percent) VALUES ('Soxta', 50);
-  EXCEPTION WHEN raise_exception THEN refused := refused + 1; END;
-  IF refused <> 2 THEN RAISE EXCEPTION 'TEST 1 FAILED: % of 2 refused', refused; END IF;
-END $$;
-SELECT set_config('request.jwt.claim.sub', '63000000-0000-0000-0000-000000000001', false);
-UPDATE public.events SET cashback_percent = 10 WHERE id = 'e6300000-0000-0000-0000-000000000001';
-DO $$ BEGIN
-  IF (SELECT cashback_percent FROM public.events WHERE id = 'e6300000-0000-0000-0000-000000000001') <> 10 THEN
-    RAISE EXCEPTION 'TEST 1 FAILED: editor could not set the percent'; END IF;
-  RAISE NOTICE 'TEST 1 ok: event cashback %% only for finance editors';
-END $$;
-
--- ─── TEST 2: individual price only for finance editors ──────────────────────
-SELECT set_config('request.jwt.claim.sub', '63000000-0000-0000-0000-000000000002', false);
-DO $$
-DECLARE refused int := 0;
-BEGIN
-  BEGIN PERFORM public.enroll_participant('e6300000-0000-0000-0000-000000000001', NULL, NULL, NULL, 'Tekin Mijoz', '906300001', 0);
-  EXCEPTION WHEN raise_exception THEN
-    IF SQLERRM <> 'forbidden: individual_price' THEN RAISE; END IF; refused := refused + 1; END;
-  BEGIN INSERT INTO public.event_participants (event_id, full_name, price) VALUES ('e6300000-0000-0000-0000-000000000001', 'Soxta', 0);
-  EXCEPTION WHEN raise_exception THEN
-    IF SQLERRM <> 'forbidden: enroll_via_rpc' THEN RAISE; END IF; refused := refused + 1; END;
-  IF refused <> 2 THEN RAISE EXCEPTION 'TEST 2 FAILED: % of 2 refused', refused; END IF;
-  -- by tariff staff still enrols
-  PERFORM public.enroll_participant('e6300000-0000-0000-0000-000000000002', '7c630000-0000-0000-0000-000000000001', NULL, NULL, 'Tarifli Mijoz', '906300002');
-END $$;
+-- Rules 1–2 (cashback % / individual price for finance editors only) were
+-- lifted again by 065 — see its test. The individual-price client for TEST 3:
 SELECT set_config('request.jwt.claim.sub', '63000000-0000-0000-0000-000000000001', false);
 DO $$ BEGIN
   PERFORM public.enroll_participant('e6300000-0000-0000-0000-000000000001', NULL, NULL, NULL, 'Individual Mijoz', '906300003', 1000000);
-  RAISE NOTICE 'TEST 2 ok: staff enrols by tariff only; editor may type a price';
 END $$;
 
 -- ─── TEST 3: no-show gives back the spent cashback ──────────────────────────

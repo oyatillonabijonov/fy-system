@@ -116,9 +116,9 @@ function useMoneyMutation<V, R>(fn: (vars: V) => Promise<R>) {
 
 // A receipt that fails to upload never undoes the money: the row stays saved and the
 // receipt can be attached later from the list. Resolves false when it wasn't attached.
-async function saveThenAttach(kind: ReceiptKind, save: () => Promise<string>, file: File | null): Promise<boolean> {
+async function saveThenAttach(kind: ReceiptKind, save: () => Promise<string | null>, file: File | null): Promise<boolean> {
   const id = await save()
-  if (!file) return true
+  if (!file || !id) return true
   try {
     await attachReceipt(kind, id, file)
     return true

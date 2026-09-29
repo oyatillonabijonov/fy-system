@@ -32,7 +32,7 @@ function filterParams(f: FinanceFilters) {
 const FINANCE_ERRORS: Record<string, string> = {
   ...ENROLL_ERRORS,
   "forbidden: finance_only": "Moliyani tahrirlash uchun ruxsat yo'q",
-  "forbidden: finance_fields": "Kelishuv summasi, to'lov sanasi va keshbek foizini faqat Moliya o'zgartiradi",
+  "forbidden: finance_fields": "Kelishuv summasi, to'lov sanasi va ishtirokchi keshbek foizini faqat Moliya o'zgartiradi",
   invalid_amount: "Summa 0 dan katta bo'lishi kerak",
   invalid_price: "Kelishuv summasi manfiy bo'lishi mumkin emas",
   enroll_required: "Mijoz bu tadbirda yo'q — tarif va sotuvchini tanlang",
@@ -57,6 +57,10 @@ function financeError(e: { message: string; code?: string }): Error {
   if (debt) return new Error(`To'lov qarzdan ko'p. Qolgan qarz: ${formatMoney(Number(debt[1]))}`)
   const keep = /^invalid_keep \(cash=([\d.]+)\)$/.exec(e.message)
   if (keep) return new Error(`Ushlab qolinadigan summa 0 dan ${formatMoney(Number(keep[1]))} gacha bo'lishi kerak`)
+  const cb = /^cashback_insufficient \(balance=([\d.]+)/.exec(e.message)
+  if (cb) return new Error(`Keshbek balansi yetarli emas. Balans: ${formatMoney(Number(cb[1]))}`)
+  if (e.message.startsWith("cashback_exceeds_debt")) return new Error("Keshbek qarzdan ko'p")
+  if (e.message.startsWith("cashback_invalid_amount")) return new Error("Keshbek summasi to'lov summasidan oshmasligi kerak")
   const cash = /^refund_exceeds_paid \(paid=([\d.]+)\)$/.exec(e.message)
   if (cash) return new Error(`Qaytarish to'langan puldan ko'p. Ko'pi bilan: ${formatMoney(Number(cash[1]))}`)
   if (e.code === "23505") return new Error("Bu telefon raqam boshqa mijozda band")
@@ -254,9 +258,12 @@ export interface RecordPaymentInput {
   enroll: { tariffId: string | null; sellerId: string | null; price: number } | null
   nextDueDate: string | null
   note: string
+  // Part of `amount` paid from the client's cashback balance (065); the rest is cash
+  cashback: number
 }
 
-export async function recordPayment(i: RecordPaymentInput): Promise<string> {
+// null = the whole amount came from cashback, so there's no cash payment row
+export async function recordPayment(i: RecordPaymentInput): Promise<string | null> {
   const c = i.client
   const { data, error } = await db.rpc("record_payment", {
     p_event_id: i.eventId,
@@ -271,9 +278,10 @@ export async function recordPayment(i: RecordPaymentInput): Promise<string> {
     p_price: i.enroll?.price ?? null,
     p_next_due_date: i.nextDueDate,
     p_note: i.note || null,
+    p_cashback: i.cashback,
   })
   if (error) throw financeError(error)
-  return data as string
+  return data as string | null
 }
 
 export async function voidPayment(id: string, reason: string): Promise<void> {
