@@ -258,14 +258,14 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
+              className={`px-5 py-2 rounded-full text-base font-bold transition-colors ${
                 saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >

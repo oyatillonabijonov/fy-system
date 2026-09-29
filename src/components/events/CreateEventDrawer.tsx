@@ -456,7 +456,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                           onClick={() => setTariffs((rows) => rows.filter((r) => r.key !== t.key))}
                           disabled={tariffs.length === 1}
                           aria-label={`${i + 1}-tarifni o'chirish`}
-                          className="shrink-0 size-9 flex items-center justify-center rounded-control text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                          className="shrink-0 size-9 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <Trash size={16} />
                         </button>
@@ -481,14 +481,14 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 <button
                   onClick={onClose}
                   disabled={saving}
-                  className="px-4 py-2 rounded-control text-base font-medium text-ink-muted hover:text-ink transition-colors"
+                  className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className={`px-5 py-2 rounded-control text-base font-bold transition-colors ${
+                  className={`px-5 py-2 rounded-full text-base font-bold transition-colors ${
                     saving ? "bg-mute-soft text-ink-muted cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
                   }`}
                 >

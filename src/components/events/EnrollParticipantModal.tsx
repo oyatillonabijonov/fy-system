@@ -303,14 +303,14 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               <button
                 onClick={onClose}
                 disabled={enroll.isPending}
-                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
                   canSubmit ? "bg-accent text-ink-on-accent hover:bg-accent-hover active:scale-95" : "bg-mute-soft text-ink-muted cursor-not-allowed"
                 }`}
               >

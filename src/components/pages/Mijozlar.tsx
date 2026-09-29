@@ -368,7 +368,7 @@ export function Mijozlar() {
             cell: (info) => (
                 <div className="flex items-center justify-end gap-1 pr-2">
                     <button
-                        className="size-8 flex items-center justify-center hover:bg-mute-ghost-hover rounded-control-sm transition-colors text-ink"
+                        className="size-8 flex items-center justify-center hover:bg-mute-ghost-hover rounded-full transition-colors text-ink"
                         title="Ko'rish"
                         aria-label="Ko'rish"
                         onClick={(e) => {
@@ -379,7 +379,7 @@ export function Mijozlar() {
                         <Eye size={18} />
                     </button>
                     <button
-                        className="size-8 flex items-center justify-center hover:bg-danger-soft rounded-control-sm transition-colors text-ink hover:text-danger-text"
+                        className="size-8 flex items-center justify-center hover:bg-danger-soft rounded-full transition-colors text-ink hover:text-danger-text"
                         title="O'chirish"
                         aria-label="O'chirish"
                         onClick={(e) => {
@@ -612,7 +612,7 @@ export function Mijozlar() {
                                 <button
                                     onClick={() => setBulkDeleteConfirm(true)}
                                     disabled={deleteClientsMutation.isPending}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-soft hover:bg-danger-soft text-danger-text rounded-control-sm text-sm font-bold transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-soft hover:bg-danger-soft text-danger-text rounded-full text-sm font-bold transition-colors disabled:opacity-50"
                                 >
                                     <Trash size={16} />
                                     Tanlanganlarni o'chirish
@@ -629,7 +629,7 @@ export function Mijozlar() {
                     <div className="flex items-center gap-2">
                         <button 
                             onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-accent text-ink-on-accent rounded-control text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
                         >
                             <Plus size={16} />
                             Yangi mijoz
@@ -717,7 +717,7 @@ export function Mijozlar() {
                                 <button
                                     onClick={closeDetailsModal}
                                     aria-label="Yopish"
-                                    className="absolute top-3 right-3 p-2 hover:bg-mute-ghost-hover rounded-control transition-colors text-ink-muted"
+                                    className="absolute top-3 right-3 p-2 hover:bg-mute-ghost-hover rounded-full transition-colors text-ink-muted"
                                 >
                                     <X size={20} />
                                 </button>
@@ -814,7 +814,7 @@ export function Mijozlar() {
                                             <button
                                                 type="button"
                                                 onClick={() => setAdjustOpen(true)}
-                                                className="flex-shrink-0 px-3.5 h-control-md rounded-control bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
+                                                className="flex-shrink-0 px-3.5 h-control-md rounded-full bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
                                             >
                                                 O'zgartirish
                                             </button>
@@ -918,8 +918,8 @@ export function Mijozlar() {
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
                                                             className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.name}</span>
@@ -942,8 +942,8 @@ export function Mijozlar() {
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
                                                             className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="+998 90 123 45 67" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.phone || '—'}</span>
@@ -966,8 +966,8 @@ export function Mijozlar() {
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
                                                             className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="email@example.com" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink truncate">{selectedCustomer.email || '—'}</span>
@@ -989,8 +989,8 @@ export function Mijozlar() {
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
                                                             className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-control-sm"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.activity || '—'}</span>
@@ -1039,14 +1039,14 @@ export function Mijozlar() {
                                             <button
                                                 onClick={saveEditAll}
                                                 disabled={updateClientMutation.isPending}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50"
                                             >
                                                 <Check size={16} />
                                                 Saqlash
                                             </button>
                                             <button
                                                 onClick={cancelEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold text-ink-muted bg-mute-soft hover:bg-mute-soft-hover transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-ink-muted bg-mute-soft hover:bg-mute-soft-hover transition-colors"
                                             >
                                                 Bekor qilish
                                             </button>
@@ -1055,14 +1055,14 @@ export function Mijozlar() {
                                         <div className="flex gap-3 mt-6 mb-6">
                                             <button
                                                 onClick={startEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
                                             >
                                                 <PencilSimple size={16} />
                                                 O'zgartirish
                                             </button>
                                             <button
                                                 onClick={() => setCustomerToDelete(selectedCustomer)}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-control text-sm font-semibold text-danger-text bg-danger-soft hover:bg-danger-soft transition-colors"
+                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-danger-text bg-danger-soft hover:bg-danger-soft transition-colors"
                                             >
                                                 <Trash size={16} />
                                                 O'chirish
@@ -1243,14 +1243,14 @@ export function Mijozlar() {
                                         type="button"
                                         onClick={closeAddModal}
                                         disabled={savingNewCustomer}
-                                        className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Bekor qilish
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={savingNewCustomer || !newCustomer.name.trim() || !!duplicateClient}
-                                        className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-ink-on-accent transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                                        className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold text-ink-on-accent transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                             savingNewCustomer || !newCustomer.name.trim() || duplicateClient
                                                 ? "bg-mute-soft cursor-not-allowed"
                                                 : "bg-accent hover:bg-accent-hover"
@@ -1337,7 +1337,7 @@ export function Mijozlar() {
                                 <button
                                     onClick={() => setCustomerToDelete(null)}
                                     disabled={deleteClientMutation.isPending}
-                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Bekor qilish
                                 </button>
@@ -1348,7 +1348,7 @@ export function Mijozlar() {
                                         })
                                     }}
                                     disabled={deleteClientMutation.isPending}
-                                    className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                                    className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                         deleteClientMutation.isPending
                                             ? "bg-mute-soft cursor-not-allowed"
                                             : "bg-danger hover:bg-danger"
@@ -1402,7 +1402,7 @@ export function Mijozlar() {
                                 <button
                                     onClick={() => setBulkDeleteConfirm(false)}
                                     disabled={deleteClientsMutation.isPending}
-                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-control text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Bekor qilish
                                 </button>
@@ -1416,7 +1416,7 @@ export function Mijozlar() {
                                         })
                                     }}
                                     disabled={deleteClientsMutation.isPending}
-                                    className={`flex-1 px-4 py-2.5 rounded-control text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                                    className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold text-white transition-all active:scale-95 flex items-center justify-center gap-2 ${
                                         deleteClientsMutation.isPending
                                             ? "bg-mute-soft cursor-not-allowed"
                                             : "bg-danger hover:bg-danger"

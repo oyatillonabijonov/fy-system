@@ -78,13 +78,13 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 h-control-md rounded-control text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-full text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
           >
             <PencilSimple size={16} /> Tahrirlash
           </button>
           <button
             onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 h-control-md rounded-control text-base font-medium text-danger-text bg-danger-soft hover:bg-danger-soft-hover transition-colors"
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-full text-base font-medium text-danger-text bg-danger-soft hover:bg-danger-soft-hover transition-colors"
           >
             <Trash size={16} /> O'chirish
           </button>
@@ -126,14 +126,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <button
               onClick={handleExportBooklet}
               disabled={exporting || participants.length === 0}
-              className="flex items-center gap-2 px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Export size={16} />
               {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
             </button>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
-              className="flex items-center gap-2 px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
+              className="flex items-center gap-2 px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
             >
               <Plus size={16} />
               Ishtirokchi qo'shish
@@ -184,7 +184,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                         disabled={p.paid > 0}
                         title={p.paid > 0 ? "To'lovi bor — Moliya orqali bekor qilinadi" : "O'chirish"}
                         aria-label={p.paid > 0 ? `${p.full_name}: to'lovi bor — o'chirib bo'lmaydi` : `${p.full_name}ni o'chirish`}
-                        className="shrink-0 size-7 flex items-center justify-center rounded-control-sm text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        className="shrink-0 size-7 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
                       >
                         <Trash size={16} />
                       </button>

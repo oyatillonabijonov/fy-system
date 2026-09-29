@@ -404,7 +404,7 @@ export function PipelineSettingsModal({
                   <button
                     onClick={handleAddStage}
                     disabled={adding || !newStageName.trim()}
-                    className="flex items-center gap-1 px-3 py-2 bg-accent text-ink-on-accent text-sm font-bold rounded-control hover:bg-accent-hover disabled:bg-mute-soft disabled:text-ink-faint disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1 px-3 py-2 bg-accent text-ink-on-accent text-sm font-bold rounded-full hover:bg-accent-hover disabled:bg-mute-soft disabled:text-ink-faint disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus size={16} />
                     {adding ? "..." : "Qo'shish"}
@@ -437,7 +437,7 @@ export function PipelineSettingsModal({
                       <button
                         onClick={handleDeletePipeline}
                         disabled={deletingPipeline}
-                        className="px-4 py-1.5 bg-danger text-white text-sm font-bold rounded-control hover:opacity-90 disabled:opacity-50 transition-colors"
+                        className="px-4 py-1.5 bg-danger text-white text-sm font-bold rounded-full hover:opacity-90 disabled:opacity-50 transition-colors"
                       >
                         {deletingPipeline ? "O'chirilmoqda..." : "Ha, o'chirish"}
                       </button>

@@ -229,7 +229,7 @@ function Comments({ taskId }: { taskId: string }) {
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send() } }}
           placeholder="Izoh yozish…" className="flex-1 resize-none bg-transparent text-base text-ink placeholder:text-ink-faint focus:outline-none py-1.5 px-1" />
         <button onClick={send} disabled={!body.trim() || add.isPending} aria-label="Yuborish"
-          className="size-8 shrink-0 flex items-center justify-center rounded-control bg-accent text-ink-on-accent disabled:bg-mute-soft disabled:text-ink-muted transition-colors">
+          className="size-8 shrink-0 flex items-center justify-center rounded-full bg-accent text-ink-on-accent disabled:bg-mute-soft disabled:text-ink-muted transition-colors">
           <PaperPlaneRight size={16} />
         </button>
       </div>

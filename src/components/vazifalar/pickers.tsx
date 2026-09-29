@@ -152,7 +152,7 @@ export function DuePicker({ date, time, today, onChange, tile, open: isOpenTask 
               ? <button type="button" onClick={() => onChange(null, null)} className="text-sm text-ink-muted hover:text-danger-text transition-colors">Olib tashlash</button>
               : <span />}
             <button type="button" onClick={close}
-              className="h-8 px-4 rounded-control bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover transition-colors">Tayyor</button>
+              className="h-8 px-4 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover transition-colors">Tayyor</button>
           </div>
         </div>
       )}

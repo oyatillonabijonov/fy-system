@@ -105,7 +105,7 @@ export function TaskCreate({ defaults, sections, nextSortOrder, onClose }: {
           <span className="hidden sm:inline text-sm text-ink-faint">Enter — saqlash · Shift+Enter — yangi qator</span>
           <div className="flex-1" />
           <button onClick={save} disabled={!canSave}
-            className={`h-9 px-5 rounded-control text-base font-medium transition-colors ${canSave ? "bg-accent text-ink-on-accent hover:bg-accent-hover" : "bg-mute-soft text-ink-muted cursor-not-allowed"}`}>
+            className={`h-9 px-5 rounded-full text-base font-medium transition-colors ${canSave ? "bg-accent text-ink-on-accent hover:bg-accent-hover" : "bg-mute-soft text-ink-muted cursor-not-allowed"}`}>
             {create.isPending ? "Saqlanmoqda…" : "Qo'shish"}
           </button>
         </div>

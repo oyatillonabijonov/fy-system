@@ -347,7 +347,7 @@ export function CrmNLeadsList({
           <button
             onClick={handleBulkAction}
             disabled={bulkLoading || !bulkAction || (bulkAction !== "delete" && !bulkActionValue)}
-            className={`px-3 py-1 rounded-control-sm text-xs font-bold transition-colors disabled:bg-mute-soft disabled:cursor-not-allowed ${
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors disabled:bg-mute-soft disabled:cursor-not-allowed ${
               bulkAction === "delete" ? "bg-danger text-white hover:bg-danger" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
             }`}
           >

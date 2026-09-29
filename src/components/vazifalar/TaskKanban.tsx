@@ -80,7 +80,7 @@ export function TaskKanban({
                 )}
               </Droppable>
               <button type="button" onClick={() => onAdd(s.id)}
-                className="mt-2 flex items-center gap-1.5 h-8 px-2 rounded-control text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+                className="mt-2 flex items-center gap-1.5 h-8 px-2 rounded-full text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
                 <Plus size={12} weight="bold" />Kartochka qo'shish
               </button>
             </div>

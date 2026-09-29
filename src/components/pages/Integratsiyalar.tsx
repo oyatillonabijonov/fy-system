@@ -9,8 +9,8 @@ import { GROUP_ROLES, type GroupRole, type TelegramGroup } from "@/lib/supabase/
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
-const primaryBtn = "flex items-center gap-2 px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
-const softBtn = "flex items-center gap-2 px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+const primaryBtn = "flex items-center gap-2 px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+const softBtn = "flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
 // Group avatars: the same data palette as Vazifalar, as a wash under ink initials
 const PALETTE = ["#7F77DD", "#1D9E75", "#D85A30", "#D4537E", "#378ADD", "#BA7517", "#639922"]
@@ -165,7 +165,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
     <Modal title="Guruh sozlamalari" onClose={onClose} footer={<>
       <button type="button" disabled={remove.isPending}
         onClick={() => window.confirm(`"${g.title || g.chat_id}" ro'yxatdan olib tashlansinmi? Bot bu guruhga boshqa yozmaydi.`) && remove.mutate(g.chat_id, { onSuccess: onClose })}
-        className="flex items-center gap-2 px-3 h-control-md rounded-control text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
+        className="flex items-center gap-2 px-3 h-control-md rounded-full text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
         <Trash size={16} /> Olib tashlash
       </button>
       <div className="flex-1" />

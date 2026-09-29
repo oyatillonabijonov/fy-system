@@ -204,7 +204,7 @@ export function Faollik() {
             <button
               type="button"
               onClick={() => { setActorId(""); setEntity(""); setAction(""); setSearchInput(""); setPage(0) }}
-              className="h-control-md px-3 rounded-control text-base text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors"
+              className="h-control-md px-3 rounded-full text-base text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors"
             >
               Tozalash
             </button>
