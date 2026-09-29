@@ -364,6 +364,8 @@ export const ENROLL_ERRORS: Record<string, string> = {
   tariff_mismatch: "Tarif bu tadbirga tegishli emas",
   tariff_required: "Bu tadbirda tariflar bor — tarifni tanlang",
   price_required: "Kelishilgan narxni kiriting",
+  "forbidden: individual_price": "Tarifsiz tadbirga individual narx bilan faqat Moliya huquqi borlar qo'sha oladi",
+  "forbidden: enroll_via_rpc": "Ishtirokchi faqat \"Qo'shish\" oynasi orqali qo'shiladi",
   seller_invalid: "Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak",
   client_not_found: "Mijoz topilmadi",
   client_required: "Ism va to'g'ri telefon raqamni kiriting",

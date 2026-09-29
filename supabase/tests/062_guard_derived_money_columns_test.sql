@@ -62,8 +62,8 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN refused := refused + 1; END;
   IF refused <> 8 THEN RAISE EXCEPTION 'TEST 2 FAILED: only % of 8 writes refused', refused; END IF;
 
-  -- a plain participant / client insert still works
-  INSERT INTO public.event_participants (event_id, full_name, price) VALUES ('e6200000-0000-0000-0000-000000000001', 'Oddiy', 0);
+  -- a plain client insert still works (a direct participant insert is refused
+  -- for non-editors since 063 — see its test)
   INSERT INTO public.clients (full_name) VALUES ('Oddiy Mijoz');
   RAISE NOTICE 'TEST 2 ok: staff edits pass, 8 money writes refused';
 END $$;
@@ -85,7 +85,8 @@ DECLARE r record;
 BEGIN
   PERFORM public.settle_no_show((SELECT id FROM public.event_participants WHERE full_name = 'Guard Mijoz'), 300000, 'naqd');
   SELECT price, paid, no_show_at IS NOT NULL AS ns INTO r FROM public.event_participants WHERE full_name = 'Guard Mijoz';
-  IF r.price <> 350000 OR r.paid <> 350000 OR NOT r.ns THEN RAISE EXCEPTION 'TEST 4 FAILED: %', row_to_json(r); END IF;
+  -- 300k kept; the 50k cashback spent goes back to the balance (063)
+  IF r.price <> 300000 OR r.paid <> 300000 OR NOT r.ns THEN RAISE EXCEPTION 'TEST 4 FAILED: %', row_to_json(r); END IF;
   RAISE NOTICE 'TEST 4 ok: settle_no_show works through the API role';
 END $$;
 RESET ROLE;
