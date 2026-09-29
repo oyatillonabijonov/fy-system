@@ -10,6 +10,7 @@ import { Sozlamalar } from "./components/pages/Sozlamalar"
 import { Hodimlar } from "./components/pages/Hodimlar"
 import { HodimDetail } from "./components/pages/HodimDetail"
 import { Faollik } from "./components/pages/Faollik"
+import { Vazifalar } from "./components/pages/Vazifalar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
@@ -32,6 +33,7 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
+  '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
@@ -214,6 +216,9 @@ function App() {
           <Route path="/mijozlar" element={
             <ProtectedRoute module="mijozlar"><Mijozlar /></ProtectedRoute>
           } />
+
+          {/* Every signed-in staff member sees and edits all tasks (066) */}
+          <Route path="/vazifalar" element={<Vazifalar />} />
 
           <Route path="/tadbirlar" element={<Navigate to="/tadbirlar/boshqaruv" replace />} />
 

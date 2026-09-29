@@ -402,6 +402,7 @@ export async function updateMyProfile(updates: {
   full_name?: string
   phone?: string | null
   avatar_url?: string | null
+  telegram?: string | null   // for task reminder @mentions (066)
   must_change_password?: false
 }): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
