@@ -1,5 +1,6 @@
 import { useId, useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
+import { isAuthApiError, isAuthRetryableFetchError } from "@supabase/supabase-js"
 import { Eye, EyeSlash, ArrowRight } from "@phosphor-icons/react"
 import { signIn } from "@/lib/supabase/queries/auth"
 import { useAuth } from "@/context/AuthContext"
@@ -43,6 +44,19 @@ export function Login() {
   )
 }
 
+/** Tell the user *why* sign-in failed — "Xatolik yuz berdi" alone can't be diagnosed */
+function loginError(err: unknown): string {
+  // The request never reached the server (offline, blocked network, DNS…)
+  if (isAuthRetryableFetchError(err) || err instanceof TypeError) {
+    return "Serverga ulanib bo'lmadi. Internetni tekshirib, qayta urinib ko'ring"
+  }
+  const msg = err instanceof Error ? err.message : String(err)
+  if (msg === "Invalid login credentials") return "Email yoki parol noto'g'ri"
+  if (isAuthApiError(err) && err.status === 429) return "Juda ko'p urinish. Bir necha daqiqadan so'ng qayta urinib ko'ring"
+  if (msg === "Email not confirmed") return "Email tasdiqlanmagan. Administratorga murojaat qiling"
+  return msg ? `Kirib bo'lmadi: ${msg}` : "Xatolik yuz berdi"
+}
+
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -60,8 +74,8 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       await signIn(email, password)
       onSuccess()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ""
-      setError(msg === "Invalid login credentials" ? "Email yoki parol noto'g'ri" : "Xatolik yuz berdi")
+      console.error("Login xatosi:", err)
+      setError(loginError(err))
     } finally {
       setLoading(false)
     }
