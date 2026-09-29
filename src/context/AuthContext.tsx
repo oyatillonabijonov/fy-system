@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- useAuth hook is co-located with the AuthProvider component */
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "../lib/supabase/client"
 import {
   getCurrentProfile,
@@ -105,6 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, permissions],
   )
 
+  // Name/photo also live in the staff list and in every task's owner — refetch them
+  // at once, even on pages not open right now (global refetchOnMount is off)
+  const qc = useQueryClient()
+  const refreshProfile = useCallback(async () => {
+    await loadUser()
+    qc.invalidateQueries({ queryKey: ["users"], refetchType: "all" })
+    qc.invalidateQueries({ queryKey: ["tasks"], refetchType: "all" })
+  }, [loadUser, qc])
+
   return (
     <AuthContext.Provider
       value={{
@@ -114,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         hasAccess,
         canEdit,
-        refreshProfile: loadUser,
+        refreshProfile,
       }}
     >
       {children}

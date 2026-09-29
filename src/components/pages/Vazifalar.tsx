@@ -74,9 +74,9 @@ function EventTasks() {
   }, [events, today])
   // People who own tasks in this list — staff by id, outside people by name
   const owners = useMemo(() => {
-    const m = new Map<string, { key: string; name: string; outside: boolean }>()
+    const m = new Map<string, { key: string; name: string; url?: string | null; outside: boolean }>()
     for (const t of tasks) {
-      if (t.assignee_id && t.assignee) m.set(t.assignee_id, { key: t.assignee_id, name: t.assignee.full_name, outside: false })
+      if (t.assignee_id && t.assignee) m.set(t.assignee_id, { key: t.assignee_id, name: t.assignee.full_name, url: t.assignee.avatar_url, outside: false })
       else if (t.assignee_name) m.set(`x:${t.assignee_name}`, { key: `x:${t.assignee_name}`, name: t.assignee_name, outside: true })
     }
     return [...m.values()]
@@ -108,7 +108,7 @@ function EventTasks() {
                 <button key={o.key} type="button" onClick={() => setOwnerFilter(ownerFilter === o.key ? "" : o.key)}
                   title={o.name} aria-label={o.name} aria-pressed={ownerFilter === o.key}
                   className={`rounded-full ring-2 transition-transform hover:-translate-y-0.5 ${ownerFilter === o.key ? "ring-ink z-10" : "ring-surface"}`}>
-                  <PersonDot name={o.name} outside={o.outside} size={28} />
+                  <PersonDot name={o.name} url={o.url} outside={o.outside} size={28} />
                 </button>
               ))}
             </div>

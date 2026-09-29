@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useRef } from "react"
+import { cue } from "@/lib/sound"
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -22,6 +23,7 @@ export function useDialog<T extends HTMLElement>(onClose: () => void, open = tru
     if (!open || !el) return
     const opener = document.activeElement as HTMLElement | null
     stack.push(el)
+    cue("open")
     if (!el.contains(document.activeElement)) (el.querySelector<HTMLElement>(FOCUSABLE) ?? el).focus()
 
     function onKey(e: KeyboardEvent) {
@@ -44,6 +46,7 @@ export function useDialog<T extends HTMLElement>(onClose: () => void, open = tru
     return () => {
       document.removeEventListener("keydown", onKey)
       stack.splice(stack.indexOf(el), 1)
+      cue("close")
       opener?.focus()
     }
   }, [open])

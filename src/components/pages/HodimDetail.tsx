@@ -106,8 +106,8 @@ export function HodimDetail() {
     try {
       const url = await uploadUserAvatar(blob, user.id)
       await updateUserAvatar(user.id, url)
-      qc.invalidateQueries({ queryKey: [...USERS_KEY, user.id] })
-      qc.invalidateQueries({ queryKey: USERS_KEY })
+      qc.invalidateQueries({ queryKey: USERS_KEY, refetchType: "all" })
+      qc.invalidateQueries({ queryKey: ["tasks"], refetchType: "all" })
       showToast("Rasm yangilandi")
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Rasm yuklashda xatolik", "error")
@@ -121,8 +121,8 @@ export function HodimDetail() {
     if (!confirm("Rasmni o'chirishni tasdiqlaysizmi?")) return
     try {
       await deleteUserAvatar(user.id, user.avatar_url)
-      qc.invalidateQueries({ queryKey: [...USERS_KEY, user.id] })
-      qc.invalidateQueries({ queryKey: USERS_KEY })
+      qc.invalidateQueries({ queryKey: USERS_KEY, refetchType: "all" })
+      qc.invalidateQueries({ queryKey: ["tasks"], refetchType: "all" })
       showToast("Rasm o'chirildi")
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Xatolik", "error")
