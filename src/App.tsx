@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
@@ -14,13 +13,10 @@ import { Vazifalar } from "./components/pages/Vazifalar"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
-import { ThemeProvider, useTheme } from "./context/ThemeContext"
-import { ThemeSwitcher } from "./components/ui/ThemeSwitcher"
+import { ThemeProvider } from "./context/ThemeContext"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   MagnifyingGlass,
-  CaretDown,
-  Gear,
   Warning,
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
@@ -66,20 +62,7 @@ function AppShell() {
   const { user } = useAuth()
   const meta = pageMetaFor(location.pathname)
 
-  const { lang: currentLang, setLang: setCurrentLang } = useTheme()
-  const [isLangOpen, setIsLangOpen] = useState(false)
 
-  // Escape closes the language popover
-  useEffect(() => {
-    if (!isLangOpen) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setIsLangOpen(false)
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [isLangOpen])
-
-  const iconBtn = "relative h-control-md w-9 flex items-center justify-center rounded-control text-ink transition-colors hover:bg-mute-ghost-hover"
 
   return (
     <div className="app-ground h-screen text-ink flex overflow-hidden bg-page">
@@ -127,54 +110,12 @@ function AppShell() {
               />
             </div>
 
-            {/* Language */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsLangOpen(!isLangOpen)}
-                aria-label="Tilni tanlash"
-                aria-haspopup="true"
-                aria-expanded={isLangOpen}
-                className="h-control-md flex items-center gap-1.5 px-3 rounded-control bg-mute-soft text-ink transition-colors hover:bg-mute-soft-hover"
-              >
-                <span className="text-base font-medium uppercase">{currentLang}</span>
-                <CaretDown
-                  size={16}
-                 
-                  className={`text-ink-muted transition-transform ${isLangOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-              <AnimatePresence>
-                {isLangOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-                    className="absolute top-full right-0 mt-2 w-[96px] p-1 rounded-menu bg-surface-raised border border-line z-50"
-                  >
-                    {(['uz', 'ru', 'en'] as const).map((lang) => (
-                      <button
-                        key={lang}
-                        type="button"
-                        aria-pressed={currentLang === lang}
-                        onClick={() => { setCurrentLang(lang); setIsLangOpen(false) }}
-                        className={`w-full h-control-sm px-3 rounded-item text-base font-medium text-left uppercase transition-colors ${currentLang === lang ? "bg-surface-sunken text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
-                      >
-                        {lang}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Theme switcher */}
-            <ThemeSwitcher />
-
-            {/* Settings */}
-            <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Sozlamalar" className={iconBtn}>
-              <Gear size={20} />
+            {/* Profile — opens Profilim */}
+            <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Profilim" title={user?.full_name ?? "Profilim"}
+              className="size-9 shrink-0 rounded-full overflow-hidden bg-mute-soft flex items-center justify-center text-sm font-semibold text-ink transition-opacity hover:opacity-85">
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="" className="size-full object-cover" />
+                : (user?.full_name ?? "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("")}
             </button>
           </div>
         </header>
