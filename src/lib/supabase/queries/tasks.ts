@@ -31,6 +31,7 @@ export interface Task {
   assignee: { full_name: string; avatar_url: string | null } | null
   event: { name: string } | null
   comments_count: number
+  attachments_count: number      // yo'riqnoma (071)
 }
 
 export interface TaskComment {
@@ -45,10 +46,11 @@ export type TaskDraft = Pick<Task, "event_id" | "section" | "title" | "status" |
 
 const SELECT =
   "id, event_id, section, title, status, assignee_id, assignee_name, due_date, due_time, sort_order, created_by, created_at, completed_at, " +
-  "assignee:assignee_id(full_name, avatar_url), event:event_id(name), task_comments(count)"
+  "assignee:assignee_id(full_name, avatar_url), event:event_id(name), task_comments(count), task_attachments(count)"
 
-type TaskRow = Omit<Task, "comments_count"> & { task_comments: { count: number }[] }
-const toTask = (r: TaskRow): Task => ({ ...r, comments_count: r.task_comments?.[0]?.count ?? 0 })
+type TaskRow = Omit<Task, "comments_count" | "attachments_count"> & { task_comments: { count: number }[]; task_attachments: { count: number }[] }
+const toTask = ({ task_comments, task_attachments, ...r }: TaskRow): Task =>
+  ({ ...r, comments_count: task_comments?.[0]?.count ?? 0, attachments_count: task_attachments?.[0]?.count ?? 0 })
 
 /** Tasks of one event, or the general ones (eventId null) */
 export async function getEventTasks(eventId: string | null): Promise<Task[]> {
@@ -123,4 +125,55 @@ export async function addTaskComment(taskId: string, body: string): Promise<void
   const { data: { user } } = await supabase.auth.getUser()
   const { error } = await db.from("task_comments").insert({ task_id: taskId, body: body.trim(), author_id: user?.id })
   if (error) throw error
+}
+
+// ─── Yo'riqnoma (071): a link or a file on a task ───────────────────────────
+
+export interface TaskAttachment {
+  id: string
+  title: string
+  url: string | null
+  file_path: string | null
+  file_size: number | null
+  created_by: string | null
+  created_at: string
+}
+
+export const ATTACH_MAX = 10 * 1024 * 1024
+export const ATTACH_ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+
+export async function getTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
+  const { data, error } = await db.from("task_attachments")
+    .select("id, title, url, file_path, file_size, created_by, created_at").eq("task_id", taskId).order("created_at")
+  if (error) throw error
+  return (data ?? []) as TaskAttachment[]
+}
+
+export async function addTaskLink(taskId: string, url: string, title: string): Promise<void> {
+  const clean = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`
+  const { error } = await db.from("task_attachments").insert({ task_id: taskId, url: clean, title: title.trim() || new URL(clean).hostname.replace(/^www\./, "") })
+  if (error) throw error
+}
+
+/** Upload to the private task-files bucket, then add the row */
+export async function addTaskFile(taskId: string, file: File): Promise<void> {
+  if (file.size > ATTACH_MAX) throw new Error("Fayl 10 MB dan katta")
+  const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "bin"
+  const path = `${taskId}/${crypto.randomUUID()}.${ext}`
+  const up = await supabase.storage.from("task-files").upload(path, file, { contentType: file.type || undefined })
+  if (up.error) throw up.error
+  const { error } = await db.from("task_attachments").insert({ task_id: taskId, file_path: path, file_size: file.size, title: file.name })
+  if (error) throw error
+}
+
+export async function deleteTaskAttachment(id: string): Promise<void> {
+  const { error } = await db.from("task_attachments").delete().eq("id", id)
+  if (error) throw error
+}
+
+/** A 5-minute link to open a private file */
+export async function taskFileUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from("task-files").createSignedUrl(path, 300)
+  if (error) throw error
+  return data.signedUrl
 }

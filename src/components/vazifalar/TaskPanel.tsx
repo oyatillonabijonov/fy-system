@@ -1,11 +1,12 @@
-import { useId, useState } from "react"
+import { useId, useRef, useState } from "react"
 import { motion } from "framer-motion"
-import { X, Trash, PaperPlaneRight } from "@phosphor-icons/react"
+import { X, Trash, PaperPlaneRight, LinkSimple, FilePdf, FileImage, File as FileIcon, YoutubeLogo, Paperclip, Plus } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
 import { useUsers } from "@/hooks/useUsers"
 import { useEvents } from "@/hooks/useEvents"
 import { useAuth } from "@/context/AuthContext"
-import { useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment } from "@/hooks/useTasks"
+import { useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment, useTaskAttachments, useAddTaskLink, useAddTaskFile, useDeleteTaskAttachment } from "@/hooks/useTasks"
+import { ATTACH_ACCEPT, taskFileUrl, type TaskAttachment } from "@/lib/supabase/queries/tasks"
 import type { Task, TaskDraft } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, PersonDot } from "./pickers"
@@ -87,10 +88,106 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
             {t.event_id && <SectionPicker value={t.section} sections={t.event_id === task.event_id ? sections : []} onChange={(section) => save({ section })} />}
           </div>
 
+          <Instructions taskId={task.id} />
           <Comments taskId={task.id} />
         </div>
       </motion.div>
     </div>
+  )
+}
+
+const fmtSize = (b: number | null) => (b == null ? "" : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
+
+function AttachIcon({ a }: { a: TaskAttachment }) {
+  if (a.url) return /youtu\.?be/i.test(a.url) ? <YoutubeLogo size={20} className="text-danger-text" /> : <LinkSimple size={20} className="text-info-text" />
+  if (/\.pdf$/i.test(a.file_path ?? "")) return <FilePdf size={20} className="text-danger-text" />
+  if (/\.(jpe?g|png|webp)$/i.test(a.file_path ?? "")) return <FileImage size={20} className="text-success-text" />
+  return <FileIcon size={20} className="text-ink-muted" />
+}
+
+/** Yo'riqnoma: links (video, Drive…) and files anyone on the team can add (071) */
+function Instructions({ taskId }: { taskId: string }) {
+  const { user } = useAuth()
+  const { data: items = [] } = useTaskAttachments(taskId)
+  const addLink = useAddTaskLink()
+  const addFile = useAddTaskFile()
+  const remove = useDeleteTaskAttachment()
+  const [linking, setLinking] = useState(false)
+  const [url, setUrl] = useState("")
+  const [title, setTitle] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const busy = addLink.isPending || addFile.isPending
+
+  async function open(a: TaskAttachment) {
+    if (a.url) return void window.open(a.url, "_blank", "noopener")
+    // open the tab first (a popup opened after an await is blocked), then point it at the signed URL
+    const w = window.open("", "_blank")
+    try { const u = await taskFileUrl(a.file_path!); if (w) w.location.href = u } catch (e) { w?.close(); setError(e instanceof Error ? e.message : "Faylni ochib bo'lmadi") }
+  }
+  function saveLink() {
+    if (!url.trim()) return
+    setError(null)
+    addLink.mutate({ taskId, url, title }, { onSuccess: () => { setUrl(""); setTitle(""); setLinking(false) }, onError: (e) => setError(e.message) })
+  }
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = ""
+    if (!f) return
+    setError(null)
+    addFile.mutate({ taskId, file: f }, { onError: (err) => setError(err.message) })
+  }
+
+  return (
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <h4 className="text-sm font-medium text-ink-muted flex items-center gap-1.5"><Paperclip size={16} /> Yo'riqnoma{items.length ? ` · ${items.length}` : ""}</h4>
+        <div className="flex-1" />
+        <button type="button" onClick={() => setLinking((v) => !v)} className="flex items-center gap-1 h-7 px-2.5 rounded-full text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors">
+          <Plus size={12} weight="bold" /> Havola
+        </button>
+        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="flex items-center gap-1 h-7 px-2.5 rounded-full text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors disabled:opacity-50">
+          <Plus size={12} weight="bold" /> {addFile.isPending ? "Yuklanmoqda…" : "Fayl"}
+        </button>
+        <input ref={fileRef} type="file" accept={ATTACH_ACCEPT} onChange={pick} className="hidden" />
+      </div>
+
+      {linking && (
+        <div className="flex flex-col sm:flex-row gap-2 p-2 rounded-control bg-surface-sunken">
+          <input autoFocus value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://youtube.com/… yoki Drive havola"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveLink() } if (e.key === "Escape") { e.preventDefault(); setLinking(false) } }}
+            className="flex-1 min-w-0 h-9 px-2.5 rounded-item bg-surface text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nomi (ixtiyoriy)"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveLink() } }}
+            className="sm:w-44 h-9 px-2.5 rounded-item bg-surface text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+          <button type="button" onClick={saveLink} disabled={!url.trim() || busy}
+            className="h-9 px-4 rounded-item bg-accent text-ink-on-accent text-base font-medium disabled:opacity-40">Qo'shish</button>
+        </div>
+      )}
+      {error && <p role="alert" className="text-sm font-medium text-danger-text">{error}</p>}
+
+      {items.length === 0 && !linking ? (
+        <span className="text-sm text-ink-faint">Video, PDF yoki havola — yangi hodim shu vazifani qanday bajarishni bilishi uchun.</span>
+      ) : (
+        <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+          {items.map((a) => (
+            <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded-control bg-surface-sunken">
+              <AttachIcon a={a} />
+              <button type="button" onClick={() => open(a)} className="min-w-0 flex-1 flex flex-col text-left">
+                <span className="text-base font-medium text-ink truncate hover:underline">{a.title}</span>
+                <span className="text-sm text-ink-muted truncate">{a.url ? a.url.replace(/^https?:\/\/(www\.)?/, "") : fmtSize(a.file_size)}</span>
+              </button>
+              {(a.created_by === user?.id || user?.role === "admin") && (
+                <button type="button" aria-label="O'chirish" title="O'chirish" onClick={() => window.confirm(`"${a.title}" o'chirilsinmi?`) && remove.mutate(a.id)}
+                  className="p-1.5 rounded-item text-ink-muted opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger-text hover:bg-danger-soft transition">
+                  <Trash size={16} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 

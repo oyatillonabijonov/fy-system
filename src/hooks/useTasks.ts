@@ -9,6 +9,10 @@ import {
   copyEventTasks,
   getTaskComments,
   addTaskComment,
+  getTaskAttachments,
+  addTaskLink,
+  addTaskFile,
+  deleteTaskAttachment,
   type Task,
   type TaskDraft,
 } from "@/lib/supabase/queries/tasks"
@@ -54,6 +58,11 @@ function useTaskMutation<V>(fn: (v: V) => Promise<unknown>, success?: (data: unk
 export const useCreateTask = () => useTaskMutation((d: TaskDraft & { sort_order: number }) => createTask(d), () => "Vazifa qo'shildi", true)
 export const useDeleteTask = () => useTaskMutation((id: string) => deleteTask(id), () => "Vazifa o'chirildi", true)
 export const useCopyEventTasks = () => useTaskMutation((v: { from: string; to: string }) => copyEventTasks(v.from, v.to), (n) => `${n} ta vazifa ko'chirildi`, true)
+export const useTaskAttachments = (taskId: string) =>
+  useQuery({ queryKey: [...TASKS_KEY, "attachments", taskId], queryFn: () => getTaskAttachments(taskId), refetchOnMount: true })
+export const useAddTaskLink = () => useTaskMutation((v: { taskId: string; url: string; title: string }) => addTaskLink(v.taskId, v.url, v.title), () => "Yo'riqnoma qo'shildi", true)
+export const useAddTaskFile = () => useTaskMutation((v: { taskId: string; file: File }) => addTaskFile(v.taskId, v.file), () => "Fayl yuklandi", true)
+export const useDeleteTaskAttachment = () => useTaskMutation((id: string) => deleteTaskAttachment(id), () => "Yo'riqnoma o'chirildi")
 export const useAddTaskComment = () => useTaskMutation((v: { taskId: string; body: string }) => addTaskComment(v.taskId, v.body), () => "Izoh qo'shildi")
 
 /** Optimistic, so a kanban drop or a status pick moves at once */
