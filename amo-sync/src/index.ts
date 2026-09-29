@@ -11,7 +11,8 @@
 //   open tasks                             full replace
 //   + settle_event_cashback() and expire_cashback() (not AmoCRM — see expireCashback below)
 // Alongside the loop: Telegram payment receipts (src/telegram.ts), event-driven;
-// and the Vazifalar morning report at 9:00 on its own minute timer (src/tasks.ts).
+// the Vazifalar morning report at 9:00 on its own minute timer (src/tasks.ts); and
+// tasks created from the team chat by mentioning the bot (src/taskbot.ts, Gemini).
 //
 // Env: DATABASE_URL, AMO_SUBDOMAIN, AMO_TOKEN (long-lived), SYNC_INTERVAL_MIN (10),
 //      EVENTS_FROM (2025-01-01, first backfill of status history).
@@ -20,6 +21,7 @@
 import postgres from "postgres"
 import { startTelegram } from "./telegram"
 import { startTaskDigest } from "./tasks"
+import { startTaskBot } from "./taskbot"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -274,6 +276,7 @@ if (process.argv.includes("--once")) {
 } else {
   await startTelegram(sql)
   startTaskDigest(sql)
+  await startTaskBot(sql).catch((e) => console.error(`[taskbot] ${e instanceof Error ? e.message : e}`))
   for (;;) {
     await runOnce()
     await sleep(INTERVAL_MIN * 60 * 1000)
