@@ -263,6 +263,7 @@ const THEME_OPTIONS: { id: ThemeId; label: string; ground: string; card: string 
   { id: "light",    label: "Yorug'",   ground: "#f2f2f2", card: "#ffffff" },
   { id: "contrast", label: "Kontrast", ground: "#0b0b0c", card: "#ffffff" },
   { id: "dark",     label: "Qorong'i", ground: "#0b0b0c", card: "#141416" },
+  { id: "photo",    label: "Manzara",  ground: "url(/images/login-sea.jpg) center / cover", card: "#ffffff" },
 ]
 
 const LANG_OPTIONS: { id: LangId; label: string }[] = [
@@ -276,7 +277,7 @@ function PreferencesRows() {
   return (
     <>
       <SettingsRow title="Ko'rinish" desc="Tizim mavzusi. Tanlov shu qurilmada saqlanadi.">
-        <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-3 gap-3 max-w-[480px]">
+        <div role="radiogroup" aria-label="Mavzu" className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px]">
           {THEME_OPTIONS.map((t) => (
             <button
               key={t.id}

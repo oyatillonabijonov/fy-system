@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- useTheme hook is part of the theme context module */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
-/** contrast = light main card on a dark ground and sidebar */
-export type ThemeId = 'light' | 'dark' | 'contrast'
+/** contrast = light main card on a dark ground and sidebar; photo = the same on the login photo */
+export type ThemeId = 'light' | 'dark' | 'contrast' | 'photo'
 
 /** Interface language — stored only; the copy is Uzbek until translations exist */
 export type LangId = 'uz' | 'ru' | 'en'
@@ -31,7 +31,7 @@ function getInitialTheme(): ThemeId {
     try {
         // Old values (neutral / black-orange / light-orange) fall back to light
         const saved = localStorage.getItem(THEME_KEY)
-        if (saved === 'dark' || saved === 'contrast') return saved
+        if (saved === 'dark' || saved === 'contrast' || saved === 'photo') return saved
     } catch { /* private browsing */ }
     return 'light'
 }
