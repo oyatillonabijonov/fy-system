@@ -126,14 +126,14 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <button
               onClick={handleExportBooklet}
               disabled={exporting || participants.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-semibold border border-line text-ink-muted hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3.5 h-control-md rounded-control bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Export size={16} />
               {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
             </button>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-bold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
+              className="flex items-center gap-2 px-4 h-control-md rounded-control bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
             >
               <Plus size={16} />
               Ishtirokchi qo'shish
