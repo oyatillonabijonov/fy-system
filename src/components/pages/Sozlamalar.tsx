@@ -1,5 +1,6 @@
 import { useState, useRef, useId } from "react"
 import { toast as notify } from "@/lib/toast"
+import { soundOn, setSoundOn } from "@/lib/sound"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
@@ -264,6 +265,7 @@ const LANG_OPTIONS: { id: LangId; label: string }[] = [
 
 function PreferencesRows() {
   const { themeId, setThemeId, lang, setLang } = useTheme()
+  const [sound, setSound] = useState(soundOn)
   return (
     <>
       <SettingsRow title="Ko'rinish" desc="Tizim mavzusi. Tanlov shu qurilmada saqlanadi.">
@@ -283,6 +285,18 @@ function PreferencesRows() {
                 <span className="flex-1 rounded-sm" style={{ background: t.card }} />
               </span>
               <span className="text-base font-medium text-ink">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </SettingsRow>
+
+      <SettingsRow title="Ovozlar" desc="Bosish, oyna ochilishi, saqlash va xatolik uchun yumshoq ovozlar. Tanlov shu qurilmada saqlanadi.">
+        <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken">
+          {[true, false].map((v) => (
+            <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
+              onClick={() => { setSound(v); setSoundOn(v) }}
+              className={`h-8 px-4 rounded-item text-base font-medium transition-colors ${sound === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+              {v ? "Yoqilgan" : "O'chirilgan"}
             </button>
           ))}
         </div>

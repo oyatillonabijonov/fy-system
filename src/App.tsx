@@ -23,6 +23,7 @@ import {
   Warning,
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
+import { cue } from "./lib/sound"
 
 
 interface PageMeta {
@@ -66,6 +67,8 @@ function AppShell() {
 
   const { lang: currentLang, setLang: setCurrentLang } = useTheme()
   const [isLangOpen, setIsLangOpen] = useState(false)
+
+  useEffect(() => { cue("navigate", { emphasis: "subtle" }) }, [location.pathname])
 
   // Escape closes the language popover
   useEffect(() => {

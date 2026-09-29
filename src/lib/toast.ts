@@ -2,6 +2,7 @@
 // Call toast.success / toast.error from anywhere; mutations can also declare
 // `meta: { success }` and get one automatically (MutationCache in main.tsx), and
 // every failed mutation shows an error unless it sets `meta: { silent: true }`.
+import { cue } from "@/lib/sound"
 
 export type ToastKind = "success" | "error" | "info"
 export interface Toast { id: number; kind: ToastKind; title: string; detail?: string }
@@ -23,6 +24,7 @@ function push(kind: ToastKind, title: string, detail?: string) {
   const t: Toast = { id: ++seq, kind, title, detail }
   items = [...items, t].slice(-MAX)
   emit()
+  cue(kind === "info" ? "ready" : kind, { emphasis: "subtle" })
   setTimeout(() => dismiss(t.id), LIFETIME[kind])
 }
 
