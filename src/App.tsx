@@ -11,6 +11,8 @@ import { HodimDetail } from "./components/pages/HodimDetail"
 import { Faollik } from "./components/pages/Faollik"
 import { Vazifalar } from "./components/pages/Vazifalar"
 import { Sotuv } from "./components/pages/Sotuv"
+import { PhoneProvider, usePhone } from "./context/PhoneContext"
+import { PhoneWidget } from "./components/sotuv/PhoneWidget"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Login } from "./components/pages/Login"
@@ -20,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   MagnifyingGlass,
   Warning,
+  Phone,
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
 
@@ -60,6 +63,18 @@ function DashboardRoute() {
   return hasAccess("dashboard") ? <Dashboard /> : <HomeDashboard />
 }
 
+/** Header chip: the browser phone's line (only for staff with an internal number) */
+function PhoneStatus() {
+  const { status, ext } = usePhone()
+  if (status === "off" || !ext) return null
+  const [dot, text] = status === "ready" ? ["bg-success", "Tayyor"] : status === "connecting" ? ["bg-warning", "Ulanmoqda"] : ["bg-danger", "Aloqa yo'q"]
+  return (
+    <span title={`Telefon: ichki raqam ${ext} · ${text}`} className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken text-sm text-ink-muted tabular-nums">
+      <Phone size={16} className="text-ink" />{ext}<span className={`size-2 rounded-full ${dot}`} />
+    </span>
+  )
+}
+
 function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -69,6 +84,7 @@ function AppShell() {
 
 
   return (
+    <PhoneProvider>
     <div className="app-ground h-screen text-ink flex overflow-hidden bg-page">
       <Sidebar />
 
@@ -114,6 +130,8 @@ function AppShell() {
               />
             </div>
 
+            <PhoneStatus />
+
             {/* Profile — opens Profilim */}
             <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Profilim" title={user?.full_name ?? "Profilim"}
               className="size-9 shrink-0 rounded-full overflow-hidden bg-mute-soft flex items-center justify-center text-sm font-semibold text-ink transition-opacity hover:opacity-85">
@@ -143,6 +161,8 @@ function AppShell() {
         </main>
       </div>
     </div>
+    <PhoneWidget />
+    </PhoneProvider>
   )
 }
 

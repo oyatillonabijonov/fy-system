@@ -6,6 +6,7 @@
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
+import { handlePbx } from "./pbx"
 
 const PORT = Number(process.env.INTAKE_PORT ?? 8787)
 const GRAPH = "https://graph.facebook.com/v19.0"
@@ -85,6 +86,7 @@ export function startIntake(sql: Sql): void {
     port: PORT,
     async fetch(req) {
       const url = new URL(req.url)
+      if (url.pathname.startsWith("/hooks/pbx/")) return handlePbx(req, sql, url.pathname.slice("/hooks/pbx/".length))
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
       const source = m[1]

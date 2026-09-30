@@ -285,6 +285,14 @@ export function subscribeLeads(pipelineId: string, onChange: () => void): () => 
   return () => { supabase.removeChannel(ch) }
 }
 
+/** A call on this deal was logged (the PBX publishes it ~1 min after it ends) — also its call-back task */
+export function subscribeLeadCalls(leadId: string, onChange: () => void): () => void {
+  const ch = supabase.channel(`sotuv_calls_${leadId}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_calls", filter: `lead_id=eq.${leadId}` }, onChange)
+    .subscribe()
+  return () => { supabase.removeChannel(ch) }
+}
+
 // ─── Time: tasks carry a Tashkent wall-clock deadline ───────────────────────
 
 /** "YYYY-MM-DD" + optional "HH:MM" (Tashkent) → timestamptz; no time = end of day ("kun davomida") */
@@ -295,4 +303,54 @@ export function fromDue(iso: string): { date: string; time: string | null } {
   const t = new Date(new Date(iso).getTime() + 5 * 3600_000).toISOString()
   const time = t.slice(11, 16)
   return { date: t.slice(0, 10), time: time === "23:59" ? null : time }
+}
+
+// ─── Telefoniya (074): OnlinePBX calls ──────────────────────────────────────
+
+export interface Call {
+  uuid: string
+  direction: "in" | "out"
+  phone: string | null
+  ext: string | null
+  started_at: string
+  duration: number
+  talk_time: number
+  staff: Person | null
+}
+
+export async function getLeadCalls(leadId: string): Promise<Call[]> {
+  const { data, error } = await db.from("crm_calls")
+    .select("uuid, direction, phone, ext, started_at, duration, talk_time, staff:staff_id(full_name, avatar_url)")
+    .eq("lead_id", leadId).order("started_at")
+  if (error) throw error
+  return data as unknown as Call[]
+}
+
+/** "+998 90 123 45 67", "901234567", "998901234567" → "+998901234567" (other countries: digits) */
+export function canonPhone(raw: string): string {
+  const d = raw.replace(/\D/g, "")
+  if (d.length === 9) return `+998${d}`
+  if (d.length === 12 && d.startsWith("998")) return `+${d}`
+  return d ? `+${d}` : ""
+}
+
+/** Who is on the line: the client with this phone and their latest open deal */
+export async function findCallContact(phone: string): Promise<{ name: string; leadId: string | null; leadName: string | null } | null> {
+  const { data, error } = await db.from("clients")
+    .select("full_name, crm_leads(id, name, is_won, is_lost, updated_at)").eq("phone", canonPhone(phone)).maybeSingle()
+  if (error || !data) return null
+  const c = data as { full_name: string; crm_leads: { id: string; name: string; is_won: boolean; is_lost: boolean; updated_at: string }[] }
+  const open = c.crm_leads.filter((l) => !l.is_won && !l.is_lost).sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0]
+  return { name: c.full_name, leadId: open?.id ?? null, leadName: open?.name ?? null }
+}
+
+/** amo-sync's /hooks/pbx/* with the signed-in session (the PBX key never reaches the browser) */
+export async function pbxApi<T>(path: string): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession()
+  const res = await fetch(`${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/pbx/${path}`, {
+    headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+  })
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string }
+  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`)
+  return body
 }

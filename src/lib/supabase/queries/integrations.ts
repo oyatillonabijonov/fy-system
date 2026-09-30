@@ -71,3 +71,17 @@ export async function updateLeadSource(id: string, patch: Partial<Pick<LeadSourc
   const { error } = await db.from("crm_lead_sources").update(patch).eq("id", id)
   if (error) throw error
 }
+
+// ─── Telefoniya (074): OnlinePBX internal numbers ↔ staff ──────────────────
+
+export interface PbxExt { num: string; name: string; enabled: boolean; registered: boolean }
+
+/** Give a staff member an internal number (null = none); whoever had it loses it (one line per person) */
+export async function setStaffExt(userId: string, ext: string | null): Promise<void> {
+  if (ext) {
+    const { error: e1 } = await db.from("profiles").update({ pbx_ext: null }).eq("pbx_ext", ext).neq("id", userId)
+    if (e1) throw e1
+  }
+  const { error } = await db.from("profiles").update({ pbx_ext: ext }).eq("id", userId)
+  if (error) throw error
+}
