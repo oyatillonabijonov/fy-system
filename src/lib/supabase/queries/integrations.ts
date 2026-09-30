@@ -43,3 +43,31 @@ export async function deleteTelegramGroup(chatId: number): Promise<void> {
   const { error } = await db.from("telegram_groups").delete().eq("chat_id", chatId)
   if (error) throw error
 }
+
+// ─── Lid manbalari (migration 073): form webhooks → Sotuv bo'limi, admin only ───
+
+export interface LeadSource {
+  id: string
+  label: string
+  token: string
+  pipeline_id: string | null
+  enabled: boolean
+  leads_count: number
+  last_lead_at: string | null
+}
+
+/** The address a form posts to (amo-sync behind the gateway's /hooks/) */
+export const leadHookUrl = (s: Pick<LeadSource, "id" | "token">) =>
+  `${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/lead/${s.id}?token=${s.token}`
+
+export async function getLeadSources(): Promise<LeadSource[]> {
+  const { data, error } = await db.from("crm_lead_sources")
+    .select("id, label, token, pipeline_id, enabled, leads_count, last_lead_at").order("created_at").order("id")
+  if (error) throw error
+  return data as LeadSource[]
+}
+
+export async function updateLeadSource(id: string, patch: Partial<Pick<LeadSource, "pipeline_id" | "enabled">>): Promise<void> {
+  const { error } = await db.from("crm_lead_sources").update(patch).eq("id", id)
+  if (error) throw error
+}

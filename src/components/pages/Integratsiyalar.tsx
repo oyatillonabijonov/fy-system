@@ -1,11 +1,13 @@
 import { useId, useState } from "react"
 import { motion } from "framer-motion"
-import { Plus, Trash, X, TelegramLogo } from "@phosphor-icons/react"
+import { Plus, Trash, X, TelegramLogo, Copy, Check } from "@phosphor-icons/react"
+import { useAuth } from "@/context/AuthContext"
+import { usePipelines } from "@/hooks/useSotuv"
 import { useDialog } from "@/hooks/useDialog"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
-import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDeleteTelegramGroup } from "@/hooks/useIntegrations"
-import { GROUP_ROLES, type GroupRole, type TelegramGroup } from "@/lib/supabase/queries/integrations"
+import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDeleteTelegramGroup, useLeadSources, useUpdateLeadSource } from "@/hooks/useIntegrations"
+import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type LeadSource } from "@/lib/supabase/queries/integrations"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
@@ -20,6 +22,7 @@ const isGone = (g: TelegramGroup) => g.bot_status === "left" || g.bot_status ===
 
 /** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's five jobs across */
 export function Integratsiyalar() {
+  const { isAdmin } = useAuth()
   const { data: groups = [], isLoading, error } = useTelegramGroups()
   const { page, setPage, pageCount, pageItems } = usePaged(groups)
   const [openId, setOpenId] = useState<number | null>(null)
@@ -61,9 +64,83 @@ export function Integratsiyalar() {
       </div>
       <Pager page={page} pageCount={pageCount} total={groups.length} onPage={setPage} />
 
+      {isAdmin && <LeadSources />}
+
       {open && <GroupModal group={open} onClose={() => setOpenId(null)} />}
       {adding && <AddModal onClose={() => setAdding(false)} />}
     </div>
+  )
+}
+
+/** Lid manbalari: each form source's webhook address, target voronka and on/off (admin — the address holds a secret) */
+function LeadSources() {
+  const { data: sources = [], isLoading, error } = useLeadSources(true)
+  const { data: pipelines = [] } = usePipelines()
+  const update = useUpdateLeadSource()
+  return (
+    <section className="flex flex-col gap-4 mt-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-md font-semibold text-ink">Lid manbalari</h2>
+        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga sdelka bo'lib tushadi. Bir telefondan qayta kelsa, ochiq sdelkasiga yoziladi.</p>
+      </div>
+      <div className={tbl.scroll}>
+        <table className={tbl.table}>
+          <thead>
+            <tr>
+              <th className={tbl.th}>Manba</th><th className={tbl.th}>Manzil (webhook)</th><th className={tbl.th}>Voronka</th>
+              <th className={tbl.th}>Kelgan</th><th className={`${tbl.th} text-center`}>Yoqilgan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? <tr><td colSpan={5} className={tbl.empty}>Yuklanmoqda…</td></tr>
+              : error ? <tr><td colSpan={5} className={`${tbl.empty} text-danger-text`}>{error.message}</td></tr>
+              : sources.map((s) => (
+                <tr key={s.id} className={tbl.tr}>
+                  <td className={`${tbl.td} font-medium whitespace-nowrap`}>{s.label}</td>
+                  <td className={tbl.td}><HookUrl source={s} /></td>
+                  <td className={tbl.td}>
+                    <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
+                      aria-label={`${s.label}: voronka`} className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
+                      <option value="">Tanlanmagan</option>
+                      {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </td>
+                  <td className={`${tbl.td} text-sm text-ink-muted whitespace-nowrap tabular-nums`}>
+                    {s.leads_count} ta{s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
+                  </td>
+                  <td className={`${tbl.td} text-center`}>
+                    <Switch on={s.enabled} label={`${s.label}: yoqilgan`} onChange={(v) => update.mutate({ id: s.id, patch: { enabled: v } })} />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+function HookUrl({ source }: { source: LeadSource }) {
+  const url = leadHookUrl(source)
+  return (
+    <div className="flex flex-col gap-1 max-w-[440px]">
+      <div className="flex items-center gap-2">
+        <code className="min-w-0 truncate text-sm text-ink-muted">{url}</code>
+        <CopyBtn value={url} />
+      </div>
+      {/* Meta asks for a separate "verify token" when the callback is registered */}
+      {source.id === "meta" && <div className="flex items-center gap-2 text-sm text-ink-faint">Verify token: <CopyBtn value={source.token} /></div>}
+    </div>
+  )
+}
+
+function CopyBtn({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
+  return (
+    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-sm text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+      {copied ? <Check size={12} weight="bold" /> : <Copy size={16} />}{copied ? "Nusxalandi" : "Nusxa"}
+    </button>
   )
 }
 

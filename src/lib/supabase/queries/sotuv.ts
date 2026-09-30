@@ -73,7 +73,7 @@ export interface SalesTask {
 
 export interface FeedNote {
   id: string
-  kind: "note" | "created" | "stage"
+  kind: "note" | "created" | "stage" | "lead"   // lead = a form request (073)
   text: string
   created_at: string
   created_by: string | null
@@ -88,6 +88,10 @@ export const SOURCES: { id: string; label: string }[] = [
   { id: "facebook", label: "Facebook" },
   { id: "sayt", label: "Sayt" },
   { id: "tavsiya", label: "Tavsiya" },
+  // form sources (073) — set by the intake, shown as is
+  { id: "tilda", label: "Tilda" },
+  { id: "framer", label: "Framer" },
+  { id: "meta", label: "Facebook / Instagram" },
 ]
 export const sourceLabel = (s: string | null) => SOURCES.find((x) => x.id === s)?.label ?? s ?? "—"
 
