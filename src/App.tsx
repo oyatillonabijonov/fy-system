@@ -10,6 +10,8 @@ import { Hodimlar } from "./components/pages/Hodimlar"
 import { HodimDetail } from "./components/pages/HodimDetail"
 import { Faollik } from "./components/pages/Faollik"
 import { Vazifalar } from "./components/pages/Vazifalar"
+import { Sotuv } from "./components/pages/Sotuv"
+import { SotuvLead } from "./components/pages/SotuvLead"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
@@ -30,6 +32,7 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
+  '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, sdelkalar va sotuv vazifalari." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
@@ -43,6 +46,7 @@ function pageMetaFor(pathname: string): PageMeta {
   if (/^\/hodimlar\/[^/]+/.test(pathname)) {
     return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
   }
+  if (pathname.startsWith('/sotuv/sdelka/')) return { title: 'Sdelka', desc: "Mijoz, bosqich, vazifalar va lenta." }
   return PAGE_META[pathname] ?? { title: '', desc: '' }
 }
 
@@ -159,6 +163,14 @@ function App() {
           <Route path="/mijozlar" element={
             <ProtectedRoute module="mijozlar"><Mijozlar /></ProtectedRoute>
           } />
+
+          <Route path="/sotuv" element={
+            <ProtectedRoute module="sotuv-crmn"><Sotuv /></ProtectedRoute>
+          } />
+          <Route path="/sotuv/sdelka/:id" element={
+            <ProtectedRoute module="sotuv-crmn"><SotuvLead /></ProtectedRoute>
+          } />
+          <Route path="/sotuv/crm-n" element={<Navigate to="/sotuv" replace />} />
 
           {/* Every signed-in staff member sees and edits all tasks (066) */}
           <Route path="/vazifalar" element={<Vazifalar />} />

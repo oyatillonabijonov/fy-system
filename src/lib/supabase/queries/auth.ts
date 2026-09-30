@@ -13,11 +13,12 @@ export type ModuleName =
   | "sozlamalar"
   | "integratsiyalar"
 
-/** Modules an admin can grant. "sotuv-crmn" (detached CRM-N) and "sozlamalar"
- *  (Profilim is open to everyone) stay valid ids in the DB but aren't offered. */
+/** Modules an admin can grant. "sozlamalar" (Profilim is open to everyone) stays a
+ *  valid id in the DB but isn't offered. "sotuv-crmn" is Sotuv bo'limi (the id is historical). */
 export const MODULES: { id: ModuleName; label: string; desc: string }[] = [
   { id: "dashboard",        label: "Dashboard",  desc: "AmoCRM sotuv analitikasi" },
   { id: "mijozlar",         label: "Mijozlar",   desc: "Mijozlar bazasi" },
+  { id: "sotuv-crmn",       label: "Sotuv bo'limi", desc: "Voronkalar, sdelkalar, sotuv vazifalari" },
   { id: "tadbirlar",        label: "Tadbirlar",  desc: "Tadbirlar va ishtirokchilar" },
   { id: "tadbirlar-moliya", label: "Moliya",     desc: "To'lovlar, qarzdorlar, xarajatlar" },
   { id: "integratsiyalar",  label: "Integratsiyalar", desc: "Telegram guruhlar: bot qaysi guruhda nima qiladi" },

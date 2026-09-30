@@ -1,4 +1,4 @@
-import { Code,
+import { Code, Funnel,
     MagnifyingGlass,
     House,
     Users,
@@ -52,6 +52,7 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
+            { name: "Sotuv bo'limi", icon: Funnel, path: "/sotuv", module: "sotuv-crmn" },
             { name: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },
             { name: "Tadbirlar", icon: Ticket, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
             { name: "Moliya", icon: Bank, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
