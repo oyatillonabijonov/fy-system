@@ -105,7 +105,11 @@ export async function handlePbx(req: Request, sql: Sql, path: string): Promise<R
       const w = u?.webrtc
       if (!w?.user || !w.password) return json({ error: "no_webrtc" }, 404)
       const host = w.host || `${DOMAIN}:8082`
-      return json({ ext: me.ext, login: `${w.user}@${host.replace(/:\d+$/, "")}`, password: w.password, socketUrl: `wss://${host}` })
+      // Signalling goes through our own gateway (location /pbx/verto → the PBX's :8082): some staff
+      // browsers' blockers stop any page request to *.onpbx.ru, but never to our API domain.
+      const api = req.headers.get("host")
+      return json({ ext: me.ext, login: `${w.user}@${host.replace(/:\d+$/, "")}`, password: w.password,
+                    socketUrl: api ? `wss://${api}/pbx/verto` : `wss://${host}` })
     }
     if (path === "exts") {
       if (!me.admin) return json({ error: "forbidden" }, 403)
