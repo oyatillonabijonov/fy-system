@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
+import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Play, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
+import { usePhone } from "@/context/PhoneContext"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
-import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask } from "@/hooks/useSotuv"
-import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, type FeedNote, type Lead, type SalesTask, type Stage, type TaskKind } from "@/lib/supabase/queries/sotuv"
+import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, SOTUV_KEY } from "@/hooks/useSotuv"
+import { useQueryClient } from "@tanstack/react-query"
+import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, pbxApi, subscribeLeadCalls, type Call, type FeedNote, type Lead, type SalesTask, type Stage, type TaskKind } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
 import { formatPhone } from "@/lib/format"
 import { DuePicker, PersonDot, addDays } from "@/components/vazifalar/pickers"
@@ -86,11 +88,7 @@ function LeadView({ lead }: { lead: Lead }) {
               <span className="block text-base font-medium text-ink truncate">{lead.client?.full_name ?? "Mijoz biriktirilmagan"}</span>
               {lead.client?.phone && <span className="block text-sm text-ink-muted tabular-nums">{formatPhone(lead.client.phone)}</span>}
             </div>
-            {lead.client?.phone && (
-              // ponytail: tel: link until OnlinePBX (phase 3) rings from the browser
-              <a href={`tel:${lead.client.phone}`} aria-label="Qo'ng'iroq qilish" title="Qo'ng'iroq qilish"
-                className="w-10 h-10 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity"><Phone size={20} weight="fill" /></a>
-            )}
+            {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
 
           <div className="flex flex-col gap-3">
@@ -135,6 +133,25 @@ function LeadView({ lead }: { lead: Lead }) {
   )
 }
 
+/** Rings from the browser when this staff member's line is up; otherwise the device's own dialer */
+function CallButton({ phone }: { phone: string }) {
+  const { status, dial, call } = usePhone()
+  const [error, setError] = useState<string | null>(null)
+  const cls = "w-10 h-10 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40"
+  if (status !== "ready") {
+    return <a href={`tel:${phone}`} aria-label="Qo'ng'iroq qilish" title={status === "off" ? "Qo'ng'iroq qilish" : "Brauzer telefoni ulanmagan — qurilma orqali"} className={cls}><Phone size={20} weight="fill" /></a>
+  }
+  return (
+    <span className="flex flex-col items-end gap-1">
+      <button type="button" disabled={!!call} aria-label="Brauzerdan qo'ng'iroq qilish" title="Brauzerdan qo'ng'iroq qilish" className={cls}
+        onClick={() => { setError(null); dial(phone).catch(() => setError("Mikrofonga ruxsat bering")) }}>
+        <Phone size={20} weight="fill" />
+      </button>
+      {error && <span role="alert" className="text-sm text-danger-text">{error}</span>}
+    </span>
+  )
+}
+
 const Field = ({ label, children }: { label: string; children: ReactNode }) => (
   <label className="flex flex-col gap-1.5"><span className="text-sm text-ink-muted">{label}</span>{children}</label>
 )
@@ -163,6 +180,9 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
   const { user, isAdmin } = useAuth()
   const { data: notes = [] } = useNotes(lead.id)
   const { data: tasks = [] } = useLeadTasks(lead.id)
+  const { data: calls = [] } = useLeadCalls(lead.id)
+  const qc = useQueryClient()
+  useEffect(() => subscribeLeadCalls(lead.id, () => qc.invalidateQueries({ queryKey: SOTUV_KEY })), [lead.id, qc])
   const delNote = useDeleteNote()
   const [closing, setClosing] = useState<SalesTask | null>(null)
   const end = useRef<HTMLDivElement>(null)
@@ -173,6 +193,7 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
   const items: Item[] = [
     ...notes.map((n) => ({ at: n.created_at, key: n.id, node: <NoteItem note={n} canDelete={n.kind === "note" && (n.created_by === user?.id || isAdmin)} onDelete={() => delNote.mutate(n.id)} /> })),
     ...tasks.filter((t) => t.is_done && t.done_at).map((t) => ({ at: t.done_at!, key: t.id, node: <DoneItem task={t} /> })),
+    ...calls.map((c) => ({ at: c.started_at, key: c.uuid, node: <CallItem call={c} /> })),
   ].sort((a, b) => a.at.localeCompare(b.at))
 
   // Newest at the bottom, next to the composer — keep it in view
@@ -239,6 +260,41 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
           {canDelete && <button onClick={onDelete} aria-label="Izohni o'chirish" className="ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-full hover:text-danger-text transition-opacity"><Trash size={16} /></button>}
         </div>
         <p className="mt-1 rounded-control bg-surface-sunken px-3 py-2 text-base text-ink whitespace-pre-wrap break-words">{note.text}</p>
+      </div>
+    </div>
+  )
+}
+
+const secs = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} daq ${s % 60} s` : `${s} s`)
+
+/** A PBX call in the feed; the recording link is fetched fresh on play (it expires in 30 min) */
+function CallItem({ call }: { call: Call }) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle")
+  const missed = call.talk_time === 0
+  const Icon = call.direction === "in" ? PhoneIncoming : PhoneOutgoing
+  async function play() {
+    setState("loading")
+    try { setSrc((await pbxApi<{ url: string }>(`record/${call.uuid}`)).url); setState("idle") } catch { setState("error") }
+  }
+  return (
+    <div className="flex gap-3 py-2">
+      <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${missed ? "bg-danger-soft text-danger-text" : "bg-surface-sunken text-ink-muted"}`}><Icon size={16} /></span>
+      <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 text-sm text-ink-muted">
+          <span className={missed ? "text-danger-text" : "text-ink"}>
+            {call.direction === "in" ? (missed ? "Javobsiz kiruvchi qo'ng'iroq" : "Kiruvchi qo'ng'iroq") : missed ? "Chiquvchi · javob berilmadi" : "Chiquvchi qo'ng'iroq"}
+          </span>
+          {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
+          {call.staff && <span className="truncate">· {call.staff.full_name}</span>}
+          <span className="tabular-nums ml-auto shrink-0">{when(call.started_at)}</span>
+        </div>
+        {!missed && (src
+          ? <audio src={src} controls autoPlay className="w-full h-9" />
+          : <button type="button" onClick={play} disabled={state === "loading"}
+              className="self-start inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors disabled:opacity-60">
+              <Play size={12} weight="fill" />{state === "loading" ? "Yuklanmoqda…" : state === "error" ? "Yozuv topilmadi — qayta urinish" : "Yozuvni tinglash"}
+            </button>)}
       </div>
     </div>
   )

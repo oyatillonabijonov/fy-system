@@ -6,7 +6,8 @@ import { usePipelines } from "@/hooks/useSotuv"
 import { useDialog } from "@/hooks/useDialog"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
-import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDeleteTelegramGroup, useLeadSources, useUpdateLeadSource } from "@/hooks/useIntegrations"
+import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDeleteTelegramGroup, useLeadSources, useUpdateLeadSource, usePbxExts, useSetStaffExt } from "@/hooks/useIntegrations"
+import { useUsers } from "@/hooks/useUsers"
 import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type LeadSource } from "@/lib/supabase/queries/integrations"
 
 const BOT = "@fymoliyabot"
@@ -64,11 +65,62 @@ export function Integratsiyalar() {
       </div>
       <Pager page={page} pageCount={pageCount} total={groups.length} onPage={setPage} />
 
+      {isAdmin && <Telephony />}
       {isAdmin && <LeadSources />}
 
       {open && <GroupModal group={open} onClose={() => setOpenId(null)} />}
       {adding && <AddModal onClose={() => setAdding(false)} />}
     </div>
+  )
+}
+
+/** Telefoniya: OnlinePBX internal numbers (live from the PBX) → which staff member uses each */
+function Telephony() {
+  const { data: exts = [], isLoading, error } = usePbxExts(true)
+  const { data: users = [] } = useUsers()
+  const setExt = useSetStaffExt()
+  const staff = users.filter((u) => u.is_active)
+  return (
+    <section className="flex flex-col gap-4 mt-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-md font-semibold text-ink">Telefoniya · OnlinePBX</h2>
+        <p className="text-sm text-ink-muted">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari sdelka lentasiga tushadi.</p>
+      </div>
+      <div className={tbl.scroll}>
+        <table className={tbl.table}>
+          <thead>
+            <tr><th className={tbl.th}>Ichki raqam</th><th className={tbl.th}>Holat</th><th className={tbl.th}>Hodim</th></tr>
+          </thead>
+          <tbody>
+            {isLoading ? <tr><td colSpan={3} className={tbl.empty}>Yuklanmoqda…</td></tr>
+              : error ? <tr><td colSpan={3} className={`${tbl.empty} text-danger-text`}>OnlinePBX bilan aloqa yo'q ({error.message})</td></tr>
+              : exts.length === 0 ? <tr><td colSpan={3} className={tbl.empty}>OnlinePBX'da ichki raqam yo'q</td></tr>
+              : exts.map((e) => {
+                const owner = users.find((u) => u.pbx_ext === e.num)
+                return (
+                  <tr key={e.num} className={tbl.tr}>
+                    <td className={`${tbl.td} font-medium tabular-nums`}>{e.num}{e.name ? <span className="ml-2 text-sm text-ink-muted font-normal">{e.name}</span> : null}</td>
+                    <td className={tbl.td}>
+                      <span className="inline-flex items-center gap-2 text-sm text-ink-muted">
+                        <span className={`size-2 rounded-full ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`} />
+                        {!e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"}
+                      </span>
+                    </td>
+                    <td className={tbl.td}>
+                      <select value={owner?.id ?? ""} aria-label={`${e.num}: hodim`}
+                        onChange={(ev) => ev.target.value ? setExt.mutate({ userId: ev.target.value, ext: e.num }) : owner && setExt.mutate({ userId: owner.id, ext: null })}
+                        className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
+                        <option value="">Biriktirilmagan</option>
+                        {staff.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.pbx_ext && u.pbx_ext !== e.num ? ` (${u.pbx_ext})` : ""}</option>)}
+                      </select>
+                    </td>
+                  </tr>
+                )
+              })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 
@@ -97,7 +149,9 @@ function LeadSources() {
               : sources.map((s) => (
                 <tr key={s.id} className={tbl.tr}>
                   <td className={`${tbl.td} font-medium whitespace-nowrap`}>{s.label}</td>
-                  <td className={tbl.td}><HookUrl source={s} /></td>
+                  <td className={tbl.td}>{s.id === "call"
+                    ? <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq sdelka bo'ladi</span>
+                    : <HookUrl source={s} />}</td>
                   <td className={tbl.td}>
                     <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
                       aria-label={`${s.label}: voronka`} className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">

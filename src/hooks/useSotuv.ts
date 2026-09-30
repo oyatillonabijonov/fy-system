@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getPipelines, getStages, getLeads, getLead, createLead, updateLead, deleteLead,
-  getNotes, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
+  getNotes, getLeadCalls, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
   createPipeline, renamePipeline, deletePipeline, saveStage, deleteStage,
   type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
 } from "@/lib/supabase/queries/sotuv"
@@ -24,6 +24,7 @@ export const useLeads = (p: string | null) => useQuery({ queryKey: K.leads(p), q
 export const useLead = (id: string) => useQuery({ queryKey: K.lead(id), queryFn: () => getLead(id), refetchOnMount: true })
 export const useNotes = (id: string) => useQuery({ queryKey: K.notes(id), queryFn: () => getNotes(id) })
 export const useLeadTasks = (id: string) => useQuery({ queryKey: K.tasks(id), queryFn: () => getLeadTasks(id) })
+export const useLeadCalls = (id: string) => useQuery({ queryKey: [...SOTUV_KEY, "calls", id], queryFn: () => getLeadCalls(id), refetchOnMount: true })
 export const useOpenTasks = () => useQuery({ queryKey: K.openTasks, queryFn: getOpenTasks, refetchOnMount: true })
 
 /** Any Sotuv write → refetch the whole section (small data, always consistent) */

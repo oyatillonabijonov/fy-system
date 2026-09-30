@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { pbxApi } from "@/lib/supabase/queries/sotuv"
+import { USERS_KEY } from "@/hooks/useUsers"
 import {
   getTelegramGroups, addTelegramGroup, updateTelegramGroup, deleteTelegramGroup, type TelegramGroup,
-  getLeadSources, updateLeadSource, type LeadSource,
+  getLeadSources, updateLeadSource, setStaffExt, type LeadSource, type PbxExt,
 } from "@/lib/supabase/queries/integrations"
 
 export const TELEGRAM_GROUPS_KEY = ["telegram-groups"] as const
@@ -63,5 +65,18 @@ export function useUpdateLeadSource() {
     },
     onError: (_e, _v, ctx) => qc.setQueryData(LEAD_SOURCES_KEY, ctx?.prev),
     onSettled: () => qc.invalidateQueries({ queryKey: LEAD_SOURCES_KEY }),
+  })
+}
+
+/** The PBX's internal numbers, live from OnlinePBX through amo-sync (admin) */
+export const usePbxExts = (enabled: boolean) =>
+  useQuery({ queryKey: ["pbx-exts"], queryFn: () => pbxApi<PbxExt[]>("exts"), enabled, refetchOnMount: true, retry: false })
+
+export function useSetStaffExt() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { userId: string; ext: string | null }) => setStaffExt(v.userId, v.ext),
+    meta: { success: "Ichki raqam saqlandi" },
+    onSettled: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })
 }

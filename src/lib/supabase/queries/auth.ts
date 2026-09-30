@@ -55,11 +55,13 @@ export interface UserProfile {
   notes: string | null
   /** account made with a temporary password — ask for a new one (migration 056) */
   must_change_password: boolean
+  /** OnlinePBX internal number (074) — admin sets it in Integratsiyalar → Telefoniya */
+  pbx_ext: string | null
   created_at: string
 }
 
 const PROFILE_COLUMNS =
-  "id, full_name, email, phone, avatar_url, role, is_active, department, position, hire_date, birth_date, address, bio, telegram, emergency_contact, notes, must_change_password, created_at"
+  "id, full_name, email, phone, avatar_url, role, is_active, department, position, hire_date, birth_date, address, bio, telegram, emergency_contact, notes, must_change_password, pbx_ext, created_at"
 
 interface ProfileRow {
   id: string
@@ -79,6 +81,7 @@ interface ProfileRow {
   emergency_contact: string | null
   notes: string | null
   must_change_password: boolean | null
+  pbx_ext?: string | null   // ponytail: not in types.ts until gen:types picks up 074 (hence the casts below)
   created_at: string | null
 }
 
@@ -101,6 +104,7 @@ function mapProfileRow(row: ProfileRow): UserProfile {
     emergency_contact: row.emergency_contact,
     notes: row.notes,
     must_change_password: row.must_change_password ?? false,
+    pbx_ext: row.pbx_ext ?? null,
     created_at: row.created_at ?? new Date().toISOString(),
   }
 }
@@ -139,7 +143,7 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
     .single()
 
   if (error || !data) return null
-  return mapProfileRow(data as ProfileRow)
+  return mapProfileRow(data as unknown as ProfileRow)
 }
 
 export async function getCurrentPermissions(): Promise<UserPermission[]> {
@@ -167,7 +171,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
     .select(PROFILE_COLUMNS)
     .order("created_at", { ascending: false })
   if (error) throw error
-  return (data ?? []).map((row) => mapProfileRow(row as ProfileRow))
+  return (data ?? []).map((row) => mapProfileRow(row as unknown as ProfileRow))
 }
 
 export async function getUserById(userId: string): Promise<UserProfile | null> {
@@ -177,7 +181,7 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
     .eq("id", userId)
     .single()
   if (error || !data) return null
-  return mapProfileRow(data as ProfileRow)
+  return mapProfileRow(data as unknown as ProfileRow)
 }
 
 // ─── User stats ──────────────────────────────────────────
