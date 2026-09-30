@@ -125,12 +125,14 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
       if (disposed) return
       verto = new Verto({
         login: creds.login, passwd: creds.password, socketUrl: creds.socketUrl,
-        autoReconnect: true, keepAlive: { interval: 10_000, maxFailed: 3 },
+        // No keepAlive: the library pings with XSwitch's "Uas.Ping", which OnlinePBX rejects
+        // (-32601), so it dropped the line every ~30 s. The PBX pings us (verto.ping) instead.
+        autoReconnect: true,
         tag: () => audio.current, ringer_tag: null, useVideo: false, useStereo: false,
         deviceParams: { useCamera: false, useMic: "any", useSpeak: "any" },
       }, {
         onWSLogin: (_v: unknown, ok: boolean) => { if (!disposed) setStatus(ok ? "ready" : "offline") },
-        onWSClose: () => { if (!disposed) setStatus("offline") },
+        onWSClose: (v: { purge: () => void }) => { v.purge(); if (!disposed) setStatus("offline") },   // purge = the library's own default
         onDialogState,
       }) as unknown as VertoClient
       client.current = verto
