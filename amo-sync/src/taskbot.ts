@@ -162,11 +162,11 @@ export function confirmation(tasks: Resolved[]): string {
   return `✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
 }
 
-/** The task text when the message is for us — "/vazifa@bot …" (always delivered, even in
- *  privacy mode) or a plain "@bot …" mention; null otherwise. A bare "/vazifa" is left to
- *  any other bot in the group (one there has the same command), so tasks aren't doubled. */
+/** The task text when the message is for us — "/task …" (bare or "/task@bot"), "/vazifa@bot …"
+ *  or a plain "@bot …" mention; null otherwise. A bare "/vazifa" is left to another bot in
+ *  the group (it owns that command), so tasks aren't doubled; "/task@otherbot" isn't ours. */
 export function taskText(raw: string, botUsername: string): string | null {
-  const cmd = new RegExp(`^/vazifa@${botUsername}\\b`, "i")
+  const cmd = new RegExp(`^/(?:vazifa@${botUsername}\\b|task(?:@${botUsername}\\b|(?![@\\w])))`, "i")
   const mention = new RegExp(`@${botUsername}\\b`, "gi")
   if (cmd.test(raw)) return raw.replace(cmd, "").replace(mention, "").trim()
   if (/^\//.test(raw)) return null   // someone else's command
@@ -271,7 +271,10 @@ export async function startTaskBot(sql: Sql): Promise<void> {
   if (!GEMINI_KEY) console.log("[taskbot] GEMINI_API_KEY yo'q — guruhdan vazifa qo'shish o'chiq (guruhlar ro'yxatga olinadi)")
   const me = await tg<{ username: string }>("getMe", {})
   // Command menu in groups: picking it inserts "/vazifa@<bot>", which only this bot receives
-  await tg("setMyCommands", { commands: [{ command: "vazifa", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" }], scope: { type: "all_group_chats" } })
+  await tg("setMyCommands", { commands: [
+    { command: "task", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" },
+    { command: "vazifa", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" },
+  ], scope: { type: "all_group_chats" } })
   // Skip whatever piled up while the bot wasn't listening — never act on old chat
   const backlog = await tg<TgUpdate[]>("getUpdates", { offset: -1, timeout: 0 })
   let offset = backlog.length ? backlog[backlog.length - 1].update_id + 1 : 0
