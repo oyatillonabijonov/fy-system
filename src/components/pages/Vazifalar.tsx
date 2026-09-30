@@ -154,11 +154,10 @@ function EventTasks() {
       )}
 
       {editing && (editing.task ? (
-        <TaskPanel task={editing.task} sections={sections} onClose={() => setEditing(null)} />
+        <TaskPanel task={editing.task} onClose={() => setEditing(null)} />
       ) : (
         <TaskCreate
           defaults={{ event_id: eventId, section: editing.section, status: editing.status }}
-          sections={sections}
           nextSortOrder={nextSort}
           onClose={() => setEditing(null)}
         />
@@ -301,7 +300,7 @@ function MyTasks() {
           {rows.map((t) => <TaskRow key={t.id} task={t} today={today} onOpen={setEditing} context />)}
         </section>
       ))}
-      {editing && <TaskPanel task={editing} sections={[]} onClose={() => setEditing(null)} />}
+      {editing && <TaskPanel task={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }

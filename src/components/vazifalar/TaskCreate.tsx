@@ -4,15 +4,14 @@ import { X } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
 import { useUsers } from "@/hooks/useUsers"
 import { useEvents } from "@/hooks/useEvents"
-import { useCreateTask } from "@/hooks/useTasks"
+import { useCreateTask, useEventSections } from "@/hooks/useTasks"
 import type { TaskStatus } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, type Owner } from "./pickers"
 
 /** Quick create: a big title line and property chips; Enter saves, "Yana qo'shish" keeps it open */
-export function TaskCreate({ defaults, sections, nextSortOrder, onClose }: {
+export function TaskCreate({ defaults, nextSortOrder, onClose }: {
   defaults: { event_id: string | null; section?: string | null; status?: TaskStatus }
-  sections: string[]
   nextSortOrder: number
   onClose: () => void
 }) {
@@ -38,14 +37,14 @@ export function TaskCreate({ defaults, sections, nextSortOrder, onClose }: {
   const guardedClose = () => !create.isPending && onClose()
   const panelRef = useDialog<HTMLDivElement>(guardedClose, true)
   const canSave = title.trim().length > 0 && !create.isPending
-  // Sections of the chosen event only make sense for that event
-  const sectionList = eventId === defaults.event_id ? sections : []
+  // bo'limlar of the chosen event (or Umumiy)
+  const sectionList = useEventSections(eventId)
 
   function save() {
     if (!canSave) return
     setError(null)
     create.mutate(
-      { title: title.trim(), event_id: eventId, section: eventId ? section : null, status, due_date: date, due_time: date ? time : null, ...owner, sort_order: sort.current++ },
+      { title: title.trim(), event_id: eventId, section, status, due_date: date, due_time: date ? time : null, ...owner, sort_order: sort.current++ },
       {
         onSuccess: () => {
           if (!more) return onClose()
@@ -91,8 +90,8 @@ export function TaskCreate({ defaults, sections, nextSortOrder, onClose }: {
           {/* Secondary: where it belongs and its state */}
           <div className="flex flex-wrap items-center gap-2">
             <StatusPicker value={status} onChange={setStatus} />
-            <EventPicker value={eventId} events={events} onChange={(id) => { setEventId(id); if (id !== defaults.event_id) setSection(null) }} />
-            {eventId && <SectionPicker value={section} sections={sectionList} onChange={setSection} />}
+            <EventPicker value={eventId} events={events} onChange={setEventId} />
+            <SectionPicker value={section} sections={sectionList} onChange={setSection} />
           </div>
           {error && <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">{error}</div>}
         </div>

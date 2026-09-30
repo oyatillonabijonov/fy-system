@@ -77,19 +77,20 @@ const SCHEMA = {
   required: ["tasks"],
 }
 
-export function buildPrompt(text: string, context: string | null, author: string, today: string, clock: string, staff: Staff[], events: EventCtx[]): string {
+export function buildPrompt(text: string, context: string | null, author: string, today: string, clock: string, staff: Staff[], events: EventCtx[], sections: string[] = []): string {
   const weekday = WEEKDAYS[new Date(`${today}T00:00:00Z`).getUTCDay()]
   return `Sen "Fikr Yetakchilari" jamoasining Telegram guruhidagi vazifa yordamchisisan. Xabardan vazifa(lar)ni ajrat.
 Bugun: ${today} (${weekday}), hozir soat ${clock}, Toshkent vaqti. Xabar muallifi: ${author}.
 Hodimlar (ism — telegram): ${staff.map((s) => `${s.full_name} — ${s.telegram ?? "yo'q"}`).join("; ")}
 Tadbirlar: ${JSON.stringify(events.map((e) => ({ name: e.name, start: e.start, end: e.end, sections: e.sections ?? [] })))}
+Barcha bo'limlar (vazifa turlari): ${JSON.stringify(sections)}
 Qoidalar:
 - title: qisqa, aniq, harakat shaklida (masalan "Resort to'lovlarini qilish"), o'zbek lotinida — kirillda yozilgan bo'lsa lotinga o'gir. Muddat va mas'ulni title'ga yozma.
 - assignee_username: mas'ul hodimlar ro'yxatida bo'lsa (xabardagi @username yoki ismi bo'yicha) — ro'yxatdagi username (@ bilan). Hodimning username'i "yo'q" bo'lsa yoki mas'ul tashqi odam bo'lsa — assignee_name ga to'liq ism. "Men"/"o'zim" — xabar muallifi. Mas'ul aytilmasa ikkalasi null.
 - due_date: YYYY-MM-DD. "bugun" = bugun, "ertaga/ertagacha" = +1 kun, "indinga/indingacha" = +2, hafta kuni = eng yaqin kelayotgan o'sha kun (bugun bo'lsa — bugun), "hafta oxirigacha" = yakshanba, "oy oxirigacha" = oyning oxirgi kuni, "3-oktabrgacha" = o'sha sana. Aytilmasa null.
 - due_time: aniq soat aytilsa "HH:MM" (24 soatlik: "soat 14:00 da" = "14:00", "ertalab 9 da" = "09:00", "kechki 7 da" = "19:00"), aytilmasa null. Soat aytilib kun aytilmasa — soat hali o'tmagan bo'lsa bugun, o'tgan bo'lsa ertaga (due_date ga yoz). Soatni title'ga yozma.
 - event: xabar tadbirlardan biriga taalluqli bo'lsa (tadbir yoki joy nomi, masalan resort nomi) — ro'yxatdagi aniq nom; aks holda null.
-- section: shu tadbirning bo'limlaridan eng mosi; mos kelmasa null.
+- section (vazifa turi): har doim tanlashga harakat qil. Tadbir aniq va uning bo'limlari bo'lsa — o'sha bo'limlardan eng mosi; aks holda (tadbir null yoki bo'limi yo'q) — "Barcha bo'limlar"dan eng mosi. Faqat ro'yxatdagi aniq nom; hech biri mos kelmasa null (yangi nom o'ylab topma).
 - Bir nechta vazifa bo'lsa — har birini alohida (ko'pi bilan ${MAX_TASKS} ta).
 - Xabar vazifa bo'lmasa (salomlashish, savol, hazil) — tasks bo'sh, question'ga qisqa o'zbekcha izoh.
 ${context ? `Javob berilgan xabar (kontekst):\n"""${context}"""\n` : ""}Xabar:
@@ -127,14 +128,18 @@ async function askGemini(prompt: string): Promise<Parsed> {
 
 export interface Resolved { title: string; assignee_id: string | null; assignee_name: string | null; due_date: string | null; due_time: string | null; event: EventCtx | null; section: string | null; owner_label: string | null }
 
-/** Maps the model's names onto real rows; anything unknown becomes plain text or null */
-export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[]): Resolved[] {
+/** Maps the model's names onto real rows; anything unknown becomes plain text or null.
+ *  A section must be a known one: the event's own when it has them, otherwise any known
+ *  section (all tasks) — so an Umumiy task gets a type too; the name is kept canonical. */
+export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[], sections: string[] = []): Resolved[] {
   return parsed.tasks.slice(0, MAX_TASKS).filter((t) => t.title?.trim()).map((t) => {
     const byHandle = t.assignee_username ? staff.find((s) => handle(s.telegram) === handle(t.assignee_username)) : undefined
     const byName = !byHandle && t.assignee_name ? staff.find((s) => s.full_name.toLowerCase() === t.assignee_name!.trim().toLowerCase()) : undefined
     const person = byHandle ?? byName
     const outside = !person ? (t.assignee_name?.trim() || (t.assignee_username ? `@${handle(t.assignee_username)}` : null)) : null
     const event = t.event ? events.find((e) => e.name === t.event) ?? null : null
+    const allowed = event?.sections?.length ? event.sections : sections
+    const section = t.section?.trim() ? allowed.find((s) => s.toLowerCase() === t.section!.trim().toLowerCase()) ?? null : null
     const due = t.due_date && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date) && !Number.isNaN(Date.parse(t.due_date)) ? t.due_date : null
     return {
       title: t.title.trim().slice(0, 300),
@@ -143,7 +148,7 @@ export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[])
       due_date: due,
       due_time: due && t.due_time && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.due_time) ? t.due_time : null,
       event,
-      section: event && t.section?.trim() ? t.section.trim() : null,
+      section,
       owner_label: person ? (person.telegram ? (person.telegram.startsWith("@") ? person.telegram : `@${person.telegram}`) : person.full_name) : outside,
     }
   })
@@ -152,7 +157,7 @@ export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[])
 export function confirmation(tasks: Resolved[]): string {
   const line = (t: Resolved) =>
     [t.owner_label ? `👤 ${esc(t.owner_label)}` : "👤 mas'ul belgilanmagan", t.due_date ? `📅 ${dayLabel(t.due_date)}${t.due_time ? `, ${t.due_time}` : ""}` : "📅 muddatsiz",
-     `📌 ${esc(t.event ? t.event.name + (t.section ? ` › ${t.section}` : "") : "Umumiy")}`].join(" · ")
+     `📌 ${esc((t.event ? t.event.name : "Umumiy") + (t.section ? ` › ${t.section}` : ""))}`].join(" · ")
   if (tasks.length === 1) return `✅ <b>Vazifa qo'shildi</b>\n${esc(tasks[0].title)}\n${line(tasks[0])}`
   return `✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
 }
@@ -198,18 +203,20 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     from events e
     where e.date is null or (coalesce(e.end_date, e.date) at time zone 'Asia/Tashkent')::date >= ${today}::date
     order by e.date nulls last`
+  const [{ sections }] = await sql<{ sections: string[] }[]>`
+    select coalesce(array_agg(distinct section order by section), '{}') as sections from tasks where section is not null`
   const context = msg.reply_to_message?.text ?? msg.reply_to_message?.caption ?? null
 
   let parsed: Parsed
   try {
-    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, events))
+    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, events, sections))
   } catch (err) {
     console.error(`[taskbot] AI: ${err instanceof Error ? err.message : String(err)}`)
     await reply(msg, "⏳ AI hozir band, vazifani qo'sha olmadim. Bir daqiqadan so'ng qayta yuboring.")
     return
   }
 
-  const tasks = resolveTasks(parsed, staff, events)
+  const tasks = resolveTasks(parsed, staff, events, sections)
   if (!tasks.length) {
     await reply(msg, `🤔 ${esc(parsed.question || "Xabardan vazifani tushuna olmadim.")}\nVazifani aniqroq yozing: nima qilish kerak, kim va qachongacha.`)
     return

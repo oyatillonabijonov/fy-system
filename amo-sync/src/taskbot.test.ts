@@ -51,3 +51,16 @@ test("due time kept only as HH:MM with a date; shown in the confirmation", () =>
   expect(r.map((t) => t.due_time)).toEqual(["14:00", null, null])
   expect(confirmation([r[0]])).toContain("📅 30-sentyabr, 14:00")
 })
+
+test("vazifa turi: an Umumiy task gets a known section; unknown names dropped; event's own list wins", () => {
+  const all = ["Marketing", "Resort", "Spikerlar"]
+  const r = resolveTasks({ tasks: [
+    { title: "Reels tayyorlash", section: "marketing" },
+    { title: "Yangi narsa", section: "O'ylab topilgan" },
+    { title: "Resort to'lovi", event: "Tog' safari 7.0 | Amirsoy", section: "Spikerlar" },
+  ] }, staff, events, all)
+  expect(r[0]).toMatchObject({ event: null, section: "Marketing" })
+  expect(r[1].section).toBeNull()
+  expect(r[2].section).toBeNull()   // the event has its own sections (Resort) — Spikerlar isn't one
+  expect(confirmation([r[0]])).toContain("📌 Umumiy › Marketing")
+})

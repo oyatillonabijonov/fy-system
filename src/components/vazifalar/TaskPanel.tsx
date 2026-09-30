@@ -5,14 +5,14 @@ import { useDialog } from "@/hooks/useDialog"
 import { useUsers } from "@/hooks/useUsers"
 import { useEvents } from "@/hooks/useEvents"
 import { useAuth } from "@/context/AuthContext"
-import { useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment, useTaskAttachments, useAddTaskLink, useAddTaskFile, useDeleteTaskAttachment } from "@/hooks/useTasks"
+import { useEventSections, useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment, useTaskAttachments, useAddTaskLink, useAddTaskFile, useDeleteTaskAttachment } from "@/hooks/useTasks"
 import { ATTACH_ACCEPT, taskFileUrl, type TaskAttachment } from "@/lib/supabase/queries/tasks"
 import type { Task, TaskDraft } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, PersonDot } from "./pickers"
 
 /** An existing task in a centred modal: every change saves at once; comments below */
-export function TaskPanel({ task, sections, onClose }: { task: Task; sections: string[]; onClose: () => void }) {
+export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }) {
   const { user } = useAuth()
   const { data: users = [] } = useUsers()
   const { data: events = [] } = useEvents()
@@ -24,6 +24,8 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
 
   // Local copy so the panel reflects edits at once (the list refetches behind it)
   const [t, setT] = useState(task)
+  // bo'limlar of wherever the task sits now — follows a move to another event
+  const sections = useEventSections(t.event_id)
   const [title, setTitle] = useState(task.title)
   const [error, setError] = useState<string | null>(null)
   const canDelete = task.created_by === user?.id || user?.role === "admin"
@@ -84,8 +86,9 @@ export function TaskPanel({ task, sections, onClose }: { task: Task; sections: s
           <div className="flex flex-wrap items-center gap-2">
             <StatusPicker value={t.status} onChange={(status) => save({ status })} />
             <EventPicker value={t.event_id} events={events}
-              onChange={(id) => { save({ event_id: id, ...(id !== t.event_id ? { section: null } : {}) }); setT((c) => ({ ...c, event: id ? { name: events.find((e) => e.id === id)?.name ?? "" } : null })) }} />
-            {t.event_id && <SectionPicker value={t.section} sections={t.event_id === task.event_id ? sections : []} onChange={(section) => save({ section })} />}
+              onChange={(id) => { save({ event_id: id });   // the bo'lim (vazifa turi) moves with the task
+                setT((c) => ({ ...c, event: id ? { name: events.find((e) => e.id === id)?.name ?? "" } : null })) }} />
+            <SectionPicker value={t.section} sections={sections} onChange={(section) => save({ section })} />
           </div>
 
           <Instructions taskId={task.id} />
