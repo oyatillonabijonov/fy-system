@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getTelegramGroups, addTelegramGroup, updateTelegramGroup, deleteTelegramGroup, type TelegramGroup,
+  getLeadSources, updateLeadSource, type LeadSource,
 } from "@/lib/supabase/queries/integrations"
 
 export const TELEGRAM_GROUPS_KEY = ["telegram-groups"] as const
@@ -40,5 +41,27 @@ export function useDeleteTelegramGroup() {
     mutationFn: deleteTelegramGroup,
     meta: { success: "Guruh ro'yxatdan olib tashlandi" },
     onSettled: () => qc.invalidateQueries({ queryKey: TELEGRAM_GROUPS_KEY }),
+  })
+}
+
+export const LEAD_SOURCES_KEY = ["lead-sources"] as const
+
+// Counters move as leads arrive — fetch fresh on every visit
+export const useLeadSources = (enabled: boolean) =>
+  useQuery({ queryKey: LEAD_SOURCES_KEY, queryFn: getLeadSources, enabled, refetchOnMount: true, refetchOnWindowFocus: true })
+
+/** Optimistic, so the switch flips at once */
+export function useUpdateLeadSource() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (v: { id: string; patch: Partial<Pick<LeadSource, "pipeline_id" | "enabled">> }) => updateLeadSource(v.id, v.patch),
+    onMutate: async ({ id, patch }) => {
+      await qc.cancelQueries({ queryKey: LEAD_SOURCES_KEY })
+      const prev = qc.getQueryData<LeadSource[]>(LEAD_SOURCES_KEY)
+      qc.setQueryData<LeadSource[]>(LEAD_SOURCES_KEY, (old) => old?.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => qc.setQueryData(LEAD_SOURCES_KEY, ctx?.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: LEAD_SOURCES_KEY }),
   })
 }

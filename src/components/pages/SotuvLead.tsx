@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil } from "@phosphor-icons/react"
+import { ArrowLeft, Phone, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
 import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask } from "@/hooks/useSotuv"
@@ -203,6 +203,22 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
 const when = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent" })
 
 function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: boolean; onDelete: () => void }) {
+  if (note.kind === "lead") {
+    // "Murojaat · Tilda" + the form's answers, one per line
+    const [title, ...lines] = note.text.split("\n")
+    return (
+      <div className="flex gap-3 py-2">
+        <span className="w-7 h-7 rounded-full bg-info-soft text-info-text flex items-center justify-center shrink-0"><Tray size={16} /></span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 text-sm text-ink-muted">
+            <span className="font-medium text-ink">{title}</span>
+            <span className="tabular-nums ml-auto">{when(note.created_at)}</span>
+          </div>
+          {lines.length > 0 && <p className="mt-1 rounded-control bg-surface-sunken px-3 py-2 text-base text-ink whitespace-pre-wrap break-words">{lines.join("\n")}</p>}
+        </div>
+      </div>
+    )
+  }
   if (note.kind !== "note") {
     const Icon = note.kind === "stage" ? ArrowsLeftRight : Sparkle
     return (
