@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getEventTasks,
@@ -26,6 +27,12 @@ export function useEventTasks(eventId: string | null) {
     queryFn: () => getEventTasks(eventId),
     refetchOnMount: true,
   })
+}
+
+/** The bo'limlar (vazifa turlari) already used in one event, or in Umumiy (null) */
+export function useEventSections(eventId: string | null): string[] {
+  const { data = [] } = useEventTasks(eventId)
+  return useMemo(() => [...new Set(data.map((t) => t.section).filter((s): s is string => !!s))], [data])
 }
 
 export function useTaskCounts() {
