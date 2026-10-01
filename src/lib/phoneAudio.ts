@@ -35,7 +35,7 @@ export function startRing(): () => void {
   const c = audio()
   void c.resume()
   const out = c.createGain()
-  out.gain.value = 0.9
+  out.gain.value = 1   // the file itself is mastered loud (+7 dB, limited to −1 dBFS ≈ −10 LUFS)
   out.connect(c.destination)
   if (ring) {
     const src = c.createBufferSource()
