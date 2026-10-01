@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
 import { HomeDashboard } from "./components/pages/HomeDashboard"
@@ -13,7 +13,9 @@ import { Vazifalar } from "./components/pages/Vazifalar"
 import { Sotuv } from "./components/pages/Sotuv"
 import { PhoneProvider, usePhone } from "./context/PhoneContext"
 import { PhoneWidget } from "./components/sotuv/PhoneWidget"
+import { SalesReminders } from "./components/sotuv/SalesReminders"
 import { SotuvLead } from "./components/pages/SotuvLead"
+import { SotuvCalls } from "./components/pages/SotuvCalls"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
@@ -35,7 +37,8 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
-  '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, sdelkalar va sotuv vazifalari." },
+  '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari." },
+  '/sotuv/qongiroqlar': { title: "Qo'ng'iroqlar", desc: "Kiruvchi va chiquvchi qo'ng'iroqlar — qayta qo'ng'iroq, yozuv, bitim." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
@@ -49,7 +52,7 @@ function pageMetaFor(pathname: string): PageMeta {
   if (/^\/hodimlar\/[^/]+/.test(pathname)) {
     return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
   }
-  if (pathname.startsWith('/sotuv/sdelka/')) return { title: 'Sdelka', desc: "Mijoz, bosqich, vazifalar va lenta." }
+  if (pathname.startsWith('/sotuv/bitim/')) return { title: 'Bitim', desc: "Mijoz, bosqich, vazifalar va lenta." }
   return PAGE_META[pathname] ?? { title: '', desc: '' }
 }
 
@@ -61,6 +64,12 @@ function pageMetaFor(pathname: string): PageMeta {
 function DashboardRoute() {
   const { hasAccess } = useAuth()
   return hasAccess("dashboard") ? <Dashboard /> : <HomeDashboard />
+}
+
+/** Links from before "Sdelka" became "Bitim" */
+function OldDealLink() {
+  const { id } = useParams()
+  return <Navigate to={`/sotuv/bitim/${id}`} replace />
 }
 
 /** Header chip: the browser phone's line (only for staff with an internal number) */
@@ -78,7 +87,7 @@ function PhoneStatus() {
 function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, hasAccess } = useAuth()
   const meta = pageMetaFor(location.pathname)
 
 
@@ -162,6 +171,7 @@ function AppShell() {
       </div>
     </div>
     <PhoneWidget />
+    {hasAccess("sotuv-crmn") && <SalesReminders />}
     </PhoneProvider>
   )
 }
@@ -187,10 +197,14 @@ function App() {
           <Route path="/sotuv" element={
             <ProtectedRoute module="sotuv-crmn"><Sotuv /></ProtectedRoute>
           } />
-          <Route path="/sotuv/sdelka/:id" element={
+          <Route path="/sotuv/bitim/:id" element={
             <ProtectedRoute module="sotuv-crmn"><SotuvLead /></ProtectedRoute>
           } />
+          <Route path="/sotuv/qongiroqlar" element={
+            <ProtectedRoute module="sotuv-crmn"><SotuvCalls /></ProtectedRoute>
+          } />
           <Route path="/sotuv/crm-n" element={<Navigate to="/sotuv" replace />} />
+          <Route path="/sotuv/sdelka/:id" element={<OldDealLink />} />
 
           {/* Every signed-in staff member sees and edits all tasks (066) */}
           <Route path="/vazifalar" element={<Vazifalar />} />

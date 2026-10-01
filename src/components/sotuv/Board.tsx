@@ -66,7 +66,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
                     {open && (
                       <button type="button" onClick={() => onAdd(s.id)}
                         className="flex items-center gap-1.5 h-9 px-2 rounded-full text-sm font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
-                        <Plus size={12} weight="bold" />Sdelka
+                        <Plus size={12} weight="bold" />Bitim
                       </button>
                     )}
                   </div>

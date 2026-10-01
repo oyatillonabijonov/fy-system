@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getPipelines, getStages, getLeads, getLead, createLead, updateLead, deleteLead,
-  getNotes, getLeadCalls, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
+  getNotes, getLeadCalls, getCalls, getDuplicateLeads, mergeLeads, renameClient, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
   createPipeline, renamePipeline, deletePipeline, saveStage, deleteStage,
-  type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
+  type CallFilter, type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
 } from "@/lib/supabase/queries/sotuv"
 
 /** Every Sotuv query key starts with this — one invalidation refreshes the section */
@@ -25,6 +25,11 @@ export const useLead = (id: string) => useQuery({ queryKey: K.lead(id), queryFn:
 export const useNotes = (id: string) => useQuery({ queryKey: K.notes(id), queryFn: () => getNotes(id) })
 export const useLeadTasks = (id: string) => useQuery({ queryKey: K.tasks(id), queryFn: () => getLeadTasks(id) })
 export const useLeadCalls = (id: string) => useQuery({ queryKey: [...SOTUV_KEY, "calls", id], queryFn: () => getLeadCalls(id), refetchOnMount: true })
+export const useCalls = (o: { page: number; filter: CallFilter; staffId: string | null }) =>
+  useQuery({ queryKey: [...SOTUV_KEY, "calls-page", o], queryFn: () => getCalls(o), refetchOnMount: true, placeholderData: (prev) => prev })
+export const useDuplicateLeads = () => useQuery({ queryKey: [...SOTUV_KEY, "duplicates"], queryFn: getDuplicateLeads, refetchOnMount: true })
+export const useMergeLeads = () => useSotuvMutation(({ keep, drop }: { keep: string; drop: string }) => mergeLeads(keep, drop), "Bitimlar birlashtirildi")
+export const useRenameClient = () => useSotuvMutation(({ id, name }: { id: string; name: string }) => renameClient(id, name), "Mijoz ismi saqlandi")
 export const useOpenTasks = () => useQuery({ queryKey: K.openTasks, queryFn: getOpenTasks, refetchOnMount: true })
 
 /** Any Sotuv write → refetch the whole section (small data, always consistent) */
@@ -37,8 +42,8 @@ function useSotuvMutation<V, R = void>(fn: (v: V) => Promise<R>, success?: strin
   })
 }
 
-export const useCreateLead = () => useSotuvMutation((d: LeadDraft) => createLead(d), "Sdelka qo'shildi")
-export const useDeleteLead = () => useSotuvMutation((id: string) => deleteLead(id), "Sdelka o'chirildi")
+export const useCreateLead = () => useSotuvMutation((d: LeadDraft) => createLead(d), "Bitim qo'shildi")
+export const useDeleteLead = () => useSotuvMutation((id: string) => deleteLead(id), "Bitim o'chirildi")
 export const useAddNote = () => useSotuvMutation(({ leadId, text }: { leadId: string; text: string }) => addNote(leadId, text))
 export const useDeleteNote = () => useSotuvMutation((id: string) => deleteNote(id))
 export const useAddTask = () => useSotuvMutation((t: TaskDraft) => addTask(t), "Vazifa qo'shildi")

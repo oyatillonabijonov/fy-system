@@ -49,8 +49,8 @@ export function SalesTasks({ today }: { today: string }) {
           {rows.map((t) => {
             const Icon = KIND_ICON[t.kind]
             return (
-              <div key={t.id} role="button" tabIndex={0} onClick={() => navigate(`/sotuv/sdelka/${t.lead_id}`)}
-                onKeyDown={(e) => { if (e.key === "Enter") navigate(`/sotuv/sdelka/${t.lead_id}`) }}
+              <div key={t.id} role="button" tabIndex={0} onClick={() => navigate(`/sotuv/bitim/${t.lead_id}`)}
+                onKeyDown={(e) => { if (e.key === "Enter") navigate(`/sotuv/bitim/${t.lead_id}`) }}
                 className="grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_160px_150px] items-center gap-3 px-3 py-2.5 border-t border-line first:border-t-0 hover:bg-mute-ghost-hover cursor-pointer transition-colors">
                 <DoneButton onClick={() => setClosing(t)} />
                 <span className="flex flex-col min-w-0">

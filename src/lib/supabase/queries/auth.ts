@@ -18,7 +18,7 @@ export type ModuleName =
 export const MODULES: { id: ModuleName; label: string; desc: string }[] = [
   { id: "dashboard",        label: "Dashboard",  desc: "AmoCRM sotuv analitikasi" },
   { id: "mijozlar",         label: "Mijozlar",   desc: "Mijozlar bazasi" },
-  { id: "sotuv-crmn",       label: "Sotuv bo'limi", desc: "Voronkalar, sdelkalar, sotuv vazifalari" },
+  { id: "sotuv-crmn",       label: "Sotuv bo'limi", desc: "Voronkalar, bitimlar, sotuv vazifalari" },
   { id: "tadbirlar",        label: "Tadbirlar",  desc: "Tadbirlar va ishtirokchilar" },
   { id: "tadbirlar-moliya", label: "Moliya",     desc: "To'lovlar, qarzdorlar, xarajatlar" },
   { id: "integratsiyalar",  label: "Integratsiyalar", desc: "Telegram guruhlar: bot qaysi guruhda nima qiladi" },

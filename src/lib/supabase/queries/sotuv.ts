@@ -135,7 +135,7 @@ export async function renamePipeline(id: string, name: string): Promise<void> {
 
 export async function deletePipeline(id: string): Promise<void> {
   const { error } = await db.from("crm_pipelines").delete().eq("id", id)
-  if (error) throw error.code === "23503" ? new Error("Voronkada sdelkalar bor — avval ularni boshqa voronkaga o'tkazing") : error
+  if (error) throw error.code === "23503" ? new Error("Voronkada bitimlar bor — avval ularni boshqa voronkaga o'tkazing") : error
 }
 
 export async function saveStage(s: Partial<Stage> & { pipeline_id: string }): Promise<void> {
@@ -147,10 +147,10 @@ export async function saveStage(s: Partial<Stage> & { pipeline_id: string }): Pr
 
 export async function deleteStage(id: string): Promise<void> {
   const { error } = await db.from("crm_stages").delete().eq("id", id)
-  if (error) throw error.code === "23503" ? new Error("Bu bosqichda sdelkalar bor — avval ularni boshqa bosqichga o'tkazing") : error
+  if (error) throw error.code === "23503" ? new Error("Bu bosqichda bitimlar bor — avval ularni boshqa bosqichga o'tkazing") : error
 }
 
-// ─── Sdelkalar ───────────────────────────────────────────────────────────────
+// ─── Bitimlar ───────────────────────────────────────────────────────────────
 
 const LEAD_SELECT =
   "id, name, pipeline_id, stage_id, client_id, price, source, responsible_user_id, loss_reason, is_won, is_lost, created_at, stage_changed_at, closed_at, " +
@@ -206,7 +206,7 @@ export async function updateLead(id: string, patch: LeadPatch): Promise<void> {
 export async function deleteLead(id: string): Promise<void> {
   const { data, error } = await db.from("crm_leads").delete().eq("id", id).select("id")
   if (error) throw error
-  if (!data?.length) throw new Error("Sdelkani faqat administrator o'chira oladi")
+  if (!data?.length) throw new Error("Bitimni faqat administrator o'chira oladi")
 }
 
 export interface PhoneMatch {
@@ -367,4 +367,74 @@ export async function pbxApi<T>(path: string): Promise<T> {
   const body = (await res.json().catch(() => ({}))) as T & { error?: string }
   if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`)
   return body
+}
+
+// ─── Qo'ng'iroqlar page (075): every call, newest first, 20 per page ────────
+
+export type CallFilter = "all" | "in" | "out" | "missed"
+export interface CallRow extends Call {
+  lead_id: string | null
+  client: { full_name: string } | null
+  lead: { name: string } | null
+}
+
+export async function getCalls(o: { page: number; filter: CallFilter; staffId: string | null }): Promise<{ rows: CallRow[]; total: number }> {
+  let q = db.from("crm_calls")
+    .select("uuid, direction, phone, ext, started_at, duration, talk_time, lead_id, staff:staff_id(full_name, avatar_url), client:client_id(full_name), lead:lead_id(name)", { count: "exact" })
+    .order("started_at", { ascending: false })
+    .range(o.page * 20, o.page * 20 + 19)
+  if (o.filter === "in" || o.filter === "out") q = q.eq("direction", o.filter)
+  if (o.filter === "missed") q = q.eq("talk_time", 0)
+  if (o.staffId) q = q.eq("staff_id", o.staffId)
+  const { data, error, count } = await q
+  if (error) throw error
+  return { rows: data as unknown as CallRow[], total: count ?? 0 }
+}
+
+/** Any new call → the list refreshes */
+export function subscribeCalls(onChange: () => void): () => void {
+  const ch = supabase.channel("sotuv_calls_all")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_calls" }, onChange)
+    .subscribe()
+  return () => { supabase.removeChannel(ch) }
+}
+
+/** Open bitimlar grouped by client — 2+ in a group is a duplicate (Dublikatlar) */
+export interface DupLead { id: string; name: string; price: number; created_at: string; updated_at: string; pipeline: string; stage: string; responsible: string | null }
+export async function getDuplicateLeads(): Promise<{ client: { id: string; full_name: string; phone: string | null }; leads: DupLead[] }[]> {
+  // ponytail: all open bitimlar grouped in the browser; a SQL group-by when there are thousands
+  const { data, error } = await db.from("crm_leads")
+    .select("id, name, price, created_at, updated_at, client_id, client:client_id(id, full_name, phone), pipeline:pipeline_id(name), stage:stage_id(name), responsible:responsible_user_id(full_name)")
+    .eq("is_won", false).eq("is_lost", false).not("client_id", "is", null)
+  if (error) throw error
+  type Row = { id: string; name: string; price: number; created_at: string; updated_at: string; client_id: string
+    client: { id: string; full_name: string; phone: string | null }; pipeline: { name: string } | null; stage: { name: string } | null; responsible: { full_name: string } | null }
+  const groups = new Map<string, { client: Row["client"]; leads: DupLead[] }>()
+  for (const r of data as unknown as Row[]) {
+    const g = groups.get(r.client_id) ?? { client: r.client, leads: [] }
+    g.leads.push({ id: r.id, name: r.name, price: r.price, created_at: r.created_at, updated_at: r.updated_at,
+      pipeline: r.pipeline?.name ?? "", stage: r.stage?.name ?? "", responsible: r.responsible?.full_name ?? null })
+    groups.set(r.client_id, g)
+  }
+  return [...groups.values()].filter((g) => g.leads.length > 1)
+    .map((g) => ({ ...g, leads: g.leads.sort((a, b) => a.created_at.localeCompare(b.created_at)) }))
+}
+
+export async function mergeLeads(keep: string, drop: string): Promise<void> {
+  const { error } = await db.rpc("merge_crm_leads", { p_keep: keep, p_drop: drop })
+  if (error) throw error
+}
+
+/** My open sales tasks, for the in-app reminder (075) */
+export async function getMyOpenTasks(userId: string): Promise<(Pick<SalesTask, "id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]> {
+  const { data, error } = await db.from("crm_tasks").select("id, kind, text, due_date, lead:lead_id(name)")
+    .eq("assignee_id", userId).eq("is_done", false).order("due_date")
+  if (error) throw error
+  return data as unknown as (Pick<SalesTask, "id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]
+}
+
+/** The operator names a client that came in as a bare phone number (075) */
+export async function renameClient(id: string, fullName: string): Promise<void> {
+  const { error } = await db.from("clients").update({ full_name: fullName }).eq("id", id)
+  if (error) throw error
 }

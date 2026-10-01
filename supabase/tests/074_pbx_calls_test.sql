@@ -36,6 +36,7 @@ DO $$ BEGIN
 END $$;
 
 -- TEST 3: an unknown incoming number opens a deal only when the "call" source is on
+UPDATE public.crm_lead_sources SET enabled = false WHERE id = 'call';   -- 075 switches it on; start from off
 DO $$ BEGIN
   PERFORM public.log_pbx_call('u5', 'inbound', '935550074', '100', 1790763800, 40, 30, 'NORMAL_CLEARING');
   IF EXISTS (SELECT 1 FROM public.clients WHERE phone = '+998935550074') THEN RAISE EXCEPTION 'TEST 3 FAILED: source off but client created'; END IF;

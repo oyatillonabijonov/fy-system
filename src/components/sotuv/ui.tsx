@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Sotuv section */
-import { Phone, UsersThree, EnvelopeSimple, DotsThreeCircle, type Icon } from "@phosphor-icons/react"
+import { useState } from "react"
+import { Phone, UsersThree, EnvelopeSimple, DotsThreeCircle, Play, type Icon } from "@phosphor-icons/react"
 import { dueLabel } from "@/components/vazifalar/pickers"
-import { fromDue, type TaskKind } from "@/lib/supabase/queries/sotuv"
+import { fromDue, pbxApi, type Call, type TaskKind } from "@/lib/supabase/queries/sotuv"
 import { formatNumber } from "@/lib/format"
 
 export const KIND_ICON: Record<TaskKind, Icon> = { call: Phone, meeting: UsersThree, email: EnvelopeSimple, other: DotsThreeCircle }
@@ -40,3 +41,25 @@ export function shortMoney(n: number): string {
 export const StageDot = ({ color, size = 8 }: { color: string; size?: number }) => (
   <span className="rounded-full shrink-0" style={{ width: size, height: size, backgroundColor: color }} />
 )
+
+export const secs = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} daq ${s % 60} s` : `${s} s`)
+
+export const callLabel = (c: Pick<Call, "direction" | "talk_time">) =>
+  c.direction === "in" ? (c.talk_time ? "Kiruvchi qo'ng'iroq" : "Javobsiz kiruvchi qo'ng'iroq") : c.talk_time ? "Chiquvchi qo'ng'iroq" : "Chiquvchi · javob berilmadi"
+
+/** ▶ → a signed link to the recording, streamed through our API (OnlinePBX's own host is blocked in some browsers) */
+export function Recording({ uuid, compact }: { uuid: string; compact?: boolean }) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle")
+  async function play() {
+    setState("loading")
+    try { setSrc((await pbxApi<{ url: string }>(`record/${uuid}`)).url); setState("idle") } catch { setState("error") }
+  }
+  if (src) return <audio src={src} controls autoPlay className={compact ? "w-56 h-8" : "w-full h-9"} />
+  return (
+    <button type="button" onClick={play} disabled={state === "loading"}
+      className="self-start inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors disabled:opacity-60 whitespace-nowrap">
+      <Play size={12} weight="fill" />{state === "loading" ? "Yuklanmoqda…" : state === "error" ? "Topilmadi — qayta" : compact ? "Tinglash" : "Yozuvni tinglash"}
+    </button>
+  )
+}
