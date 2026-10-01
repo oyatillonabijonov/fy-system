@@ -1,5 +1,5 @@
 // Browser phone sound: the ringtone and the call visualizer share one AudioContext.
-// The ringtone (public/sounds/ring.mp3 — Mixkit "Waiting ringtone", Mixkit License) is fetched
+// The ringtone (public/sounds/ring-waiting.mp3 — Mixkit "Waiting ringtone", Mixkit License) is fetched
 // and decoded once when the line comes up, so an incoming call rings from memory at once —
 // no network at ring time. Browsers only let audio start after the page was touched, so the
 // context is resumed on the first click/key.
@@ -21,7 +21,9 @@ function audio(): AudioContext {
 export async function preloadRing(): Promise<void> {
   if (ring) return
   const c = audio()
-  const res = await fetch("/sounds/ring.mp3")
+  // A new file name per new sound: Cloudflare cached an HTML fallback under the first name once
+  const res = await fetch("/sounds/ring-waiting.mp3")
+  if (!res.ok || !(res.headers.get("content-type") ?? "").startsWith("audio/")) throw new Error(`ringtone: ${res.status}`)
   ring = await c.decodeAudioData(await res.arrayBuffer())
 }
 
