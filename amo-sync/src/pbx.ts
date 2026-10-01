@@ -89,9 +89,45 @@ export async function verifyJwt(token: string, secret = JWT_SECRET): Promise<str
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: CORS })
 
+// Recordings are streamed through us too (api2.onlinepbx.ru is blocked in some staff browsers):
+// /record/<uuid> (session) hands out /audio/<uuid>?exp&sig, signed for 30 min — an <audio> tag
+// can't send the session header, so the signature is its pass.
+const b64u = (b: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+async function sign(v: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(process.env.JWT_SECRET ?? ""), { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+  return b64u(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`record.${v}`)))
+}
+
+export async function audioLink(uuid: string, base: string, now = Date.now()): Promise<string> {
+  const exp = Math.floor(now / 1000) + 1800
+  return `${base}/hooks/pbx/audio/${uuid}?exp=${exp}&sig=${await sign(`${uuid}.${exp}`)}`
+}
+
+export async function audioAllowed(uuid: string, exp: string, sig: string, now = Date.now()): Promise<boolean> {
+  return Number(exp) * 1000 > now && !!process.env.JWT_SECRET && sig === (await sign(`${uuid}.${exp}`))
+}
+
+async function streamAudio(req: Request, sql: Sql, uuid: string): Promise<Response> {
+  const q = new URL(req.url).searchParams
+  if (!(await audioAllowed(uuid, q.get("exp") ?? "", q.get("sig") ?? ""))) return new Response("forbidden", { status: 403 })
+  const [call] = await sql<{ uuid: string }[]>`select uuid from crm_calls where uuid = ${uuid} and talk_time > 0`
+  if (!call) return new Response("not found", { status: 404 })
+  const src = await fetch(await pbx<string>("mongo_history/search.json", { uuid, download: "1" }), {
+    headers: req.headers.get("range") ? { range: req.headers.get("range")! } : {},   // seeking in the player
+  })
+  const headers = new Headers({ "content-type": src.headers.get("content-type") ?? "audio/mpeg", "cache-control": "private, max-age=1800" })
+  for (const h of ["content-length", "content-range", "accept-ranges"]) { const v = src.headers.get(h); if (v) headers.set(h, v) }
+  return new Response(src.body, { status: src.status, headers })
+}
+
 export async function handlePbx(req: Request, sql: Sql, path: string): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS })
   if (!DOMAIN || !KEY) return json({ error: "pbx_off" }, 503)
+  const audio = path.match(/^audio\/([\w-]+)$/)
+  if (audio) return streamAudio(req, sql, audio[1]).catch((e) => {
+    console.error(`[pbx] audio: ${e instanceof Error ? e.message : e}`)
+    return new Response("pbx error", { status: 502 })
+  })
   const uid = await verifyJwt((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, ""))
   if (!uid) return json({ error: "unauthorized" }, 401)
   const [me] = await sql<{ ext: string | null; sales: boolean; admin: boolean }[]>`
@@ -120,8 +156,7 @@ export async function handlePbx(req: Request, sql: Sql, path: string): Promise<R
     if (rec) {
       const [call] = await sql<{ uuid: string }[]>`select uuid from crm_calls where uuid = ${rec[1]} and talk_time > 0`
       if (!call) return json({ error: "not_found" }, 404)
-      const url = await pbx<string>("mongo_history/search.json", { uuid: call.uuid, download: "1" })
-      return json({ url })
+      return json({ url: await audioLink(call.uuid, `https://${req.headers.get("host") ?? "api.fikryetakchilari.uz"}`) })
     }
     return json({ error: "not_found" }, 404)
   } catch (e) {
