@@ -29,7 +29,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
 
   return (
     <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
-      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 -mx-1 px-1 min-h-[60vh]">
+      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 min-h-[60vh]">
         {stages.map((s) => {
           const col = leads.filter((l) => l.stage_id === s.id)
           const sum = col.reduce((a, l) => a + l.price, 0)

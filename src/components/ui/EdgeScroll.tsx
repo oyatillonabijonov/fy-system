@@ -46,9 +46,10 @@ export function EdgeScroll({ className, dragging = false, step = 568, children }
   const up = () => { pan.current = null; setPanning(false) }
 
   return (
-    <div className="relative">
+    // The row bleeds 4px past the page edge (-mx-1, px-1 inside); the fades must start at that same edge
+    <div className="relative -mx-1">
       <div ref={scroller} onScroll={measure} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
-        className={`overflow-x-auto no-scrollbar ${panning ? "cursor-grabbing select-none" : ""} ${className}`}>{children}</div>
+        className={`overflow-x-auto no-scrollbar px-1 ${panning ? "cursor-grabbing select-none" : ""} ${className}`}>{children}</div>
       {([["left", -1, CaretLeft, "Oldingi ustunlar"], ["right", 1, CaretRight, "Keyingi ustunlar"]] as const).map(([side, dir, Icon, label]) => (
         <div key={side} aria-hidden={!edge[side]}
           className={`pointer-events-none absolute inset-y-0 w-16 from-surface to-transparent transition-opacity duration-150 ${side === "left" ? "left-0 bg-linear-to-r" : "right-0 bg-linear-to-l"} ${edge[side] ? "opacity-100" : "opacity-0"}`}>
