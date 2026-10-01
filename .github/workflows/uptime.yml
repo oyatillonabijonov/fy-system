@@ -33,7 +33,7 @@ jobs:
           body=$(curl -s -m 20 https://api.fikryetakchilari.uz/hooks/health || true)
           if [ "$(echo "$body" | jq -r '.ok' 2>/dev/null)" != "true" ]; then
             bad=$(echo "$body" | jq -r '.checks | to_entries[] | select(.value != true) | .key' 2>/dev/null | tr '\n' ' ')
-            fail="$fail"$'\n'"• Server xizmati: ${bad:-javob yo'q}"
+            fail="$fail"$'\n'"• Server xizmati: ${bad:-javob kelmadi}"
           fi
           mkdir -p state
           prev=$(cat state/status 2>/dev/null || echo up)
