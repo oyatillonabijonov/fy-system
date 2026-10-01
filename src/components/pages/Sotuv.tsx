@@ -79,7 +79,7 @@ export function Sotuv() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pb-10">
       {/* Voronkalar */}
       <div role="tablist" aria-label="Voronkalar" className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {pipelines.map((p) => (
