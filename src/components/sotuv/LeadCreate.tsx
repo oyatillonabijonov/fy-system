@@ -2,7 +2,9 @@ import { useEffect, useId, useState } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
 import { useCreateLead } from "@/hooks/useSotuv"
-import { findClientByPhone, SOURCES, type Stage } from "@/lib/supabase/queries/sotuv"
+import { Link } from "react-router-dom"
+import { ArrowRight, WarningCircle } from "@phosphor-icons/react"
+import { findClientByPhone, SOURCES, type PhoneMatch, type Stage } from "@/lib/supabase/queries/sotuv"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 
@@ -22,7 +24,7 @@ export function LeadCreate({ pipelineId, stages, stageId, onClose, onCreated }: 
     client_name: "", phone: "", name: "", price: "", source: "manual",
     stage_id: stageId ?? open[0]?.id ?? "", responsible_user_id: user?.id ?? "",
   })
-  const [existing, setExisting] = useState<{ id: string; full_name: string } | null>(null)
+  const [existing, setExisting] = useState<PhoneMatch | null>(null)
   const [error, setError] = useState<string | null>(null)
   const ids = { name: useId(), phone: useId(), deal: useId(), price: useId(), source: useId(), stage: useId(), owner: useId() }
   const set = (patch: Partial<typeof f>) => setF((c) => ({ ...c, ...patch }))
@@ -45,12 +47,28 @@ export function LeadCreate({ pipelineId, stages, stageId, onClose, onCreated }: 
   }
 
   return (
-    <ModalShell title="Yangi sdelka" error={error} submitLabel="Qo'shish" canSubmit={canSubmit} pending={create.isPending} onSubmit={submit} onClose={onClose}>
+    <ModalShell title="Yangi sdelka" error={error} submitLabel={existing?.open.length ? "Baribir yangi ochish" : "Qo'shish"} canSubmit={canSubmit} pending={create.isPending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={ids.phone} className={LABEL}>Telefon</label>
         <PhoneInput id={ids.phone} value={f.phone} onChange={(phone) => set({ phone })} />
-        {existing && <span className="text-sm text-info-text">Mavjud mijoz: <b className="font-medium">{existing.full_name}</b> — sdelka unga qo'shiladi</span>}
+        {existing && !existing.open.length && <span className="text-sm text-info-text">Mavjud mijoz: <b className="font-medium">{existing.full_name}</b> — sdelka unga qo'shiladi</span>}
       </div>
+      {/* The client already has an open deal: open it instead of making a duplicate */}
+      {existing && existing.open.length > 0 && (
+        <div role="alert" className="flex flex-col gap-2 rounded-control bg-warning-soft p-3">
+          <span className="flex items-start gap-2 text-sm text-warning-dark">
+            <WarningCircle size={16} className="shrink-0 mt-0.5" />
+            <span><b className="font-medium">{existing.full_name}</b>ning ochiq sdelkasi bor — yangisi dublikat bo'ladi.</span>
+          </span>
+          {existing.open.map((l) => (
+            <Link key={l.id} to={`/sotuv/sdelka/${l.id}`} onClick={onClose}
+              className="flex items-center gap-2 h-10 px-3 rounded-control bg-surface text-sm text-ink hover:bg-surface-raised transition-colors">
+              <span className="flex-1 min-w-0 truncate"><span className="font-medium">{l.name}</span><span className="text-ink-muted"> · {l.pipeline} › {l.stage}</span></span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-ink-muted">Ochish<ArrowRight size={16} /></span>
+            </Link>
+          ))}
+        </div>
+      )}
       {!existing && (
         <div className="flex flex-col gap-1.5">
           <label htmlFor={ids.name} className={LABEL}>Mijoz ismi</label>
