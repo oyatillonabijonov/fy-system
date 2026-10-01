@@ -1,0 +1,52 @@
+# Uptime watch from OUTSIDE the server: every 5 min it checks the web app, the Supabase API and
+# amo-sync's /hooks/health (DB, AmoCRM pass, call-history sync, last backup). A change of state
+# (down ↔ up) goes to the Telegram alert chat. Secrets: TELEGRAM_BOT_TOKEN, ALERT_CHAT_ID,
+# SUPABASE_ANON_KEY. GitHub pauses schedules after 60 days without commits — re-enable in Actions.
+name: Uptime
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: uptime-${{ github.run_id }}
+          restore-keys: uptime-
+
+      - name: Check and alert on change
+        env:
+          BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.ALERT_CHAT_ID }}
+          ANON: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          fail=""
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 https://app.fikryetakchilari.uz/ || true)
+          [ "$code" = 200 ] || fail="$fail"$'\n'"• Sayt (app): HTTP $code"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 https://api.fikryetakchilari.uz/rest/v1/ -H "apikey: $ANON" || true)
+          [ "$code" = 200 ] || fail="$fail"$'\n'"• API (Supabase): HTTP $code"
+          body=$(curl -s -m 20 https://api.fikryetakchilari.uz/hooks/health || true)
+          if [ "$(echo "$body" | jq -r '.ok' 2>/dev/null)" != "true" ]; then
+            bad=$(echo "$body" | jq -r '.checks | to_entries[] | select(.value != true) | .key' 2>/dev/null | tr '\n' ' ')
+            fail="$fail"$'\n'"• Server xizmati: ${bad:-javob yo'q}"
+          fi
+          mkdir -p state
+          prev=$(cat state/status 2>/dev/null || echo up)
+          now=up; [ -n "$fail" ] && now=down
+          echo "status: $now (was $prev)$fail"
+          if [ "$now" != "$prev" ] && [ -n "$CHAT" ]; then
+            if [ "$now" = down ]; then text="🔴 FY-System: muammo$fail"$'\n'"@oyatillonabijonov"; else text="🟢 FY-System: hammasi qayta ishlayapti"; fi
+            curl -s -m 20 "https://api.telegram.org/bot$BOT/sendMessage" --data-urlencode "chat_id=$CHAT" --data-urlencode "text=$text" > /dev/null
+          fi
+          echo "$now" > state/status
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state
+          key: uptime-${{ github.run_id }}

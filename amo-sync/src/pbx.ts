@@ -43,21 +43,33 @@ interface HistoryCall {
   start_stamp: number; end_stamp: number; duration: number; user_talk_time: number; hangup_cause: string
 }
 
-let syncedTo = Math.floor(Date.now() / 1000) - 86_400   // first pass: the last day
+const WEEK = 6 * 86_400   // the API serves at most a week per request
+/** Last successful history pass (for /hooks/health) */
+export let pbxSyncedAt = 0
 
+/** Read the history from where the last pass stopped (amo_sync_state 'pbx_synced_to'), so a long
+ *  outage of this service doesn't lose calls: a gap is replayed week by week. First run: the last day. */
 async function syncCalls(sql: Sql): Promise<void> {
   const now = Math.floor(Date.now() / 1000)
-  // By END time: a long call that started long ago still gets picked up when it ends.
-  // 5 min overlap for the PBX's ~1 min publishing delay; log_pbx_call ignores known uuids.
-  const calls = await pbx<HistoryCall[]>("mongo_history/search.json", { end_stamp_from: String(syncedTo - 300), end_stamp_to: String(now) })
+  const [row] = await sql<{ value: string | null }[]>`select value from amo_sync_state where key = 'pbx_synced_to'`
+  let from = Number(row?.value) || now - 86_400
   let logged = 0
-  for (const c of calls ?? []) {
-    const [{ r }] = await sql<{ r: string }[]>`
-      select public.log_pbx_call(${c.uuid}, ${c.accountcode}, ${String(c.caller_id_number ?? "")}, ${String(c.destination_number ?? "")},
-                                 ${c.start_stamp}, ${c.duration ?? 0}, ${c.user_talk_time ?? 0}, ${c.hangup_cause ?? null}) as r`
-    if (r === "logged") logged++
+  while (from < now) {
+    const to = Math.min(from + WEEK, now)
+    // By END time: a long call that started long ago still gets picked up when it ends.
+    // 5 min overlap for the PBX's ~1 min publishing delay; log_pbx_call ignores known uuids.
+    const calls = await pbx<HistoryCall[]>("mongo_history/search.json", { end_stamp_from: String(from - 300), end_stamp_to: String(to) })
+    for (const c of calls ?? []) {
+      const [{ r }] = await sql<{ r: string }[]>`
+        select public.log_pbx_call(${c.uuid}, ${c.accountcode}, ${String(c.caller_id_number ?? "")}, ${String(c.destination_number ?? "")},
+                                   ${c.start_stamp}, ${c.duration ?? 0}, ${c.user_talk_time ?? 0}, ${c.hangup_cause ?? null}) as r`
+      if (r === "logged") logged++
+    }
+    await sql`insert into amo_sync_state (key, value, updated_at) values ('pbx_synced_to', ${String(to)}, now())
+              on conflict (key) do update set value = excluded.value, updated_at = now()`
+    from = to
   }
-  syncedTo = now
+  pbxSyncedAt = Date.now()
   if (logged) console.log(`[pbx] ${logged} ta yangi qo'ng'iroq yozildi`)
 }
 
