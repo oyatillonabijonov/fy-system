@@ -14,6 +14,7 @@ import { Sotuv } from "./components/pages/Sotuv"
 import { PhoneProvider, usePhone } from "./context/PhoneContext"
 import { PhoneWidget } from "./components/sotuv/PhoneWidget"
 import { SalesReminders } from "./components/sotuv/SalesReminders"
+import { LiveSync } from "./components/layout/LiveSync"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { SotuvCalls } from "./components/pages/SotuvCalls"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
@@ -172,6 +173,7 @@ function AppShell() {
       </div>
     </div>
     <PhoneWidget />
+    <LiveSync />
     </PhoneProvider>
   )
 }
