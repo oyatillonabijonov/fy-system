@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
 import { EdgeScroll } from "@/components/ui/EdgeScroll"
@@ -21,15 +22,18 @@ export function TaskKanban({
 }) {
   const update = useUpdateTask()
 
+  const [dragging, setDragging] = useState(false)
+
   function onDragEnd(r: DropResult) {
+    setDragging(false)
     const to = r.destination?.droppableId as TaskStatus | undefined
     if (!to || to === r.source.droppableId) return
     update.mutate({ id: r.draggableId, patch: { status: to } })
   }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <EdgeScroll className="flex gap-3 pb-2 -mx-1 px-1">
+    <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
+      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 -mx-1 px-1">
         {TASK_STATUSES.map((s) => {
           const col = tasks.filter((t) => t.status === s.id)
           return (

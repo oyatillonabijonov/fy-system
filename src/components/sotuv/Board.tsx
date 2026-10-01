@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
 import { EdgeScroll } from "@/components/ui/EdgeScroll"
@@ -17,15 +18,18 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
 }) {
   const update = useUpdateLead()
 
+  const [dragging, setDragging] = useState(false)
+
   function onDragEnd(r: DropResult) {
+    setDragging(false)
     const to = r.destination?.droppableId
     if (!to || to === r.source.droppableId) return
     update.mutate({ id: r.draggableId, patch: { stage_id: to } })
   }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <EdgeScroll className="flex gap-3 pb-2 -mx-1 px-1 min-h-[60vh]">
+    <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
+      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 -mx-1 px-1 min-h-[60vh]">
         {stages.map((s) => {
           const col = leads.filter((l) => l.stage_id === s.id)
           const sum = col.reduce((a, l) => a + l.price, 0)
