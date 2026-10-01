@@ -125,7 +125,7 @@ export function Sotuv() {
         )}
         {isAdmin && pipeline && (
           <button onClick={() => setSettings(true)} aria-label="Voronka sozlamalari" title="Voronka sozlamalari"
-            className="h-control-md w-control-md flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"><GearSix size={20} /></button>
+            className="h-control-md aspect-square flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"><GearSix size={20} /></button>
         )}
         <button onClick={() => setCreating({ stageId: null })} disabled={!pipeline}
           className="h-control-md px-4 flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
