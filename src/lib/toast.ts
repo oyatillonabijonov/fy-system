@@ -2,7 +2,8 @@
 // Call toast.success / toast.error from anywhere; mutations can also declare
 // `meta: { success }` and get one automatically (MutationCache in main.tsx), and
 // every failed mutation shows an error unless it sets `meta: { silent: true }`.
-import { cue } from "@/lib/sound"
+import { cue, soundOn } from "@/lib/sound"
+import { playNotify } from "@/lib/phoneAudio"
 
 export type ToastKind = "success" | "error" | "info"
 export interface Toast { id: number; kind: ToastKind; title: string; detail?: string }
@@ -20,11 +21,11 @@ export function dismiss(id: number) {
   emit()
 }
 
-function push(kind: ToastKind, title: string, detail?: string) {
+function push(kind: ToastKind, title: string, detail?: string, loud = false) {
   const t: Toast = { id: ++seq, kind, title, detail }
   items = [...items, t].slice(-MAX)
   emit()
-  cue(kind === "info" ? "ready" : kind)
+  if (!(loud && soundOn() && playNotify())) cue(kind === "info" ? "ready" : kind)
   setTimeout(() => dismiss(t.id), LIFETIME[kind])
 }
 
@@ -32,6 +33,8 @@ export const toast = {
   success: (title: string, detail?: string) => push("success", title, detail),
   error: (title: string, detail?: string) => push("error", title, detail),
   info: (title: string, detail?: string) => push("info", title, detail),
+  /** Something that needs attention (a new lead, a task falling due): the louder notification sound */
+  notify: (title: string, detail?: string) => push("info", title, detail, true),
 }
 
 export const toastStore = {
