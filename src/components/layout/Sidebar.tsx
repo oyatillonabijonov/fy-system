@@ -1,4 +1,4 @@
-import { Code, Funnel,
+import { Code, Funnel, Kanban, PhoneCall,
     MagnifyingGlass,
     House,
     Users,
@@ -52,7 +52,13 @@ const navigationSections: NavSection[] = [
         items: [
             { name: "Dashboard", icon: House, path: "/dashboard" },
             { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
-            { name: "Sotuv bo'limi", icon: Funnel, path: "/sotuv", module: "sotuv-crmn" },
+            {
+                name: "Sotuv bo'limi", icon: Funnel, path: "/sotuv", module: "sotuv-crmn", opensPage: true,
+                subItems: [
+                    { name: "Bitimlar", icon: Kanban, path: "/sotuv", module: "sotuv-crmn" },
+                    { name: "Qo'ng'iroqlar", icon: PhoneCall, path: "/sotuv/qongiroqlar", module: "sotuv-crmn" },
+                ],
+            },
             { name: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },
             { name: "Tadbirlar", icon: Ticket, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
             { name: "Moliya", icon: Bank, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
@@ -282,7 +288,9 @@ export function Sidebar() {
                                     {hasSubItems && isExpanded && !isCollapsed && (
                                         <div className="flex flex-col gap-0.5 mt-0.5 ml-[21px] pl-3 border-l border-line">
                                             {item.subItems?.map((subItem) => {
-                                                const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
+                                                // the longest matching path wins (/sotuv vs /sotuv/qongiroqlar)
+                                                const match = (p?: string) => !!p && location.pathname.startsWith(p)
+                                                const isSubActive = match(subItem.path) && !item.subItems?.some((o) => o !== subItem && match(o.path) && (o.path?.length ?? 0) > (subItem.path?.length ?? 0))
                                                 return (
                                                     <button
                                                         key={subItem.name}

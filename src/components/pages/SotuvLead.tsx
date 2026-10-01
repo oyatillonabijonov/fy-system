@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Play, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
+import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
 import { usePhone } from "@/context/PhoneContext"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
-import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, SOTUV_KEY } from "@/hooks/useSotuv"
+import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, useRenameClient, SOTUV_KEY } from "@/hooks/useSotuv"
 import { useQueryClient } from "@tanstack/react-query"
-import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, pbxApi, subscribeLeadCalls, type Call, type FeedNote, type Lead, type SalesTask, type Stage, type TaskKind } from "@/lib/supabase/queries/sotuv"
+import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, subscribeLeadCalls, type Call, type FeedNote, type Lead, type SalesTask, type Stage, type TaskKind } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
 import { formatPhone } from "@/lib/format"
 import { DuePicker, PersonDot, addDays } from "@/components/vazifalar/pickers"
-import { KIND_ICON, TaskChip, NoTaskChip } from "@/components/sotuv/ui"
+import { KIND_ICON, TaskChip, NoTaskChip, Recording, callLabel, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
@@ -18,7 +18,7 @@ export function SotuvLead() {
   const { id = "" } = useParams()
   const { data: lead, isLoading } = useLead(id)
   if (isLoading) return <Box>Yuklanmoqda…</Box>
-  if (!lead) return <Box>Sdelka topilmadi. <Link to="/sotuv" className="underline">Sotuv bo'limiga qaytish</Link></Box>
+  if (!lead) return <Box>Bitim topilmadi. <Link to="/sotuv" className="underline">Sotuv bo'limiga qaytish</Link></Box>
   return <LeadView key={lead.id} lead={lead} />
 }
 
@@ -40,6 +40,17 @@ function LeadView({ lead }: { lead: Lead }) {
   const [name, setName] = useState(lead.name)
   const [price, setPrice] = useState(lead.price ? lead.price.toLocaleString("ru-RU") : "")
   const [reason, setReason] = useState(lead.loss_reason ?? "")
+  // A call-created client is named by their phone until the operator types the name
+  const rename = useRenameClient()
+  const isBareNumber = (v: string) => /^\+?\d[\d\s()-]*$/.test(v)
+  const [clientName, setClientName] = useState(lead.client && !isBareNumber(lead.client.full_name) ? lead.client.full_name : "")
+  function saveClientName() {
+    const v = clientName.trim()
+    const old = lead.client?.full_name ?? ""
+    if (!lead.client || !v || v === old) { setClientName(lead.client && !isBareNumber(old) ? old : ""); return }
+    rename.mutate({ id: lead.client.id, name: v })
+    if (lead.name === old) { setName(v); save({ name: v }) }   // a bitim named after its client follows
+  }
   const pipeline = pipelines.find((p) => p.id === lead.pipeline_id)
   const stage = stages.find((s) => s.id === lead.stage_id)
   const openStages = stages.filter((s) => !s.is_won && !s.is_lost)
@@ -50,7 +61,7 @@ function LeadView({ lead }: { lead: Lead }) {
     if (first) save({ pipeline_id: pid, stage_id: first.id })
   }
   function del() {
-    if (!window.confirm(`"${lead.name}" sdelkasi o'chirilsinmi? Lenta va vazifalar ham o'chadi.`)) return
+    if (!window.confirm(`"${lead.name}" bitimi o'chirilsinmi? Lenta va vazifalar ham o'chadi.`)) return
     remove.mutate(lead.id, { onSuccess: () => navigate(`/sotuv?p=${lead.pipeline_id}`) })
   }
 
@@ -64,7 +75,7 @@ function LeadView({ lead }: { lead: Lead }) {
         {/* Left: the deal */}
         <aside className="rounded-surface bg-surface-sunken p-5 flex flex-col gap-5 lg:sticky lg:top-4">
           <div className="flex flex-col gap-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Sdelka nomi"
+            <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Bitim nomi"
               onBlur={() => { const v = name.trim(); if (v && v !== lead.name) save({ name: v }); else setName(lead.name) }}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
               className="w-full bg-transparent text-xl font-semibold text-ink focus:outline-none -mx-1 px-1 rounded-item focus:bg-surface" />
@@ -85,7 +96,11 @@ function LeadView({ lead }: { lead: Lead }) {
           <div className="rounded-control bg-surface p-3.5 flex items-center gap-3">
             <PersonDot name={lead.client?.full_name ?? lead.name} url={lead.client?.image} size={40} />
             <div className="flex-1 min-w-0">
-              <span className="block text-base font-medium text-ink truncate">{lead.client?.full_name ?? "Mijoz biriktirilmagan"}</span>
+              {lead.client
+                ? <input value={clientName} onChange={(e) => setClientName(e.target.value)} aria-label="Mijoz ismi" placeholder="Mijoz ismini yozing"
+                    onBlur={saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
+                    className="block w-full bg-transparent text-base font-medium text-ink truncate rounded-item -mx-1 px-1 hover:bg-surface-sunken focus:bg-surface-sunken focus:outline-none" />
+                : <span className="block text-base font-medium text-ink truncate">Mijoz biriktirilmagan</span>}
               {lead.client?.phone && <span className="block text-sm text-ink-muted tabular-nums">{formatPhone(lead.client.phone)}</span>}
             </div>
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
@@ -213,7 +228,7 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
             {t.assignee && <PersonDot name={t.assignee.full_name} url={t.assignee.avatar_url} />}
             <TaskChip kind={t.kind} due={t.due_date} today={today} />
           </div>
-        )) : !isClosed && <div className="flex items-center gap-2 text-sm text-warning-text"><NoTaskChip />Keyingi qadamni belgilang — sdelka vazifasiz qolmasin</div>}
+        )) : !isClosed && <div className="flex items-center gap-2 text-sm text-warning-text"><NoTaskChip />Keyingi qadamni belgilang — bitim vazifasiz qolmasin</div>}
         <Composer leadId={lead.id} responsible={lead.responsible_user_id} today={today} />
       </div>
       {closing && <TaskDone task={closing} onClose={() => setClosing(null)} />}
@@ -265,36 +280,21 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
   )
 }
 
-const secs = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} daq ${s % 60} s` : `${s} s`)
-
-/** A PBX call in the feed; the recording link is fetched fresh on play (it expires in 30 min) */
+/** A PBX call in the feed */
 function CallItem({ call }: { call: Call }) {
-  const [src, setSrc] = useState<string | null>(null)
-  const [state, setState] = useState<"idle" | "loading" | "error">("idle")
   const missed = call.talk_time === 0
   const Icon = call.direction === "in" ? PhoneIncoming : PhoneOutgoing
-  async function play() {
-    setState("loading")
-    try { setSrc((await pbxApi<{ url: string }>(`record/${call.uuid}`)).url); setState("idle") } catch { setState("error") }
-  }
   return (
     <div className="flex gap-3 py-2">
       <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${missed ? "bg-danger-soft text-danger-text" : "bg-surface-sunken text-ink-muted"}`}><Icon size={16} /></span>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
         <div className="flex items-center gap-2 text-sm text-ink-muted">
-          <span className={missed ? "text-danger-text" : "text-ink"}>
-            {call.direction === "in" ? (missed ? "Javobsiz kiruvchi qo'ng'iroq" : "Kiruvchi qo'ng'iroq") : missed ? "Chiquvchi · javob berilmadi" : "Chiquvchi qo'ng'iroq"}
-          </span>
+          <span className={missed ? "text-danger-text" : "text-ink"}>{callLabel(call)}</span>
           {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
           {call.staff && <span className="truncate">· {call.staff.full_name}</span>}
           <span className="tabular-nums ml-auto shrink-0">{when(call.started_at)}</span>
         </div>
-        {!missed && (src
-          ? <audio src={src} controls autoPlay className="w-full h-9" />
-          : <button type="button" onClick={play} disabled={state === "loading"}
-              className="self-start inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors disabled:opacity-60">
-              <Play size={12} weight="fill" />{state === "loading" ? "Yuklanmoqda…" : state === "error" ? "Yozuv topilmadi — qayta urinish" : "Yozuvni tinglash"}
-            </button>)}
+        {!missed && <Recording uuid={call.uuid} />}
       </div>
     </div>
   )

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel } from "@phosphor-icons/react"
+import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel, Copy } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
-import { usePipelines, useStages, useLeads, useCreatePipeline, SOTUV_KEY } from "@/hooks/useSotuv"
+import { usePipelines, useStages, useLeads, useCreatePipeline, useDuplicateLeads, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeLeads, sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
 import { formatDate, formatNumber } from "@/lib/format"
@@ -14,6 +14,7 @@ import { Board } from "@/components/sotuv/Board"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { PipelineSettings } from "@/components/sotuv/PipelineSettings"
 import { SalesTasks } from "@/components/sotuv/SalesTasks"
+import { Duplicates } from "@/components/sotuv/Duplicates"
 import { TaskChip, NoTaskChip, StageDot } from "@/components/sotuv/ui"
 
 const LAST_PIPELINE = "fy_last_crm_pipeline_id"
@@ -36,6 +37,8 @@ export function Sotuv() {
   const [q, setQ] = useState("")
   const [creating, setCreating] = useState<{ stageId: string | null } | null>(null)
   const [settings, setSettings] = useState(false)
+  const [dups, setDups] = useState(false)
+  const { data: duplicates = [] } = useDuplicateLeads()
   const today = tashkentToday()
 
   const set = (k: string, v: string | null) => setParams((cur) => { const n = new URLSearchParams(cur); if (v) n.set(k, v); else n.delete(k); return n }, { replace: true })
@@ -63,7 +66,7 @@ export function Sotuv() {
     const name = window.prompt("Yangi voronka nomi")?.trim()
     if (name) createPipeline.mutate({ name, sortOrder: pipelines.length }, { onSuccess: (p) => pick(p.id) })
   }
-  const open = (l: Lead) => navigate(`/sotuv/sdelka/${l.id}`)
+  const open = (l: Lead) => navigate(`/sotuv/bitim/${l.id}`)
 
   if (!isLoading && pipelines.length === 0) {
     return (
@@ -96,7 +99,7 @@ export function Sotuv() {
         {view !== "tasks" && (
           <label className="flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken w-full sm:w-72">
             <MagnifyingGlass size={16} className="text-ink-muted" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism, sdelka yoki telefon"
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism, bitim yoki telefon"
               className="flex-1 min-w-0 bg-transparent text-base text-ink placeholder:text-ink-muted focus:outline-none" />
           </label>
         )}
@@ -114,13 +117,19 @@ export function Sotuv() {
             </button>
           ))}
         </div>
+        {duplicates.length > 0 && (
+          <button onClick={() => setDups(true)} title="Bir mijozning bir nechta ochiq bitimi"
+            className="h-control-md px-3 flex items-center gap-1.5 rounded-full bg-warning-soft text-warning-dark text-sm font-medium hover:opacity-90 transition-opacity">
+            <Copy size={16} />Dublikatlar · {duplicates.length}
+          </button>
+        )}
         {isAdmin && pipeline && (
           <button onClick={() => setSettings(true)} aria-label="Voronka sozlamalari" title="Voronka sozlamalari"
             className="h-control-md w-control-md flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"><GearSix size={20} /></button>
         )}
         <button onClick={() => setCreating({ stageId: null })} disabled={!pipeline}
           className="h-control-md px-4 flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
-          <Plus size={16} />Sdelka
+          <Plus size={16} />Bitim
         </button>
       </div>
 
@@ -136,8 +145,9 @@ export function Sotuv() {
 
       {creating && pipeline && (
         <LeadCreate pipelineId={pipeline.id} stages={stages} stageId={creating.stageId}
-          onClose={() => setCreating(null)} onCreated={(id) => navigate(`/sotuv/sdelka/${id}`)} />
+          onClose={() => setCreating(null)} onCreated={(id) => navigate(`/sotuv/bitim/${id}`)} />
       )}
+      {dups && <Duplicates onClose={() => setDups(false)} />}
       {settings && pipeline && (
         <PipelineSettings pipeline={pipeline} stages={stages} onClose={() => setSettings(false)} onDeleted={() => { setSettings(false); set("p", null) }} />
       )}
@@ -154,13 +164,13 @@ function LeadTable({ leads, stages, today, onOpen }: { leads: Lead[]; stages: St
         <table className={tbl.table}>
           <thead>
             <tr>
-              <th className={tbl.th}>Sdelka</th><th className={tbl.th}>Telefon</th><th className={tbl.th}>Bosqich</th>
+              <th className={tbl.th}>Bitim</th><th className={tbl.th}>Telefon</th><th className={tbl.th}>Bosqich</th>
               <th className={`${tbl.th} text-right`}>Summa</th><th className={tbl.th}>Keyingi vazifa</th>
               <th className={tbl.th}>Mas'ul</th><th className={tbl.th}>Manba</th><th className={tbl.th}>Yaratildi</th>
             </tr>
           </thead>
           <tbody>
-            {pageItems.length === 0 && <tr><td colSpan={8} className={tbl.empty}>Sdelka topilmadi</td></tr>}
+            {pageItems.length === 0 && <tr><td colSpan={8} className={tbl.empty}>Bitim topilmadi</td></tr>}
             {pageItems.map((l) => {
               const s = stage(l.stage_id)
               return (

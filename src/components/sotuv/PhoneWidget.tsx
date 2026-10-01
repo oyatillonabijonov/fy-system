@@ -51,7 +51,7 @@ export function PhoneWidget() {
           </div>
 
           {call.contact?.leadId && (
-            <Link to={`/sotuv/sdelka/${call.contact.leadId}`}
+            <Link to={`/sotuv/bitim/${call.contact.leadId}`}
               className="flex items-center gap-2 h-9 px-3 rounded-control bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors">
               <span className="flex-1 min-w-0 truncate">{call.contact.leadName}</span><ArrowRight size={16} className="text-ink-muted" />
             </Link>

@@ -84,7 +84,7 @@ function Telephony() {
     <section className="flex flex-col gap-4 mt-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-md font-semibold text-ink">Telefoniya · OnlinePBX</h2>
-        <p className="text-sm text-ink-muted">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari sdelka lentasiga tushadi.</p>
+        <p className="text-sm text-ink-muted">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.</p>
       </div>
       <div className={tbl.scroll}>
         <table className={tbl.table}>
@@ -133,7 +133,7 @@ function LeadSources() {
     <section className="flex flex-col gap-4 mt-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-md font-semibold text-ink">Lid manbalari</h2>
-        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga sdelka bo'lib tushadi. Bir telefondan qayta kelsa, ochiq sdelkasiga yoziladi.</p>
+        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
       </div>
       <div className={tbl.scroll}>
         <table className={tbl.table}>
@@ -150,7 +150,7 @@ function LeadSources() {
                 <tr key={s.id} className={tbl.tr}>
                   <td className={`${tbl.td} font-medium whitespace-nowrap`}>{s.label}</td>
                   <td className={tbl.td}>{s.id === "call"
-                    ? <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq sdelka bo'ladi</span>
+                    ? <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
                     : <HookUrl source={s} />}</td>
                   <td className={tbl.td}>
                     <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
