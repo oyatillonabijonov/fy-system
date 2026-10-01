@@ -33,7 +33,7 @@ export function TaskKanban({
 
   return (
     <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
-      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 -mx-1 px-1">
+      <EdgeScroll dragging={dragging} className="flex gap-3 pb-2">
         {TASK_STATUSES.map((s) => {
           const col = tasks.filter((t) => t.status === s.id)
           return (
