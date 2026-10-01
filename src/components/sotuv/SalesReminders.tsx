@@ -58,7 +58,7 @@ export function SalesReminders() {
       <button type="button" onClick={toggle} aria-expanded={open}
         aria-label={due.length ? `Eslatmalar: ${due.length} ta vazifa vaqti keldi` : "Eslatmalar"}
         className="relative size-9 shrink-0 rounded-full bg-surface-sunken flex items-center justify-center text-ink hover:bg-surface-sunken-hover transition-colors">
-        <Bell size={18} weight={due.length ? "fill" : "regular"} className={due.length ? "text-danger" : ""} />
+        <Bell size={16} />
         {due.length > 0 && (
           <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-danger text-white text-xs font-semibold tabular-nums flex items-center justify-center">
             {due.length > 99 ? "99+" : due.length}
