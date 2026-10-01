@@ -216,7 +216,7 @@ After changing any secret, update Doppler — local `.env.local` is a convenienc
 ```bash
 # 0) Always back up first
 ssh -i ~/.ssh/heons_key ubuntu@141.147.119.131 \
-  'TS=$(date +%Y%m%d_%H%M%S); docker exec supabase-db-1 pg_dump -U postgres -d postgres -Fc -f /tmp/fy_$TS.dump \
+  'TS=$(date +%Y%m%d_%H%M%S); docker exec supabase-db-1 pg_dump -U postgres -d postgres -Fc --exclude-schema=_realtime -f /tmp/fy_$TS.dump \
    && docker cp supabase-db-1:/tmp/fy_$TS.dump ~/backups/fy_$TS.dump && echo backed up $TS'
 
 # 1) Apply a migration file
