@@ -209,11 +209,25 @@ export async function deleteLead(id: string): Promise<void> {
   if (!data?.length) throw new Error("Sdelkani faqat administrator o'chira oladi")
 }
 
-/** A client already in the base with this phone (for the "mavjud mijoz" hint) */
-export async function findClientByPhone(phone: string): Promise<{ id: string; full_name: string } | null> {
-  const { data, error } = await db.from("clients").select("id, full_name").eq("phone", phone).maybeSingle()
+export interface PhoneMatch {
+  id: string
+  full_name: string
+  /** the client's deals that are still open — a new one would be a duplicate */
+  open: { id: string; name: string; pipeline: string; stage: string }[]
+}
+
+/** A client already in the base with this phone, with their open deals (the "mavjud mijoz" hint) */
+export async function findClientByPhone(phone: string): Promise<PhoneMatch | null> {
+  const { data, error } = await db.from("clients")
+    .select("id, full_name, crm_leads(id, name, is_won, is_lost, pipeline:pipeline_id(name), stage:stage_id(name))")
+    .eq("phone", phone).maybeSingle()
   if (error) throw error
-  return data as { id: string; full_name: string } | null
+  if (!data) return null
+  const c = data as unknown as { id: string; full_name: string; crm_leads: { id: string; name: string; is_won: boolean; is_lost: boolean; pipeline: { name: string } | null; stage: { name: string } | null }[] }
+  return {
+    id: c.id, full_name: c.full_name,
+    open: c.crm_leads.filter((l) => !l.is_won && !l.is_lost).map((l) => ({ id: l.id, name: l.name, pipeline: l.pipeline?.name ?? "", stage: l.stage?.name ?? "" })),
+  }
 }
 
 // ─── Lenta ───────────────────────────────────────────────────────────────────
