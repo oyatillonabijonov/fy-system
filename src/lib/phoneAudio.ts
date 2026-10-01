@@ -7,9 +7,12 @@
 // Imported, so the build gives it a content-hashed /assets/ name: no URL is ever requested before its
 // file exists (a fixed /sounds/ URL got an HTML/404 answer cached by Cloudflare for 4 h, twice).
 import ringUrl from "@/assets/sounds/ring-waiting.mp3"
+// New lead / task due (Mixkit "Positive notification", Mixkit License; mastered to about −12 LUFS)
+import notifyUrl from "@/assets/sounds/notify-positive.mp3"
 
 let ctx: AudioContext | null = null
 let ring: AudioBuffer | null = null
+let notify: AudioBuffer | null = null
 
 function audio(): AudioContext {
   if (!ctx) {
@@ -21,13 +24,32 @@ function audio(): AudioContext {
   return ctx
 }
 
+async function decode(url: string): Promise<AudioBuffer> {
+  const res = await fetch(url)
+  if (!res.ok || !(res.headers.get("content-type") ?? "").startsWith("audio/")) throw new Error(`sound: ${res.status}`)
+  return audio().decodeAudioData(await res.arrayBuffer())
+}
+
 /** Fetch + decode the ringtone once (called when the phone line starts) */
 export async function preloadRing(): Promise<void> {
-  if (ring) return
+  if (!ring) ring = await decode(ringUrl)
+}
+
+/** Fetch + decode the notification once (called on sign-in), so it plays the moment it's due */
+export async function preloadNotify(): Promise<void> {
+  if (!notify) notify = await decode(notifyUrl)
+}
+
+/** The notification, once; false if it isn't loaded yet (the caller falls back to the UI cue) */
+export function playNotify(): boolean {
+  if (!notify) return false
   const c = audio()
-  const res = await fetch(ringUrl)
-  if (!res.ok || !(res.headers.get("content-type") ?? "").startsWith("audio/")) throw new Error(`ringtone: ${res.status}`)
-  ring = await c.decodeAudioData(await res.arrayBuffer())
+  void c.resume()
+  const src = c.createBufferSource()
+  src.buffer = notify
+  src.connect(c.destination)
+  src.start()
+  return true
 }
 
 /** Ring until the returned stop() — the file looped; if it isn't ready, a plain two-tone ring */

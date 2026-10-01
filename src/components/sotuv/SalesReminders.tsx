@@ -44,8 +44,8 @@ export function SalesReminders() {
     const seen = load()
     const due = tasks.filter((t) => remindAt(t.due_date) <= now && seen[t.id] !== t.due_date)
     if (due.length === 0) return
-    if (due.length > 2) toast.info(`${due.length} ta vazifa vaqti keldi`, "Sotuv bo'limi → Vazifalar")
-    else for (const t of due) toast.info(`Vazifa vaqti keldi: ${kindLabel(t.kind)}`, [t.text, t.lead?.name].filter(Boolean).join(" · "))
+    if (due.length > 2) toast.notify(`${due.length} ta vazifa vaqti keldi`, "Sotuv bo'limi → Vazifalar")
+    else for (const t of due) toast.notify(`Vazifa vaqti keldi: ${kindLabel(t.kind)}`, [t.text, t.lead?.name].filter(Boolean).join(" · "))
     // Keep only still-open tasks in the store
     const next: Record<string, string> = {}
     for (const t of tasks) if (seen[t.id] || due.includes(t)) next[t.id] = t.due_date

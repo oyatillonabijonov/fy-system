@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/context/AuthContext"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { toast } from "@/lib/toast"
+import { preloadNotify } from "@/lib/phoneAudio"
 
 // Table (in the supabase_realtime publication, 072–076) → first elements of the query keys that
 // show it. A profile's name/photo is embedded nearly everywhere, so it refreshes everything.
@@ -28,6 +29,7 @@ export function LiveSync() {
 
   useEffect(() => {
     if (!uid) return
+    preloadNotify().catch(() => { /* falls back to the UI cue */ })
     let all = false
     const dirty = new Set<string>()
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -49,7 +51,7 @@ export function LiveSync() {
 
         if (p.table === "crm_leads" && p.eventType === "INSERT") {
           const lead = p.new as { name?: string; source?: string | null; created_by?: string | null }
-          if (lead.created_by !== uid) toast.info(`Yangi lid: ${lead.name ?? ""}`, sourceLabel(lead.source ?? null))
+          if (lead.created_by !== uid) toast.notify(`Yangi lid: ${lead.name ?? ""}`, sourceLabel(lead.source ?? null))
         }
       })
       .subscribe()
