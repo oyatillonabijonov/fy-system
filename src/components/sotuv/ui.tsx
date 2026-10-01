@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Sotuv section */
-import { useState } from "react"
+import { useState, type SyntheticEvent } from "react"
 import { Phone, UsersThree, EnvelopeSimple, DotsThreeCircle, Play, type Icon } from "@phosphor-icons/react"
 import { dueLabel } from "@/components/vazifalar/pickers"
 import { fromDue, pbxApi, type Call, type TaskKind } from "@/lib/supabase/queries/sotuv"
@@ -55,7 +55,10 @@ export function Recording({ uuid, compact }: { uuid: string; compact?: boolean }
     setState("loading")
     try { setSrc((await pbxApi<{ url: string }>(`record/${uuid}`)).url); setState("idle") } catch { setState("error") }
   }
-  if (src) return <audio src={src} controls autoPlay className={compact ? "w-56 h-8" : "w-full h-9"} />
+  // One recording at a time: starting one pauses the others (data-recording keeps the live call's audio out of it)
+  const solo = (e: SyntheticEvent<HTMLAudioElement>) =>
+    document.querySelectorAll<HTMLAudioElement>("audio[data-recording]").forEach((a) => { if (a !== e.currentTarget) a.pause() })
+  if (src) return <audio src={src} controls autoPlay data-recording onPlay={solo} className={compact ? "w-56 h-8" : "w-full h-9"} />
   return (
     <button type="button" onClick={play} disabled={state === "loading"}
       className="self-start inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors disabled:opacity-60 whitespace-nowrap">

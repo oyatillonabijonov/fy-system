@@ -38,7 +38,7 @@ export function SotuvCalls() {
   const choose = (f: CallFilter) => { setFilter(f); setPage(0) }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pb-10">
       <div className="flex flex-wrap items-center gap-3">
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {FILTERS.map(([id, label]) => (
@@ -108,15 +108,16 @@ function CallRowView({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
       <td className={`${tbl.td} tabular-nums whitespace-nowrap text-ink-muted`}>{when(c.started_at)}</td>
       <td className={tbl.td}>{missed ? <span className="text-ink-faint">—</span> : <Recording uuid={c.uuid} compact />}</td>
       <td className={`${tbl.td} text-right`}>
-        <span className="inline-flex items-center gap-1.5">
+        {/* Fixed widths, so the call and bitim buttons line up row under row */}
+        <span className="inline-flex items-center justify-end gap-1.5">
           {phone && (status === "ready"
             ? <button type="button" disabled={!!active} onClick={() => void dial(phone).catch(() => {})} aria-label="Qayta qo'ng'iroq qilish" title="Qayta qo'ng'iroq qilish"
-                className={`${btn} bg-success text-white hover:opacity-90 disabled:opacity-40`}><Phone size={16} weight="fill" /></button>
-            : <a href={`tel:${phone}`} aria-label="Qayta qo'ng'iroq qilish" title="Qayta qo'ng'iroq qilish" className={`${btn} bg-success text-white hover:opacity-90`}><Phone size={16} weight="fill" /></a>)}
+                className={`${btn} w-12 justify-center bg-success text-white hover:opacity-90 disabled:opacity-40`}><Phone size={16} weight="fill" /></button>
+            : <a href={`tel:${phone}`} aria-label="Qayta qo'ng'iroq qilish" title="Qayta qo'ng'iroq qilish" className={`${btn} w-12 justify-center bg-success text-white hover:opacity-90`}><Phone size={16} weight="fill" /></a>)}
           {c.lead_id
             ? <Link to={`/sotuv/bitim/${c.lead_id}`} title={c.lead?.name ?? "Bitim"}
-                className={`${btn} bg-surface-sunken text-ink hover:bg-surface-sunken-hover`}>Bitim<ArrowRight size={16} /></Link>
-            : phone && <button type="button" onClick={() => onCreate(phone)} className={`${btn} bg-surface-sunken text-ink hover:bg-surface-sunken-hover`}><Plus size={12} weight="bold" />Bitim ochish</button>}
+                className={`${btn} w-36 justify-center bg-surface-sunken text-ink hover:bg-surface-sunken-hover`}>Bitimni ochish<ArrowRight size={16} /></Link>
+            : phone && <button type="button" onClick={() => onCreate(phone)} className={`${btn} w-36 justify-center bg-surface-sunken text-ink hover:bg-surface-sunken-hover`}><Plus size={12} weight="bold" />Bitim yaratish</button>}
         </span>
       </td>
     </tr>
