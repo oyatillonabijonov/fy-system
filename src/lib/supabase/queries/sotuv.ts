@@ -426,11 +426,11 @@ export async function mergeLeads(keep: string, drop: string): Promise<void> {
 }
 
 /** My open sales tasks, for the in-app reminder (075) */
-export async function getMyOpenTasks(userId: string): Promise<(Pick<SalesTask, "id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]> {
-  const { data, error } = await db.from("crm_tasks").select("id, kind, text, due_date, lead:lead_id(name)")
+export async function getMyOpenTasks(userId: string): Promise<(Pick<SalesTask, "id" | "lead_id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]> {
+  const { data, error } = await db.from("crm_tasks").select("id, lead_id, kind, text, due_date, lead:lead_id(name)")
     .eq("assignee_id", userId).eq("is_done", false).order("due_date")
   if (error) throw error
-  return data as unknown as (Pick<SalesTask, "id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]
+  return data as unknown as (Pick<SalesTask, "id" | "lead_id" | "kind" | "text" | "due_date"> & { lead: { name: string } | null })[]
 }
 
 /** The operator names a client that came in as a bare phone number (075) */

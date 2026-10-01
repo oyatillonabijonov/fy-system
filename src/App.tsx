@@ -140,6 +140,7 @@ function AppShell() {
             </div>
 
             <PhoneStatus />
+            {hasAccess("sotuv-crmn") && <SalesReminders />}
 
             {/* Profile — opens Profilim */}
             <button type="button" onClick={() => navigate('/sozlamalar')} aria-label="Profilim" title={user?.full_name ?? "Profilim"}
@@ -171,7 +172,6 @@ function AppShell() {
       </div>
     </div>
     <PhoneWidget />
-    {hasAccess("sotuv-crmn") && <SalesReminders />}
     </PhoneProvider>
   )
 }
