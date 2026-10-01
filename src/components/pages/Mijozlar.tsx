@@ -395,17 +395,25 @@ export function Mijozlar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ], [])
 
+    // "Rasmi yo'q" / "Raqami yo'q" — to find the cards that still need filling in
+    const [noImage, setNoImage] = useState(false)
+    const [noPhone, setNoPhone] = useState(false)
+    const shown = useMemo(
+        () => customers.filter(c => (!noImage || !c.image) && (!noPhone || !c.phone)),
+        [customers, noImage, noPhone]
+    )
+
     const rowSelection = useMemo(
         () => selectedMijozlar.reduce((acc, id) => {
-            const idx = customers.findIndex(c => c.id === id)
+            const idx = shown.findIndex(c => c.id === id)
             if (idx !== -1) acc[idx] = true
             return acc
         }, {} as Record<string, boolean>),
-        [selectedMijozlar, customers]
+        [selectedMijozlar, shown]
     )
 
     const table = useReactTable({
-        data: customers,
+        data: shown,
         columns,
         state: { sorting, globalFilter, rowSelection },
         onSortingChange: setSorting,
@@ -419,7 +427,7 @@ export function Mijozlar() {
             const newSel = typeof updater === 'function' ? updater(rowSelection) : updater
             const ids = Object.keys(newSel)
                 .filter(k => newSel[Number(k)])
-                .map(k => customers[Number(k)]?.id)
+                .map(k => shown[Number(k)]?.id)
                 .filter((id): id is string => Boolean(id))
             setSelectedMijozlar(ids)
         },
@@ -605,6 +613,14 @@ export function Mijozlar() {
                                 className="pl-9 pr-4 py-2 bg-surface-sunken border-transparent focus:bg-surface focus:border-line-focus rounded-control text-base w-80 transition-all outline-hidden font-medium"
                             />
                             <Users size={16} className="text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            {([["Rasmi yo'q", noImage, setNoImage], ["Raqami yo'q", noPhone, setNoPhone]] as const).map(([label, on, set]) => (
+                                <button key={label} type="button" aria-pressed={on} onClick={() => { set(!on); table.setPageIndex(0) }}
+                                    className={`h-control-md px-3.5 inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
+                                    {on && <Check size={12} weight="bold" />}{label}
+                                </button>
+                            ))}
                         </div>
                         {selectedMijozlar.length > 0 && (
                             <div className="flex items-center gap-2 pl-4 border-l border-line">
