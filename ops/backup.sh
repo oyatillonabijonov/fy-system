@@ -21,7 +21,8 @@ MENTION="@oyatillonabijonov"
 trap 'alert "⚠️ FY-System: kunlik zaxira OLINMADI ($TS UTC). Log: ~/fy-backup/backup.log $MENTION"' ERR
 
 # 1. Database (includes the storage.objects metadata)
-docker exec supabase-db-1 pg_dump -U postgres -d postgres -Fc -f /tmp/fy_auto.dump
+# _realtime = Realtime's own bookkeeping (owner supabase_admin, unreadable to postgres); its migrate + seed rebuild it
+docker exec supabase-db-1 pg_dump -U postgres -d postgres -Fc --exclude-schema=_realtime -f /tmp/fy_auto.dump
 docker cp supabase-db-1:/tmp/fy_auto.dump "$OUT/fy_$TS.dump"
 docker exec supabase-db-1 rm -f /tmp/fy_auto.dump
 # 2. Uploaded files (receipts, task files, images)

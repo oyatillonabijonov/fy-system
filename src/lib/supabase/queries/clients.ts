@@ -32,6 +32,7 @@ export async function getClients(): Promise<ClientRow[]> {
   const result = await supabase
     .from("clients")
     .select("*")
+    .filter("is_customer", "is", true)   // 077: a lead's person stays in Sotuv until a bitim is won
     .order("created_at", { ascending: false })
   const { data, error } = result as unknown as { data: ClientRow[] | null; error: Error | null }
   if (error) throw error
