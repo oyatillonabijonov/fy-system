@@ -75,7 +75,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
               <input value={newStage} onChange={(e) => setNewStage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add() }}
                 placeholder="Yangi bosqich nomi" className={INPUT} />
               <button onClick={add} disabled={!newStage.trim()} aria-label="Bosqich qo'shish"
-                className="h-control-md w-control-md shrink-0 flex items-center justify-center rounded-full bg-accent text-ink-on-accent disabled:opacity-40 transition-opacity"><Plus size={16} /></button>
+                className="h-control-md aspect-square shrink-0 flex items-center justify-center rounded-full bg-accent text-ink-on-accent disabled:opacity-40 transition-opacity"><Plus size={16} /></button>
             </div>
             <span className="text-sm font-medium text-ink-muted mt-4 mb-1">Yakuniy bosqichlar</span>
             {closed.map((s) => <StageRow key={s.id} stage={s} onSave={(p) => save.mutate({ ...s, ...p }, { onError })} />)}
