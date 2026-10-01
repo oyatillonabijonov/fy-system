@@ -1,16 +1,33 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
-import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X } from "@phosphor-icons/react"
+import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion"
+import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X, DotsSixVertical } from "@phosphor-icons/react"
 import { usePhone } from "@/context/PhoneContext"
 import { formatPhone } from "@/lib/format"
 import { canonPhone } from "@/lib/supabase/queries/sotuv"
+import { analyse } from "@/lib/phoneAudio"
+
+const POS_KEY = "fy_call_pos"   // where the card was dragged to (offset from bottom-right)
+function savedPos(): { x: number; y: number } {
+  try {
+    const p = JSON.parse(localStorage.getItem(POS_KEY) ?? "") as { x: number; y: number }
+    // a smaller window than when it was saved → back to the corner
+    return Math.abs(p.x) < window.innerWidth - 340 && Math.abs(p.y) < window.innerHeight - 200 ? p : { x: 0, y: 0 }
+  } catch { return { x: 0, y: 0 } }
+}
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 
 /** The call card: incoming (answer / decline), dialing, talking (timer, mute, end) */
 export function PhoneWidget() {
-  const { call, answer, hangup, toggleMute, dismiss } = usePhone()
+  const { call, answer, hangup, toggleMute, dismiss, remoteStream } = usePhone()
+  // Draggable by its top part, anywhere on screen (the card mustn't cover what you type mid-call)
+  const area = useRef<HTMLDivElement>(null)
+  const drag = useDragControls()
+  const [start] = useState(savedPos)
+  const x = useMotionValue(start.x)
+  const y = useMotionValue(start.y)
+  const savePos = () => { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: x.get(), y: y.get() })) } catch { /* not saved */ } }
   const [now, setNow] = useState(() => Date.now())
   const [error, setError] = useState<string | null>(null)
 
@@ -32,11 +49,13 @@ export function PhoneWidget() {
   return (
     <AnimatePresence>
       {call && (
+        <div ref={area} className="fixed inset-3 z-[120] pointer-events-none">
         <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite"
-          initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16 }}
-          className="fixed bottom-5 right-5 z-[120] w-[320px] rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
-          style={{ boxShadow: "var(--toast-shadow)" }}>
-          <div className="flex items-start gap-3">
+          drag dragControls={drag} dragListener={false} dragMomentum={false} dragElastic={0} dragConstraints={area} onDragEnd={savePos}
+          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+          className="pointer-events-auto absolute bottom-2 right-2 w-[320px] rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
+          style={{ boxShadow: "var(--toast-shadow)", x, y }}>
+          <div className="flex items-start gap-3 cursor-grab active:cursor-grabbing touch-none select-none" onPointerDown={(e) => drag.start(e)} title="Sudrab boshqa joyga qo'ying">
             <span className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${call.state === "ringing" ? "bg-success-soft text-success-text animate-pulse" : "bg-surface-sunken text-ink-muted"}`}>
               <Icon size={20} />
             </span>
@@ -45,10 +64,13 @@ export function PhoneWidget() {
               {call.contact && <span className="block text-sm text-ink-muted tabular-nums truncate">{formatPhone(canonPhone(call.phone))}</span>}
               <span className={`block text-sm tabular-nums ${call.state === "ended" ? "text-ink-faint" : "text-ink-muted"}`}>{label}</span>
             </div>
+            {call.state !== "ended" && <DotsSixVertical size={16} className="text-ink-faint shrink-0 mt-1" aria-hidden />}
             {call.state === "ended" && (
-              <button onClick={dismiss} aria-label="Yopish" className="p-1 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={16} /></button>
+              <button onClick={dismiss} onPointerDown={(e) => e.stopPropagation()} aria-label="Yopish" className="p-1 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={16} /></button>
             )}
           </div>
+
+          {call.state === "active" && <CallBars getStream={remoteStream} />}
 
           {call.contact?.leadId && (
             <Link to={`/sotuv/bitim/${call.contact.leadId}`}
@@ -85,7 +107,39 @@ export function PhoneWidget() {
             </div>
           )}
         </motion.div>
+        </div>
       )}
     </AnimatePresence>
   )
+}
+
+/** The other side's voice as mirrored bars (variant 1, chosen by the user) */
+function CallBars({ getStream }: { getStream: () => MediaStream | null }) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const stream = getStream()
+    const el = canvas.current
+    if (!stream || !el) return
+    const { analyser, close } = analyse(stream)
+    const bins = new Uint8Array(analyser.frequencyBinCount)
+    const g = el.getContext("2d")!
+    const color = getComputedStyle(el).color
+    const N = 28, W = el.width, H = el.height, bw = 5, gap = (W - N * bw) / (N - 1)
+    let raf = 0
+    const draw = () => {
+      analyser.getByteFrequencyData(bins)
+      g.clearRect(0, 0, W, H)
+      g.fillStyle = color
+      for (let i = 0; i < N; i++) {
+        const k = Math.abs(i - (N - 1) / 2)                       // mirrored: low tones in the middle
+        const v = bins[Math.min(bins.length - 1, Math.round(2 + k * 1.6))] / 255
+        const h = Math.max(4, v * H * (1 - k / N * 0.5))
+        g.beginPath(); g.roundRect(i * (bw + gap), (H - h) / 2, bw, h, 2.5); g.fill()
+      }
+      raf = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => { cancelAnimationFrame(raf); close() }
+  }, [getStream])
+  return <canvas ref={canvas} width={288} height={40} aria-hidden className="w-full h-10 text-[var(--switch-on)]" />
 }
