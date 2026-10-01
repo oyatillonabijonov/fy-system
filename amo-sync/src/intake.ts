@@ -6,7 +6,7 @@
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
-import { handlePbx } from "./pbx"
+import { handlePbx, pbxSyncedAt } from "./pbx"
 
 const PORT = Number(process.env.INTAKE_PORT ?? 8787)
 const GRAPH = "https://graph.facebook.com/v19.0"
@@ -81,12 +81,33 @@ async function metaLeads(sql: Sql, token: string, body: unknown) {
   }
 }
 
+/** Uptime check (GitHub Actions every 5 min): DB reachable, AmoCRM pass ≤ 30 min old, call history
+ *  ≤ 5 min old (when the PBX is configured), a backup in the last 26 h. 503 if anything is off. */
+async function health(sql: Sql): Promise<Response> {
+  const checks: Record<string, boolean | string> = {}
+  try {
+    const rows = await sql<{ key: string; age: number }[]>`
+      select key, extract(epoch from now() - coalesce(value::timestamptz, updated_at))::int as age
+      from amo_sync_state where key in ('last_success_at', 'backup_last_ok')`
+    const age = (k: string) => rows.find((r) => r.key === k)?.age ?? Infinity
+    checks.db = true
+    checks.amocrm = age("last_success_at") < 30 * 60
+    checks.backup = age("backup_last_ok") < 26 * 3600
+  } catch (e) {
+    checks.db = `${e instanceof Error ? e.message : e}`.slice(0, 120)
+  }
+  if (process.env.ONLINEPBX_KEY) checks.calls = Date.now() - pbxSyncedAt < 5 * 60_000
+  const ok = Object.values(checks).every((v) => v === true)
+  return Response.json({ ok, checks }, { status: ok ? 200 : 503 })
+}
+
 export function startIntake(sql: Sql): void {
   Bun.serve({
     port: PORT,
     async fetch(req) {
       const url = new URL(req.url)
       if (url.pathname.startsWith("/hooks/pbx/")) return handlePbx(req, sql, url.pathname.slice("/hooks/pbx/".length))
+      if (url.pathname === "/hooks/health") return health(sql)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
       const source = m[1]
