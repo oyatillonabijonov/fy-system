@@ -1,5 +1,6 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
+import { EdgeScroll } from "@/components/ui/EdgeScroll"
 import type { Lead, Stage } from "@/lib/supabase/queries/sotuv"
 import { useUpdateLead } from "@/hooks/useSotuv"
 import { PersonDot } from "@/components/vazifalar/pickers"
@@ -24,7 +25,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 min-h-[60vh]">
+      <EdgeScroll className="flex gap-3 pb-2 -mx-1 px-1 min-h-[60vh]">
         {stages.map((s) => {
           const col = leads.filter((l) => l.stage_id === s.id)
           const sum = col.reduce((a, l) => a + l.price, 0)
@@ -75,7 +76,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
             </div>
           )
         })}
-      </div>
+      </EdgeScroll>
     </DragDropContext>
   )
 }

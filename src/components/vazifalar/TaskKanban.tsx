@@ -1,5 +1,6 @@
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
+import { EdgeScroll } from "@/components/ui/EdgeScroll"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { useUpdateTask } from "@/hooks/useTasks"
 import { Avatar, DueChip, CommentCount, AttachCount, sectionColor } from "./taskUi"
@@ -28,7 +29,7 @@ export function TaskKanban({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+      <EdgeScroll className="flex gap-3 pb-2 -mx-1 px-1">
         {TASK_STATUSES.map((s) => {
           const col = tasks.filter((t) => t.status === s.id)
           return (
@@ -86,7 +87,7 @@ export function TaskKanban({
             </div>
           )
         })}
-      </div>
+      </EdgeScroll>
     </DragDropContext>
   )
 }
