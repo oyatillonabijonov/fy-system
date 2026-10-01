@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { pbxApi, findCallContact } from "@/lib/supabase/queries/sotuv"
+import { preloadRing, startRing } from "@/lib/phoneAudio"
 
 export type PhoneStatus = "off" | "connecting" | "ready" | "offline"
 export interface ActiveCall {
@@ -26,6 +27,8 @@ interface PhoneCtx {
   hangup: () => void
   toggleMute: () => void
   dismiss: () => void
+  /** the other side's audio, for the visualizer */
+  remoteStream: () => MediaStream | null
 }
 
 // The library's own types are mostly `any`; this is the part we touch
@@ -54,20 +57,6 @@ const dialString = (phone: string) => {
 }
 
 const mic = () => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
-
-/** A classic ring (two tones, 1 s on / 2 s off) — Web Audio, so it rings even with UI sounds off */
-function startRing(): () => void {
-  const ctx = new AudioContext()
-  let stopped = false
-  const burst = () => {
-    if (stopped) return
-    const g = ctx.createGain(); g.gain.value = 0.08; g.connect(ctx.destination)
-    for (const f of [440, 480]) { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); o.stop(ctx.currentTime + 1) }
-  }
-  burst()
-  const t = setInterval(burst, 3000)
-  return () => { stopped = true; clearInterval(t); void ctx.close() }
-}
 
 export function PhoneProvider({ children }: { children: ReactNode }) {
   const { user, hasAccess } = useAuth()
@@ -121,6 +110,7 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
       try { creds = await pbxApi<Creds>("me") } catch { if (!disposed) setStatus("off"); return }
       if (disposed) return
       setExt(creds.ext)
+      void preloadRing().catch(() => { /* the fallback ring is used */ })
       const { Verto } = await import("@xswitch/rtc")
       if (disposed) return
       verto = new Verto({
@@ -180,9 +170,10 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
   }, [call, patch])
 
   const dismiss = useCallback(() => setCall((c) => (c?.state === "ended" ? null : c)), [])
+  const remoteStream = useCallback(() => (audio.current?.srcObject instanceof MediaStream ? audio.current.srcObject : null), [])
 
   return (
-    <Ctx.Provider value={{ status, ext, call, dial, answer, hangup, toggleMute, dismiss }}>
+    <Ctx.Provider value={{ status, ext, call, dial, answer, hangup, toggleMute, dismiss, remoteStream }}>
       {children}
       <audio ref={audio} autoPlay playsInline className="hidden" />
     </Ctx.Provider>
