@@ -1,13 +1,13 @@
-# Uptime watch from OUTSIDE the server: every 5 min it checks the web app, the Supabase API and
+# Uptime watch from OUTSIDE the server: once a day (09:00 Tashkent; the user found the 5-minute runs'
+# GitHub e-mails too noisy) it checks the web app, the Supabase API and
 # amo-sync's /hooks/health (DB, AmoCRM pass, call-history sync, last backup). A change of state
 # (down ↔ up) goes to the Telegram alert chat. Secrets: TELEGRAM_BOT_TOKEN, ALERT_CHAT_ID,
-# SUPABASE_ANON_KEY. GitHub pauses schedules after 60 days without commits, so a weekly run
+# SUPABASE_ANON_KEY. GitHub pauses schedules after 60 days without commits, so each run
 # re-enables the workflow through the API (resets that timer, no dummy commits).
 name: Uptime
 on:
   schedule:
-    - cron: "*/5 * * * *"
-    - cron: "0 4 * * 1"   # keepalive
+    - cron: "0 4 * * *"
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Keepalive
-        if: github.event.schedule == '0 4 * * 1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/uptime.yml/enable
