@@ -2,11 +2,19 @@ import { useState } from "react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
 import { Plus } from "@phosphor-icons/react"
 import { EdgeScroll } from "@/components/ui/EdgeScroll"
-import type { Lead, Stage } from "@/lib/supabase/queries/sotuv"
+import { sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { useUpdateLead } from "@/hooks/useSotuv"
-import { PersonDot } from "@/components/vazifalar/pickers"
+import { addDays, dueLabel } from "@/components/vazifalar/pickers"
+import { tashkentClock, tashkentToday } from "@/lib/period"
 import { formatNumber } from "@/lib/format"
 import { TaskChip, NoTaskChip, StageDot, shortMoney } from "./ui"
+
+/** When the deal came in: "Bugun · 10:20", "Kecha · 17:15", "28-sen · 09:00" (Tashkent) */
+function cameIn(iso: string, today: string): string {
+  const d = new Date(iso)
+  const day = tashkentToday(d)
+  return day === addDays(today, -1) ? `Kecha · ${tashkentClock(d)}` : dueLabel(day, tashkentClock(d), today)
+}
 
 /** AmoCRM-style board: one column per bosqich; dropping a card moves the deal */
 export function Board({ stages, leads, today, onOpen, onAdd }: {
@@ -55,13 +63,23 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
                           <div ref={drag.innerRef} {...drag.draggableProps} {...drag.dragHandleProps}
                             role="button" tabIndex={0} onClick={() => onOpen(l)} onKeyDown={(e) => { if (e.key === "Enter") onOpen(l) }}
                             className={`rounded-control bg-surface px-3 py-2.5 flex flex-col gap-1.5 cursor-pointer transition-colors hover:bg-surface-raised ${dragSnap.isDragging ? "ring-1 ring-line" : ""} ${s.is_lost ? "opacity-60" : ""}`}>
-                            <span className="text-base font-medium text-ink leading-snug line-clamp-2">{l.client?.full_name ?? l.name}</span>
-                            {l.client && l.name !== l.client.full_name && <span className="text-sm text-ink-muted truncate -mt-1">{l.name}</span>}
+                            {/* AmoCRM's card: client, mas'ul · when it came in / the deal's own name or the form's last answer / chips */}
+                            <div className="flex items-baseline gap-2">
+                              <span className="flex-1 min-w-0 text-base leading-snug line-clamp-2">
+                                <span className="font-medium text-ink">{l.client?.full_name ?? l.name}</span>
+                                {l.responsible && <span className="text-ink-muted">, {l.responsible.full_name}</span>}
+                              </span>
+                              <span className="shrink-0 text-sm text-ink-faint tabular-nums">{cameIn(l.created_at, today)}</span>
+                            </div>
+                            {(() => {
+                              // ponytail: the form's last answer (the site's turnover question); a per-voronka "card field" setting if one answer isn't enough
+                              const sub = l.client && l.name !== l.client.full_name ? l.name : l.fields.at(-1)?.v
+                              return sub && <span className="text-base text-ink truncate">{sub}</span>
+                            })()}
                             <div className="flex items-center gap-1.5 flex-wrap">
+                              {l.source && l.source !== "manual" && <span className="inline-flex items-center h-6 px-2 rounded-full text-sm bg-surface-sunken text-ink-muted whitespace-nowrap">{sourceLabel(l.source)}</span>}
                               {open && (l.next_task ? <TaskChip kind={l.next_task.kind} due={l.next_task.due_date} today={today} /> : <NoTaskChip />)}
                               {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums">{shortMoney(l.price)}</span>}
-                              <span className="flex-1" />
-                              {l.responsible && <PersonDot name={l.responsible.full_name} url={l.responsible.avatar_url} />}
                             </div>
                           </div>
                         )}

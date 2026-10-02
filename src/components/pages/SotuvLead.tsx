@@ -107,6 +107,18 @@ function LeadView({ lead }: { lead: Lead }) {
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
 
+          {/* The form's answers, like AmoCRM's deal fields */}
+          {lead.fields.length > 0 && (
+            <dl className="flex flex-col gap-2.5">
+              {lead.fields.map((f) => (
+                <div key={f.k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-3">
+                  <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
+                  <dd className="text-base text-ink break-words">{f.v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
           <div className="flex flex-col gap-3">
             <Field label="Summa">
               <input inputMode="numeric" value={price} placeholder="0" className={`${FIELD} tabular-nums`}
