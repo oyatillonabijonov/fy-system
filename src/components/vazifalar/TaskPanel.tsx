@@ -10,6 +10,7 @@ import { ATTACH_ACCEPT, taskFileUrl, type TaskAttachment } from "@/lib/supabase/
 import type { Task, TaskDraft } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, PersonDot } from "./pickers"
+import { confirmAction } from "@/lib/confirm"
 
 /** An existing task in a centred modal: every change saves at once; comments below */
 export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }) {
@@ -40,8 +41,8 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
     if (!v) return setTitle(t.title)
     if (v !== t.title) save({ title: v })
   }
-  function del() {
-    if (!window.confirm(`"${t.title}" vazifasi o'chirilsinmi?`)) return
+  async function del() {
+    if (!(await confirmAction({ title: "Vazifani o'chirish", message: `"${t.title}" vazifasi o'chirilsinmi?` }))) return
     remove.mutate(task.id, { onSuccess: onClose, onError: (e) => setError(e.message) })
   }
 
@@ -181,7 +182,7 @@ function Instructions({ taskId }: { taskId: string }) {
                 <span className="text-sm text-ink-muted truncate">{a.url ? a.url.replace(/^https?:\/\/(www\.)?/, "") : fmtSize(a.file_size)}</span>
               </button>
               {(a.created_by === user?.id || user?.role === "admin") && (
-                <button type="button" aria-label="O'chirish" title="O'chirish" onClick={() => window.confirm(`"${a.title}" o'chirilsinmi?`) && remove.mutate(a.id)}
+                <button type="button" aria-label="O'chirish" title="O'chirish" onClick={async () => { if (await confirmAction({ title: "Yo'riqnomani o'chirish", message: `"${a.title}" o'chirilsinmi?` })) remove.mutate(a.id) }}
                   className="p-1.5 rounded-item text-ink-muted opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger-text hover:bg-danger-soft transition">
                   <Trash size={16} />
                 </button>

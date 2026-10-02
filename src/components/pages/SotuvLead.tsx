@@ -12,6 +12,7 @@ import { formatPhone } from "@/lib/format"
 import { DuePicker, PersonDot, addDays } from "@/components/vazifalar/pickers"
 import { KIND_ICON, TaskChip, NoTaskChip, Recording, callLabel, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
+import { confirmAction } from "@/lib/confirm"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -60,8 +61,8 @@ function LeadView({ lead }: { lead: Lead }) {
     const first = (await getStages(pid)).find((s) => !s.is_won && !s.is_lost)
     if (first) save({ pipeline_id: pid, stage_id: first.id })
   }
-  function del() {
-    if (!window.confirm(`"${lead.name}" bitimi o'chirilsinmi? Lenta va vazifalar ham o'chadi.`)) return
+  async function del() {
+    if (!(await confirmAction({ title: "Bitimni o'chirish", message: `"${lead.name}" bitimi o'chirilsinmi? Lenta va vazifalar ham o'chadi.` }))) return
     remove.mutate(lead.id, { onSuccess: () => navigate(`/sotuv?p=${lead.pipeline_id}`) })
   }
 

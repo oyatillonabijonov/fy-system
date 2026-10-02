@@ -6,6 +6,7 @@ import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage } fr
 import type { Pipeline, Stage } from "@/lib/supabase/queries/sotuv"
 import { INPUT } from "@/components/moliya/PaymentActionModals"
 import { Popover } from "@/components/vazifalar/pickers"
+import { confirmAction } from "@/lib/confirm"
 
 const COLORS = ["#378ADD", "#BA7517", "#7F77DD", "#D4537E", "#1D9E75", "#E24B4A", "#888780", "#D85A30"]
 
@@ -43,8 +44,8 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
     save.mutate({ pipeline_id: pipeline.id, name: v, color: COLORS[open.length % COLORS.length], sort_order: at }, { onError })
     setNewStage("")
   }
-  function removePipeline() {
-    if (!window.confirm(`"${pipeline.name}" voronkasi o'chirilsinmi?`)) return
+  async function removePipeline() {
+    if (!(await confirmAction({ title: "Voronkani o'chirish", message: `"${pipeline.name}" voronkasi o'chirilsinmi?` }))) return
     del.mutate(pipeline.id, { onSuccess: onDeleted, onError })
   }
 
@@ -69,7 +70,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
             {open.map((s, i) => (
               <StageRow key={s.id} stage={s} onSave={(p) => save.mutate({ ...s, ...p }, { onError })}
                 onUp={i > 0 ? () => move(i, -1) : undefined} onDown={i < open.length - 1 ? () => move(i, 1) : undefined}
-                onDelete={() => { if (window.confirm(`"${s.name}" bosqichi o'chirilsinmi?`)) delStage.mutate(s.id, { onError }) }} />
+                onDelete={async () => { if (await confirmAction({ title: "Bosqichni o'chirish", message: `"${s.name}" bosqichi o'chirilsinmi?` })) delStage.mutate(s.id, { onError }) }} />
             ))}
             <div className="flex items-center gap-2 mt-1">
               <input value={newStage} onChange={(e) => setNewStage(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add() }}

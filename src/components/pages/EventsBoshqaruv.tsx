@@ -8,6 +8,7 @@ import { EventTabs, startOfToday, isActiveEvent } from "@/components/events/Even
 import { useEventTab, UMUMIY } from "@/hooks/useEventTab"
 import { useEvents, useDeleteEvent, EVENTS_KEY, EVENT_COUNTS_KEY } from "@/hooks/useEvents"
 import { EventCardSkeleton } from "@/components/ui/Skeleton"
+import { confirmAction } from "@/lib/confirm"
 
 export function EventsBoshqaruv() {
   const qc = useQueryClient()
@@ -32,8 +33,8 @@ export function EventsBoshqaruv() {
   const stored = events.find((e) => e.id === selectedId) ?? null
   const selected = stored ?? firstActive
 
-  function handleDelete(id: string) {
-    if (!window.confirm("Tadbirni o'chirishni tasdiqlaysizmi? Barcha ishtirokchilar ham o'chadi.")) return
+  async function handleDelete(id: string) {
+    if (!(await confirmAction({ title: "Tadbirni o'chirish", message: "Tadbirni o'chirishni tasdiqlaysizmi? Barcha ishtirokchilar ham o'chadi." }))) return
     deleteEventMutation.mutate(id, {
       onSettled: () => {
         if (selectedId === id) setSelectedId(UMUMIY)
