@@ -16,9 +16,9 @@ const NAME_KEYS = ["name", "full_name", "fullname", "ism", "ismingiz", "firstnam
 const PHONE_KEYS = ["phone", "phone_number", "telefon", "tel", "telefon raqamingiz", "raqam", "телефон", "input_phone", "inputphone"]
 const SKIP_KEYS = new Set(["tranid", "cookies", "token", "test", "formid", "last_name", "lastname"])
 
-export interface ParsedLead { name: string; phone: string; details: string }
+export interface ParsedLead { name: string; phone: string; details: string; fields: { k: string; v: string }[] }
 
-/** Any form's fields → name, phone and the rest as "Savol: javob" lines */
+/** Any form's fields → name, phone and the rest as the deal's fields + "Savol: javob" lines for the feed */
 export function parseLead(fields: Record<string, string>): ParsedLead {
   const entries = Object.entries(fields).map(([k, v]) => [k.trim(), String(v ?? "").trim()] as const).filter(([, v]) => v)
   const find = (keys: string[]) => entries.find(([k]) => keys.includes(k.toLowerCase()))
@@ -27,11 +27,11 @@ export function parseLead(fields: Record<string, string>): ParsedLead {
   const phoneE = find(PHONE_KEYS) ?? entries.find(([, v]) => /^\+?[\d\s()-]{9,18}$/.test(v) && v.replace(/\D/g, "").length >= 9)
   const last = entries.find(([k]) => ["last_name", "lastname"].includes(k.toLowerCase()))?.[1]
   const name = [nameE?.[1], last].filter(Boolean).join(" ")
-  const details = entries
+  const answers = entries
     .filter(([k]) => k !== nameE?.[0] && k !== phoneE?.[0] && !SKIP_KEYS.has(k.toLowerCase()))
-    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
-    .join("\n")
-  return { name, phone: phoneE?.[1] ?? "", details }
+    .map(([k, v]) => ({ k: k.replace(/_/g, " "), v }))
+  const details = answers.map((f) => `${f.k}: ${f.v}`).join("\n")
+  return { name, phone: phoneE?.[1] ?? "", details, fields: answers }
 }
 
 /** Nested JSON (Framer, custom sites) flattened to strings */
@@ -57,7 +57,7 @@ async function readBody(req: Request): Promise<Record<string, string>> {
 
 async function intake(sql: Sql, source: string, token: string, p: ParsedLead, raw: Record<string, string>) {
   const [{ r }] = await sql<{ r: { ok: boolean; lead_id?: string; duplicate?: boolean; skipped?: boolean } }[]>`
-    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}) as r`
+    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}, ${sql.json(p.fields)}) as r`
   console.log(`[intake] ${source}: ${r.skipped ? "manba o'chiq, faqat log" : r.duplicate ? "qayta murojaat" : "yangi sdelka"} ${r.lead_id ?? ""}`)
   return r
 }
