@@ -9,6 +9,7 @@ import { Pager, usePaged } from "@/components/ui/Pager"
 import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDeleteTelegramGroup, useLeadSources, useUpdateLeadSource, usePbxExts, useSetStaffExt } from "@/hooks/useIntegrations"
 import { useUsers } from "@/hooks/useUsers"
 import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type LeadSource } from "@/lib/supabase/queries/integrations"
+import { confirmAction } from "@/lib/confirm"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
@@ -295,7 +296,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
   return (
     <Modal title="Guruh sozlamalari" onClose={onClose} footer={<>
       <button type="button" disabled={remove.isPending}
-        onClick={() => window.confirm(`"${g.title || g.chat_id}" ro'yxatdan olib tashlansinmi? Bot bu guruhga boshqa yozmaydi.`) && remove.mutate(g.chat_id, { onSuccess: onClose })}
+        onClick={async () => { if (await confirmAction({ title: "Guruhni olib tashlash", message: `"${g.title || g.chat_id}" ro'yxatdan olib tashlansinmi? Bot bu guruhga boshqa yozmaydi.`, confirmLabel: "Olib tashlash" })) remove.mutate(g.chat_id, { onSuccess: onClose }) }}
         className="flex items-center gap-2 px-3 h-control-md rounded-full text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
         <Trash size={16} /> Olib tashlash
       </button>

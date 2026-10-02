@@ -8,6 +8,7 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/AuthContext'
 import { Toaster } from './components/ui/Toaster'
+import { ConfirmHost } from './components/ui/ConfirmHost'
 import { toast, errorDetail } from './lib/toast'
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ createRoot(document.getElementById('root')!).render(
           <MotionConfig reducedMotion="user">
             <App />
             <Toaster />
+            <ConfirmHost />
           </MotionConfig>
         </AuthProvider>
       </BrowserRouter>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel, Copy } from "@phosphor-icons/react"
@@ -9,6 +9,7 @@ import { tashkentToday } from "@/lib/period"
 import { formatDate, formatNumber } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
+import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { Board } from "@/components/sotuv/Board"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
@@ -62,10 +63,12 @@ export function Sotuv() {
   }, [leads, q])
   const openLeads = leads.filter((l) => !l.is_won && !l.is_lost)
 
-  function newPipeline() {
-    const name = window.prompt("Yangi voronka nomi")?.trim()
-    if (name) createPipeline.mutate({ name, sortOrder: pipelines.length }, { onSuccess: (p) => pick(p.id) })
-  }
+  const [naming, setNaming] = useState(false)
+  const newPipeline = () => setNaming(true)
+  const namingDialog = naming && (
+    <NewPipeline pending={createPipeline.isPending} onClose={() => setNaming(false)}
+      onSubmit={(name, onError) => createPipeline.mutate({ name, sortOrder: pipelines.length }, { onSuccess: (p) => { setNaming(false); pick(p.id) }, onError })} />
+  )
   const open = (l: Lead) => navigate(`/sotuv/bitim/${l.id}`)
 
   if (!isLoading && pipelines.length === 0) {
@@ -74,6 +77,7 @@ export function Sotuv() {
         <Funnel size={32} weight="thin" className="text-ink-muted" />
         <p className="text-base text-ink-muted">Hali voronka yo'q.</p>
         {isAdmin && <button onClick={newPipeline} className="h-control-md px-4 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">Voronka yaratish</button>}
+        {namingDialog}
       </div>
     )
   }
@@ -148,6 +152,7 @@ export function Sotuv() {
           onClose={() => setCreating(null)} onCreated={(id) => navigate(`/sotuv/bitim/${id}`)} />
       )}
       {dups && <Duplicates onClose={() => setDups(false)} />}
+      {namingDialog}
       {settings && pipeline && (
         <PipelineSettings pipeline={pipeline} stages={stages} onClose={() => setSettings(false)} onDeleted={() => { setSettings(false); set("p", null) }} />
       )}
@@ -194,5 +199,27 @@ function LeadTable({ leads, stages, today, onOpen }: { leads: Lead[]; stages: St
       </div>
       <Pager page={page} pageCount={pageCount} total={leads.length} onPage={setPage} />
     </div>
+  )
+}
+
+/** Admin: name a new voronka (it opens as soon as it's created) */
+function NewPipeline({ pending, onSubmit, onClose }: {
+  pending: boolean
+  onSubmit: (name: string, onError: (e: Error) => void) => void
+  onClose: () => void
+}) {
+  const [name, setName] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const id = useId()
+  const submit = () => { if (name.trim()) onSubmit(name.trim(), (e) => setError(e.message)) }
+  return (
+    <ModalShell title="Yangi voronka" error={error} submitLabel="Yaratish" canSubmit={!!name.trim()} pending={pending} onSubmit={submit} onClose={onClose}>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={id} className={LABEL}>Voronka nomi</label>
+        <input id={id} autoFocus value={name} maxLength={60} onChange={(e) => { setName(e.target.value); setError(null) }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit() } }}
+          placeholder="Masalan: Tog' safari" className={INPUT} />
+      </div>
+    </ModalShell>
   )
 }

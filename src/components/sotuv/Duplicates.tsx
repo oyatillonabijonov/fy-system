@@ -5,6 +5,7 @@ import { useDialog } from "@/hooks/useDialog"
 import { useDuplicateLeads, useMergeLeads } from "@/hooks/useSotuv"
 import type { DupLead } from "@/lib/supabase/queries/sotuv"
 import { formatNumber, formatPhone } from "@/lib/format"
+import { confirmAction } from "@/lib/confirm"
 
 /** One client with several open bitimlar: pick the one to keep, the rest are merged into it */
 export function Duplicates({ onClose }: { onClose: () => void }) {
@@ -41,7 +42,7 @@ function Group({ name, phone, leads }: { name: string; phone: string | null; lea
 
   async function run() {
     const drop = leads.filter((l) => l.id !== keep)
-    if (!window.confirm(`${drop.length} ta bitim tanlanganiga birlashtirilsinmi? Bu qaytarilmaydi.`)) return
+    if (!(await confirmAction({ title: "Bitimlarni birlashtirish", message: `${drop.length} ta bitim tanlanganiga birlashtirilsinmi? Bu qaytarilmaydi.`, confirmLabel: "Birlashtirish" }))) return
     setError(null)
     try { for (const l of drop) await merge.mutateAsync({ keep, drop: l.id }) }
     catch (e) { setError(e instanceof Error ? e.message : String(e)) }
