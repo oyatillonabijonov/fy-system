@@ -81,18 +81,16 @@ async function metaLeads(sql: Sql, token: string, body: unknown) {
   }
 }
 
-/** Uptime check (GitHub Actions every 5 min): DB reachable, AmoCRM pass ≤ 30 min old, call history
- *  ≤ 5 min old (when the PBX is configured), a backup in the last 26 h. 503 if anything is off. */
-async function health(sql: Sql): Promise<Response> {
+/** Uptime check (GitHub Actions, daily): DB reachable, call history ≤ 5 min old (when the PBX is
+ *  configured), a backup in the last 26 h. 503 if anything is off. */
+export async function health(sql: Sql): Promise<Response> {
   const checks: Record<string, boolean | string> = {}
   try {
     const rows = await sql<{ key: string; age: number }[]>`
       select key, extract(epoch from now() - coalesce(value::timestamptz, updated_at))::int as age
-      from amo_sync_state where key in ('last_success_at', 'backup_last_ok')`
-    const age = (k: string) => rows.find((r) => r.key === k)?.age ?? Infinity
+      from amo_sync_state where key = 'backup_last_ok'`
     checks.db = true
-    checks.amocrm = age("last_success_at") < 30 * 60
-    checks.backup = age("backup_last_ok") < 26 * 3600
+    checks.backup = (rows[0]?.age ?? Infinity) < 26 * 3600
   } catch (e) {
     checks.db = `${e instanceof Error ? e.message : e}`.slice(0, 120)
   }

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
-import { parseLead } from "./intake"
+import type { Sql } from "postgres"
+import { health, parseLead } from "./intake"
 
 test("Tilda form: name/phone by field name, the rest as details, service fields dropped", () => {
   const p = parseLead({ Name: "Aziz Karimov", Phone: "+998 (90) 123-45-67", Soha: "IT", tranid: "123:456", formid: "form1", COOKIES: "x" })
@@ -20,4 +21,13 @@ test("unknown field names: a phone-looking value is still found", () => {
 
 test("empty values are ignored", () => {
   expect(parseLead({ name: "", phone: " ", email: "a@b.uz" })).toEqual({ name: "", phone: "", details: "email: a@b.uz", fields: [{ k: "email", v: "a@b.uz" }] })
+})
+
+test("health: a fresh backup is enough — the AmoCRM sync is gone, so no amocrm check (080)", async () => {
+  const sql = (async () => [{ key: "backup_last_ok", age: 60 }]) as unknown as Sql
+  const res = await health(sql)
+  const body = (await res.json()) as { ok: boolean; checks: Record<string, unknown> }
+  expect(body.checks.amocrm).toBeUndefined()
+  expect(body.checks.backup).toBe(true)
+  if (!process.env.ONLINEPBX_KEY) expect(res.status).toBe(200)
 })
