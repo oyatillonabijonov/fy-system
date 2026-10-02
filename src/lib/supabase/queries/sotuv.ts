@@ -110,13 +110,14 @@ export async function getStages(pipelineId: string): Promise<Stage[]> {
   return data as Stage[]
 }
 
+// Every row carries both flags: a bulk insert sends NULL, not the DEFAULT, for a missing key (078)
 const DEFAULT_STAGES = [
-  { name: "Yangi lid", color: "#378ADD" },
-  { name: "Bog'lanildi", color: "#BA7517" },
-  { name: "Uchrashuv", color: "#7F77DD" },
-  { name: "Taklif yuborildi", color: "#D4537E" },
-  { name: "Yutildi", color: "#1D9E75", is_won: true },
-  { name: "Yutqazildi", color: "#E24B4A", is_lost: true },
+  { name: "Yangi lid", color: "#378ADD", is_won: false, is_lost: false },
+  { name: "Bog'lanildi", color: "#BA7517", is_won: false, is_lost: false },
+  { name: "Uchrashuv", color: "#7F77DD", is_won: false, is_lost: false },
+  { name: "Taklif yuborildi", color: "#D4537E", is_won: false, is_lost: false },
+  { name: "Yutildi", color: "#1D9E75", is_won: true, is_lost: false },
+  { name: "Yutqazildi", color: "#E24B4A", is_won: false, is_lost: true },
 ]
 
 export async function createPipeline(name: string, sortOrder: number): Promise<Pipeline> {
