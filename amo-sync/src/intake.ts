@@ -135,9 +135,10 @@ export function startIntake(sql: Sql): void {
         return Response.json({ ok: true, duplicate: !!r.duplicate }, { headers: CORS })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
-        if (msg.includes("unknown source or token")) return new Response("forbidden", { status: 403 })
+        // CORS on errors too, or the browser shows a failed site form as a network error
+        if (msg.includes("unknown source or token")) return new Response("forbidden", { status: 403, headers: CORS })
         console.error(`[intake] ${source}: ${msg}`)
-        return Response.json({ ok: false }, { status: 500 })
+        return Response.json({ ok: false }, { status: 500, headers: CORS })
       }
     },
   })
