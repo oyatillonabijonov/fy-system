@@ -96,7 +96,7 @@ END $$;
 -- TEST 5: calls — called back only by a LATER outgoing call; attention lists
 DO $$ DECLARE d jsonb := public.sales_dashboard('2026-01-10', '2026-01-12'); BEGIN
   IF (d->'calls'->>'in')::int <> 3 OR (d->'calls'->>'out')::int <> 2 OR (d->'calls'->>'missed')::int <> 2 THEN RAISE EXCEPTION 'TEST 5 FAILED: calls %', d->'calls'; END IF;
-  IF (d->'calls'->>'missed_total')::int <> 2 OR (d->'calls'->>'missed_called_back')::int <> 1 THEN RAISE EXCEPTION 'TEST 5 FAILED: callback %', d->'calls'; END IF;
+  IF (d->'calls'->>'missed')::int <> 2 OR (d->'calls'->>'missed_called_back')::int <> 1 THEN RAISE EXCEPTION 'TEST 5 FAILED: callback %', d->'calls'; END IF;
   IF (d->'calls'->>'avg_talk_sec')::int <> 43 THEN RAISE EXCEPTION 'TEST 5 FAILED: avg %', d->'calls'->>'avg_talk_sec'; END IF;
   IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(d->'attention'->'overdue_tasks') t WHERE t->>'text' = 'ochiq') THEN RAISE EXCEPTION 'TEST 5 FAILED: overdue'; END IF;
   IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(d->'attention'->'stale_leads') t WHERE t->>'name' = 'L3-stale') THEN RAISE EXCEPTION 'TEST 5 FAILED: stale'; END IF;

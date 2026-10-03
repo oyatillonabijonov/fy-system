@@ -42,7 +42,8 @@ export const StageDot = ({ color, size = 8 }: { color: string; size?: number }) 
   <span className="rounded-full shrink-0" style={{ width: size, height: size, backgroundColor: color }} />
 )
 
-export const secs = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} daq ${s % 60} s` : `${s} s`)
+export const secs = (s: number) =>
+  s >= 3600 ? `${Math.floor(s / 3600)} soat ${Math.floor((s % 3600) / 60)} daq` : s >= 60 ? `${Math.floor(s / 60)} daq ${s % 60} s` : `${s} s`
 
 export const callLabel = (c: Pick<Call, "direction" | "talk_time">) =>
   c.direction === "in" ? (c.talk_time ? "Kiruvchi qo'ng'iroq" : "Javobsiz kiruvchi qo'ng'iroq") : c.talk_time ? "Chiquvchi qo'ng'iroq" : "Chiquvchi · javob berilmadi"

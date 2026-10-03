@@ -25,9 +25,12 @@ test("empty values are ignored", () => {
 
 test("health: a fresh backup is enough — the AmoCRM sync is gone, so no amocrm check (080)", async () => {
   const sql = (async () => [{ key: "backup_last_ok", age: 60 }]) as unknown as Sql
+  const pbx = process.env.ONLINEPBX_KEY
+  delete process.env.ONLINEPBX_KEY   // the calls check needs a live PBX sync; this test is about the rest
   const res = await health(sql)
+  if (pbx !== undefined) process.env.ONLINEPBX_KEY = pbx
   const body = (await res.json()) as { ok: boolean; checks: Record<string, unknown> }
   expect(body.checks.amocrm).toBeUndefined()
   expect(body.checks.backup).toBe(true)
-  if (!process.env.ONLINEPBX_KEY) expect(res.status).toBe(200)
+  expect(res.status).toBe(200)
 })

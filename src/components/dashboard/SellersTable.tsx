@@ -5,6 +5,7 @@ import type { SalesSeller } from "@/lib/supabase/queries/salesDashboard"
 import { useSellerTasks } from "@/hooks/useSalesDashboard"
 import { kindLabel } from "@/lib/supabase/queries/sotuv"
 import { tbl } from "@/components/ui/table"
+import { Pager, usePaged } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { useAuth } from "@/context/AuthContext"
 import { formatNumber } from "@/lib/format"
@@ -18,8 +19,10 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
   const { hasAccess } = useAuth()
   const canOpen = hasAccess("sotuv-crmn")
   const [openId, setOpenId] = useState<string | null>(null)
+  const { page, setPage, pageCount, pageItems } = usePaged(rows)
   if (rows.length === 0) return <Empty text="Davrda sotuvchi faoliyati yo'q" />
   return (
+    <div className="flex flex-col gap-3">
     <div className={tbl.scroll}>
       <table className={tbl.table}>
         <thead>
@@ -33,11 +36,12 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
           </tr>
         </thead>
         <tbody>
-          {rows.map((s) => {
+          {pageItems.map((s) => {
             const open = openId === s.id
             const onTime = s.tasks_done ? Math.round((s.tasks_on_time / s.tasks_done) * 100) : null
             return [
-              <tr key={s.id} className={`${tbl.tr} ${canOpen ? "cursor-pointer" : ""}`} onClick={canOpen ? () => setOpenId(open ? null : s.id) : undefined} aria-expanded={canOpen ? open : undefined}>
+              <tr key={s.id} className={`${tbl.tr} ${canOpen ? "cursor-pointer" : ""}`} onClick={canOpen ? () => setOpenId(open ? null : s.id) : undefined} aria-expanded={canOpen ? open : undefined}
+                tabIndex={canOpen ? 0 : undefined} onKeyDown={canOpen ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenId(open ? null : s.id) } } : undefined}>
                 <td className={tbl.td}>
                   <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     {canOpen && (open ? <CaretDown size={12} weight="bold" /> : <CaretRight size={12} weight="bold" />)}
@@ -60,17 +64,20 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
         </tbody>
       </table>
     </div>
+    <Pager page={page} pageCount={pageCount} total={rows.length} onPage={setPage} />
+    </div>
   )
 }
 
 function SellerTasks({ id, from, to, pipelineId }: { id: string; from: string; to: string; pipelineId: string | null }) {
-  const { data = [], isLoading } = useSellerTasks(id, from, to, pipelineId)
+  const { data = [], isLoading, isError } = useSellerTasks(id, from, to, pipelineId)
   if (isLoading) return <p className="px-4 py-3 text-sm text-ink-muted">Yuklanmoqda…</p>
+  if (isError) return <p className="px-4 py-3 text-sm text-danger-text">Vazifalar yuklanmadi</p>
   if (data.length === 0) return <p className="px-4 py-3 text-sm text-ink-muted">Davrda yakunlangan yoki kechikkan vazifa yo'q</p>
   return (
     <ul className="flex flex-col bg-surface-sunken rounded-surface mx-2 my-2">
       {data.map((t) => {
-        const late = t.is_done ? t.done_at! > t.due_date : true
+        const late = t.is_done ? Date.parse(t.done_at!) > Date.parse(t.due_date) : true
         return (
           <li key={t.id} className="flex items-center gap-3 px-4 py-2 border-b border-line last:border-0 text-sm">
             {late ? <WarningCircle size={16} className="text-danger-text shrink-0" /> : <CheckCircle size={16} className="text-success-text shrink-0" />}
