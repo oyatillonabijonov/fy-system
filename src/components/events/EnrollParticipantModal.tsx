@@ -14,6 +14,8 @@ interface EnrollParticipantModalProps {
   existingContactIds: Set<string>
   onClose: () => void
   onAdded: () => void
+  /** Opened from a bitim: its client is already picked */
+  initialClient?: PickedClient
 }
 
 type PickedClient = Pick<ClientContact, "id" | "full_name" | "phone" | "image">
@@ -37,7 +39,7 @@ function ClientAvatar({ c }: { c: PickedClient }) {
 }
 
 // State lives here; the parent remounts this modal (via key) on each open.
-export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded }: EnrollParticipantModalProps) {
+export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, onClose, onAdded, initialClient }: EnrollParticipantModalProps) {
   const enroll = useEnrollParticipant(eventId)
   const { data: tariffs = [], isLoading: loadingTariffs } = useEventTariffs(eventId)
   const { data: users = [] } = useUsers()
@@ -54,7 +56,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   const [mode, setMode] = useState<"search" | "new">("search")
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientContact[]>([])
-  const [client, setClient] = useState<PickedClient | null>(null)
+  const [client, setClient] = useState<PickedClient | null>(initialClient ?? null)
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [suggestion, setSuggestion] = useState<PickedClient | null>(null)

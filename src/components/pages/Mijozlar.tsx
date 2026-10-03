@@ -14,6 +14,7 @@ import {
     Image as ImageIcon,
     Camera,
     Check,
+    WarningCircle,
 } from "@phosphor-icons/react"
 import { toast as notify } from "@/lib/toast"
 import { StatusBadge } from "@/components/ui/StatusBadge"
@@ -58,6 +59,8 @@ interface Customer {
     email: string;
     phone: string;
     activity: string;
+    company: string;
+    role: string;
     location: string;
     eventsCount: number;
     daysSinceLastEvent: number | null;
@@ -70,6 +73,16 @@ interface Customer {
     communityApproved: boolean;
 }
 
+
+// What a customer card still lacks — Mijozlar shows it in red until it's filled in
+function missingInfo(c: Customer): string[] {
+    return [
+        !c.image && "rasm",
+        !c.activity.trim() && "faoliyati",
+        !c.phone.trim() && "telefon",
+        !c.company.trim() && !c.role.trim() && "kompaniya / lavozim",
+    ].filter((x): x is string => !!x)
+}
 
 const columnHelper = createColumnHelper<Customer>()
 
@@ -104,6 +117,8 @@ export function Mijozlar() {
                 email: row.email ?? '',
                 phone: row.phone ?? '',
                 activity: row.activity ?? '',
+                company: row.company ?? '',
+                role: row.role ?? '',
                 location: (row as unknown as { location: string | null }).location ?? '',
                 eventsCount: row.events_count,
                 daysSinceLastEvent: days,
@@ -155,7 +170,7 @@ export function Mijozlar() {
 
     // Bulk edit mode
     const [editAllMode, setEditAllMode] = useState(false)
-    const [editAllValues, setEditAllValues] = useState({ name: '', phone: '', email: '', activity: '', location: '' })
+    const [editAllValues, setEditAllValues] = useState({ name: '', phone: '', email: '', activity: '', company: '', role: '', location: '' })
 
     function startEdit(field: "name" | "activity" | "phone" | "email") {
         if (!selectedCustomer) return
@@ -191,6 +206,8 @@ export function Mijozlar() {
             phone: selectedCustomer.phone || '',
             email: selectedCustomer.email || '',
             activity: selectedCustomer.activity || '',
+            company: selectedCustomer.company || '',
+            role: selectedCustomer.role || '',
             location: selectedCustomer.location || '',
         })
         setEditAllMode(true)
@@ -209,6 +226,8 @@ export function Mijozlar() {
                 phone: editAllValues.phone.trim() || undefined,
                 email: editAllValues.email.trim() || undefined,
                 activity: editAllValues.activity.trim() || undefined,
+                company: editAllValues.company.trim() || undefined,
+                role: editAllValues.role.trim() || undefined,
                 location: editAllValues.location.trim() || undefined,
             }},
             {
@@ -218,6 +237,8 @@ export function Mijozlar() {
                         phone: editAllValues.phone.trim(),
                         email: editAllValues.email.trim(),
                         activity: editAllValues.activity.trim(),
+                        company: editAllValues.company.trim(),
+                        role: editAllValues.role.trim(),
                         location: editAllValues.location.trim(),
                     })
                     setEditAllMode(false)
@@ -332,6 +353,12 @@ export function Mijozlar() {
                         )}
                     </div>
                     <span className="text-base font-medium text-ink whitespace-nowrap">{info.getValue()}</span>
+                    {missingInfo(info.row.original).length > 0 && (
+                        <span title={`Yetishmaydi: ${missingInfo(info.row.original).join(", ")}`} aria-label={`Yetishmaydi: ${missingInfo(info.row.original).join(", ")}`}
+                            className="shrink-0 inline-flex items-center gap-1 h-6 px-2 rounded-full bg-danger-soft text-danger-text text-sm font-medium">
+                            <WarningCircle size={12} weight="bold" />{missingInfo(info.row.original).length}
+                        </span>
+                    )}
                 </div>
             ),
         }),
@@ -398,9 +425,11 @@ export function Mijozlar() {
     // "Rasmi yo'q" / "Raqami yo'q" — to find the cards that still need filling in
     const [noImage, setNoImage] = useState(false)
     const [noPhone, setNoPhone] = useState(false)
+    const [incomplete, setIncomplete] = useState(false)
+    const incompleteCount = useMemo(() => customers.filter(c => missingInfo(c).length > 0).length, [customers])
     const shown = useMemo(
-        () => customers.filter(c => (!noImage || !c.image) && (!noPhone || !c.phone)),
-        [customers, noImage, noPhone]
+        () => customers.filter(c => (!noImage || !c.image) && (!noPhone || !c.phone) && (!incomplete || missingInfo(c).length > 0)),
+        [customers, noImage, noPhone, incomplete]
     )
 
     const rowSelection = useMemo(
@@ -621,6 +650,11 @@ export function Mijozlar() {
                                     {on && <Check size={12} weight="bold" />}{label}
                                 </button>
                             ))}
+                            <button type="button" aria-pressed={incomplete} onClick={() => { setIncomplete(!incomplete); table.setPageIndex(0) }}
+                                className={`h-control-md px-3.5 inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${incomplete ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
+                                {incomplete && <Check size={12} weight="bold" />}To'liq emas
+                                {incompleteCount > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-danger text-white text-xs font-semibold tabular-nums inline-flex items-center justify-center">{incompleteCount}</span>}
+                            </button>
                         </div>
                         {selectedMijozlar.length > 0 && (
                             <div className="flex items-center gap-2 pl-4 border-l border-line">
@@ -727,6 +761,11 @@ export function Mijozlar() {
                         className="w-[520px] max-h-[92vh] bg-surface-raised rounded-overlay flex flex-col overflow-hidden"
                     >
                         <div className="flex flex-col">
+                            {missingInfo(selectedCustomer).length > 0 && (
+                                <div role="status" className="flex items-center gap-2 px-5 py-2.5 bg-danger-soft text-danger-dark text-sm font-medium">
+                                    <WarningCircle size={16} className="shrink-0" />Yetishmaydi: {missingInfo(selectedCustomer).join(", ")}
+                                </div>
+                            )}
                             {/* AVATAR + INFO */}
                             <div className="relative flex flex-col items-center pt-6 pb-6 px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}
@@ -909,6 +948,18 @@ export function Mijozlar() {
                                                     onChange={e => setEditAllValues(v => ({ ...v, activity: e.target.value }))}
                                                     className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
                                             </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm text-ink-muted">Kompaniya</span>
+                                                    <input value={editAllValues.company} onChange={e => setEditAllValues(v => ({ ...v, company: e.target.value }))}
+                                                        className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm text-ink-muted">Lavozim</span>
+                                                    <input value={editAllValues.role} onChange={e => setEditAllValues(v => ({ ...v, role: e.target.value }))}
+                                                        className="px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                </div>
+                                            </div>
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-sm text-ink-muted">Lokatsiya</span>
                                                 <input value={editAllValues.location}
@@ -1016,6 +1067,10 @@ export function Mijozlar() {
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-sm text-ink-muted">Lokatsiya</span>
                                                 <span className="text-base text-ink">{selectedCustomer.location || '—'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm text-ink-muted">Kompaniya · lavozim</span>
+                                                <span className="text-base text-ink">{[selectedCustomer.company, selectedCustomer.role].filter(Boolean).join(" · ") || '—'}</span>
                                             </div>
                                         </>
                                     )}

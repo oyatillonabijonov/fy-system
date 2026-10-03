@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext"
 import { usePipelines, useStages, useLeads, useCreatePipeline, useDuplicateLeads, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeLeads, sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
+import { useEvents } from "@/hooks/useEvents"
 import { formatDate, formatNumber } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
@@ -41,6 +42,8 @@ export function Sotuv() {
   const [dups, setDups] = useState(false)
   const { data: duplicates = [] } = useDuplicateLeads()
   const today = tashkentToday()
+  const { data: events = [] } = useEvents()
+  const eventName = pipeline?.event_id ? events.find((e) => e.id === pipeline.event_id)?.name : undefined
 
   const set = (k: string, v: string | null) => setParams((cur) => { const n = new URLSearchParams(cur); if (v) n.set(k, v); else n.delete(k); return n }, { replace: true })
   function pick(id: string) {
@@ -110,6 +113,7 @@ export function Sotuv() {
         {view !== "tasks" && (
           <span className="text-sm text-ink-muted tabular-nums">
             {openLeads.length} ta ochiq · {formatNumber(openLeads.reduce((a, l) => a + l.price, 0))} so'm
+            {eventName && <> · Tadbir: <span className="text-ink">{eventName}</span></>}
           </span>
         )}
         <div className="flex-1" />

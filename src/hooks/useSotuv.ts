@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getPipelines, getStages, getLeads, getLead, createLead, updateLead, deleteLead,
   getNotes, getLeadCalls, getCalls, getDuplicateLeads, mergeLeads, renameClient, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
-  createPipeline, renamePipeline, deletePipeline, saveStage, deleteStage,
+  createPipeline, renamePipeline, setPipelineEvent, deletePipeline, saveStage, deleteStage,
   type CallFilter, type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
 } from "@/lib/supabase/queries/sotuv"
 
@@ -53,6 +53,7 @@ export const useUpdateTask = () =>
 
 export const useCreatePipeline = () => useSotuvMutation(({ name, sortOrder }: { name: string; sortOrder: number }) => createPipeline(name, sortOrder), "Voronka yaratildi")
 export const useRenamePipeline = () => useSotuvMutation(({ id, name }: { id: string; name: string }) => renamePipeline(id, name))
+export const useSetPipelineEvent = () => useSotuvMutation(({ id, eventId }: { id: string; eventId: string | null }) => setPipelineEvent(id, eventId), "Tadbir biriktirildi")
 export const useDeletePipeline = () => useSotuvMutation((id: string) => deletePipeline(id), "Voronka o'chirildi")
 export const useSaveStage = () => useSotuvMutation((s: Partial<Stage> & { pipeline_id: string }) => saveStage(s))
 export const useDeleteStage = () => useSotuvMutation((id: string) => deleteStage(id))
