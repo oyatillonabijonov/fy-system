@@ -2,7 +2,9 @@ import { useId, useState } from "react"
 import { motion } from "framer-motion"
 import { X, Trash, ArrowUp, ArrowDown, Plus } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
-import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage } from "@/hooks/useSotuv"
+import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent } from "@/hooks/useSotuv"
+import { useEvents } from "@/hooks/useEvents"
+import { formatDate } from "@/lib/format"
 import type { Pipeline, Stage } from "@/lib/supabase/queries/sotuv"
 import { INPUT } from "@/components/moliya/PaymentActionModals"
 import { Popover } from "@/components/vazifalar/pickers"
@@ -21,6 +23,8 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
   const del = useDeletePipeline()
   const save = useSaveStage()
   const delStage = useDeleteStage()
+  const setEvent = useSetPipelineEvent()
+  const { data: events = [] } = useEvents()
   const [name, setName] = useState(pipeline.name)
   const [newStage, setNewStage] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +68,15 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
           <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Voronka nomi"
             onBlur={() => { const v = name.trim(); if (v && v !== pipeline.name) rename.mutate({ id: pipeline.id, name: v }, { onError }); else setName(pipeline.name) }}
             className={`${INPUT} text-md font-semibold`} />
+
+          {/* The voronka's event (081): the bitim page offers "Tadbirga yozish" for it */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-ink-muted">Tadbir</span>
+            <select value={pipeline.event_id ?? ""} onChange={(e) => setEvent.mutate({ id: pipeline.id, eventId: e.target.value || null }, { onError })} className={INPUT}>
+              <option value="">Tadbirga bog'lanmagan</option>
+              {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}{ev.date ? ` · ${formatDate(ev.date)}` : ""}</option>)}
+            </select>
+          </label>
 
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-ink-muted mb-1">Bosqichlar</span>

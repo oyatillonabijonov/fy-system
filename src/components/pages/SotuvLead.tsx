@@ -13,6 +13,8 @@ import { DuePicker, PersonDot, addDays } from "@/components/vazifalar/pickers"
 import { KIND_ICON, TaskChip, NoTaskChip, Recording, callLabel, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { confirmAction } from "@/lib/confirm"
+import { useEvents, useParticipants } from "@/hooks/useEvents"
+import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -107,10 +109,14 @@ function LeadView({ lead }: { lead: Lead }) {
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
 
-          {/* The form's answers, like AmoCRM's deal fields */}
+          {/* The voronka's event (081): enrol this client straight from the bitim */}
+          {pipeline?.event_id && lead.client && <EnrollFromLead eventId={pipeline.event_id} client={lead.client} />}
+
+          {/* The form's answers, like AmoCRM's deal fields — the whole form, name and phone included */}
           {lead.fields.length > 0 && (
-            <dl className="flex flex-col gap-2.5">
-              {lead.fields.map((f) => (
+            <dl className="flex flex-col gap-2.5" aria-label="Forma javoblari">
+              <span className="text-sm font-semibold text-ink">Forma javoblari</span>
+              {[{ k: "Ism", v: lead.client?.full_name ?? lead.name }, ...(lead.client?.phone ? [{ k: "Telefon", v: formatPhone(lead.client.phone) }] : []), ...lead.fields].map((f) => (
                 <div key={f.k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-3">
                   <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
                   <dd className="text-base text-ink break-words">{f.v}</dd>
@@ -396,3 +402,28 @@ function Composer({ leadId, responsible, today }: { leadId: string; responsible:
   )
 }
 
+/** "Tadbirga yozish" for the voronka's event; once enrolled it just says so */
+function EnrollFromLead({ eventId, client }: { eventId: string; client: { id: string; full_name: string; phone: string | null; image: string | null } }) {
+  const { hasAccess } = useAuth()
+  const { data: events = [] } = useEvents()
+  const { data: participants = [] } = useParticipants(eventId)
+  const [open, setOpen] = useState(false)
+  const event = events.find((e) => e.id === eventId)
+  if (!event || !hasAccess("tadbirlar")) return null
+  const ids = new Set(participants.map((p) => p.contact_id).filter((x): x is string => !!x))
+  return (
+    <div className="rounded-control bg-surface p-3.5 flex items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <span className="block text-sm text-ink-muted">Tadbir</span>
+        <span className="block text-base font-medium text-ink truncate">{event.name}</span>
+      </div>
+      {ids.has(client.id)
+        ? <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-success-soft text-success-dark text-sm font-medium whitespace-nowrap"><CheckCircle size={16} />Yozilgan</span>
+        : <button type="button" onClick={() => setOpen(true)} className="h-8 px-3.5 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover transition-colors whitespace-nowrap">Tadbirga yozish</button>}
+      {open && (
+        <EnrollParticipantModal isOpen eventId={eventId} existingContactIds={ids} initialClient={client}
+          onClose={() => setOpen(false)} onAdded={() => {}} />
+      )}
+    </div>
+  )
+}

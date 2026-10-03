@@ -7,7 +7,7 @@ const db = supabase as unknown as SupabaseClient
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export interface Pipeline { id: string; name: string; sort_order: number }
+export interface Pipeline { id: string; name: string; sort_order: number; event_id: string | null }
 
 export interface Stage {
   id: string
@@ -100,7 +100,7 @@ export const sourceLabel = (s: string | null) => SOURCES.find((x) => x.id === s)
 // ─── Voronkalar / bosqichlar (admin edits; RLS enforces it) ────────────────
 
 export async function getPipelines(): Promise<Pipeline[]> {
-  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order").order("sort_order").order("created_at")
+  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order, event_id").order("sort_order").order("created_at")
   if (error) throw error
   return data as Pipeline[]
 }
@@ -133,6 +133,12 @@ export async function createPipeline(name: string, sortOrder: number): Promise<P
 
 export async function renamePipeline(id: string, name: string): Promise<void> {
   const { error } = await db.from("crm_pipelines").update({ name }).eq("id", id)
+  if (error) throw error
+}
+
+/** The voronka's event (081); null unlinks */
+export async function setPipelineEvent(id: string, eventId: string | null): Promise<void> {
+  const { error } = await db.from("crm_pipelines").update({ event_id: eventId }).eq("id", id)
   if (error) throw error
 }
 
