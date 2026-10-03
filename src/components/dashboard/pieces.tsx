@@ -91,13 +91,14 @@ export function CountList({ rows }: { rows: { key: string; label: string; leads:
 export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
   if (rows.length === 0) return <Empty text="Bosqich yo'q" />
   const max = Math.max(1, ...rows.map((r) => r.open))
-  const groups = [...new Set(rows.map((r) => r.pipeline))]
+  // By id: two voronkalar may share a name
+  const groups = [...new Map(rows.map((r) => [r.pipeline_id, r.pipeline])).entries()]
   return (
     <div className="flex flex-col gap-4">
-      {groups.map((g) => (
-        <div key={g} className="flex flex-col gap-2">
-          {groups.length > 1 && <span className="text-sm font-medium text-ink-muted">{g}</span>}
-          {rows.filter((r) => r.pipeline === g).map((r) => (
+      {groups.map(([id, name]) => (
+        <div key={id} className="flex flex-col gap-2">
+          {groups.length > 1 && <span className="text-sm font-medium text-ink-muted">{name}</span>}
+          {rows.filter((r) => r.pipeline_id === id).map((r) => (
             <div key={r.stage_id} className="grid grid-cols-[minmax(0,160px)_1fr_auto] items-center gap-3">
               <span className="text-base text-ink truncate flex items-center gap-2">
                 <span className="size-2 rounded-full shrink-0" style={{ background: r.color }} />{r.name}

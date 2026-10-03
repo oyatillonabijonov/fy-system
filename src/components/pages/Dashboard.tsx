@@ -67,7 +67,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {isLoading || !d ? <Skeleton className="h-[420px] rounded-surface" /> : (
+      {!d ? (!error || isLoading) && <Skeleton className="h-[420px] rounded-surface" /> : (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           <div className="flex flex-col gap-8 min-w-0">
             <Section title="Sotuv natijasi" desc="Tanlangan davr, oldingi shuncha davrga nisbatan">

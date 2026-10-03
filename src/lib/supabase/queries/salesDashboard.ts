@@ -17,12 +17,12 @@ export interface SalesDashboard {
   pipelines: { id: string; name: string }[]
   kpi: SalesKpi
   kpi_prev: SalesKpi
-  funnel: { pipeline: string; stage_id: string; name: string; color: string; open: number; open_sum: number }[]
+  funnel: { pipeline: string; pipeline_id: string; stage_id: string; name: string; color: string; open: number; open_sum: number }[]
   by_source: { source: string | null; new: number; won: number }[]
   by_pipeline: { id: string; name: string; new: number; won: number }[]
   daily: { day: string; new: number; won: number }[]
   sellers: SalesSeller[]
-  calls: { in: number; out: number; missed: number; talk_sec: number; avg_talk_sec: number; missed_total: number; missed_called_back: number }
+  calls: { in: number; out: number; missed: number; talk_sec: number; avg_talk_sec: number; missed_called_back: number }
   attention: {
     overdue_tasks: { id: string; lead_id: string; lead_name: string; text: string | null; kind: TaskKind; due_date: string; assignee: string | null }[]
     stale_leads: { id: string; name: string; stage: string; days: number; responsible: string | null }[]

@@ -7,12 +7,12 @@ import { formatNumber } from "@/lib/format"
 
 /** Period totals, then the same per seller (only those who called) */
 export function CallsCard({ calls: c, sellers }: { calls: SalesDashboard["calls"]; sellers: SalesSeller[] }) {
-  const back = c.missed_total ? `${Math.round((c.missed_called_back / c.missed_total) * 100)}%` : "—"
+  const back = c.missed ? `${Math.round((c.missed_called_back / c.missed) * 100)}%` : "—"
   const tiles = [
     { label: "Kiruvchi", icon: <PhoneIncoming size={16} />, value: formatNumber(c.in) },
     { label: "Chiquvchi", icon: <PhoneOutgoing size={16} />, value: formatNumber(c.out) },
     { label: "Javobsiz", icon: <PhoneX size={16} />, value: formatNumber(c.missed), danger: c.missed > 0 },
-    { label: "Qayta qo'ng'iroq", icon: <ArrowBendUpLeft size={16} />, value: back, hint: `${c.missed_called_back} / ${c.missed_total}` },
+    { label: "Qayta qo'ng'iroq", icon: <ArrowBendUpLeft size={16} />, value: back, hint: `${c.missed_called_back} / ${c.missed}` },
     { label: "Gaplashilgan", icon: <Clock size={16} />, value: secs(c.talk_sec), hint: `o'rtacha ${secs(c.avg_talk_sec)}` },
   ]
   const callers = sellers.filter((s) => s.calls_in + s.calls_out > 0)
