@@ -44,6 +44,7 @@ import { PhoneInput } from "@/components/ui/PhoneInput"
 import { normalizePhone } from "@/lib/utils"
 import { ThinkingOrb } from "thinking-orbs"
 import { useAuth } from "@/context/AuthContext"
+import { ClientSms } from "@/components/sms/ClientSms"
 import { useCashbackNextExpiry } from "@/hooks/useCashback"
 import { AdjustCashbackModal } from "@/components/cashback/AdjustCashbackModal"
 import type { CashbackTransaction } from "@/lib/supabase/queries/cashback"
@@ -71,6 +72,7 @@ interface Customer {
     cashbackBalance: number;
     authUserId: string | null;
     communityApproved: boolean;
+    smsOptOut: boolean;
 }
 
 
@@ -129,6 +131,7 @@ export function Mijozlar() {
                 cashbackBalance: Number(row.cashback_balance ?? 0),
                 authUserId: row.auth_user_id,
                 communityApproved: row.community_approved ?? false,
+                smsOptOut: (row as { sms_opt_out?: boolean }).sms_opt_out ?? false,   // 083, until gen:types
             }
         })
     }, [rawClients, lastEventDatesQuery.data])
@@ -139,7 +142,7 @@ export function Mijozlar() {
     const [sorting, setSorting] = useState<SortingState>([])
     const [globalFilter, setGlobalFilter] = useState('')
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-    const [drawerTab, setDrawerTab] = useState<'cashback' | 'malumotlar'>('malumotlar')
+    const [drawerTab, setDrawerTab] = useState<'cashback' | 'malumotlar' | 'sms'>('malumotlar')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
 
@@ -161,7 +164,7 @@ export function Mijozlar() {
 
     const journeyQuery = useClientJourney(selectedCustomer?.id ?? null)
     const expiryQuery = useCashbackNextExpiry(selectedCustomer?.id ?? null)
-    const { canEdit } = useAuth()
+    const { canEdit, hasAccess } = useAuth()
     const [adjustOpen, setAdjustOpen] = useState(false)
 
     // Inline edit state for sidebar
@@ -833,6 +836,7 @@ export function Mijozlar() {
                                 {([
                                     { id: 'malumotlar' as const, label: "Ma'lumotlar" },
                                     { id: 'cashback' as const, label: 'Cashback' },
+                                    ...(hasAccess('sms') ? [{ id: 'sms' as const, label: 'SMS' }] : []),
                                 ]).map(tab => (
                                     <button
                                         key={tab.id}
@@ -847,6 +851,8 @@ export function Mijozlar() {
                                     </button>
                                 ))}
                             </div>
+
+                            {drawerTab === 'sms' && <ClientSms key={selectedCustomer.id} clientId={selectedCustomer.id} optOut={selectedCustomer.smsOptOut} />}
 
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (

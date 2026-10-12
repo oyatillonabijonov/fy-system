@@ -18,6 +18,7 @@ import { LiveSync } from "./components/layout/LiveSync"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { SotuvCalls } from "./components/pages/SotuvCalls"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
+import { Sms } from "./components/pages/Sms"
 import { Login } from "./components/pages/Login"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider } from "./context/ThemeContext"
@@ -40,6 +41,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
   '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari." },
   '/sotuv/qongiroqlar': { title: "Qo'ng'iroqlar", desc: "Kiruvchi va chiquvchi qo'ng'iroqlar — qayta qo'ng'iroq, yozuv, bitim." },
+  '/sms':           { title: 'SMS',             desc: "Mijozlarga reklama va eslatma SMS'lari — matn, tanlash, yuborish." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
@@ -207,6 +209,10 @@ function App() {
           } />
           <Route path="/sotuv/crm-n" element={<Navigate to="/sotuv" replace />} />
           <Route path="/sotuv/sdelka/:id" element={<OldDealLink />} />
+
+          <Route path="/sms" element={
+            <ProtectedRoute module="sms"><Sms /></ProtectedRoute>
+          } />
 
           {/* Every signed-in staff member sees and edits all tasks (066) */}
           <Route path="/vazifalar" element={<Vazifalar />} />

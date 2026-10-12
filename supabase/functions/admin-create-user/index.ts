@@ -16,6 +16,7 @@ const VALID_MODULES = new Set([
   "tadbirlar-moliya",
   "sozlamalar",
   "integratsiyalar",
+  "sms",
 ])
 
 interface CreateUserRequest {
