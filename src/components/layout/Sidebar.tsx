@@ -1,4 +1,4 @@
-import { Code, Funnel, Kanban, PhoneCall,
+import { Code, Funnel, Kanban, PhoneCall, ChatText,
     MagnifyingGlass,
     House,
     Users,
@@ -60,6 +60,7 @@ const navigationSections: NavSection[] = [
                 ],
             },
             { name: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },
+            { name: "SMS", icon: ChatText, path: "/sms", module: "sms" },
             { name: "Tadbirlar", icon: Ticket, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
             { name: "Moliya", icon: Bank, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
         ],

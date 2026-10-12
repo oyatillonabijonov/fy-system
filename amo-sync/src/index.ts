@@ -5,7 +5,7 @@
 // Alongside: Telegram payment receipts (src/telegram.ts); the Vazifalar morning report and
 // deadline reminders (src/tasks.ts); tasks from the team chat (src/taskbot.ts, Gemini); form
 // webhooks that open bitimlar (src/intake.ts, :8787 behind /hooks/); OnlinePBX call history and
-// the browser phone's endpoints (src/pbx.ts, /hooks/pbx/).
+// the browser phone's endpoints (src/pbx.ts, /hooks/pbx/); SMS to clients through Eskiz (src/sms.ts).
 //
 // Env: DATABASE_URL, SYNC_INTERVAL_MIN (10). `bun run src/index.ts --once` runs one pass and exits.
 
@@ -16,6 +16,7 @@ import { startTaskBot } from "./taskbot"
 import { startIntake } from "./intake"
 import { startPbxSync } from "./pbx"
 import { seedGroups } from "./groups"
+import { startSms } from "./sms"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -56,6 +57,7 @@ if (process.argv.includes("--once")) {
   await startTaskBot(sql).catch((e) => console.error(`[taskbot] ${e instanceof Error ? e.message : e}`))
   startIntake(sql)
   startPbxSync(sql)
+  await startSms(sql).catch((e) => console.error(`[sms] ${e instanceof Error ? e.message : e}`))
   for (;;) {
     await runOnce()
     await sleep(INTERVAL_MIN * 60 * 1000)

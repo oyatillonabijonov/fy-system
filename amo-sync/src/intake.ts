@@ -7,6 +7,7 @@
 
 import type { Sql } from "postgres"
 import { handlePbx, pbxSyncedAt } from "./pbx"
+import { handleSms } from "./sms"
 
 const PORT = Number(process.env.INTAKE_PORT ?? 8787)
 const GRAPH = "https://graph.facebook.com/v19.0"
@@ -106,6 +107,7 @@ export function startIntake(sql: Sql): void {
       const url = new URL(req.url)
       if (url.pathname.startsWith("/hooks/pbx/")) return handlePbx(req, sql, url.pathname.slice("/hooks/pbx/".length))
       if (url.pathname === "/hooks/health") return health(sql)
+      if (url.pathname.startsWith("/hooks/sms/")) return handleSms(req, sql, url)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
       const source = m[1]

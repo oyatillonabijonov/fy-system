@@ -12,6 +12,7 @@ export type ModuleName =
   | "tadbirlar-moliya"
   | "sozlamalar"
   | "integratsiyalar"
+  | "sms"
 
 /** Modules an admin can grant. "sozlamalar" (Profilim is open to everyone) stays a
  *  valid id in the DB but isn't offered. "sotuv-crmn" is Sotuv bo'limi (the id is historical). */
@@ -22,6 +23,7 @@ export const MODULES: { id: ModuleName; label: string; desc: string }[] = [
   { id: "tadbirlar",        label: "Tadbirlar",  desc: "Tadbirlar va ishtirokchilar" },
   { id: "tadbirlar-moliya", label: "Moliya",     desc: "To'lovlar, qarzdorlar, xarajatlar" },
   { id: "integratsiyalar",  label: "Integratsiyalar", desc: "Telegram guruhlar: bot qaysi guruhda nima qiladi" },
+  { id: "sms",              label: "SMS",        desc: "Mijozlarga reklama va eslatma SMS'lari (Eskiz)" },
 ]
 
 /** The only module whose UI distinguishes view from edit (canEdit) */
