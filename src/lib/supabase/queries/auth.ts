@@ -17,7 +17,7 @@ export type ModuleName =
 /** Modules an admin can grant. "sozlamalar" (Profilim is open to everyone) stays a
  *  valid id in the DB but isn't offered. "sotuv-crmn" is Sotuv bo'limi (the id is historical). */
 export const MODULES: { id: ModuleName; label: string; desc: string }[] = [
-  { id: "dashboard",        label: "Dashboard",  desc: "AmoCRM sotuv analitikasi" },
+  { id: "dashboard",        label: "Dashboard",  desc: "Sotuv natijalari va analitika" },
   { id: "mijozlar",         label: "Mijozlar",   desc: "Mijozlar bazasi" },
   { id: "sotuv-crmn",       label: "Sotuv bo'limi", desc: "Voronkalar, bitimlar, sotuv vazifalari" },
   { id: "tadbirlar",        label: "Tadbirlar",  desc: "Tadbirlar va ishtirokchilar" },
@@ -191,24 +191,22 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
 export interface UserStats {
   leads_handled: number
   events_organized: number
-  clients_added: number
 }
 
 export async function getUserStats(userId: string): Promise<UserStats> {
   // crm_leads.responsible_user_id is the staff profile id directly — it used to
   // hop through amocrm_users by email, which never resolved (those emails were
   // always empty), so this counter always read 0.
-  const { count, error } = await supabase
-    .from("crm_leads")
-    .select("id", { count: "exact", head: true })
-    .eq("responsible_user_id", userId)
-
-  if (error) throw error
+  const [leads, events] = await Promise.all([
+    supabase.from("crm_leads").select("id", { count: "exact", head: true }).eq("responsible_user_id", userId),
+    supabase.from("events").select("id", { count: "exact", head: true }).eq("manager_id", userId),
+  ])
+  if (leads.error) throw leads.error
+  if (events.error) throw events.error
 
   return {
-    leads_handled: count ?? 0,
-    events_organized: 0,
-    clients_added: 0,
+    leads_handled: leads.count ?? 0,
+    events_organized: events.count ?? 0,
   }
 }
 

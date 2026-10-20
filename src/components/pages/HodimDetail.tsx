@@ -182,7 +182,7 @@ export function HodimDetail() {
       />
 
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard
           icon={<ChartBar size={16} />}
           label="CRM-N lidlar"
@@ -192,11 +192,6 @@ export function HodimDetail() {
           icon={<Ticket size={16} />}
           label="Tadbirlar"
           value={stats?.events_organized.toString() ?? "—"}
-        />
-        <StatCard
-          icon={<Briefcase size={16} />}
-          label="Mijozlar"
-          value={stats?.clients_added.toString() ?? "—"}
         />
       </div>
 

@@ -24,7 +24,6 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider } from "./context/ThemeContext"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  MagnifyingGlass,
   Warning,
   Phone,
 } from "@phosphor-icons/react"
@@ -125,23 +124,8 @@ function AppShell() {
             <p className="text-sm text-ink-muted truncate">{meta.desc}</p>
           </div>
 
-          {/* Right: Search, Lang, Theme, Settings */}
+          {/* Right: phone, reminders, profile */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Search */}
-            <div className="relative w-[280px]">
-              <MagnifyingGlass
-                size={16}
-               
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"
-              />
-              <input
-                type="text"
-                placeholder="Tizim bo'ylab qidirish"
-                aria-label="Tizim bo'ylab qidirish"
-                className="w-full h-control-md rounded-control pl-9 pr-3 text-base text-ink placeholder:text-ink-faint bg-surface-sunken border border-transparent outline-none transition-colors hover:bg-surface-sunken-hover focus:border-line-focus"
-              />
-            </div>
-
             <PhoneStatus />
             {hasAccess("sotuv-crmn") && <SalesReminders />}
 

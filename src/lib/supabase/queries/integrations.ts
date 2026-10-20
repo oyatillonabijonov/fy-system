@@ -12,7 +12,7 @@ export const GROUP_ROLES: { id: GroupRole; label: string; short: string; desc: s
   { id: "expenses", label: "Xarajat cheklari", short: "Xarajatlar", desc: "Yangi va bekor qilingan chiqimlar cheki" },
   { id: "task_digest", label: "Ertalabki hisobot", short: "Hisobot 9:00", desc: "Har kuni 9:00 da vazifalar holati" },
   { id: "task_reminders", label: "Muddat eslatmalari", short: "Eslatmalar", desc: "1 soat oldin, vaqtida va kechikkanda — mas'ul belgilanadi" },
-  { id: "task_bot", label: "Chatdan vazifa", short: "Chatdan vazifa", desc: "@bot yoki /vazifa bilan yozilgan xabar vazifa bo'ladi" },
+  { id: "task_bot", label: "Chatdan vazifa", short: "Chatdan vazifa", desc: "/task, /vazifa@bot yoki @bot bilan yozilgan xabar vazifa bo'ladi" },
 ]
 
 export type TelegramGroup = {

@@ -12,6 +12,7 @@ import { useDialog } from "@/hooks/useDialog"
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { ReceiptInput } from "@/components/moliya/Receipt"
+import { toast } from "@/lib/toast"
 
 export type PickedClient = Pick<ClientContact, "id" | "full_name" | "phone" | "image">
 
@@ -191,7 +192,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
       },
       {
         onSuccess: (attached) => {
-          if (!attached) window.alert("To'lov saqlandi, lekin chek yuklanmadi — To'lovlar ro'yxatidan qayta biriktiring")
+          if (!attached) toast.error("Chek yuklanmadi", "To'lov saqlandi — chekni To'lovlar ro'yxatidan qayta biriktiring")
           onClose()
         },
         onError: (err) => {

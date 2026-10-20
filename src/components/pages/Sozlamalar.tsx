@@ -4,7 +4,7 @@ import { soundOn, setSoundOn } from "@/lib/sound"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { User as UserIcon, Camera } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
-import { useTheme, MODES, PHOTOS, photoThumb, type ThemeId, type LangId } from "@/context/ThemeContext"
+import { useTheme, MODES, PHOTOS, photoThumb, type ThemeId } from "@/context/ThemeContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import {
   ROLE_LABELS,
@@ -257,14 +257,8 @@ const PREVIEW: Record<ThemeId, { ground: string; card: string }> = {
 }
 const THEME_OPTIONS = MODES.map((m) => ({ ...m, ...PREVIEW[m.id] }))
 
-const LANG_OPTIONS: { id: LangId; label: string }[] = [
-  { id: "uz", label: "O'zbekcha" },
-  { id: "ru", label: "Русский" },
-  { id: "en", label: "English" },
-]
-
 function PreferencesRows() {
-  const { themeId, setThemeId, photo, setPhoto, lang, setLang } = useTheme()
+  const { themeId, setThemeId, photo, setPhoto } = useTheme()
   const [sound, setSound] = useState(soundOn)
   return (
     <>
@@ -304,7 +298,7 @@ function PreferencesRows() {
         </div>
       </SettingsRow>
 
-      <SettingsRow title="Ovozlar" desc="Vazifa, mijoz, hodim qo'shilganda yoki xatolik bo'lganda yumshoq ovoz. Tanlov shu qurilmada saqlanadi.">
+      <SettingsRow title="Ovozlar" desc="Vazifa, mijoz, hodim qo'shilganda yoki xatolik bo'lganda yumshoq ovoz. Tanlov shu qurilmada saqlanadi." last>
         <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken">
           {[true, false].map((v) => (
             <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
@@ -316,22 +310,6 @@ function PreferencesRows() {
         </div>
       </SettingsRow>
 
-      <SettingsRow title="Til" desc="Interfeys tili. Hozircha tarjimalar tayyorlanmoqda — matnlar o'zbekcha qoladi." last>
-        <div role="radiogroup" aria-label="Til" className="inline-grid grid-cols-3 gap-1 p-1 rounded-control bg-surface-sunken">
-          {LANG_OPTIONS.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              role="radio"
-              aria-checked={lang === l.id}
-              onClick={() => setLang(l.id)}
-              className={`h-8 px-4 rounded-item text-base font-medium transition-colors ${lang === l.id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-      </SettingsRow>
     </>
   )
 }

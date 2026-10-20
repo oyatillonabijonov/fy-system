@@ -3,6 +3,7 @@ import { Paperclip, UploadSimple, X } from "@phosphor-icons/react"
 import { RECEIPT_ACCEPT, RECEIPT_MAX_BYTES, receiptUrl, type ReceiptKind } from "@/lib/supabase/queries/finance"
 import { useAttachReceipt } from "@/hooks/useFinance"
 import { LABEL } from "@/components/moliya/PaymentActionModals"
+import { toast, errorDetail } from "@/lib/toast"
 
 function fileProblem(f: File): string | null {
   if (!RECEIPT_ACCEPT.split(",").includes(f.type)) return "Faqat JPG, PNG, WEBP yoki PDF fayl"
@@ -74,7 +75,7 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
             }
           } catch (e) {
             tab?.close()
-            window.alert(e instanceof Error ? e.message : "Chekni ochib bo'lmadi")
+            toast.error("Chekni ochib bo'lmadi", errorDetail(e))
           }
         }}
         title="Chekni ochish"
@@ -110,10 +111,10 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
           if (!f) return
           const problem = fileProblem(f)
           if (problem) {
-            window.alert(problem)
+            toast.error(problem)
             return
           }
-          attach.mutate({ kind, id, file: f }, { onError: (err) => window.alert(err.message) })
+          attach.mutate({ kind, id, file: f }, { onError: (err) => toast.error("Chek biriktirilmadi", errorDetail(err)) })
         }}
       />
     </>

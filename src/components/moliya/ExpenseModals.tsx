@@ -6,6 +6,7 @@ import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModal
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatNumber } from "@/lib/format"
 import { ReceiptInput } from "@/components/moliya/Receipt"
+import { toast } from "@/lib/toast"
 
 // Both modals are mounted only while open, so their state starts fresh.
 export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: string | null; onClose: () => void }) {
@@ -39,7 +40,7 @@ export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: s
           { category, amount: amountNum, spentAt, eventId: event || null, note: note.trim(), receipt },
           {
             onSuccess: (attached) => {
-              if (!attached) window.alert("Xarajat saqlandi, lekin chek yuklanmadi — Xarajatlar ro'yxatidan qayta biriktiring")
+              if (!attached) toast.error("Chek yuklanmadi", "Xarajat saqlandi — chekni Xarajatlar ro'yxatidan qayta biriktiring")
               onClose()
             },
             onError: (e) => setError(e.message),
