@@ -185,7 +185,7 @@ export function HodimDetail() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard
           icon={<ChartBar size={16} />}
-          label="CRM-N lidlar"
+          label="Bitimlar"
           value={stats?.leads_handled.toString() ?? "—"}
         />
         <StatCard
