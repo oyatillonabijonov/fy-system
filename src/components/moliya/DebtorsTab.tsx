@@ -13,6 +13,7 @@ import { Pager, usePaged } from "@/components/ui/Pager"
 import { tashkentToday } from "@/lib/period"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
+import { toast, errorDetail } from "@/lib/toast"
 
 const STATUS_LABEL: Record<DebtStatus, string> = {
   debt: "Qarzdorlar",
@@ -146,7 +147,7 @@ function DebtorTableRow({
       : sellers
 
   function patch(p: ParticipantFinancePatch) {
-    update.mutate({ id: r.participant_id, patch: p }, { onError: (e) => window.alert(e.message) })
+    update.mutate({ id: r.participant_id, patch: p }, { onError: (e) => toast.error("Saqlanmadi", errorDetail(e)) })
   }
 
   return (
@@ -212,7 +213,7 @@ function DebtorTableRow({
             earned={r.cashback_earned}
             defaultPercent={r.event_cashback_percent}
             onSet={(percent) =>
-              setPercent.mutate({ participantId: r.participant_id, percent }, { onError: (e) => window.alert(e.message) })
+              setPercent.mutate({ participantId: r.participant_id, percent })
             }
           />
         ) : (

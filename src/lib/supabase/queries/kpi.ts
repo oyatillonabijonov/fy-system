@@ -88,14 +88,25 @@ export async function getKpiActual(
     })
     .single()
 
+  // The SQL function still returns 0 for events_managed, so count the month's
+  // events this person manages (events.date is a plain calendar date) here.
+  const from = `${year}-${String(month).padStart(2, "0")}-01`
+  const to = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`
+  const { count } = await supabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("manager_id", userId)
+    .gte("date", from)
+    .lt("date", to)
+
   if (error || !data) {
-    return { revenue_actual: 0, leads_closed: 0, events_managed: 0 }
+    return { revenue_actual: 0, leads_closed: 0, events_managed: count ?? 0 }
   }
-  const row = data as { revenue_actual: number | null; leads_closed: number | null; events_managed: number | null }
+  const row = data as { revenue_actual: number | null; leads_closed: number | null }
   return {
     revenue_actual: Number(row.revenue_actual ?? 0),
     leads_closed: row.leads_closed ?? 0,
-    events_managed: row.events_managed ?? 0,
+    events_managed: count ?? 0,
   }
 }
 

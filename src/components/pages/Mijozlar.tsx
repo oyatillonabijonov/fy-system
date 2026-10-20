@@ -21,7 +21,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useMemo, useEffect, useRef, useId } from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Link } from "react-router-dom"
+import { findClientByPhone } from "@/lib/supabase/queries/sotuv"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { useDialog } from "@/hooks/useDialog"
 import { useClients, useDeleteClient, useDeleteClients, useUpdateClient, CLIENTS_KEY, useClientJourney, useClientsLastEventDates } from "@/hooks/useClients"
@@ -226,12 +228,12 @@ export function Mijozlar() {
         updateClientMutation.mutate(
             { id: selectedCustomer.id, data: {
                 full_name: editAllValues.name.trim() || undefined,
-                phone: editAllValues.phone.trim() || undefined,
-                email: editAllValues.email.trim() || undefined,
-                activity: editAllValues.activity.trim() || undefined,
-                company: editAllValues.company.trim() || undefined,
-                role: editAllValues.role.trim() || undefined,
-                location: editAllValues.location.trim() || undefined,
+                phone: editAllValues.phone.trim() || null,
+                email: editAllValues.email.trim() || null,
+                activity: editAllValues.activity.trim() || null,
+                company: editAllValues.company.trim() || null,
+                role: editAllValues.role.trim() || null,
+                location: editAllValues.location.trim() || null,
             }},
             {
                 onSuccess: () => {
@@ -270,11 +272,20 @@ export function Mijozlar() {
     });
 
     // Same phone already in the base? (the DB rejects it too — migration 057 — this just says so while typing)
-    const duplicateClient = useMemo(() => {
+    const newPhone = useMemo(() => {
         const p = normalizePhone(newCustomer.phone)
-        if (!p || !/^\+998\d{9}$/.test(p)) return null
-        return customers.find(c => normalizePhone(c.phone) === p) ?? null
-    }, [newCustomer.phone, customers])
+        return p && /^\+998\d{9}$/.test(p) ? p : null
+    }, [newCustomer.phone])
+    const duplicateClient = useMemo(
+        () => (newPhone ? customers.find(c => normalizePhone(c.phone) === newPhone) ?? null : null),
+        [newPhone, customers])
+    // Leads aren't in this list (077) — ask the DB for anyone else with the phone
+    const { data: duplicateLead } = useQuery({
+        queryKey: ["client-by-phone", newPhone],
+        queryFn: () => findClientByPhone(newPhone as string),
+        enabled: !!newPhone && !duplicateClient,
+    })
+    const phoneTaken = !!duplicateClient || (!!newPhone && !!duplicateLead)
 
     useEffect(() => {
         setDrawerTab('malumotlar')
@@ -1284,6 +1295,18 @@ export function Mijozlar() {
                                                 </button>
                                             </div>
                                         )}
+                                        {!duplicateClient && newPhone && duplicateLead && (
+                                            <div role="alert" className="col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
+                                                <span className="flex-1 min-w-0">
+                                                    Bu raqam Sotuv bo'limida lid sifatida bor: <span className="font-semibold">{duplicateLead.full_name}</span>
+                                                </span>
+                                                {duplicateLead.open[0] && hasAccess('sotuv-crmn') && (
+                                                    <Link to={`/sotuv/bitim/${duplicateLead.open[0].id}`} onClick={closeAddModal} className="flex-shrink-0 font-semibold underline underline-offset-2">
+                                                        Bitimni ochish
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-email`} className="text-sm font-bold text-ink">EMAIL (IXTIYORIY)</label>
                                             <input
@@ -1326,9 +1349,9 @@ export function Mijozlar() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={savingNewCustomer || !newCustomer.name.trim() || !!duplicateClient}
+                                        disabled={savingNewCustomer || !newCustomer.name.trim() || phoneTaken}
                                         className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold text-ink-on-accent transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                                            savingNewCustomer || !newCustomer.name.trim() || duplicateClient
+                                            savingNewCustomer || !newCustomer.name.trim() || phoneTaken
                                                 ? "bg-mute-soft cursor-not-allowed"
                                                 : "bg-accent hover:bg-accent-hover"
                                         }`}

@@ -16,6 +16,7 @@ import { EnrollParticipantModal } from "@/components/events/EnrollParticipantMod
 import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 import { Pager, usePaged } from "@/components/ui/Pager"
+import { toast } from "@/lib/toast"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -44,7 +45,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const hasPayments = participants.some((p) => p.paid > 0)
   function handleDelete() {
     if (hasPayments) {
-      window.alert("Bu tadbirda to'lovlar bor. Tadbirni o'chirib bo'lmaydi — to'lovlar Moliya orqali bekor qilinadi.")
+      toast.error("Tadbirni o'chirib bo'lmaydi", "Bu tadbirda to'lovlar bor — to'lovlar Moliya orqali bekor qilinadi")
       return
     }
     onDelete()
