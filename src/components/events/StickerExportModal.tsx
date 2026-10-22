@@ -1,13 +1,35 @@
 import { useState } from "react"
 import { type Event, type Participant } from "@/lib/supabase/queries/events"
-import { STICKER_PALETTES, PER_SHEET } from "@/lib/stickers/drawStickers"
+import { STICKER_STYLES, PER_SHEET, type StickerStyle } from "@/lib/stickers/drawStickers"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 
 const rgb = (c: [number, number, number]) => `rgb(${c.join(",")})`
 
-/** Name stickers for an event: palette, the occasion line, who gets one (+ names typed by hand) → vector PDF */
+/** A tiny drawing of the sticker: band + strip for classic, plain ground + rule for minimal */
+function Swatch({ s }: { s: StickerStyle }) {
+  if (s.layout === "classic") return (
+    <span className="h-9 rounded-item overflow-hidden flex flex-col">
+      <span className="flex-1 flex items-center gap-1.5 px-1.5" style={{ background: rgb(s.band[1]) }}>
+        <span className="size-2.5 shrink-0" style={{ background: rgb(s.mark) }} />
+        <span className="h-1.5 flex-1 rounded-full" style={{ background: rgb(s.name) }} />
+      </span>
+      <span className="h-2.5" style={{ background: rgb(s.strip[0]) }} />
+    </span>
+  )
+  return (
+    <span className="h-9 rounded-item flex flex-col justify-between px-1.5 py-1.5" style={{ background: rgb(s.bg) }}>
+      <span className="flex items-center gap-1.5">
+        <span className="h-1.5 flex-1 rounded-full" style={{ background: rgb(s.ink) }} />
+        <span className="size-2 shrink-0" style={{ background: rgb(s.metal) }} />
+      </span>
+      <span className="h-px w-4" style={{ background: rgb(s.metal) }} />
+    </span>
+  )
+}
+
+/** Name stickers for an event: design, the occasion line, who gets one (+ names typed by hand) → vector PDF */
 export function StickerExportModal({ event, participants, onClose }: { event: Event; participants: Participant[]; onClose: () => void }) {
-  const [paletteId, setPaletteId] = useState(STICKER_PALETTES[0].id)
+  const [styleId, setStyleId] = useState(STICKER_STYLES[0].id)
   const [caption, setCaption] = useState(event.name)
   const [picked, setPicked] = useState<Set<string>>(() => new Set(participants.map((p) => p.id)))
   const [extra, setExtra] = useState("")
@@ -24,7 +46,7 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
     setPending(true); setError(null)
     try {
       const { generateStickers } = await import("@/lib/stickers/generateStickers")
-      await generateStickers(names, caption.trim(), STICKER_PALETTES.find((p) => p.id === paletteId)!, event.name)
+      await generateStickers(names, caption.trim(), STICKER_STYLES.find((s) => s.id === styleId)!, event.name)
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : "PDF tayyorlab bo'lmadi")
@@ -37,16 +59,13 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
     <ModalShell title="Ism stikerlari" error={error} submitLabel="PDF yuklab olish"
       canSubmit={names.length > 0} pending={pending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
-        <span className={LABEL}>Rang</span>
-        <div role="radiogroup" aria-label="Rang" className="grid grid-cols-3 gap-2">
-          {STICKER_PALETTES.map((p) => (
-            <button key={p.id} type="button" role="radio" aria-checked={paletteId === p.id} onClick={() => setPaletteId(p.id)}
-              className={`flex flex-col gap-1.5 p-1.5 rounded-control border transition-colors ${paletteId === p.id ? "border-line-focus" : "border-line hover:bg-mute-ghost-hover"}`}>
-              <span className="h-9 rounded-item flex flex-col justify-between px-2 py-1.5" style={{ background: rgb(p.bg) }}>
-                <span className="h-1.5 w-10 rounded-full" style={{ background: rgb(p.ink) }} />
-                <span className="h-px w-4" style={{ background: rgb(p.metal) }} />
-              </span>
-              <span className="text-sm text-ink">{p.label}</span>
+        <span className={LABEL}>Dizayn</span>
+        <div role="radiogroup" aria-label="Dizayn" className="grid grid-cols-3 gap-2">
+          {STICKER_STYLES.map((st) => (
+            <button key={st.id} type="button" role="radio" aria-checked={styleId === st.id} onClick={() => setStyleId(st.id)}
+              className={`flex flex-col gap-1.5 p-1.5 rounded-control border transition-colors ${styleId === st.id ? "border-line-focus" : "border-line hover:bg-mute-ghost-hover"}`}>
+              <Swatch s={st} />
+              <span className="text-sm text-ink">{st.label}</span>
             </button>
           ))}
         </div>
