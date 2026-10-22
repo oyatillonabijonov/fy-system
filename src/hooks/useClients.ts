@@ -12,6 +12,7 @@ import {
   type ClientJourney,
 } from "@/lib/supabase/queries/clients"
 import type { Database } from "@/lib/supabase/types"
+import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"]
 type ClientInsert = Database["public"]["Tables"]["clients"]["Insert"]
@@ -52,7 +53,10 @@ export function useUpdateClient() {
     onError: (_err, _vars, context) => {
       if (context?.previous) qc.setQueryData(CLIENTS_KEY, context.previous)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: CLIENTS_KEY }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: CLIENTS_KEY })
+      qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY })   // 084 copies the card into the client's participations
+    },
   })
 }
 

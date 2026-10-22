@@ -27,6 +27,7 @@ import { findClientByPhone } from "@/lib/supabase/queries/sotuv"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { useDialog } from "@/hooks/useDialog"
 import { useClients, useDeleteClient, useDeleteClients, useUpdateClient, CLIENTS_KEY, useClientJourney, useClientsLastEventDates } from "@/hooks/useClients"
+import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import { getClientActivityStatus, ACTIVITY_STATUS_META, type ClientActivityStatus } from "@/lib/constants/clientStatus"
 import {
     createColumnHelper,
@@ -502,6 +503,7 @@ export function Mijozlar() {
                 await updateClient(selectedCustomer.id, { image: imageUrl })
                 setSelectedCustomer(prev => prev ? { ...prev, image: imageUrl } : null)
                 qc.invalidateQueries({ queryKey: CLIENTS_KEY })
+                qc.invalidateQueries({ queryKey: PARTICIPANTS_KEY })   // the photo is copied to their participations (084)
                 showToast("Rasm muvaffaqiyatli qo'shildi", "success")
             } catch (err) {
                 console.error("Rasm yuklashda xatolik:", err)
