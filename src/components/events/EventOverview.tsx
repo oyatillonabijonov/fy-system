@@ -8,11 +8,16 @@ import {
   UserCircle,
   Plus,
   Export,
+  CaretDown,
+  BookOpen,
+  IdentificationBadge,
 } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { useParticipants, useDeleteParticipant } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
+import { StickerExportModal } from "@/components/events/StickerExportModal"
+import { Popover } from "@/components/vazifalar/pickers"
 import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 import { Pager, usePaged } from "@/components/ui/Pager"
@@ -32,6 +37,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [enrollKey, setEnrollKey] = useState(0)
   const [exporting, setExporting] = useState(false)
+  const [stickersOpen, setStickersOpen] = useState(false)
 
   const { data: participants = [], isLoading } = useParticipants(event.id)
   const deleteParticipant = useDeleteParticipant(event.id)
@@ -124,14 +130,27 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         <div className="flex items-center justify-between gap-2 px-1">
           <span className="text-base font-bold text-ink">Ishtirokchilar ({participants.length})</span>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleExportBooklet}
-              disabled={exporting || participants.length === 0}
-              className="flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Export size={16} />
-              {exporting ? "Tayyorlanmoqda..." : "Booklet export"}
-            </button>
+            <Popover width={220} trigger={(open, toggle) => (
+              <button onClick={toggle} aria-haspopup="menu" aria-expanded={open} disabled={exporting}
+                className="flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <Export size={16} />
+                {exporting ? "Tayyorlanmoqda..." : "Dizayn materiallar"}
+                <CaretDown size={12} weight="bold" />
+              </button>
+            )}>
+              {(close) => (
+                <div role="menu" className="flex flex-col">
+                  <button role="menuitem" disabled={participants.length === 0} onClick={() => { close(); void handleExportBooklet() }}
+                    className="flex items-center gap-2.5 h-9 px-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover disabled:opacity-40 disabled:pointer-events-none">
+                    <BookOpen size={16} /> Booklet export
+                  </button>
+                  <button role="menuitem" onClick={() => { close(); setStickersOpen(true) }}
+                    className="flex items-center gap-2.5 h-9 px-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover">
+                    <IdentificationBadge size={16} /> Sticker export
+                  </button>
+                </div>
+              )}
+            </Popover>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
               className="flex items-center gap-2 px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
@@ -199,6 +218,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         )}
       </div>
 
+      {stickersOpen && <StickerExportModal event={event} participants={participants} onClose={() => setStickersOpen(false)} />}
       <EnrollParticipantModal
         key={`enroll-${enrollKey}`}
         isOpen={enrollOpen}
