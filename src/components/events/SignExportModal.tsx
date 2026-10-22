@@ -12,7 +12,9 @@ const row = (place: string, direction: Direction): Row => ({ key: ++seq, place, 
 /** Navigation signs for the venue: style, then each sign's place and arrow → vector PDF, two per A4 */
 export function SignExportModal({ event, onClose }: { event: Event; onClose: () => void }) {
   const [styleId, setStyleId] = useState(SIGN_STYLES[0].id)
-  const [rows, setRows] = useState<Row[]>(() => [row("Tadbirlar zali", "right"), row("Namozxona", "left")])
+  const [rows, setRows] = useState<Row[]>(() => [
+    row("Tadbirlar zali", "right"), row("Restoran", "left"), row("Coffee Break", "right"), row("Namozxona", "left"), row("Fikr yetakchilari", "both"),
+  ])
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

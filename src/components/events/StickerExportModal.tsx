@@ -2,6 +2,7 @@ import { useState } from "react"
 import { type Event, type Participant } from "@/lib/supabase/queries/events"
 import { STICKER_STYLES, PER_SHEET, type StickerStyle } from "@/lib/stickers/drawStickers"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { useUsers } from "@/hooks/useUsers"
 
 const rgb = (c: [number, number, number]) => `rgb(${c.join(",")})`
 
@@ -27,20 +28,53 @@ function Swatch({ s }: { s: StickerStyle }) {
   )
 }
 
-/** Name stickers for an event: design, the occasion line, who gets one (+ names typed by hand) → vector PDF */
+/** A titled checklist with "select all" (participants, team) */
+function PickList({ title, empty, items, picked, onChange }: {
+  title: string; empty: string; items: { id: string; name: string }[]; picked: Set<string>; onChange: (next: Set<string>) => void
+}) {
+  const all = items.length > 0 && items.every((i) => picked.has(i.id))
+  const toggle = (id: string) => { const n = new Set(picked); if (n.has(id)) n.delete(id); else n.add(id); onChange(n) }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className={LABEL}>{title} · {items.filter((i) => picked.has(i.id)).length}/{items.length}</span>
+        {items.length > 0 && (
+          <button type="button" onClick={() => onChange(all ? new Set() : new Set(items.map((i) => i.id)))}
+            className="text-sm text-ink hover:underline">{all ? "Hammasini olib tashlash" : "Hammasini belgilash"}</button>
+        )}
+      </div>
+      <div className="max-h-40 overflow-y-auto rounded-control border border-line">
+        {items.length === 0 ? <p className="px-3 py-4 text-sm text-ink-muted text-center">{empty}</p>
+          : items.map((i) => (
+            <label key={i.id} className="flex items-center gap-2.5 px-3 h-9 text-base text-ink cursor-pointer hover:bg-mute-ghost-hover border-b border-line last:border-b-0">
+              <input type="checkbox" checked={picked.has(i.id)} onChange={() => toggle(i.id)} className="size-4 accent-[var(--ds-color-bg-inverted)]" />
+              <span className="truncate">{i.name}</span>
+            </label>
+          ))}
+      </div>
+    </div>
+  )
+}
+
+/** Name stickers for an event: design, the occasion line, who gets one — participants, the team, names typed by hand → vector PDF */
 export function StickerExportModal({ event, participants, onClose }: { event: Event; participants: Participant[]; onClose: () => void }) {
   const [styleId, setStyleId] = useState(STICKER_STYLES[0].id)
   const [caption, setCaption] = useState(event.name)
   const [picked, setPicked] = useState<Set<string>>(() => new Set(participants.map((p) => p.id)))
+  const { data: users = [] } = useUsers()
+  const team = users.filter((u) => u.is_active !== false).map((u) => ({ id: u.id, name: u.full_name }))
+  const [pickedTeam, setPickedTeam] = useState<Set<string>>(new Set())
   const [extra, setExtra] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const extraNames = extra.split("\n").map((s) => s.trim()).filter(Boolean)
-  const names = [...participants.filter((p) => picked.has(p.id)).map((p) => p.full_name), ...extraNames]
+  const names = [
+    ...participants.filter((p) => picked.has(p.id)).map((p) => p.full_name),
+    ...team.filter((t) => pickedTeam.has(t.id)).map((t) => t.name),
+    ...extraNames,
+  ]
   const sheets = Math.ceil(names.length / PER_SHEET)
-  const all = participants.length > 0 && picked.size === participants.length
-  const toggle = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
   async function submit() {
     setPending(true); setError(null)
@@ -76,24 +110,9 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
         <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Biznes nonushta 3.0" className={INPUT} />
       </label>
 
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <span className={LABEL}>Ishtirokchilar · {picked.size}/{participants.length}</span>
-          {participants.length > 0 && (
-            <button type="button" onClick={() => setPicked(all ? new Set() : new Set(participants.map((p) => p.id)))}
-              className="text-sm text-ink hover:underline">{all ? "Hammasini olib tashlash" : "Hammasini belgilash"}</button>
-          )}
-        </div>
-        <div className="max-h-48 overflow-y-auto rounded-control border border-line">
-          {participants.length === 0 ? <p className="px-3 py-4 text-sm text-ink-muted text-center">Ishtirokchi yo'q — ismlarni pastga yozing</p>
-            : participants.map((p) => (
-              <label key={p.id} className="flex items-center gap-2.5 px-3 h-9 text-base text-ink cursor-pointer hover:bg-mute-ghost-hover border-b border-line last:border-b-0">
-                <input type="checkbox" checked={picked.has(p.id)} onChange={() => toggle(p.id)} className="size-4 accent-[var(--ds-color-bg-inverted)]" />
-                <span className="truncate">{p.full_name}</span>
-              </label>
-            ))}
-        </div>
-      </div>
+      <PickList title="Ishtirokchilar" empty="Ishtirokchi yo'q — ismlarni pastga yozing"
+        items={participants.map((p) => ({ id: p.id, name: p.full_name }))} picked={picked} onChange={setPicked} />
+      <PickList title="Jamoa" empty="Faol xodim yo'q" items={team} picked={pickedTeam} onChange={setPickedTeam} />
 
       <label className="flex flex-col gap-1.5">
         <span className={LABEL}>Qo'shimcha ismlar (har qatorda bittasi)</span>
