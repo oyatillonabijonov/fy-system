@@ -8,7 +8,7 @@
 // The caller registers the fonts as family "DMSans": "normal" = DM Sans 500, "bold" = DM Sans 600.
 import { ShadingPattern, type jsPDF } from "jspdf"
 
-type RGB = [number, number, number]
+export type RGB = [number, number, number]
 interface Classic {
   layout: "classic"; id: string; label: string
   band: [RGB, RGB]; strip: [RGB, RGB]; base: RGB      // gradients run top → bottom
@@ -60,7 +60,7 @@ export function nameLines(full: string): string[] {
 
 let shade = 0
 /** Vertical gradient as a real PDF axial shading (smooth, vector; no banding) */
-function gradient(doc: jsPDF, x: number, y: number, w: number, h: number, [a, b]: [RGB, RGB]) {
+export function gradient(doc: jsPDF, x: number, y: number, w: number, h: number, [a, b]: [RGB, RGB]) {
   doc.advancedAPI((d) => {
     const key = `g${++shade}`
     d.addShadingPattern(key, new ShadingPattern("axial", [x, y, x, y + h], [{ offset: 0, color: a }, { offset: 1, color: b }]))
@@ -69,7 +69,7 @@ function gradient(doc: jsPDF, x: number, y: number, w: number, h: number, [a, b]
   })
 }
 
-function mark(doc: jsPDF, x: number, y: number, size: number, color: RGB) {
+export function mark(doc: jsPDF, x: number, y: number, size: number, color: RGB) {
   const pts = F.map(([u, v]) => [x + u * size, y + v * size])
   doc.setFillColor(...color)
   doc.lines(pts.slice(1).map(([px, py], i) => [px - pts[i][0], py - pts[i][1]]), pts[0][0], pts[0][1], [1, 1], "F", true)
