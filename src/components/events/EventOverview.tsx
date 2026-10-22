@@ -11,12 +11,14 @@ import {
   CaretDown,
   BookOpen,
   IdentificationBadge,
+  Signpost,
 } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { useParticipants, useDeleteParticipant } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
 import { StickerExportModal } from "@/components/events/StickerExportModal"
+import { SignExportModal } from "@/components/events/SignExportModal"
 import { Popover } from "@/components/vazifalar/pickers"
 import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
@@ -38,6 +40,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const [enrollKey, setEnrollKey] = useState(0)
   const [exporting, setExporting] = useState(false)
   const [stickersOpen, setStickersOpen] = useState(false)
+  const [signsOpen, setSignsOpen] = useState(false)
 
   const { data: participants = [], isLoading } = useParticipants(event.id)
   const deleteParticipant = useDeleteParticipant(event.id)
@@ -148,6 +151,10 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                     className="flex items-center gap-2.5 h-9 px-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover">
                     <IdentificationBadge size={16} /> Sticker export
                   </button>
+                  <button role="menuitem" onClick={() => { close(); setSignsOpen(true) }}
+                    className="flex items-center gap-2.5 h-9 px-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover">
+                    <Signpost size={16} /> Navigatsiya
+                  </button>
                 </div>
               )}
             </Popover>
@@ -218,6 +225,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         )}
       </div>
 
+      {signsOpen && <SignExportModal event={event} onClose={() => setSignsOpen(false)} />}
       {stickersOpen && <StickerExportModal event={event} participants={participants} onClose={() => setStickersOpen(false)} />}
       <EnrollParticipantModal
         key={`enroll-${enrollKey}`}
