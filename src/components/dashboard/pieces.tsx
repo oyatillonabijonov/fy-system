@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Dashboard (delta() next to its cards) */
 // Shared Dashboard pieces (cards, KPI tiles, lists, charts) — moved from pages/Dashboard.tsx in 080.
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react"
 import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
 import { formatNumber } from "@/lib/format"
@@ -69,32 +69,88 @@ export function KpiCard({ label, icon, value, unit, sub, delta: d, invert }: { l
     )
 }
 
-/** Open bitimlar by stage (the voronka's current state); "Hammasi" groups stages under their voronka */
+/** Open bitimlar by stage as a horizontal flow funnel (after BoardUI's Funnel Chart Card): each stage
+ *  is a column sized to its count that tapers into the next, a share pill in the middle and a
+ *  name/value footer; hovering a stage dims the rest and puts it in the headline. "Hammasi" shows
+ *  one voronka at a time behind tabs. */
 export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
-  if (rows.length === 0) return <Empty text="Bosqich yo'q" />
-  const max = Math.max(1, ...rows.map((r) => r.open))
   // By id: two voronkalar may share a name
-  const groups = [...new Map(rows.map((r) => [r.pipeline_id, r.pipeline])).entries()]
+  const pipelines = [...new Map(rows.map((r) => [r.pipeline_id, r.pipeline])).entries()]
+  const [picked, setPicked] = useState<string | null>(null)
+  const [hover, setHover] = useState<number | null>(null)
+  if (rows.length === 0) return <Empty text="Bosqich yo'q" />
+  const pid = pipelines.some(([id]) => id === picked) ? picked! : pipelines[0][0]
+  const stages = rows.filter((r) => r.pipeline_id === pid)
+  const total = stages.reduce((s, r) => s + r.open, 0)
+  const max = Math.max(1, ...stages.map((r) => r.open))
+
+  // Geometry in a 1000 × 200 box, stretched to the card width
+  const W = 1000, H = 200, GAP = 6, MIN = 14, HALO = 14
+  const colW = W / stages.length
+  const height = (v: number) => MIN + (H - 2 * HALO - MIN) * (v / max)
+  const band = (i: number, extra: number) => {
+    const x0 = i * colW, x1 = x0 + colW - GAP, xa = x0 + (x1 - x0) * 0.45, xm = (xa + x1) / 2
+    const h = height(stages[i].open) + extra, hn = (i < stages.length - 1 ? height(stages[i + 1].open) : height(stages[i].open)) + extra
+    const t = H / 2 - h / 2, b = H / 2 + h / 2, tn = H / 2 - hn / 2, bn = H / 2 + hn / 2
+    return `M${x0},${t} L${xa},${t} C${xm},${t} ${xm},${tn} ${x1},${tn} L${x1},${bn} C${xm},${bn} ${xm},${b} ${xa},${b} L${x0},${b} Z`
+  }
+  const share = (v: number) => (total ? Math.round((v / total) * 100) : 0)
+  const head = hover === null ? null : stages[hover]
+
   return (
-    <div className="flex flex-col gap-4">
-      {groups.map(([id, name]) => (
-        <div key={id} className="flex flex-col gap-2">
-          {groups.length > 1 && <span className="text-sm font-medium text-ink-muted">{name}</span>}
-          {rows.filter((r) => r.pipeline_id === id).map((r) => (
-            <div key={r.stage_id} className="grid grid-cols-[minmax(0,160px)_1fr_auto] items-center gap-3">
-              <span className="text-base text-ink truncate flex items-center gap-2">
-                <span className="size-2 rounded-full shrink-0" style={{ background: r.color }} />{r.name}
-              </span>
-              <div className="h-6 rounded-item bg-surface overflow-hidden">
-                <div className="h-full rounded-item bg-accent opacity-85" style={{ width: `${r.open ? Math.max(2, (r.open / max) * 100) : 0}%` }} />
-              </div>
-              <span className="text-base font-medium tabular-nums text-ink w-28 text-right">
-                {formatNumber(r.open)}{r.open_sum > 0 && <span className="text-sm font-normal text-ink-muted"> · {formatNumber(r.open_sum)}</span>}
-              </span>
-            </div>
+    <div className="flex flex-1 flex-col gap-4">
+      {pipelines.length > 1 && (
+        <div role="tablist" aria-label="Voronka" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface flex-wrap">
+          {pipelines.map(([id, name]) => (
+            <button key={id} role="tab" aria-selected={id === pid} onClick={() => { setPicked(id); setHover(null) }}
+              className={`h-7 px-3 rounded-item text-sm font-medium transition-colors ${id === pid ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>{name}</button>
           ))}
         </div>
-      ))}
+      )}
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-semibold tabular-nums text-ink">{formatNumber(head ? head.open : total)}</span>
+        <span className="text-base text-ink-muted">{head ? `${head.name} · ${share(head.open)}%` : "ochiq bitim"}</span>
+        {(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0)) > 0 && (
+          <span className="text-sm text-ink-faint tabular-nums">· {formatNumber(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0))} so'm</span>
+        )}
+      </div>
+
+      {/* the row stretches the card to the right-hand column's height: keep the funnel's own
+          proportions and sit it (with its footer) in the middle of whatever space is left */}
+      <div className="my-auto flex flex-col gap-4">
+      <div className="relative h-60" onMouseLeave={() => setHover(null)}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full block" aria-hidden>
+          {stages.map((r, i) => (
+            <g key={r.stage_id} onMouseEnter={() => setHover(i)} className="transition-opacity duration-200"
+              style={{ opacity: hover === null || hover === i ? 1 : 0.3 }}>
+              <path d={band(i, HALO)} fill={r.color} opacity={0.18} />
+              <path d={band(i, 0)} fill={r.color} />
+            </g>
+          ))}
+        </svg>
+        {/* share pills, one per column centre */}
+        {stages.map((r, i) => (
+          <span key={r.stage_id} className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 h-6 inline-flex items-center rounded-full bg-surface text-sm font-medium tabular-nums text-ink transition-opacity duration-200"
+            style={{ left: `${((i + 0.5) / stages.length) * 100}%`, opacity: hover === null || hover === i ? 1 : 0.4 }}>
+            {share(r.open)}%
+          </span>
+        ))}
+      </div>
+
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+        {stages.map((r, i) => (
+          <div key={r.stage_id} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+            className="bg-surface rounded-control px-3 py-2 min-w-0 transition-opacity duration-200" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
+            <span className="flex items-center gap-1.5 text-sm text-ink-muted min-w-0">
+              <span className="size-2.5 rounded-[3px] shrink-0" style={{ background: r.color }} />
+              <span className="truncate">{r.name}</span>
+            </span>
+            <span className="text-md font-semibold tabular-nums text-ink">{formatNumber(r.open)}</span>
+          </div>
+        ))}
+      </div>
+      </div>
     </div>
   )
 }
