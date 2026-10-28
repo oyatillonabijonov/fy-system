@@ -6,7 +6,8 @@ import { periodRange, tashkentToday } from "@/lib/period"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { formatNumber } from "@/lib/format"
-import { Section, Card, KpiCard, CountList, Funnel, DailyChart, delta } from "@/components/dashboard/pieces"
+import { Section, Card, KpiCard, Funnel, delta } from "@/components/dashboard/pieces"
+import { MixDonut, DailyBars } from "@/components/dashboard/charts"
 import { SellersTable } from "@/components/dashboard/SellersTable"
 import { CallsCard } from "@/components/dashboard/CallsCard"
 import { AttentionPanel } from "@/components/dashboard/AttentionPanel"
@@ -81,11 +82,11 @@ export function Dashboard() {
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
                 <Card title="Voronka" aside="ochiq bitimlar, hozir" className="xl:col-span-2"><Funnel rows={d.funnel} /></Card>
                 <div className="flex flex-col gap-3">
-                  <Card title="Manbalar"><CountList rows={d.by_source.map((r) => ({ key: r.source ?? "none", label: sourceLabel(r.source), leads: r.new, won: r.won }))} /></Card>
-                  {!pipelineId && <Card title="Voronkalar"><CountList rows={d.by_pipeline.map((r) => ({ key: r.id, label: r.name, leads: r.new, won: r.won }))} /></Card>}
+                  <Card title="Manbalar"><MixDonut totalLabel="yangi bitim" rows={d.by_source.map((r) => ({ key: r.source ?? "none", label: sourceLabel(r.source), value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>
+                  {!pipelineId && <Card title="Voronkalar"><MixDonut grey totalLabel="yangi bitim" rows={d.by_pipeline.map((r) => ({ key: r.id, label: r.name, value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>}
                 </div>
               </div>
-              <Card title="Kunlik dinamika"><DailyChart rows={d.daily} /></Card>
+              <Card title="Kunlik dinamika"><DailyBars rows={d.daily} /></Card>
             </Section>
             <Section title="Sotuvchilar" desc="Bitimlar va vazifalar; qatorni bosing — vazifalar ro'yxati">
               <SellersTable rows={d.sellers} from={from} to={to} pipelineId={pipelineId} />

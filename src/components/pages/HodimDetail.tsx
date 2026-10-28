@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { DotRing } from "@/components/dashboard/charts"
 import { toast as notify } from "@/lib/toast"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
@@ -644,47 +645,17 @@ function KpiProgressCard({
 }) {
   const fmt = formatNumber ?? ((n: number) => n.toString())
 
-  let progressColor = "var(--ds-color-success-default)"
-  if (progress < 50) progressColor = "var(--ds-color-danger-default)"
-  else if (progress < 80) progressColor = "var(--ds-color-warning-default)"
-  else if (progress < 100) progressColor = "var(--ds-color-info-default)"
+  // danger / warning / info / success — hex, because the ring's colours go to ECharts
+  const color = progress < 50 ? "#e11d48" : progress < 80 ? "#d97706" : progress < 100 ? "#0284c7" : "#059669"
 
   return (
-    <div className="bg-surface-sunken rounded-surface p-5">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-surface-sunken rounded-surface p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
         <div className="text-ink-muted">{icon}</div>
         <span className="text-sm text-ink-muted font-medium">{label}</span>
       </div>
-
-      <div className="mb-2">
-        <span className="text-xl font-semibold tabular-nums text-ink">
-          {fmt(actual)}
-        </span>
-        <span className="text-sm text-ink-muted ml-1">
-          / {fmt(target)} {unit}
-        </span>
-      </div>
-
-      <div className="h-1.5 bg-surface rounded-full overflow-hidden mb-2">
-        <div
-          className="h-full transition-all duration-500"
-          style={{
-            width: `${Math.min(progress, 100)}%`,
-            backgroundColor: progressColor,
-          }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold tabular-nums" style={{ color: progressColor }}>
-          {progress}%
-        </span>
-        {progress >= 100 && (
-          <span className="text-sm font-medium text-success-text">
-            Maqsad bajarildi
-          </span>
-        )}
-      </div>
+      <DotRing id={`kpi-${label}`} value={progress} color={color} caption={`${fmt(actual)} / ${fmt(target)} ${unit}`} />
+      {progress >= 100 && <span className="text-sm font-medium text-success-text text-center">Maqsad bajarildi</span>}
     </div>
   )
 }

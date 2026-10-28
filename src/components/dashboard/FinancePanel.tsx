@@ -4,6 +4,7 @@ import { useEvents, useParticipantCounts } from "@/hooks/useEvents"
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatDate } from "@/lib/format"
 import { Card } from "./pieces"
+import { DotRing } from "./charts"
 
 /** Moliya at a glance — rendered only with the tadbirlar-moliya module (finance_summary guards it too) */
 export function FinancePanel({ from, to }: { from: string; to: string }) {
@@ -18,6 +19,8 @@ export function FinancePanel({ from, to }: { from: string; to: string }) {
   )
   return (
     <Card title="Moliya">
+      <DotRing id="collected" value={allTime.data?.agreed ? (allTime.data.collected / allTime.data.agreed) * 100 : null}
+        color="#059669" caption="kelishuvdan yig'ildi (jami)" />
       <div className="flex flex-col gap-2">
         {row("Kirim", formatMoney(period.data?.income), "text-success-text")}
         {row("Xarajat", formatMoney(period.data?.expense))}
