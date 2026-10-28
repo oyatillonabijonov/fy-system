@@ -2,7 +2,6 @@
 // Shared Dashboard pieces (cards, KPI tiles, lists, charts) — moved from pages/Dashboard.tsx in 080.
 import type { ReactNode } from "react"
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react"
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
 import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
 import { formatNumber } from "@/lib/format"
 
@@ -70,23 +69,6 @@ export function KpiCard({ label, icon, value, unit, sub, delta: d, invert }: { l
     )
 }
 
-export function CountList({ rows }: { rows: { key: string; label: string; leads: number; won: number }[] }) {
-    if (rows.length === 0) return <Empty text="Davrda harakat yo'q" />
-    return (
-        <div className="flex flex-col">
-            {rows.map((r) => (
-                <div key={r.key} className="flex items-center justify-between gap-3 py-2.5 border-b border-line last:border-0">
-                    <span className="text-base text-ink truncate">{r.label}</span>
-                    <span className="flex items-center gap-3 text-sm tabular-nums shrink-0">
-                        <span className="text-ink-muted">{formatNumber(r.leads)} bitim</span>
-                        <span className="text-success-text">{formatNumber(r.won)} yutildi</span>
-                    </span>
-                </div>
-            ))}
-        </div>
-    )
-}
-
 /** Open bitimlar by stage (the voronka's current state); "Hammasi" groups stages under their voronka */
 export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
   if (rows.length === 0) return <Empty text="Bosqich yo'q" />
@@ -115,39 +97,4 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
       ))}
     </div>
   )
-}
-
-export function DailyChart({ rows }: { rows: SalesDashboard["daily"] }) {
-    const data = rows.map((r) => ({ ...r, label: `${r.day.slice(8, 10)}.${r.day.slice(5, 7)}` }))
-    const tick = { fontSize: 12, fill: "var(--ds-color-text-muted)", fontFamily: "var(--ds-font-body)" }
-    return (
-        <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-4 text-sm text-ink-muted">
-                <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-mute-soft-hover" />Yangi bitimlar</span>
-                <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-success" />Yutilgan</span>
-            </div>
-            <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={2}>
-                        <CartesianGrid vertical={false} stroke="var(--ds-color-border-default)" />
-                        <XAxis dataKey="label" axisLine={false} tickLine={false} tick={tick} minTickGap={16} />
-                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={tick} />
-                        <Tooltip
-                            cursor={{ fill: "var(--ds-color-mute-ghost-hover)" }}
-                            contentStyle={{
-                                borderRadius: "var(--ds-radius-menu)",
-                                background: "var(--ds-color-surface-raised)",
-                                color: "var(--ds-color-text-default)",
-                                border: "1px solid var(--ds-color-border-default)",
-                                fontFamily: "var(--ds-font-body)",
-                                fontSize: 12,
-                            }}
-                        />
-                        <Bar dataKey="new" name="Yangi bitimlar" fill="var(--ds-color-mute-soft-hover)" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                        <Bar dataKey="won" name="Yutilgan" fill="var(--ds-color-success-default)" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    )
 }
