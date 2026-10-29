@@ -1,18 +1,23 @@
 /* eslint-disable react-refresh/only-export-components -- small pickers shared by the task create form and panel */
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react"
-import { Check, CalendarBlank, UserCircle, Tag, CircleDashed, MagnifyingGlass, X, Clock } from "@phosphor-icons/react"
+import { Check, CalendarBlank, UserCircle, Tag, CircleDashed, MagnifyingGlass, X, Clock, CaretRight } from "@phosphor-icons/react"
 import { TASK_STATUSES, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { STATUS_VARIANTS } from "@/lib/constants/theme"
-import { STATUS_VARIANT, sectionColor } from "./taskUi"
+import { useMedia } from "@/hooks/useMedia"
+import { Sheet } from "@/components/ui/Sheet"
+import { STATUS_VARIANT, StatusGlyph, sectionColor } from "./taskUi"
 
 // ─── Popover ────────────────────────────────────────────────────────────────
 
-/** Minimal anchored popover: outside click or Escape closes it (Escape doesn't close the dialog) */
-export function Popover({ trigger, children, width = 260 }: {
+/** Minimal anchored popover: outside click or Escape closes it (Escape doesn't close the dialog).
+ *  On a phone (below sm) the same content opens as a bottom sheet titled `title`. */
+export function Popover({ trigger, children, width = 260, title = "Tanlang" }: {
   trigger: (open: boolean, toggle: (e: ReactMouseEvent<HTMLElement>) => void) => ReactNode
   children: (close: () => void) => ReactNode
   width?: number
+  title?: string
 }) {
+  const phone = useMedia("(width < 40rem)")
   const [open, setOpen] = useState(false)
   const [shift, setShift] = useState(0)   // px from the trigger's left edge, so the panel stays on screen
   const ref = useRef<HTMLDivElement>(null)
@@ -23,17 +28,18 @@ export function Popover({ trigger, children, width = 260 }: {
     setOpen((o) => !o)
   }
   useEffect(() => {
-    if (!open) return
+    if (!open || phone) return
     const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); setOpen(false) } }
     document.addEventListener("mousedown", onDown)
     document.addEventListener("keydown", onKey, true)
     return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey, true) }
-  }, [open])
+  }, [open, phone])
   return (
     <div ref={ref} className="relative">
       {trigger(open, toggle)}
-      {open && (
+      {phone && <Sheet open={open} onClose={() => setOpen(false)} title={title}>{children(() => setOpen(false))}</Sheet>}
+      {open && !phone && (
         <div className="absolute top-full mt-1.5 z-30" style={{ left: shift, width: Math.min(width, window.innerWidth - 32) }}>
           <div className="bg-surface-raised border border-line rounded-menu p-1.5">
           {children(() => setOpen(false))}
@@ -45,11 +51,13 @@ export function Popover({ trigger, children, width = 260 }: {
 }
 
 /** Property chip: filled when set, dashed placeholder when empty */
-export function Pill({ icon, label, empty, onClick, active }: { icon: ReactNode; label: ReactNode; empty?: boolean; onClick: (e: ReactMouseEvent<HTMLElement>) => void; active?: boolean }) {
+const TONE = { danger: "text-danger-text", warning: "text-warning-text" } as const
+
+export function Pill({ icon, label, empty, onClick, active, tone }: { icon: ReactNode; label: ReactNode; empty?: boolean; onClick: (e: ReactMouseEvent<HTMLElement>) => void; active?: boolean; tone?: "danger" | "warning" }) {
   return (
     <button type="button" onClick={onClick}
-      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm whitespace-nowrap transition-colors border ${
-        empty ? "border-dashed border-line text-ink-muted hover:text-ink" : "border-line text-ink bg-surface"
+      className={`inline-flex items-center gap-1.5 h-8 max-sm:h-10 px-3 max-sm:px-3.5 rounded-full text-sm max-sm:text-base whitespace-nowrap transition-colors border ${
+        empty ? "border-dashed border-line text-ink-muted hover:text-ink" : `border-line bg-surface ${tone ? TONE[tone] : "text-ink"}`
       } ${active ? "bg-mute-ghost-hover" : "hover:bg-mute-ghost-hover"}`}>
       {icon}{label}
     </button>
@@ -71,9 +79,26 @@ export function Tile({ label, value, icon, empty, onClick, active, tone }: {
   )
 }
 
+/** Property as a list row (phone/tablet panel): icon, label, value on the right, chevron */
+export function PropRow({ label, value, icon, empty, onClick, active, tone }: {
+  label: string; value: ReactNode; icon: ReactNode; empty?: boolean; onClick: (e: ReactMouseEvent<HTMLElement>) => void; active?: boolean
+  tone?: "danger" | "warning"
+}) {
+  const color = empty ? "text-ink-faint" : tone ? TONE[tone] : "text-ink"
+  return (
+    <button type="button" onClick={onClick}
+      className={`w-full flex items-center gap-3 min-h-14 px-4 py-2.5 text-left transition-colors ${active ? "bg-mute-ghost-hover" : "active:bg-mute-ghost-hover"}`}>
+      <span className="shrink-0 text-ink-muted flex items-center">{icon}</span>
+      <span className="text-base text-ink shrink-0">{label}</span>
+      <span className={`flex-1 min-w-0 flex items-center justify-end gap-2 text-base text-right ${color}`}>{value}</span>
+      <CaretRight size={16} className="shrink-0 text-ink-faint" />
+    </button>
+  )
+}
+
 const Option = ({ selected, onClick, children }: { selected?: boolean; onClick: () => void; children: ReactNode }) => (
   <button type="button" onClick={onClick}
-    className="w-full flex items-center gap-2 h-9 px-2.5 rounded-item text-base text-ink text-left hover:bg-mute-ghost-hover transition-colors">
+    className="w-full flex items-center gap-2 h-9 max-sm:h-12 px-2.5 max-sm:px-3 rounded-item text-base text-ink text-left hover:bg-mute-ghost-hover active:bg-mute-ghost-hover transition-colors">
     <span className="flex-1 min-w-0 flex items-center gap-2 truncate">{children}</span>
     {selected && <Check size={16} className="text-ink shrink-0" />}
   </button>
@@ -109,50 +134,65 @@ const QUICK = (today: string) => [
 ]
 
 const chip = (on: boolean) =>
-  `h-8 px-3 rounded-control text-sm font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink hover:bg-surface-sunken-hover"}`
+  `h-8 max-sm:h-11 px-3 rounded-control text-sm max-sm:text-base font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink hover:bg-surface-sunken-hover"}`
 
-export function DuePicker({ date, time, today, onChange, tile, open: isOpenTask = true }: {
+export function DuePicker({ date, time, today, onChange, tile, row, part = "both", open: isOpenTask = true }: {
   date: string | null; time: string | null; today: string
   onChange: (date: string | null, time: string | null) => void
   tile?: boolean
+  /** list row (phone/tablet panel); `part` picks which half of the picker it edits */
+  row?: boolean
+  part?: "both" | "date" | "time"
   /** the task is still open — only then is a past date shown as late */
   open?: boolean
 }) {
   const tone = !date || !isOpenTask ? undefined : date < today ? "danger" : date === today ? "warning" : undefined
+  const showDate = part !== "time"
+  const showTime = part !== "date"
   return (
-    <Popover width={300} trigger={(open, toggle) => tile ? (
+    <Popover width={300} title={part === "time" ? "Soat" : "Muddat"} trigger={(open, toggle) => row ? (
+      part === "time"
+        ? <PropRow label="Vaqt" icon={<Clock size={20} />} value={time ? time.slice(0, 5) : "Belgilanmagan"} empty={!time} tone={time ? tone : undefined} active={open} onClick={toggle} />
+        : <PropRow label="Muddat" icon={<CalendarBlank size={20} />} value={date ? dueLabel(date, null, today) : "Belgilanmagan"} empty={!date} tone={tone} active={open} onClick={toggle} />
+    ) : tile ? (
       <Tile label="Muddat" icon={<CalendarBlank size={16} />} value={date ? dueLabel(date, time, today) : "Belgilanmagan"} empty={!date} tone={tone} active={open} onClick={toggle} />
     ) : (
-      <Pill icon={<CalendarBlank size={16} />} label={date ? dueLabel(date, time, today) : "Muddat"} empty={!date} active={open} onClick={toggle} />
+      <Pill icon={<CalendarBlank size={16} />} label={date ? dueLabel(date, time, today) : "Muddat"} empty={!date} tone={tone} active={open} onClick={toggle} />
     )}>
       {(close) => (
-        <div className="flex flex-col gap-3 p-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            {QUICK(today).map((q) => (
-              <button key={q.label} type="button" onClick={() => onChange(q.day, time)} className={chip(date === q.day)}>{q.label}</button>
-            ))}
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-muted">
-            <CalendarBlank size={16} />
-            <input type="date" value={date ?? ""} onChange={(e) => onChange(e.target.value || null, e.target.value ? time : null)}
-              className="flex-1 h-8 px-2 rounded-control border border-line bg-surface text-ink text-sm focus:outline-none focus:border-line-focus" />
-          </label>
-          <div className={`flex flex-col gap-1.5 ${date ? "" : "opacity-40 pointer-events-none"}`}>
-            <span className="flex items-center gap-1.5 text-sm text-ink-muted"><Clock size={16} />Soat {date ? "" : "(avval sanani tanlang)"}</span>
-            <div className="grid grid-cols-4 gap-1.5">
-              {TIMES.map((t) => (
-                <button key={t} type="button" onClick={() => onChange(date, time === t ? null : t)} className={chip(time === t)}>{t}</button>
-              ))}
-              <input type="time" value={time && !TIMES.includes(time) ? time : ""} onChange={(e) => onChange(date, e.target.value || null)}
-                aria-label="Boshqa soat" className="col-span-2 h-8 px-2 rounded-control border border-line bg-surface text-ink text-sm focus:outline-none focus:border-line-focus" />
+        <div className="flex flex-col gap-3 p-1.5 max-sm:p-0">
+          {showDate && (
+            <>
+              <div className="flex flex-wrap gap-1.5 max-sm:gap-2">
+                {QUICK(today).map((q) => (
+                  <button key={q.label} type="button" onClick={() => onChange(q.day, time)} className={chip(date === q.day)}>{q.label}</button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-ink-muted">
+                <CalendarBlank size={16} />
+                <input type="date" value={date ?? ""} onChange={(e) => onChange(e.target.value || null, e.target.value ? time : null)}
+                  className="flex-1 h-8 max-sm:h-11 px-2 max-sm:px-3 rounded-control border border-line bg-surface text-ink text-sm max-sm:text-md focus:outline-none focus:border-line-focus" />
+              </label>
+            </>
+          )}
+          {showTime && (
+            <div className={`flex flex-col gap-1.5 ${date ? "" : "opacity-40 pointer-events-none"}`}>
+              <span className={`items-center gap-1.5 text-sm text-ink-muted ${part === "time" ? "max-sm:hidden flex" : "flex"}`}><Clock size={16} />Soat {date ? "" : "(avval sanani tanlang)"}</span>
+              <div className="grid grid-cols-4 gap-1.5 max-sm:gap-2">
+                {TIMES.map((t) => (
+                  <button key={t} type="button" onClick={() => onChange(date, time === t ? null : t)} className={chip(time === t)}>{t}</button>
+                ))}
+                <input type="time" value={time && !TIMES.includes(time) ? time : ""} onChange={(e) => onChange(date, e.target.value || null)}
+                  aria-label="Boshqa soat" className="col-span-2 h-8 max-sm:h-11 px-2 max-sm:px-3 rounded-control border border-line bg-surface text-ink text-sm max-sm:text-md focus:outline-none focus:border-line-focus" />
+              </div>
             </div>
-          </div>
+          )}
           <div className="flex items-center justify-between border-t border-line pt-3">
-            {date
-              ? <button type="button" onClick={() => onChange(null, null)} className="text-sm text-ink-muted hover:text-danger-text transition-colors">Olib tashlash</button>
+            {(part === "time" ? time : date)
+              ? <button type="button" onClick={() => part === "time" ? onChange(date, null) : onChange(null, null)} className="text-sm max-sm:text-base max-sm:h-11 text-ink-muted hover:text-danger-text transition-colors">Olib tashlash</button>
               : <span />}
             <button type="button" onClick={close}
-              className="h-8 px-4 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover transition-colors">Tayyor</button>
+              className="h-8 max-sm:h-11 px-4 max-sm:px-6 rounded-full bg-accent text-ink-on-accent text-sm max-sm:text-base font-medium hover:bg-accent-hover transition-colors">Tayyor</button>
           </div>
         </div>
       )}
@@ -173,14 +213,17 @@ export function PersonDot({ name, url, outside, size = 20 }: { name: string; url
     : <span className={`rounded-full shrink-0 inline-flex items-center justify-center font-semibold text-ink ${outside ? "border border-dashed border-line bg-surface" : "bg-mute-soft"}`} style={box}>{initials(name)}</span>
 }
 
-export function OwnerPicker({ value, staff, onChange, tile }: { value: Owner; staff: StaffOption[]; onChange: (o: Owner) => void; tile?: boolean }) {
+export function OwnerPicker({ value, staff, onChange, tile, row }: { value: Owner; staff: StaffOption[]; onChange: (o: Owner) => void; tile?: boolean; row?: boolean }) {
   const [q, setQ] = useState("")
   const person = staff.find((s) => s.id === value.assignee_id)
   const name = person?.full_name ?? value.assignee_name
   const shown = staff.filter((s) => s.full_name.toLowerCase().includes(q.trim().toLowerCase()))
   const pick = (o: Owner, close: () => void) => { onChange(o); setQ(""); close() }
   return (
-    <Popover trigger={(open, toggle) => tile ? (
+    <Popover title="Mas'ul" trigger={(open, toggle) => row ? (
+      <PropRow label="Mas'ul" icon={<UserCircle size={20} />}
+        value={name ? <><PersonDot name={name} url={person?.avatar_url} outside={!person} size={24} /><span>{name}</span></> : "Belgilanmagan"} empty={!name} active={open} onClick={toggle} />
+    ) : tile ? (
       <Tile label="Mas'ul" icon={name ? <PersonDot name={name} url={person?.avatar_url} outside={!person} /> : <UserCircle size={16} />}
         value={name ?? "Belgilanmagan"} empty={!name} active={open} onClick={toggle} />
     ) : (
@@ -189,13 +232,13 @@ export function OwnerPicker({ value, staff, onChange, tile }: { value: Owner; st
     )}>
       {(close) => (
         <div className="flex flex-col gap-1">
-          <label className="flex items-center gap-2 h-9 px-2.5 rounded-item bg-surface-sunken">
+          <label className="flex items-center gap-2 h-9 max-sm:h-11 px-2.5 max-sm:px-3 rounded-item bg-surface-sunken">
             <MagnifyingGlass size={16} className="text-ink-muted" />
             <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism yoki tashqi odam…"
               onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) { e.preventDefault(); pick(shown.length === 1 ? { assignee_id: shown[0].id, assignee_name: null } : { assignee_id: null, assignee_name: q.trim() }, close) } }}
-              className="flex-1 bg-transparent text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+              className="flex-1 min-w-0 bg-transparent text-base max-sm:text-md text-ink placeholder:text-ink-faint focus:outline-none" />
           </label>
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-60 max-sm:max-h-none overflow-y-auto">
             {shown.map((s) => (
               <Option key={s.id} selected={s.id === value.assignee_id} onClick={() => pick({ assignee_id: s.id, assignee_name: null }, close)}>
                 <PersonDot name={s.full_name} url={s.avatar_url} />{s.full_name}
@@ -214,12 +257,16 @@ export function OwnerPicker({ value, staff, onChange, tile }: { value: Owner; st
   )
 }
 
-export function SectionPicker({ value, sections, onChange }: { value: string | null; sections: string[]; onChange: (s: string | null) => void }) {
+export function SectionPicker({ value, sections, onChange, row }: { value: string | null; sections: string[]; onChange: (s: string | null) => void; row?: boolean }) {
   const [q, setQ] = useState("")
   const shown = sections.filter((s) => s.toLowerCase().includes(q.trim().toLowerCase()))
   const pick = (s: string | null, close: () => void) => { onChange(s); setQ(""); close() }
   return (
-    <Popover trigger={(open, toggle) => (
+    <Popover title="Bo'lim" trigger={(open, toggle) => row ? (
+      <PropRow label="Bo'lim" icon={<Tag size={20} />}
+        value={value ? <><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: sectionColor(value, sections) }} /><span>{value}</span></> : "Belgilanmagan"}
+        empty={!value} active={open} onClick={toggle} />
+    ) : (
       <Pill icon={value ? <span className="size-2 rounded-full" style={{ backgroundColor: sectionColor(value, sections) }} /> : <Tag size={16} />}
         label={value ?? "Bo'lim"} empty={!value} active={open} onClick={toggle} />
     )}>
@@ -227,8 +274,8 @@ export function SectionPicker({ value, sections, onChange }: { value: string | n
         <div className="flex flex-col gap-1">
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Bo'lim nomi…"
             onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) { e.preventDefault(); pick(shown.find((s) => s.toLowerCase() === q.trim().toLowerCase()) ?? q.trim(), close) } }}
-            className="h-9 px-2.5 rounded-item bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none" />
-          <div className="max-h-60 overflow-y-auto">
+            className="h-9 max-sm:h-11 px-2.5 max-sm:px-3 rounded-item bg-surface-sunken text-base max-sm:text-md text-ink placeholder:text-ink-faint focus:outline-none" />
+          <div className="max-h-60 max-sm:max-h-none overflow-y-auto">
             {shown.map((s) => (
               <Option key={s} selected={s === value} onClick={() => pick(s, close)}>
                 <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: sectionColor(s, sections) }} />{s}
@@ -245,14 +292,16 @@ export function SectionPicker({ value, sections, onChange }: { value: string | n
   )
 }
 
-export function EventPicker({ value, events, onChange }: { value: string | null; events: { id: string; name: string }[]; onChange: (id: string | null) => void }) {
+export function EventPicker({ value, events, onChange, row }: { value: string | null; events: { id: string; name: string }[]; onChange: (id: string | null) => void; row?: boolean }) {
   const current = events.find((e) => e.id === value)
   return (
-    <Popover trigger={(open, toggle) => (
+    <Popover title="Tadbir" trigger={(open, toggle) => row ? (
+      <PropRow label="Tadbir" icon={<CalendarBlank size={20} />} value={current?.name ?? "Umumiy"} active={open} onClick={toggle} />
+    ) : (
       <Pill icon={<CalendarBlank size={16} />} label={current?.name ?? "Umumiy"} active={open} onClick={toggle} />
     )}>
       {(close) => (
-        <div className="max-h-72 overflow-y-auto">
+        <div className="max-h-72 max-sm:max-h-none overflow-y-auto">
           {events.map((e) => <Option key={e.id} selected={e.id === value} onClick={() => { onChange(e.id); close() }}>{e.name}</Option>)}
           <Option selected={!value} onClick={() => { onChange(null); close() }}>Umumiy vazifalar</Option>
         </div>
@@ -261,24 +310,41 @@ export function EventPicker({ value, events, onChange }: { value: string | null;
   )
 }
 
+/** The four statuses as option rows (status picker and the list's status sheet) */
+function StatusOptions({ value, onPick }: { value: TaskStatus; onPick: (s: TaskStatus) => void }) {
+  return TASK_STATUSES.map((s) => {
+    const c = STATUS_VARIANTS[STATUS_VARIANT[s.id]]
+    return (
+      <Option key={s.id} selected={s.id === value} onClick={() => onPick(s.id)}>
+        <span className="sm:hidden"><StatusGlyph status={s.id} size={24} /></span>
+        <span className="max-sm:hidden size-2 rounded-full shrink-0" style={{ backgroundColor: c.text }} />{s.label}
+      </Option>
+    )
+  })
+}
+
 export function StatusPicker({ value, onChange }: { value: TaskStatus; onChange: (s: TaskStatus) => void }) {
   const v = STATUS_VARIANTS[STATUS_VARIANT[value]]
   return (
-    <Popover width={200} trigger={(open, toggle) => (
-      <button type="button" onClick={toggle} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm font-medium"
+    <Popover width={200} title="Holat" trigger={(open, toggle) => (
+      <button type="button" onClick={toggle} className="inline-flex items-center gap-1.5 h-8 max-sm:h-10 px-3 max-sm:px-3.5 rounded-full text-sm max-sm:text-base font-medium"
         style={{ backgroundColor: v.bg, color: v.text }}>
         <CircleDashed size={16} />{TASK_STATUSES.find((s) => s.id === value)!.label}
         <span className="sr-only">{open ? "yopish" : "o'zgartirish"}</span>
       </button>
     )}>
-      {(close) => TASK_STATUSES.map((s) => {
-        const c = STATUS_VARIANTS[STATUS_VARIANT[s.id]]
-        return (
-          <Option key={s.id} selected={s.id === value} onClick={() => { onChange(s.id); close() }}>
-            <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: c.text }} />{s.label}
-          </Option>
-        )
-      })}
+      {(close) => <StatusOptions value={value} onPick={(st) => { onChange(st); close() }} />}
     </Popover>
+  )
+}
+
+/** Phone/tablet: pick one of the four statuses for a task from a list row (long-press on its circle) */
+export function StatusSheet({ open, title, value, onPick, onClose }: { open: boolean; title: string; value: TaskStatus; onPick: (s: TaskStatus) => void; onClose: () => void }) {
+  return (
+    <Sheet open={open} onClose={onClose} title={title}>
+      <div className="flex flex-col gap-1 pb-2">
+        <StatusOptions value={value} onPick={(st) => { onPick(st); onClose() }} />
+      </div>
+    </Sheet>
   )
 }

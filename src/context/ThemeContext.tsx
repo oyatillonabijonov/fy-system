@@ -86,6 +86,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // data-photo picks the ground image in index.css
         if (photo) root.setAttribute('data-photo', photo)
         else root.removeAttribute('data-photo')
+        // the installed app's status bar takes the header's colour (main card in dark, white otherwise)
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeId === 'dark' ? '#141416' : '#ffffff')
         try {
             localStorage.setItem(THEME_KEY, themeId)
             if (photo) localStorage.setItem(PHOTO_KEY, photo)

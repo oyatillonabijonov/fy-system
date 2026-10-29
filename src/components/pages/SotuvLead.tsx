@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray } from "@phosphor-icons/react"
-import { usePhone } from "@/context/PhoneContext"
+import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
 import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, useRenameClient, SOTUV_KEY } from "@/hooks/useSotuv"
 import { useQueryClient } from "@tanstack/react-query"
 import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, subscribeLeadCalls, type Call, type FeedNote, type Lead, type SalesTask, type Stage, type TaskKind } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
-import { formatPhone } from "@/lib/format"
-import { DuePicker, PersonDot, addDays } from "@/components/vazifalar/pickers"
-import { KIND_ICON, TaskChip, NoTaskChip, Recording, callLabel, secs } from "@/components/sotuv/ui"
+import { formatPhone, formatNumber } from "@/lib/format"
+import { DuePicker, PersonDot, addDays, dueLabel } from "@/components/vazifalar/pickers"
+import { KIND_ICON, TaskChip, NoTaskChip, Recording, CallButton, StageDot, callLabel, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { confirmAction } from "@/lib/confirm"
 import { useEvents, useParticipants } from "@/hooks/useEvents"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
+import { useMedia } from "@/hooks/useMedia"
+import { Sheet } from "@/components/ui/Sheet"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -34,6 +35,7 @@ const FIELD = "w-full h-control-md px-3 rounded-control bg-surface border border
 function LeadView({ lead }: { lead: Lead }) {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
+  const mobile = useMedia("(width < 64rem)")
   const { data: pipelines = [] } = usePipelines()
   const { data: stages = [] } = useStages(lead.pipeline_id)
   const { data: users = [] } = useUsers()
@@ -66,6 +68,12 @@ function LeadView({ lead }: { lead: Lead }) {
   async function del() {
     if (!(await confirmAction({ title: "Bitimni o'chirish", message: `"${lead.name}" bitimi o'chirilsinmi? Lenta va vazifalar ham o'chadi.` }))) return
     remove.mutate(lead.id, { onSuccess: () => navigate(`/sotuv?p=${lead.pipeline_id}`) })
+  }
+
+  if (mobile) {
+    return <LeadMobile lead={lead} stages={stages} pipelines={pipelines} users={users} today={today} isAdmin={isAdmin} save={save} movePipeline={movePipeline} del={del}
+      name={name} setName={setName} price={price} setPrice={setPrice} reason={reason} setReason={setReason}
+      clientName={clientName} setClientName={setClientName} saveClientName={saveClientName} />
   }
 
   return (
@@ -167,25 +175,6 @@ function LeadView({ lead }: { lead: Lead }) {
   )
 }
 
-/** Rings from the browser when this staff member's line is up; otherwise the device's own dialer */
-function CallButton({ phone }: { phone: string }) {
-  const { status, dial, call } = usePhone()
-  const [error, setError] = useState<string | null>(null)
-  const cls = "w-10 h-10 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40"
-  if (status !== "ready") {
-    return <a href={`tel:${phone}`} aria-label="Qo'ng'iroq qilish" title={status === "off" ? "Qo'ng'iroq qilish" : "Brauzer telefoni ulanmagan — qurilma orqali"} className={cls}><Phone size={20} weight="fill" /></a>
-  }
-  return (
-    <span className="flex flex-col items-end gap-1">
-      <button type="button" disabled={!!call} aria-label="Brauzerdan qo'ng'iroq qilish" title="Brauzerdan qo'ng'iroq qilish" className={cls}
-        onClick={() => { setError(null); dial(phone).catch(() => setError("Mikrofonga ruxsat bering")) }}>
-        <Phone size={20} weight="fill" />
-      </button>
-      {error && <span role="alert" className="text-sm text-danger-text">{error}</span>}
-    </span>
-  )
-}
-
 const Field = ({ label, children }: { label: string; children: ReactNode }) => (
   <label className="flex flex-col gap-1.5"><span className="text-sm text-ink-muted">{label}</span>{children}</label>
 )
@@ -210,7 +199,8 @@ function StageBar({ stages, current, onPick }: { stages: Stage[]; current: strin
 
 type Item = { at: string; key: string; node: ReactNode }
 
-function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: string }) {
+/** The deal's feed: notes, finished tasks and calls oldest → newest, plus the still-open tasks */
+function useFeed(lead: Lead, stages: Stage[]) {
   const { user, isAdmin } = useAuth()
   const { data: notes = [] } = useNotes(lead.id)
   const { data: tasks = [] } = useLeadTasks(lead.id)
@@ -218,8 +208,6 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
   const qc = useQueryClient()
   useEffect(() => subscribeLeadCalls(lead.id, () => qc.invalidateQueries({ queryKey: SOTUV_KEY })), [lead.id, qc])
   const delNote = useDeleteNote()
-  const [closing, setClosing] = useState<SalesTask | null>(null)
-  const end = useRef<HTMLDivElement>(null)
   const closed = stages.find((s) => s.id === lead.stage_id)
   const isClosed = !!(closed?.is_won || closed?.is_lost)
 
@@ -229,6 +217,13 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
     ...tasks.filter((t) => t.is_done && t.done_at).map((t) => ({ at: t.done_at!, key: t.id, node: <DoneItem task={t} /> })),
     ...calls.map((c) => ({ at: c.started_at, key: c.uuid, node: <CallItem call={c} /> })),
   ].sort((a, b) => a.at.localeCompare(b.at))
+  return { items, open, isClosed }
+}
+
+function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: string }) {
+  const { items, open, isClosed } = useFeed(lead, stages)
+  const [closing, setClosing] = useState<SalesTask | null>(null)
+  const end = useRef<HTMLDivElement>(null)
 
   // Newest at the bottom, next to the composer — keep it in view
   useEffect(() => { end.current?.scrollIntoView({ block: "nearest" }) }, [items.length])
@@ -277,8 +272,8 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
   if (note.kind !== "note") {
     const Icon = note.kind === "stage" ? ArrowsLeftRight : Sparkle
     return (
-      <div className="flex items-center gap-2 py-1.5 text-sm text-ink-muted">
-        <Icon size={16} className="shrink-0" />
+      <div className="flex items-center gap-2 max-lg:gap-3 py-1.5 text-sm text-ink-muted">
+        <span className="flex w-4 max-lg:w-7 max-lg:bg-surface justify-center shrink-0"><Icon size={16} /></span>
         <span className="flex-1 min-w-0">{note.kind === "stage" ? <>Bosqich: <span className="text-ink">{note.text}</span></> : note.text}{note.author ? ` · ${note.author.full_name}` : ""}</span>
         <span className="tabular-nums shrink-0">{when(note.created_at)}</span>
       </div>
@@ -291,7 +286,7 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
         <div className="flex items-center gap-2 text-sm text-ink-muted">
           <span className="font-medium text-ink">{note.author?.full_name ?? "—"}</span>
           <span className="tabular-nums">{when(note.created_at)}</span>
-          {canDelete && <button onClick={onDelete} aria-label="Izohni o'chirish" className="ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-full hover:text-danger-text transition-opacity"><Trash size={16} /></button>}
+          {canDelete && <button onClick={onDelete} aria-label="Izohni o'chirish" className="ml-auto opacity-0 max-lg:opacity-100 group-hover:opacity-100 focus:opacity-100 p-1 max-lg:p-2 max-lg:-m-1 rounded-full hover:text-danger-text transition-opacity"><Trash size={16} /></button>}
         </div>
         <p className="mt-1 rounded-control bg-surface-sunken px-3 py-2 text-base text-ink whitespace-pre-wrap break-words">{note.text}</p>
       </div>
@@ -311,7 +306,7 @@ function CallItem({ call }: { call: Call }) {
           <span className={missed ? "text-danger-text" : "text-ink"}>{callLabel(call)}</span>
           {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
           {call.staff && <span className="truncate">· {call.staff.full_name}</span>}
-          <span className="tabular-nums ml-auto shrink-0">{when(call.started_at)}</span>
+          <span className="tabular-nums ml-auto max-lg:ml-0 max-lg:basis-full shrink-0">{when(call.started_at)}</span>
         </div>
         {!missed && <Recording uuid={call.uuid} />}
       </div>
@@ -327,7 +322,7 @@ function DoneItem({ task }: { task: SalesTask }) {
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <Icon size={16} /><span className="text-ink">{kindLabel(task.kind)}{task.text ? `: ${task.text}` : ""}</span>
-          <span className="tabular-nums ml-auto">{when(task.done_at!)}</span>
+          <span className="tabular-nums ml-auto max-lg:ml-0 max-lg:basis-full">{when(task.done_at!)}</span>
         </div>
         {task.result && <p className="mt-1 text-base text-ink whitespace-pre-wrap break-words">{task.result}</p>}
       </div>
@@ -425,5 +420,317 @@ function EnrollFromLead({ eventId, client }: { eventId: string; client: { id: st
           onClose={() => setOpen(false)} onAdded={() => {}} />
       )}
     </div>
+  )
+}
+
+// ─── Phone ───────────────────────────────────────────────────────────────────
+
+type SaveLead = (patch: Parameters<ReturnType<typeof useUpdateLead>["mutate"]>[0]["patch"]) => void
+interface MobileProps {
+  lead: Lead; stages: Stage[]; pipelines: { id: string; name: string; event_id: string | null }[]; users: ReturnType<typeof useUsers>["data"]
+  today: string; isAdmin: boolean; save: SaveLead; movePipeline: (pid: string) => void; del: () => void
+  name: string; setName: (v: string) => void; price: string; setPrice: (v: string) => void
+  reason: string; setReason: (v: string) => void; clientName: string; setClientName: (v: string) => void; saveClientName: () => void
+}
+
+const ROW = "min-h-14 px-4 flex items-center gap-3 border-b border-line last:border-b-0"
+const ROW_INPUT = "flex-1 min-w-0 h-14 bg-transparent text-right text-base text-ink focus:outline-none"
+const SECTION = "px-1 text-sm font-semibold text-ink-muted"
+
+/** The bitim on a phone: header card, round quick actions, the bosqich chips, then Lenta | Ma'lumotlar with the composer pinned above the tab bar */
+function LeadMobile(p: MobileProps) {
+  const { lead, stages, pipelines, today, isAdmin, save } = p
+  const users = p.users ?? []
+  const [tab, setTab] = useState<"feed" | "info">("feed")
+  const [taskOpen, setTaskOpen] = useState(false)
+  const [closing, setClosing] = useState<SalesTask | null>(null)
+  const note = useRef<HTMLTextAreaElement>(null)
+  const { items, open: openTasks, isClosed } = useFeed(lead, stages)
+  const pipeline = pipelines.find((x) => x.id === lead.pipeline_id)
+  const stage = stages.find((s) => s.id === lead.stage_id)
+  const openStages = stages.filter((s) => !s.is_won && !s.is_lost)
+  const at = stage?.is_won || stage?.is_lost ? openStages.length : openStages.findIndex((s) => s.id === lead.stage_id) + 1
+  const phone = lead.client?.phone
+  const title = lead.client?.full_name ?? lead.name
+  const chips = useRef<HTMLDivElement>(null)
+  useEffect(() => { chips.current?.querySelector("[aria-checked=true]")?.scrollIntoView({ inline: "center", block: "nearest" }) }, [lead.stage_id])
+
+  const act = "flex flex-col items-center gap-1.5 text-sm font-medium text-ink active:opacity-70"
+  const circle = "size-12 rounded-full flex items-center justify-center"
+  const writeNote = () => { setTab("feed"); setTimeout(() => note.current?.focus(), 0) }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Link to={`/sotuv?p=${lead.pipeline_id}`} className="self-start inline-flex items-center gap-1.5 h-9 px-3 -ml-3 rounded-full text-sm font-medium text-ink-muted active:bg-mute-ghost-hover">
+        <ArrowLeft size={16} />{pipeline?.name ?? "Sotuv bo'limi"}
+      </Link>
+
+      {/* Header card */}
+      <section className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <PersonDot name={title} url={lead.client?.image} size={48} />
+          <div className="flex-1 min-w-0">
+            {lead.client
+              ? <input value={p.clientName} onChange={(e) => p.setClientName(e.target.value)} aria-label="Mijoz ismi" placeholder="Mijoz ismini yozing"
+                  onBlur={p.saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
+                  className="block w-full h-8 bg-transparent text-lg font-semibold text-ink rounded-item -mx-1 px-1 focus:bg-surface focus:outline-none" />
+              : <span className="block text-lg font-semibold text-ink line-clamp-1">Mijoz biriktirilmagan</span>}
+            {phone && <span className="block text-base text-ink-muted tabular-nums">{formatPhone(phone)}</span>}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          {lead.price > 0
+            ? <span className="text-2xl font-semibold text-ink tabular-nums">{formatNumber(lead.price)} <span className="text-base font-medium text-ink-muted">so'm</span></span>
+            : <span className="text-base text-ink-muted">Summa kiritilmagan</span>}
+          <div className="flex items-center gap-2 text-sm">
+            {stage && <StageDot color={stage.color} />}
+            <span className="font-medium text-ink">{stage?.name}</span>
+            {!stage?.is_won && !stage?.is_lost && <span className="ml-auto text-ink-muted tabular-nums">{at} / {openStages.length}</span>}
+          </div>
+          <div className="flex gap-1" role="img" aria-label={`Bosqich ${at} / ${openStages.length}`}>
+            {openStages.map((s, i) => (
+              <span key={s.id} className={`flex-1 h-1.5 rounded-full ${i >= at ? "bg-mute-soft" : stage?.is_lost ? "bg-danger" : ""}`}
+                style={i < at && !stage?.is_lost ? { backgroundColor: stage?.color } : undefined} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick actions */}
+      <div className="grid grid-flow-col auto-cols-fr gap-2 w-full max-w-md mx-auto">
+        {phone && (
+          <CallButton phone={phone} className={`${act} w-full`} wrap="flex flex-col items-center gap-1">
+            <span className={`${circle} bg-success text-white`}><Phone size={22} weight="fill" /></span>Qo'ng'iroq
+          </CallButton>
+        )}
+        {phone && <a href={`sms:${phone}`} className={act}><span className={`${circle} bg-surface-sunken`}><ChatCircleText size={22} weight="light" /></span>SMS</a>}
+        <button type="button" onClick={() => setTaskOpen(true)} className={act}><span className={`${circle} bg-surface-sunken`}><CheckCircle size={22} weight="light" /></span>Vazifa</button>
+        <button type="button" onClick={writeNote} className={act}><span className={`${circle} bg-surface-sunken`}><NotePencil size={22} weight="light" /></span>Izoh</button>
+      </div>
+
+      {/* Bosqich selector: one tap moves the deal */}
+      <section className="flex flex-col gap-2">
+        <h2 className={SECTION}>Bosqich</h2>
+        <div ref={chips} role="radiogroup" aria-label="Bosqich" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+          {stages.map((s) => (
+            <button key={s.id} type="button" role="radio" aria-checked={s.id === lead.stage_id} onClick={() => { if (s.id !== lead.stage_id) save({ stage_id: s.id }) }}
+              className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors ${s.id === lead.stage_id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+              <StageDot color={s.color} />{s.name}
+            </button>
+          ))}
+        </div>
+        {stage?.is_lost && (
+          <input value={p.reason} onChange={(e) => p.setReason(e.target.value)} placeholder="Yutqazish sababi" aria-label="Yutqazish sababi"
+            onBlur={() => { if (p.reason.trim() !== (lead.loss_reason ?? "")) save({ loss_reason: p.reason.trim() || null }) }}
+            className="h-12 px-4 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+        )}
+      </section>
+
+      <div role="radiogroup" aria-label="Bitim" className="grid grid-cols-2 p-1 rounded-full bg-surface-sunken">
+        {([["feed", "Lenta"], ["info", "Ma'lumotlar"]] as const).map(([id, label]) => (
+          <button key={id} type="button" role="radio" aria-checked={tab === id} onClick={() => setTab(id)}
+            className={`h-9 rounded-full text-sm font-medium transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted"}`}>{label}</button>
+        ))}
+      </div>
+
+      {tab === "feed" ? (
+        <>
+          {openTasks.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <h2 className={SECTION}>Vazifalar · {openTasks.length}</h2>
+              <ul className="rounded-surface bg-surface-sunken overflow-hidden">
+                {openTasks.map((t) => (
+                  <li key={t.id} className="min-h-16 px-4 py-3 flex items-center gap-3 border-b border-line last:border-b-0">
+                    <DoneButton size="lg" onClick={() => setClosing(t)} />
+                    <span className="flex-1 min-w-0 flex flex-col gap-1.5">
+                      <span className="text-base font-medium text-ink line-clamp-2">{kindLabel(t.kind)}{t.text ? `: ${t.text}` : ""}</span>
+                      <span className="flex items-center gap-2 min-w-0">
+                        <TaskChip kind={t.kind} due={t.due_date} today={today} />
+                        {t.assignee && <span className="flex items-center gap-1.5 min-w-0 text-sm text-ink-muted"><PersonDot name={t.assignee.full_name} url={t.assignee.avatar_url} /><span className="line-clamp-1">{t.assignee.full_name.split(" ")[0]}</span></span>}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : !isClosed && (
+            <div className="rounded-surface bg-warning-soft p-4 flex items-center gap-3">
+              <span className="flex-1 text-base text-warning-dark">Keyingi qadamni belgilang — bitim vazifasiz qolmasin</span>
+              <button type="button" onClick={() => setTaskOpen(true)} className="shrink-0 h-10 px-4 rounded-full bg-accent text-ink-on-accent text-sm font-semibold">Vazifa</button>
+            </div>
+          )}
+
+          <section className="flex flex-col gap-2">
+            <h2 className={SECTION}>Lenta</h2>
+            {/* Newest first: what just happened is on top, the composer is right below the fold */}
+            <div className="relative flex flex-col gap-1 before:absolute before:left-[13.5px] before:top-4 before:bottom-4 before:w-px before:bg-line before:content-['']">
+              {[...items].reverse().map((i) => <div key={i.key} className="relative">{i.node}</div>)}
+            </div>
+          </section>
+
+          <MobileComposer leadId={lead.id} inputRef={note} />
+        </>
+      ) : (
+        <>
+          <ul className="rounded-surface bg-surface-sunken overflow-hidden">
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Bitim</span>
+              <input value={p.name} onChange={(e) => p.setName(e.target.value)} aria-label="Bitim nomi"
+                onBlur={() => { const v = p.name.trim(); if (v && v !== lead.name) save({ name: v }); else p.setName(lead.name) }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }} className={ROW_INPUT} />
+            </li>
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Summa</span>
+              <input inputMode="numeric" value={p.price} placeholder="0" aria-label="Summa" className={`${ROW_INPUT} tabular-nums`}
+                onChange={(e) => { const d = e.target.value.replace(/\D/g, ""); p.setPrice(d ? Number(d).toLocaleString("ru-RU") : "") }}
+                onBlur={() => { const n = Number(p.price.replace(/\D/g, "")) || 0; if (n !== lead.price) save({ price: n }) }} />
+            </li>
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Mas'ul</span>
+              <select value={lead.responsible_user_id ?? ""} onChange={(e) => save({ responsible_user_id: e.target.value || null })} aria-label="Mas'ul" className={`${ROW_INPUT} [text-align-last:right]`}>
+                <option value="">Belgilanmagan</option>
+                {users.filter((u) => u.is_active || u.id === lead.responsible_user_id).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              </select>
+            </li>
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Manba</span>
+              <select value={lead.source ?? "manual"} onChange={(e) => save({ source: e.target.value })} aria-label="Manba" className={`${ROW_INPUT} [text-align-last:right]`}>
+                {!SOURCES.some((s) => s.id === lead.source) && lead.source && <option value={lead.source}>{lead.source}</option>}
+                {SOURCES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </li>
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Voronka</span>
+              <select value={lead.pipeline_id} onChange={(e) => p.movePipeline(e.target.value)} aria-label="Voronka" className={`${ROW_INPUT} [text-align-last:right]`}>
+                {pipelines.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+              </select>
+            </li>
+            <li className={ROW}>
+              <span className="text-base text-ink-muted shrink-0">Yaratildi</span>
+              <span className="flex-1 text-right text-base text-ink tabular-nums">{new Date(lead.created_at).toLocaleDateString("ru-RU")}</span>
+            </li>
+          </ul>
+
+          {pipeline?.event_id && lead.client && (
+            <div className="rounded-surface bg-surface-sunken p-2"><EnrollFromLead eventId={pipeline.event_id} client={lead.client} /></div>
+          )}
+
+          {lead.fields.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className={SECTION}>Forma javoblari</h2>
+              <dl aria-label="Forma javoblari" className="rounded-surface bg-surface-sunken overflow-hidden">
+                {[{ k: "Ism", v: lead.client?.full_name ?? lead.name }, ...(phone ? [{ k: "Telefon", v: formatPhone(phone) }] : []), ...lead.fields].map((f) => (
+                  <div key={f.k} className="px-4 py-3 border-b border-line last:border-b-0">
+                    <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
+                    <dd className="text-base text-ink break-words">{f.v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {isAdmin && (
+            <button type="button" onClick={p.del} className="h-12 inline-flex items-center justify-center gap-2 rounded-full bg-danger-soft text-danger-text text-base font-medium">
+              <Trash size={18} />Bitimni o'chirish
+            </button>
+          )}
+        </>
+      )}
+
+      <MobileTaskSheet open={taskOpen} onClose={() => setTaskOpen(false)} lead={lead} today={today} users={users} onAdded={() => setTab("feed")} />
+      {closing && <TaskDone task={closing} onClose={() => setClosing(null)} />}
+    </div>
+  )
+}
+
+/** The note bar, fixed above the tab bar; a spacer as tall as the bar keeps the end of the page from hiding under it */
+function MobileComposer({ leadId, inputRef }: { leadId: string; inputRef: React.RefObject<HTMLTextAreaElement | null> }) {
+  const addNote = useAddNote()
+  const [text, setText] = useState("")
+  const [h, setH] = useState(64)
+  const bar = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = bar.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const send = () => { if (text.trim()) addNote.mutate({ leadId, text }, { onSuccess: () => setText("") }) }
+  return (
+    <>
+      <div aria-hidden style={{ height: h }} />
+      <div ref={bar} className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-20 px-4 sm:px-6 pt-2 pb-2.5 bg-surface border-t border-line flex items-end gap-2">
+        <textarea ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} rows={1} aria-label="Izoh" placeholder="Izoh yozing…"
+          className="flex-1 min-w-0 min-h-11 max-h-32 resize-none rounded-control bg-surface-sunken px-4 py-2.5 text-base text-ink placeholder:text-ink-faint focus:outline-none [field-sizing:content]" />
+        <button type="button" onClick={send} disabled={addNote.isPending || !text.trim()} aria-label="Izohni yuborish"
+          className="size-11 shrink-0 rounded-full bg-accent text-ink-on-accent flex items-center justify-center disabled:bg-mute-soft disabled:text-ink-muted transition-colors">
+          <PaperPlaneRight size={20} />
+        </button>
+      </div>
+    </>
+  )
+}
+
+const TIMES = [null, "09:00", "10:00", "12:00", "14:00", "16:00", "18:00"] as const
+
+/** "Vazifa" quick action: kind, note, deadline and owner in one bottom sheet */
+function MobileTaskSheet({ open, onClose, lead, today, users, onAdded }: {
+  open: boolean; onClose: () => void; lead: Lead; today: string; users: NonNullable<ReturnType<typeof useUsers>["data"]>; onAdded: () => void
+}) {
+  const { user } = useAuth()
+  const addTask = useAddTask()
+  const [kind, setKind] = useState<TaskKind>("call")
+  const [text, setText] = useState("")
+  const [date, setDate] = useState<string | null>(addDays(today, 1))
+  const [time, setTime] = useState<string | null>(null)
+  const [assignee, setAssignee] = useState(lead.responsible_user_id ?? user?.id ?? "")
+  const chip = (on: boolean) => `h-10 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`
+  const field = "w-full h-12 px-4 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none"
+
+  function submit() {
+    if (!date) return
+    addTask.mutate({ lead_id: lead.id, kind, text: text.trim(), due_date: toDue(date, time), assignee_id: assignee || null },
+      { onSuccess: () => { setText(""); onClose(); onAdded() } })
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Yangi vazifa"
+      footer={<button type="button" onClick={submit} disabled={!date || addTask.isPending}
+        className="h-12 flex-1 rounded-full bg-accent text-ink-on-accent text-base font-semibold disabled:bg-mute-soft disabled:text-ink-muted">
+        {addTask.isPending ? "Saqlanmoqda..." : "Qo'shish"}</button>}>
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-2 gap-2">
+          {TASK_KINDS.map((k) => {
+            const Icon = KIND_ICON[k.id]
+            return (
+              <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}
+                className={`h-11 px-3 rounded-full text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors ${kind === k.id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+                <Icon size={18} />{k.label}
+              </button>
+            )
+          })}
+        </div>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Nima qilish kerak (ixtiyoriy)" aria-label="Vazifa matni" className={field} />
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-ink-muted">Muddat{date ? ` · ${dueLabel(date, time, today)}` : ""}</span>
+          <div className="flex flex-wrap gap-2">
+            {([["Bugun", today], ["Ertaga", addDays(today, 1)], ["Haftadan keyin", addDays(today, 7)]] as const).map(([label, day]) => (
+              <button key={label} type="button" onClick={() => setDate(day)} className={chip(date === day)}>{label}</button>
+            ))}
+          </div>
+          <input type="date" value={date ?? ""} onChange={(e) => { setDate(e.target.value || null); if (!e.target.value) setTime(null) }} aria-label="Sana" className={field} />
+          <div className={`flex flex-wrap gap-2 ${date ? "" : "opacity-40 pointer-events-none"}`}>
+            {TIMES.map((t) => <button key={t ?? "day"} type="button" onClick={() => setTime(t)} className={chip(time === t)}>{t ?? "Kun bo'yi"}</button>)}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-ink-muted">Mas'ul</span>
+          <select value={assignee} onChange={(e) => setAssignee(e.target.value)} aria-label="Kimga" className={field}>
+            {users.filter((u) => u.is_active).map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+          </select>
+        </div>
+      </div>
+    </Sheet>
   )
 }

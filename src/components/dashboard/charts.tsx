@@ -20,7 +20,7 @@ const GREYS: Pair[] = [["#0a0a0a", "#ffffff"], ["#262626", "#dedede"], ["#3d3d3d
 export type MixRow = { key: string; label: string; value: number; hint?: string }
 
 /** Donut with the total in a dashed centre circle and the value list under it ("Revenue Mix", stacked for narrow cards) */
-export function MixDonut({ rows, totalLabel, grey = false }: { rows: MixRow[]; totalLabel: string; grey?: boolean }) {
+export function MixDonut({ rows, totalLabel, grey = false, compact = false }: { rows: MixRow[]; totalLabel: string; grey?: boolean; compact?: boolean }) {
   const shown = rows.filter((r) => r.value > 0)
   if (shown.length === 0) return <Empty text="Davrda harakat yo'q" />
   const palette = grey ? GREYS : COLORS
@@ -29,7 +29,7 @@ export function MixDonut({ rows, totalLabel, grey = false }: { rows: MixRow[]; t
   const total = shown.reduce((s, r) => s + r.value, 0)
   return (
     <div className="flex flex-col gap-3">
-      <div className={`relative aspect-square w-full max-w-48 mx-auto ${ON_CARD}`}>
+      <div className={`relative aspect-square w-full mx-auto ${compact ? "max-w-40" : "max-w-48"} ${ON_CARD}`}>
         <EChartsPieChart data={shown} config={config} dataKey="value" nameKey="key" className="h-full w-full">
           <EChartsPieChart.Tooltip />
           <EChartsPieChart.Pie innerRadius="62%" outerRadius="92%" paddingAngle={shown.length > 1 ? 6 : 0} cornerRadius={10} startAngle={90} endAngle={-270} />
@@ -88,14 +88,14 @@ export function DotRing({ id, value, caption, color }: { id: string; value: numb
 }
 
 /** New vs won bitimlar per day */
-export function DailyBars({ rows }: { rows: { day: string; new: number; won: number }[] }) {
+export function DailyBars({ rows, height = 280 }: { rows: { day: string; new: number; won: number }[]; height?: number }) {
   const data = rows.map((r) => ({ day: `${r.day.slice(8, 10)}.${r.day.slice(5, 7)}`, new: r.new, won: r.won }))
   const config: ChartConfig = {
     new: { label: "Yangi bitimlar", colors: { light: ["#4f46e5"], dark: ["#818cf8"] } },
     won: { label: "Yutilgan", colors: { light: ["#059669"], dark: ["#34d399"] } },
   }
   return (
-    <div className="h-[280px]">
+    <div style={{ height }}>
       <EChartsBarChart data={data} config={config} xDataKey="day" barRadius={4} className="h-full w-full">
         <EChartsBarChart.Grid />
         <EChartsBarChart.XAxis />
@@ -118,12 +118,12 @@ const BANDS = [
 ]
 
 /** Semicircle gauge split into bands, the value in the middle ("Reliability Score") */
-export function ScoreGauge({ value, caption }: { value: number | null; caption: string }) {
+export function ScoreGauge({ value, caption, compact = false }: { value: number | null; caption: string; compact?: boolean }) {
   const band = value === null ? null : [...BANDS].reverse().find((b) => value >= b.from) ?? BANDS[0]
   const config: ChartConfig = Object.fromEntries(BANDS.map((b) => [b.key, { label: b.label, colors: b.colors }]))
   return (
     <div className="flex flex-col">
-      <div className={`relative mx-auto aspect-square w-full max-w-48 ${ON_CARD}`}>
+      <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-40" : "max-w-48"} ${ON_CARD}`}>
         <EChartsPieChart data={[...BANDS].reverse()} config={config} dataKey="value" nameKey="key" className="h-full w-full">
           <EChartsPieChart.Pie innerRadius="74%" outerRadius="94%" paddingAngle={6} cornerRadius={10} startAngle={-30} endAngle={210} />
         </EChartsPieChart>

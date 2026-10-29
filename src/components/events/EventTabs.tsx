@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
-import { Plus, BookmarkSimple } from "@phosphor-icons/react"
+import { Plus, BookmarkSimple, Check } from "@phosphor-icons/react"
+import { Sheet } from "@/components/ui/Sheet"
 import { type Event } from "@/lib/supabase/queries/events"
 import { eventTint } from "@/lib/eventTint"
 import { formatDate } from "@/lib/format"
@@ -25,6 +26,7 @@ interface EventTabsProps {
 
 export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsProps) {
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [archiveSheet, setArchiveSheet] = useState(false)
   const archiveRef = useRef<HTMLDivElement>(null)
 
   const today = startOfToday()
@@ -56,8 +58,47 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
     return base
   }, [active, selected])
 
+  const chip = "shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2"
+
   return (
-    <div className="flex items-start sm:items-center gap-2">
+    <>
+    {/* Phones and tablets: one scrolling chip strip */}
+    <div className="lg:hidden flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+      {tabEvents.map((e) => (
+        <button key={e.id} type="button" onClick={() => onSelect(e.id)} aria-current={e.id === selectedId ? "true" : undefined}
+          className={`${chip} max-w-[240px] ${e.id === selectedId ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+          <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: eventTint(e.name) }} />
+          <span className="truncate">{e.name}</span>
+        </button>
+      ))}
+      {archive.length > 0 && (
+        <button type="button" onClick={() => setArchiveSheet(true)} className={`${chip} bg-surface-sunken text-ink-muted`}>
+          <BookmarkSimple size={16} /> O'tgan · {archive.length}
+        </button>
+      )}
+      {onCreate && (
+        <button type="button" onClick={onCreate} aria-label="Yangi tadbir" className={`${chip} bg-surface-sunken text-ink-muted`}>
+          <Plus size={16} /> Yangi
+        </button>
+      )}
+    </div>
+    <Sheet open={archiveSheet} onClose={() => setArchiveSheet(false)} title="O'tgan tadbirlar">
+      <div className="rounded-surface bg-surface-sunken overflow-hidden">
+        {archive.map((e) => (
+          <button key={e.id} type="button" onClick={() => { onSelect(e.id); setArchiveSheet(false) }}
+            className="w-full min-h-14 px-4 py-2 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+            <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: eventTint(e.name) }} />
+            <span className="flex-1 min-w-0 flex flex-col">
+              <span className="text-base font-medium text-ink truncate">{e.name}</span>
+              <span className="text-sm text-ink-muted tabular-nums">{formatDate(e.date)}</span>
+            </span>
+            {e.id === selectedId && <Check size={18} className="text-ink shrink-0" />}
+          </button>
+        ))}
+      </div>
+    </Sheet>
+
+    <div className="max-lg:hidden flex items-start sm:items-center gap-2">
       <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 sm:overflow-x-auto no-scrollbar flex-1 min-w-0">
 
         {tabEvents.map((e) => {
@@ -145,5 +186,6 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
         )}
       </div>
     </div>
+  </>
   )
 }

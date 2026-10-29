@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { UserPlus, Handshake, XCircle, Percent, Coins } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
+import { useMedia } from "@/hooks/useMedia"
 import { useSalesDashboard } from "@/hooks/useSalesDashboard"
 import { periodRange, tashkentToday } from "@/lib/period"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
@@ -12,6 +13,7 @@ import { SellersTable } from "@/components/dashboard/SellersTable"
 import { CallsCard } from "@/components/dashboard/CallsCard"
 import { AttentionPanel } from "@/components/dashboard/AttentionPanel"
 import { FinancePanel } from "@/components/dashboard/FinancePanel"
+import { MobileDashboard } from "@/components/dashboard/MobileDashboard"
 
 const PERIODS = [
   { id: "today", label: "Bugun" },
@@ -42,6 +44,22 @@ export function Dashboard() {
   const [pipelineId, setPipelineId] = useState<string | null>(null)
   const { from, to } = useMemo(() => range(period), [period])
   const { data: d, isLoading, error, refetch } = useSalesDashboard(from, to, pipelineId)
+  const mobile = useMedia("(width < 64rem)")   // phone / tablet: its own layout, same data
+
+  if (mobile) {
+    return (
+      <div className="flex flex-col gap-4 pb-6">
+        {d ? <MobileDashboard d={d} periods={PERIODS} period={period} onPeriod={(id: string) => setPeriod(id as PeriodId)} pipelineId={pipelineId} onPipeline={setPipelineId} from={from} to={to} />
+          : (!error || isLoading) && <Skeleton className="h-[420px] rounded-surface" />}
+        {error && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-surface bg-danger-soft text-danger-dark text-base">
+            <span>Ma'lumot yuklanmadi: {error.message}</span>
+            <button type="button" onClick={() => void refetch()} className="h-10 px-4 rounded-full bg-surface text-ink text-sm font-medium whitespace-nowrap shrink-0">Qayta urinish</button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-10">

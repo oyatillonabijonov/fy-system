@@ -712,7 +712,20 @@ select:not(.appearance-none):not([multiple]) {
 :root[data-photo="field"]  { --photo: url("/images/bg-field.jpg"); }
 :root[data-photo] .app-ground { background: var(--photo) center / cover; }
 :root[data-photo] .app-main { margin: 12px 12px 12px 0; }
-@media (width < 64rem) { :root[data-photo] .app-main { margin: 0; } }   /* phone/tablet: full bleed, sidebar is a drawer */
+@media (width < 64rem) { :root[data-photo] .app-main { margin: 0; } }   /* phone/tablet: full bleed, the tab bar replaces the sidebar */
+
+/* Phone/tablet app shell (below lg, MobileNav): the tab bar's height, for anything pinned above it
+   (floating buttons, sticky action bars) — 0 on desktop */
+:root { --tabbar-h: 0px; }
+@media (width < 64rem) { :root { --tabbar-h: calc(57px + env(safe-area-inset-bottom)); } }
+/* Touch screens feel like an app: no grey tap flash or double-tap zoom delay, no rubber-band on the
+   shell, and fields at 16px so iOS doesn't zoom into them on focus (unlayered, so it beats text-* utilities) */
+html, body { overscroll-behavior: none; }
+button, a, [role="button"] { touch-action: manipulation; }
+@media (pointer: coarse) {
+  html { -webkit-tap-highlight-color: transparent; }
+  input, select, textarea { font-size: 16px; }
+}
 :root[data-photo] aside.sidebar {
   margin: 12px;
   height: calc(100% - 24px);

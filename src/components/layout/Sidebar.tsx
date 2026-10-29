@@ -1,20 +1,11 @@
-import { Code, Funnel, Kanban, PhoneCall, ChatText,
+import {
     MagnifyingGlass,
-    House,
-    Users,
-    Ticket,
-    Gear,
     SignOut,
     CaretUpDown,
     CaretRight,
     User,
     SidebarSimple,
     CaretDown,
-    X,
-    Bank,
-    ClockCounterClockwise,
-    CheckCircle,
-    type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
@@ -24,87 +15,31 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useTheme, useSidebarScope, MODES, PHOTOS, photoThumb } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
-import type { ModuleName } from "@/lib/supabase/queries/auth"
+import { navigationSections, type NavItem } from "./nav"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
 
 const accountItem = "w-full flex items-center gap-2.5 h-control-md px-2.5 rounded-item text-base font-medium text-ink transition-colors hover:bg-mute-ghost-hover"
-
-interface NavItem {
-    name: string
-    icon: PhosphorIcon
-    path?: string
-    module?: ModuleName
-    adminOnly?: boolean
-    /** Parent with a page of its own: click opens `path` and expands the submenu;
-     *  with no visible sub-items it's a plain link */
-    opensPage?: boolean
-    subItems?: NavItem[]
-}
-
-interface NavSection {
-    title: string
-    items: NavItem[]
-}
-
-const navigationSections: NavSection[] = [
-    {
-        title: "Asosiy",
-        items: [
-            { name: "Dashboard", icon: House, path: "/dashboard" },
-            { name: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
-            {
-                name: "Sotuv bo'limi", icon: Funnel, path: "/sotuv", module: "sotuv-crmn", opensPage: true,
-                subItems: [
-                    { name: "Bitimlar", icon: Kanban, path: "/sotuv", module: "sotuv-crmn" },
-                    { name: "Qo'ng'iroqlar", icon: PhoneCall, path: "/sotuv/qongiroqlar", module: "sotuv-crmn" },
-                ],
-            },
-            { name: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },
-            { name: "SMS", icon: ChatText, path: "/sms", module: "sms" },
-            { name: "Tadbirlar", icon: Ticket, path: "/tadbirlar/boshqaruv", module: "tadbirlar" },
-            { name: "Moliya", icon: Bank, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
-        ],
-    },
-    {
-        title: "Boshqaruv",
-        items: [
-            { name: "Hodimlar", icon: Users, path: "/hodimlar", adminOnly: true },
-            {
-                name: "Sozlamalar",
-                icon: Gear,
-                path: "/sozlamalar",
-                opensPage: true,
-                subItems: [
-                    { name: "Integratsiyalar", icon: Code, path: "/sozlamalar/integratsiyalar", module: "integratsiyalar" },
-                    { name: "Faollik", icon: ClockCounterClockwise, path: "/faollik", adminOnly: true },
-                ],
-            },
-        ],
-    },
-]
 
 const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<unknown> }> = {
     Mijozlar: { key: [...CLIENTS_KEY], fn: () => import("@/lib/supabase/queries/clients").then(m => m.getClients()) },
     Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
-/** `drawer` = the phone/tablet menu: always expanded, the collapse button closes it */
-export function Sidebar({ drawer = false, onClose }: { drawer?: boolean; onClose?: () => void }) {
+export function Sidebar() {
     const navigate = useNavigate()
     const location = useLocation()
     const { user, hasAccess } = useAuth()
     const isAdminUser = user?.role === "admin"
 
-    const [collapsedPref, setIsCollapsed] = useState(() => {
+    const [isCollapsed, setIsCollapsed] = useState(() => {
         try {
             return localStorage.getItem('fy_sidebar_collapsed') === 'true'
         } catch { return false }
     })
     useEffect(() => {
-        try { localStorage.setItem('fy_sidebar_collapsed', String(collapsedPref)) } catch { /* private browsing */ }
-    }, [collapsedPref])
-    const isCollapsed = !drawer && collapsedPref
+        try { localStorage.setItem('fy_sidebar_collapsed', String(isCollapsed)) } catch { /* private browsing */ }
+    }, [isCollapsed])
 
     const { themeId, setThemeId, photo, setPhoto } = useTheme()
     const scope = useSidebarScope()
@@ -193,7 +128,7 @@ export function Sidebar({ drawer = false, onClose }: { drawer?: boolean; onClose
     return (
         <motion.aside
             initial={false}
-            animate={{ width: drawer ? 280 : isCollapsed ? 68 : 264 }}
+            animate={{ width: isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
             data-theme={scope}
             className="sidebar h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
@@ -209,12 +144,12 @@ export function Sidebar({ drawer = false, onClose }: { drawer?: boolean; onClose
                 )}
                 <button
                     type="button"
-                    onClick={() => drawer ? onClose?.() : setIsCollapsed(!isCollapsed)}
-                    aria-label={drawer ? "Menyuni yopish" : isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
                     aria-expanded={!isCollapsed}
                     className="h-control-md w-9 rounded-full flex items-center justify-center flex-shrink-0 text-ink transition-colors hover:bg-mute-ghost-hover"
                 >
-                    {drawer ? <X size={20} /> : <SidebarSimple size={20} />}
+                    <SidebarSimple size={20} />
                 </button>
             </div>
 

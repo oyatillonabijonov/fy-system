@@ -9,6 +9,9 @@ import { useRecordPayment } from "@/hooks/useFinance"
 import { useClientCashbackBalance } from "@/hooks/useCashback"
 import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
+import { MethodPicker } from "@/components/moliya/PaymentActionModals"
 import { tashkentToday } from "@/lib/period"
 import { formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { ReceiptInput } from "@/components/moliya/Receipt"
@@ -21,14 +24,8 @@ export interface RecordPaymentPreset {
   eventId: string
 }
 
-const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "naqd", label: "Naqd" },
-  { value: "karta", label: "Karta" },
-  { value: "transfer", label: "Transfer" },
-]
-
 const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:min-h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const LABEL = "text-sm font-medium text-ink-muted"
 
 function onlyDigits(v: string): string {
@@ -41,15 +38,16 @@ function initials(name: string): string {
 
 function ClientAvatar({ c }: { c: PickedClient }) {
   return c.image ? (
-    <img src={c.image} alt={c.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+    <img src={c.image} alt={c.full_name} className="w-8 h-8 max-sm:size-10 rounded-full object-cover shrink-0" />
   ) : (
-    <span className="w-8 h-8 rounded-full bg-mute-soft text-ink-muted text-xs font-semibold flex items-center justify-center shrink-0">
+    <span className="w-8 h-8 max-sm:size-10 rounded-full bg-mute-soft text-ink-muted text-xs font-semibold flex items-center justify-center shrink-0">
       {initials(c.full_name)}
     </span>
   )
 }
 
-export function MoneyInput({ id, value, onChange, invalid, placeholder }: { id: string; value: string; onChange: (digits: string) => void; invalid?: boolean; placeholder?: string }) {
+// `big` (phone): the amount is the hero of the sheet — a large centred figure
+export function MoneyInput({ id, value, onChange, invalid, placeholder, big }: { id: string; value: string; onChange: (digits: string) => void; invalid?: boolean; placeholder?: string; big?: boolean }) {
   return (
     <div className="relative">
       <input
@@ -59,7 +57,7 @@ export function MoneyInput({ id, value, onChange, invalid, placeholder }: { id: 
         onChange={(e) => onChange(onlyDigits(e.target.value))}
         placeholder={placeholder}
         aria-invalid={invalid}
-        className={`${INPUT} pr-12 ${invalid ? "border-danger-text" : ""}`}
+        className={`${INPUT} pr-12 ${big ? "max-sm:h-16 max-sm:text-[32px] max-sm:font-semibold max-sm:text-center max-sm:tabular-nums max-sm:bg-surface-sunken max-sm:border-transparent max-sm:px-14" : ""} ${invalid ? "border-danger-text" : ""}`}
       />
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
     </div>
@@ -74,6 +72,8 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   const sellers = users.filter((u) => u.is_active && u.department === "sotuv")
   const guardedClose = () => !record.isPending && onClose()
   const panelRef = useDialog<HTMLDivElement>(guardedClose, true)
+  const isPhone = useMedia("(width < 40rem)")
+  const [cbOpen, setCbOpen] = useState(false)   // phone: the cashback field sits behind a switch
 
   const titleId = useId()
   const searchId = useId()
@@ -211,7 +211,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   // unmounts the whole tree in the same tick it stops rendering this component.
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className={sheet.wrap}>
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={guardedClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
@@ -222,17 +222,18 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="bg-surface-raised rounded-overlay w-full max-w-md relative overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh]"
+          {...sheetMotion(isPhone)}
+          className={`${sheet.panel} sm:max-w-md relative overflow-hidden sm:max-h-[90vh]`}
         >
-          <div className="p-5 border-b border-line flex items-center justify-between shrink-0">
-            <h3 id={titleId} className="text-md font-semibold text-ink">To'lov qo'shish</h3>
-            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 sm:p-1 sm:m-0 hover:bg-mute-ghost-hover rounded-full transition-all">
+          <div className={sheet.grabber} />
+          <div className="px-4 pt-2 pb-3 sm:p-5 sm:border-b sm:border-line flex items-center justify-between shrink-0">
+            <h3 id={titleId} className="text-lg sm:text-md font-semibold text-ink">To'lov qo'shish</h3>
+            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 max-sm:size-10 max-sm:m-0 max-sm:-mr-2 max-sm:flex max-sm:items-center max-sm:justify-center sm:p-1 sm:m-0 hover:bg-mute-ghost-hover rounded-full transition-all">
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
   
-          <div className="p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
+          <div className="px-4 pb-4 sm:p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
             {error && (
               <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                 {error}
@@ -260,9 +261,9 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
                   />
                 </div>
                 {results.length > 0 && (
-                  <div className="flex flex-col max-h-[200px] overflow-y-auto no-scrollbar mt-1">
+                  <div className="flex flex-col max-h-[200px] max-sm:max-h-[40dvh] overflow-y-auto no-scrollbar mt-1">
                     {results.map((c) => (
-                      <button key={c.id} onClick={() => pick(c)} className="w-full flex items-center gap-2.5 p-2 rounded-item hover:bg-mute-ghost-hover transition-colors text-left">
+                      <button key={c.id} onClick={() => pick(c)} className="w-full flex items-center gap-2.5 p-2 max-sm:min-h-14 rounded-item hover:bg-mute-ghost-hover active:bg-mute-ghost-hover transition-colors text-left">
                         <ClientAvatar c={c} />
                         <span className="flex flex-col min-w-0 flex-1">
                           <span className="text-base font-medium text-ink truncate">{c.full_name}</span>
@@ -394,13 +395,30 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
             {/* 4. Payment */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor={amountId} className={LABEL}>To'lov summasi *</label>
-              <MoneyInput id={amountId} value={amount} onChange={setAmount} invalid={overDebt} placeholder="17,000,000" />
+              <MoneyInput id={amountId} value={amount} onChange={setAmount} invalid={overDebt} placeholder={isPhone ? "0" : "17,000,000"} big />
               {overDebt && <span className="text-xs text-danger-text">Qarzdan ko'p. Qolgan qarz: {formatMoney(debt)}</span>}
             </div>
 
             {balance > 0 && (
-              <div className="flex flex-col gap-1.5 p-3 rounded-control bg-surface-sunken">
-                <label htmlFor={cashbackId} className={LABEL}>Keshbekdan ishlatish</label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={cbOpen}
+                onClick={() => { setCbOpen(!cbOpen); if (cbOpen) setCashback("") }}
+                className="sm:hidden min-h-14 px-4 rounded-control bg-surface-sunken flex items-center justify-between gap-3 text-left"
+              >
+                <span className="flex flex-col">
+                  <span className="text-base font-medium text-ink">Keshbekdan ishlatish</span>
+                  <span className="text-sm text-ink-muted tabular-nums">Balans: {formatMoney(balance)}</span>
+                </span>
+                <span className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${cbOpen ? "bg-accent" : "bg-mute-soft"}`}>
+                  <span className={`absolute top-0.5 left-0.5 size-5 rounded-full transition-transform ${cbOpen ? "translate-x-5 bg-ink-on-accent" : "bg-surface"}`} />
+                </span>
+              </button>
+            )}
+            {balance > 0 && (
+              <div className={`flex flex-col gap-1.5 p-3 rounded-control bg-surface-sunken ${cbOpen ? "" : "max-sm:hidden"}`}>
+                <label htmlFor={cashbackId} className={`${LABEL} max-sm:sr-only`}>Keshbekdan ishlatish</label>
                 <MoneyInput id={cashbackId} value={cashback} onChange={setCashback} invalid={overCashback} placeholder="0" />
                 <span className={`text-xs ${overCashback ? "text-danger-text" : "text-ink-muted"}`}>
                   Balans: {formatMoney(balance)}
@@ -415,20 +433,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
               </div>
             )}
   
-            <div className="flex gap-2" role="group" aria-label="To'lov usuli">
-              {METHODS.map((m) => (
-                <button
-                  key={m.value}
-                  onClick={() => setMethod(m.value)}
-                  aria-pressed={method === m.value}
-                  className={`flex-1 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                    method === m.value ? "bg-accent text-ink-on-accent border-transparent" : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            <MethodPicker value={method} onChange={setMethod} />
   
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex flex-col gap-1.5 sm:flex-1 min-w-0">
@@ -458,18 +463,18 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
             )}
           </div>
   
-          <div className="p-5 pt-0 flex gap-3 shrink-0">
+          <div className="p-4 pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line sm:border-t-0 sm:p-5 sm:pt-0 flex gap-3 shrink-0">
             <button
               onClick={onClose}
               disabled={record.isPending}
-              className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
+              className="flex-1 max-sm:flex-none max-sm:px-6 max-sm:h-12 max-sm:py-0 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 max-sm:h-12 max-sm:py-0 px-4 py-2.5 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
                 canSubmit ? "bg-accent text-ink-on-accent hover:bg-accent-hover active:scale-95" : "bg-mute-soft text-ink-muted cursor-not-allowed"
               }`}
             >

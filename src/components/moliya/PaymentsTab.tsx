@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowUUpLeft, Prohibit, UserMinus } from "@phosphor-icons/react"
+import { ArrowUUpLeft, Prohibit, Receipt, UserMinus } from "@phosphor-icons/react"
 import { usePaymentsList, usePaymentsCount } from "@/hooks/useFinance"
 import type { FinanceFilters, PaymentRow } from "@/lib/supabase/queries/finance"
 import type { PaymentMethod } from "@/lib/supabase/queries/payments"
@@ -8,6 +8,9 @@ import { NoShowModal, RefundModal, VoidPaymentModal } from "@/components/moliya/
 import { ReceiptCell } from "@/components/moliya/Receipt"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
+import { Sheet } from "@/components/ui/Sheet"
+import { Avatar, BTN_DANGER, BTN_SECONDARY, Empty, GROUP, GroupHeader, KV, Loading, Money, ROW, dayLabel, groupByDay } from "@/components/moliya/mobile"
+import { tashkentClock, tashkentToday } from "@/lib/period"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 
@@ -31,18 +34,59 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
   const [voiding, setVoiding] = useState<PaymentRow | null>(null)
   const [refunding, setRefunding] = useState<PaymentRow | null>(null)
   const [noShow, setNoShow] = useState<PaymentRow | null>(null)
+  // phone: the tapped row; `open` is separate so the sheet can slide out with its content still there
+  const [picked, setPicked] = useState<PaymentRow | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const days = groupByDay(rows, (p) => tashkentToday(new Date(p.paid_at)))
 
   return (
     <div className="flex flex-col gap-3">
       {isLoading ? (
-        <div className="py-10 flex items-center justify-center">
-          <ThinkingOrb state="searching" size={20} theme="light" />
-        </div>
+        <>
+          <div className="py-10 flex items-center justify-center max-lg:hidden">
+            <ThinkingOrb state="searching" size={20} theme="light" />
+          </div>
+          <div className="lg:hidden"><Loading /></div>
+        </>
       ) : rows.length === 0 ? (
-        <div className="py-10 text-center text-base text-ink-muted">Bu filtrlar bo'yicha to'lov yo'q</div>
+        <>
+          <div className="py-10 text-center text-base text-ink-muted max-lg:hidden">Bu filtrlar bo'yicha to'lov yo'q</div>
+          <div className="lg:hidden"><Empty icon={<Receipt size={32} weight="thin" />} text="Bu filtrlar bo'yicha to'lov yo'q" /></div>
+        </>
       ) : (
         <>
-          <div className={tbl.scroll}>
+          <div className="flex flex-col gap-5 lg:hidden">
+            {days.map((g) => (
+              <section key={g.day}>
+                <GroupHeader>{dayLabel(g.day)}</GroupHeader>
+                <div className={GROUP}>
+                  {g.items.map((p) => {
+                    const voided = !!p.voided_at
+                    const refund = p.kind === "refund"
+                    return (
+                      <button key={p.id} type="button" onClick={() => { setPicked(p); setSheetOpen(true) }} className={`${ROW} ${voided ? "opacity-50" : ""}`}>
+                        <Avatar name={p.client_name} icon={refund ? <ArrowUUpLeft size={18} /> : undefined} />
+                        <span className="flex-1 min-w-0 flex flex-col">
+                          <span className="text-base font-medium text-ink truncate">{p.client_name}</span>
+                          <span className="text-sm text-ink-muted truncate">{p.event_name ?? "—"}</span>
+                        </span>
+                        <span className="shrink-0 flex flex-col items-end">
+                          <Money
+                            value={p.amount}
+                            sign
+                            unit={false}
+                            className={`text-base font-semibold ${refund ? "text-danger-text" : "text-success-text"} ${voided ? "line-through" : ""}`}
+                          />
+                          <span className="text-sm text-ink-muted whitespace-nowrap">{voided ? "Bekor qilingan" : refund ? `Qaytarish · ${METHOD_LABEL[p.method]}` : METHOD_LABEL[p.method]}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+          <div className={`${tbl.scroll} max-lg:hidden`}>
             <table className={tbl.table}>
               <thead>
                 <tr>
@@ -115,10 +159,69 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
         </>
       )}
 
+      {picked && (
+        <PaymentSheet
+          p={picked}
+          open={sheetOpen}
+          canEdit={canEdit}
+          onClose={() => setSheetOpen(false)}
+          onVoid={() => { setSheetOpen(false); setVoiding(picked) }}
+          onRefund={() => { setSheetOpen(false); setRefunding(picked) }}
+          onNoShow={() => { setSheetOpen(false); setNoShow(picked) }}
+        />
+      )}
       {voiding && <VoidPaymentModal payment={voiding} onClose={() => setVoiding(null)} />}
       {refunding && <RefundModal payment={refunding} onClose={() => setRefunding(null)} />}
       {noShow && <NoShowModal payment={noShow} onClose={() => setNoShow(null)} />}
     </div>
+  )
+}
+
+/** Phone: one payment's details, its receipt and the actions the table has in its last column */
+function PaymentSheet({ p, open, canEdit, onClose, onVoid, onRefund, onNoShow }: {
+  p: PaymentRow; open: boolean; canEdit: boolean; onClose: () => void; onVoid: () => void; onRefund: () => void; onNoShow: () => void
+}) {
+  const voided = !!p.voided_at
+  const refund = p.kind === "refund"
+  return (
+    <Sheet open={open} onClose={onClose} title={refund ? "Qaytarish" : "To'lov"}>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-1 pt-1 pb-2">
+          <Avatar name={p.client_name} />
+          <span className="text-md font-semibold text-ink mt-1">{p.client_name}</span>
+          <span className="text-base text-ink-muted">{formatPhone(p.client_phone)}</span>
+          <Money
+            value={p.amount}
+            sign
+            className={`text-[32px] leading-10 font-semibold mt-2 ${refund ? "text-danger-text" : "text-ink"} ${voided ? "line-through opacity-50" : ""}`}
+          />
+          {voided && <span className="h-6 px-2 rounded-full bg-warning-soft text-warning-dark text-xs font-medium flex items-center">Bekor qilingan</span>}
+        </div>
+        <div className={GROUP}>
+          <KV label="Tadbir">{p.event_name ?? "—"}</KV>
+          <KV label="Sana">{formatDate(p.paid_at)} · {tashkentClock(new Date(p.paid_at))}</KV>
+          <KV label="Usul">{METHOD_LABEL[p.method]}</KV>
+          <KV label="Sotuvchi">{p.seller_name ?? "—"}</KV>
+          <KV label="Kiritgan">{p.recorder_name ?? "—"}</KV>
+          {p.note && <KV label="Izoh">{p.note}</KV>}
+          {voided && p.void_reason && <KV label="Bekor sababi">{p.void_reason}</KV>}
+        </div>
+        <ReceiptCell kind="payment" id={p.id} path={p.receipt_path} canAttach={canEdit && !voided} labeled />
+        {canEdit && !voided && (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2 empty:hidden">
+              {p.kind === "payment" && p.participant_cash_paid > 0 && (
+                <button type="button" onClick={onRefund} className={`${BTN_SECONDARY} col-span-full [&:not(:only-child)]:col-span-1`}><ArrowUUpLeft size={18} /> Qaytarish</button>
+              )}
+              {p.kind === "payment" && !p.participant_no_show && (
+                <button type="button" onClick={onNoShow} className={`${BTN_SECONDARY} col-span-full [&:not(:only-child)]:col-span-1`}><UserMinus size={18} /> Qatnashmadi</button>
+              )}
+            </div>
+            <button type="button" onClick={onVoid} className={BTN_DANGER}><Prohibit size={18} /> Bekor qilish</button>
+          </div>
+        )}
+      </div>
+    </Sheet>
   )
 }
 

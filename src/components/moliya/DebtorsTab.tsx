@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Coins } from "@phosphor-icons/react"
+import { Coins, Gift, Users } from "@phosphor-icons/react"
 import { useDebtors, useUpdateParticipantFinance } from "@/hooks/useFinance"
 import { useFinanceFilters } from "@/hooks/useFinanceFilters"
 import { useSetParticipantCashbackPercent } from "@/hooks/useCashback"
@@ -10,6 +10,8 @@ import { CashbackPercentCell, PriceCell } from "@/components/moliya/cells"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
+import { Sheet } from "@/components/ui/Sheet"
+import { Avatar, BTN_PRIMARY, BTN_SECONDARY, ChipStrip, Empty, GROUP, Loading, Money } from "@/components/moliya/mobile"
 import { tashkentToday } from "@/lib/period"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
@@ -21,6 +23,8 @@ const STATUS_LABEL: Record<DebtStatus, string> = {
   paid: "To'liq to'laganlar",
   all: "Hammasi",
 }
+
+const STATUS_SHORT: Record<DebtStatus, string> = { debt: "Qarzdorlar", overdue: "Muddati o'tgan", paid: "To'langan", all: "Hammasi" }
 
 const SELECT =
   "h-control-md max-w-full pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
@@ -49,10 +53,23 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
     .map((u) => ({ id: u.id, full_name: u.full_name }))
   const [spending, setSpending] = useState<DebtorRow | null>(null)
   const today = tashkentToday()
+  // phone: the opened debtor (by id, so the sheet follows edits) and whether its sheet is up
+  const [pickedId, setPickedId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const picked = rows.find((r) => r.participant_id === pickedId) ?? null
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+      <div className="lg:hidden flex flex-col gap-3">
+        <ChipStrip
+          label="Holat"
+          options={(Object.keys(STATUS_SHORT) as DebtStatus[]).map((id) => ({ id, label: STATUS_SHORT[id] }))}
+          value={status}
+          onChange={(id) => set({ status: id === "debt" ? null : id })}
+        />
+        {!isLoading && rows.length > 0 && <span className="text-sm font-semibold text-ink-muted px-1 -mb-1 tabular-nums">{rows.length} ta</span>}
+      </div>
+      <div className="flex items-center gap-2 max-lg:hidden">
         <select
           aria-label="Holat"
           value={status}
@@ -67,14 +84,25 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
       </div>
 
       {isLoading ? (
-        <div className="py-10 flex items-center justify-center">
-          <ThinkingOrb state="searching" size={20} theme="light" />
-        </div>
+        <>
+          <div className="py-10 flex items-center justify-center max-lg:hidden">
+            <ThinkingOrb state="searching" size={20} theme="light" />
+          </div>
+          <div className="lg:hidden"><Loading /></div>
+        </>
       ) : rows.length === 0 ? (
-        <div className="py-10 text-center text-base text-ink-muted">Bu filtrlar bo'yicha ishtirokchi yo'q</div>
+        <>
+          <div className="py-10 text-center text-base text-ink-muted max-lg:hidden">Bu filtrlar bo'yicha ishtirokchi yo'q</div>
+          <div className="lg:hidden"><Empty icon={<Users size={32} weight="thin" />} text="Bu filtrlar bo'yicha ishtirokchi yo'q" /></div>
+        </>
       ) : (
         <>
-          <div className={tbl.scroll}>
+          <div className="grid md:grid-cols-2 gap-2 lg:hidden items-start">
+            {paged.pageItems.map((r) => (
+              <DebtorCard key={r.participant_id} r={r} today={today} canEdit={canEdit} onPay={onPay} onOpen={() => { setPickedId(r.participant_id); setSheetOpen(true) }} />
+            ))}
+          </div>
+          <div className={`${tbl.scroll} max-lg:hidden`}>
             <table className={tbl.table}>
               <thead>
                 <tr>
@@ -100,6 +128,19 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
         </>
       )}
 
+      {picked && (
+        <DebtorSheet
+          r={picked}
+          sellers={sellers}
+          today={today}
+          canEdit={canEdit}
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onPay={() => { setSheetOpen(false); onPay(picked) }}
+          onSpend={() => { setSheetOpen(false); setSpending(picked) }}
+        />
+      )}
+
       {spending && (
         <ApplyCashbackModal
           isOpen
@@ -115,6 +156,178 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
           balance={spending.cashback_balance}
         />
       )}
+    </div>
+  )
+}
+
+/** Phone: one debtor — the debt as the big number, the next due date and a "To'lov" button */
+function DebtorCard({ r, today, canEdit, onPay, onOpen }: { r: DebtorRow; today: string; canEdit: boolean; onPay: (row: DebtorRow) => void; onOpen: () => void }) {
+  const inDebt = r.debt > 0
+  const overdue = inDebt && !!r.next_due_date && r.next_due_date < today
+  const pct = r.price > 0 ? Math.min(100, Math.round((r.paid / r.price) * 100)) : 100
+  return (
+    <div className="rounded-surface bg-surface-sunken overflow-hidden">
+      <button type="button" onClick={onOpen} className="w-full p-4 flex flex-col gap-3 text-left active:bg-mute-ghost-hover transition-colors">
+        <span className="flex items-center gap-3">
+          <Avatar name={r.full_name} />
+          <span className="flex-1 min-w-0 flex flex-col">
+            <span className="text-base font-medium text-ink truncate">{r.full_name}</span>
+            <span className="text-sm text-ink-muted truncate">{r.event_name}</span>
+          </span>
+        </span>
+        <span className="flex items-end justify-between gap-3">
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm text-ink-muted">{inDebt ? "Qoldiq" : "Holat"}</span>
+            {inDebt ? (
+              <Money value={r.debt} className={`text-2xl leading-8 font-semibold ${overdue ? "text-danger-text" : "text-ink"}`} />
+            ) : (
+              <span className="h-6 px-2 rounded-full bg-success-soft text-success-dark text-xs font-medium flex items-center self-start">To'langan</span>
+            )}
+          </span>
+          <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap pb-1">{pct}% to'langan</span>
+        </span>
+        <span className="h-1.5 rounded-full bg-mute-soft overflow-hidden">
+          <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        </span>
+      </button>
+      {inDebt && (
+        <div className="px-4 pb-4 flex items-center justify-between gap-3">
+          <span className="flex flex-col min-w-0">
+            <span className="text-sm text-ink-muted">Keyingi to'lov</span>
+            <span className={`text-base font-medium tabular-nums ${overdue ? "text-danger-text" : "text-ink"}`}>
+              {r.next_due_date ? formatDate(r.next_due_date) : "Belgilanmagan"}
+              {overdue && <span className="text-sm font-normal"> · muddati o'tgan</span>}
+            </span>
+          </span>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => onPay(r)}
+              disabled={!r.client_id}
+              className="h-11 px-5 shrink-0 rounded-full bg-accent text-ink-on-accent text-base font-semibold flex items-center gap-2 disabled:opacity-40 active:opacity-85"
+            >
+              <Coins size={18} /> To'lov
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Phone: the debtor's detail — the numbers, plus the editors the table has inline (price, seller, due date, cashback %) */
+function DebtorSheet({ r, sellers, today, canEdit, open, onClose, onPay, onSpend }: {
+  r: DebtorRow; sellers: SellerOption[]; today: string; canEdit: boolean; open: boolean
+  onClose: () => void; onPay: () => void; onSpend: () => void
+}) {
+  const update = useUpdateParticipantFinance()
+  const setPercent = useSetParticipantCashbackPercent(r.event_id)
+  const inDebt = r.debt > 0
+  const overdue = inDebt && !!r.next_due_date && r.next_due_date < today
+  const age = aging(r.age_days)
+  const sellerOptions =
+    r.seller_id && !sellers.some((s) => s.id === r.seller_id)
+      ? [...sellers, { id: r.seller_id, full_name: r.seller_name ?? "—" }]
+      : sellers
+
+  function patch(p: ParticipantFinancePatch) {
+    update.mutate({ id: r.participant_id, patch: p }, { onError: (e) => toast.error("Saqlanmadi", errorDetail(e)) })
+  }
+
+  const payable = canEdit && inDebt
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={r.full_name}
+      footer={payable ? (
+        <button type="button" onClick={onPay} disabled={!r.client_id} className={BTN_PRIMARY}>
+          <span className="flex items-center justify-center gap-2"><Coins size={18} /> To'lov qo'shish</span>
+        </button>
+      ) : undefined}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-1">
+          <span className="text-sm text-ink-muted">{r.event_name}{r.tariff_name ? ` · ${r.tariff_name}` : ""}</span>
+          {inDebt ? (
+            <Money value={r.debt} className={`text-[32px] leading-10 font-semibold ${overdue ? "text-danger-text" : "text-ink"}`} />
+          ) : (
+            <span className="h-6 px-2 rounded-full bg-success-soft text-success-dark text-xs font-medium flex items-center self-start my-2">To'langan</span>
+          )}
+          <span className="text-sm text-ink-muted">{inDebt ? "qoldiq" : "qarz yo'q"} · {formatPhone(r.phone)}</span>
+          <div className="flex gap-6 mt-3">
+            <span className="flex flex-col"><span className="text-sm text-ink-muted">Kelishuv</span><Money value={r.price} className="text-base font-semibold text-ink" /></span>
+            <span className="flex flex-col"><span className="text-sm text-ink-muted">To'langan</span><Money value={r.paid} className="text-base font-semibold text-ink" /></span>
+          </div>
+          {inDebt && <span className={`mt-3 self-start h-6 px-2 rounded-full text-xs font-medium flex items-center ${age.variant === "danger" ? "bg-danger-soft text-danger-dark" : age.variant === "warning" ? "bg-warning-soft text-warning-dark" : "bg-mute-soft text-ink-muted"}`}>{age.label}</span>}
+        </div>
+
+        <div className={GROUP}>
+          <Field label="Kelishuv summasi">
+            {canEdit ? <PriceCell large value={r.price} onSave={(price) => patch({ price })} /> : <Money value={r.price} />}
+          </Field>
+          <Field label="Sotuvchi">
+            {canEdit ? (
+              <select
+                aria-label={`${r.full_name} sotuvchisi`}
+                value={r.seller_id ?? ""}
+                onChange={(e) => patch({ seller_id: e.target.value || null })}
+                className="h-11 max-w-[11rem] rounded-full bg-mute-soft px-4 text-base text-ink outline-none"
+              >
+                <option value="">Belgilanmagan</option>
+                {sellerOptions.map((s) => (
+                  <option key={s.id} value={s.id}>{s.full_name}</option>
+                ))}
+              </select>
+            ) : (
+              r.seller_name ?? "Belgilanmagan"
+            )}
+          </Field>
+          {inDebt && (
+            <Field label="Keyingi to'lov">
+              {canEdit ? (
+                <input
+                  type="date"
+                  aria-label={`${r.full_name} keyingi to'lov sanasi`}
+                  value={r.next_due_date ?? ""}
+                  onChange={(e) => patch({ next_due_date: e.target.value || null })}
+                  className={`h-11 rounded-full bg-mute-soft px-4 text-base outline-none ${overdue ? "text-danger-text" : "text-ink"}`}
+                />
+              ) : (
+                <span className={overdue ? "text-danger-text" : undefined}>{r.next_due_date ? formatDate(r.next_due_date) : "—"}</span>
+              )}
+            </Field>
+          )}
+          <Field label="Keshbek foizi">
+            {canEdit ? (
+              <CashbackPercentCell
+                large
+                percent={r.cashback_percent}
+                earned={r.cashback_earned}
+                defaultPercent={r.event_cashback_percent}
+                onSet={(percent) => setPercent.mutate({ participantId: r.participant_id, percent })}
+              />
+            ) : (
+              `${r.cashback_percent ?? r.event_cashback_percent}%`
+            )}
+          </Field>
+        </div>
+
+        {canEdit && r.client_id && r.cashback_balance > 0 && inDebt && (
+          <button type="button" onClick={onSpend} className={BTN_SECONDARY}>
+            <Gift size={18} /> Keshbekdan ishlatish · <Money value={r.cashback_balance} />
+          </button>
+        )}
+      </div>
+    </Sheet>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-14 px-4 py-1.5 flex items-center justify-between gap-3 border-b border-line last:border-b-0">
+      <span className="text-base text-ink-muted shrink-0">{label}</span>
+      <span className="text-base text-ink text-right min-w-0 flex justify-end">{children}</span>
     </div>
   )
 }

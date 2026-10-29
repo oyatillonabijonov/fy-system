@@ -144,8 +144,23 @@ function ProfileTab({
 
   return (
     <div className="flex flex-col">
+      {/* Phones and tablets: who is signed in, photo on top like a native settings screen */}
+      <div className="lg:hidden flex flex-col items-center text-center gap-0.5 pt-2 pb-6">
+        <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Rasmni o'zgartirish" className="relative size-24 rounded-full">
+          <span className="block size-full rounded-full overflow-hidden bg-surface-sunken flex items-center justify-center">
+            {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : <UserIcon size={40} weight="light" className="text-ink-muted" />}
+          </span>
+          <span className="absolute right-0 bottom-0 size-8 rounded-full bg-accent text-ink-on-accent flex items-center justify-center"><Camera size={16} /></span>
+        </button>
+        <h2 className="text-xl font-semibold text-ink mt-3 max-w-full break-words">{user.full_name}</h2>
+        <p className="text-sm text-ink-muted max-w-full truncate">{ROLE_LABELS[user.role]} · {user.email}</p>
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="h-10 px-4 mt-1 rounded-full text-base font-medium text-ink disabled:opacity-50">
+          {uploading ? "Yuklanmoqda…" : avatarUrl ? "Rasmni almashtirish" : "Rasm yuklash"}
+        </button>
+      </div>
+
       {/* Photo */}
-      <SettingsRow title="Profil rasmi" desc="Sidebar'da va jurnal yozuvlarida ko'rinadi. JPG yoki PNG, 5MB gacha.">
+      <SettingsRow className="max-lg:hidden lg:pt-2" title="Profil rasmi" desc="Sidebar'da va jurnal yozuvlarida ko'rinadi. JPG yoki PNG, 5MB gacha.">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -165,9 +180,9 @@ function ProfileTab({
           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className={softBtn}>
             {uploading ? "Yuklanmoqda…" : avatarUrl ? "Rasmni almashtirish" : "Rasm yuklash"}
           </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
         </div>
       </SettingsRow>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
 
       {/* Personal info */}
       <SettingsRow title="Shaxsiy ma'lumotlar" desc="Ism, telefon va Telegram'ni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
@@ -188,7 +203,7 @@ function ProfileTab({
           <ReadOnly label="Email" value={user.email} />
           <ReadOnly label="Rol" value={ROLE_LABELS[user.role]} />
         </div>
-        <div className="flex justify-end mt-5">
+        <div className="flex justify-end mt-5 max-lg:[&>button]:w-full">
           <button type="button" onClick={handleSave} disabled={saving || !dirty} className={primaryBtn}>
             {saving ? "Saqlanmoqda…" : "O'zgarishlarni saqlash"}
           </button>
@@ -214,7 +229,7 @@ function ProfileTab({
                 <input id={`${uid}-pwd2`} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputCls} />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 max-lg:[&>button]:flex-1">
               <button
                 type="button"
                 onClick={() => { setShowPasswordForm(false); setNewPassword(""); setConfirmPassword("") }}
@@ -283,7 +298,7 @@ function PreferencesRows() {
           ))}
         </div>
         <span className="block text-sm font-medium text-ink-muted mt-5 mb-2">Fon rasmi</span>
-        <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-3 sm:grid-cols-5 gap-3 max-w-[640px]">
+        <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-w-[640px]">
           <button type="button" role="radio" aria-checked={!photo} onClick={() => setPhoto(null)}
             className={`h-16 rounded-control bg-surface-sunken border text-base text-ink-muted transition-colors ${!photo ? "border-line-focus text-ink" : "border-line hover:text-ink"}`}>
             Yo'q
@@ -299,11 +314,11 @@ function PreferencesRows() {
       </SettingsRow>
 
       <SettingsRow title="Ovozlar" desc="Vazifa, mijoz, hodim qo'shilganda yoki xatolik bo'lganda yumshoq ovoz. Tanlov shu qurilmada saqlanadi." last>
-        <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken">
+        <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken max-lg:grid max-lg:w-full max-lg:rounded-full max-lg:bg-surface">
           {[true, false].map((v) => (
             <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
               onClick={() => { setSound(v); setSoundOn(v) }}
-              className={`h-8 px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${sound === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+              className={`h-8 max-lg:h-10 px-4 rounded-item max-lg:rounded-full text-base font-medium whitespace-nowrap transition-colors ${sound === v ? "bg-surface max-lg:bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>
               {v ? "Yoqilgan" : "O'chirilgan"}
             </button>
           ))}
@@ -318,21 +333,21 @@ function PreferencesRows() {
 
 const labelCls = "text-sm font-medium text-ink-muted"
 const inputCls =
-  "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full h-control-md max-lg:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const softBtn =
-  "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center max-lg:justify-center gap-2 px-3.5 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 const primaryBtn =
-  "px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+  "px-4 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium max-lg:font-semibold hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
 
 /** One settings group: title + hint on the left, controls on the right, hairline between groups */
-function SettingsRow({ id, title, desc, last, children }: { id?: string; title: string; desc: string; last?: boolean; children: React.ReactNode }) {
+function SettingsRow({ id, title, desc, last, className = "", children }: { id?: string; title: string; desc: string; last?: boolean; className?: string; children: React.ReactNode }) {
   return (
-    <section id={id} className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"}`}>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-ink">{title}</h2>
-        <p className="text-sm text-ink-muted leading-relaxed">{desc}</p>
+    <section id={id} className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"} max-lg:block max-lg:py-0 max-lg:mb-5 max-lg:border-b-0 ${className}`}>
+      <div className="flex flex-col gap-1 max-lg:mb-2 max-lg:px-1">
+        <h2 className="text-base font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">{title}</h2>
+        <p className="text-sm text-ink-muted leading-relaxed max-lg:hidden">{desc}</p>
       </div>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 max-lg:rounded-surface max-lg:bg-surface-sunken max-lg:p-4">{children}</div>
     </section>
   )
 }
@@ -341,7 +356,7 @@ function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className={labelCls}>{label}</span>
-      <span className="h-control-md px-3 flex items-center rounded-control bg-surface-sunken text-base text-ink-muted truncate">{value}</span>
+      <span className="h-control-md max-lg:h-12 px-3 flex items-center rounded-control bg-surface-sunken max-lg:bg-surface text-base text-ink-muted truncate">{value}</span>
     </div>
   )
 }

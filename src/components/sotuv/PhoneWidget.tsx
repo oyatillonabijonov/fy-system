@@ -49,11 +49,11 @@ export function PhoneWidget() {
   return (
     <AnimatePresence>
       {call && (
-        <div ref={area} className="fixed inset-3 z-[120] pointer-events-none">
+        <div ref={area} className="fixed inset-3 max-lg:bottom-[calc(var(--tabbar-h)+0.75rem)] z-[120] pointer-events-none">
         <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite"
           drag dragControls={drag} dragListener={false} dragMomentum={false} dragElastic={0} dragConstraints={area} onDragEnd={savePos}
           initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-          className="pointer-events-auto absolute bottom-2 right-2 w-[320px] max-w-full rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
+          className="pointer-events-auto absolute bottom-2 right-2 w-[320px] max-sm:w-full max-w-full rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
           style={{ boxShadow: "var(--toast-shadow)", x, y }}>
           <div className="flex items-start gap-3 cursor-grab active:cursor-grabbing touch-none select-none" onPointerDown={(e) => drag.start(e)} title="Sudrab boshqa joyga qo'ying">
             <span className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${call.state === "ringing" ? "bg-success-soft text-success-text animate-pulse" : "bg-surface-sunken text-ink-muted"}`}>
@@ -84,10 +84,10 @@ export function PhoneWidget() {
             <div className="flex items-center gap-2">
               {call.state === "ringing" && call.dir === "in" ? (
                 <>
-                  <button onClick={onAnswer} className="flex-1 h-10 inline-flex items-center justify-center gap-2 rounded-full bg-success text-white text-base font-medium hover:opacity-90 transition-opacity">
+                  <button onClick={onAnswer} className="flex-1 h-10 max-sm:h-12 inline-flex items-center justify-center gap-2 rounded-full bg-success text-white text-base font-medium hover:opacity-90 transition-opacity">
                     <Phone size={16} weight="fill" />Javob berish
                   </button>
-                  <button onClick={hangup} className="flex-1 h-10 inline-flex items-center justify-center gap-2 rounded-full bg-danger text-white text-base font-medium hover:opacity-90 transition-opacity">
+                  <button onClick={hangup} className="flex-1 h-10 max-sm:h-12 inline-flex items-center justify-center gap-2 rounded-full bg-danger text-white text-base font-medium hover:opacity-90 transition-opacity">
                     <PhoneDisconnect size={16} weight="fill" />Rad etish
                   </button>
                 </>
@@ -95,11 +95,11 @@ export function PhoneWidget() {
                 <>
                   {call.state === "active" && (
                     <button onClick={toggleMute} aria-pressed={call.muted} aria-label={call.muted ? "Mikrofonni yoqish" : "Mikrofonni o'chirish"}
-                      className={`h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-full transition-colors ${call.muted ? "bg-warning-soft text-warning-text" : "bg-surface-sunken text-ink hover:bg-surface-sunken-hover"}`}>
+                      className={`h-10 w-10 max-sm:h-12 max-sm:w-12 shrink-0 inline-flex items-center justify-center rounded-full transition-colors ${call.muted ? "bg-warning-soft text-warning-text" : "bg-surface-sunken text-ink hover:bg-surface-sunken-hover"}`}>
                       {call.muted ? <MicrophoneSlash size={20} /> : <Microphone size={20} />}
                     </button>
                   )}
-                  <button onClick={hangup} className="flex-1 h-10 inline-flex items-center justify-center gap-2 rounded-full bg-danger text-white text-base font-medium hover:opacity-90 transition-opacity">
+                  <button onClick={hangup} className="flex-1 h-10 max-sm:h-12 inline-flex items-center justify-center gap-2 rounded-full bg-danger text-white text-base font-medium hover:opacity-90 transition-opacity">
                     <PhoneDisconnect size={16} weight="fill" />Tugatish
                   </button>
                 </>

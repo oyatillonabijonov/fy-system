@@ -74,7 +74,7 @@ export function AddExpenseModal({ defaultEventId, onClose }: { defaultEventId: s
           value={amount ? formatNumber(Number(amount)) : ""}
           onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
           placeholder="0"
-          className={INPUT}
+          className={`${INPUT} max-sm:h-16 max-sm:text-[32px] max-sm:font-semibold max-sm:text-center max-sm:tabular-nums max-sm:bg-surface-sunken max-sm:border-transparent`}
         />
       </div>
       <div className="flex flex-col gap-1.5">

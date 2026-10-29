@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Plus, Minus } from "@phosphor-icons/react"
 import { useAdjustCashback } from "@/hooks/useCashback"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { formatNumber } from "@/lib/format"
 
 interface AdjustCashbackModalProps {
@@ -42,6 +44,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
   const amountId = useId()
   const descriptionId = useId()
   const panelRef = useDialog<HTMLDivElement>(handleClose)
+  const phone = useMedia("(width < 40rem)")
 
   async function handleSubmit() {
     setError(null)
@@ -85,11 +88,9 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
         onClick={handleClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
+        {...sheetMotion(phone)}
+        {...(phone ? {} : { transition: { type: "spring" as const, damping: 25, stiffness: 300 } })}
+        className="fixed inset-0 flex items-end sm:items-center justify-center z-[110] pointer-events-none sm:p-4"
       >
         <div
           ref={panelRef}
@@ -97,27 +98,28 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised border border-line rounded-overlay w-full max-w-md pointer-events-auto flex flex-col max-h-[calc(100dvh-32px)]"
+          className="bg-surface-raised sm:border border-line rounded-t-[20px] sm:rounded-overlay w-full sm:max-w-md pointer-events-auto flex flex-col max-h-[92dvh] sm:max-h-[calc(100dvh-32px)]"
           onClick={(e) => e.stopPropagation()}
         >
+          <div className={sheet.grabber} />
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+          <div className="flex items-center justify-between gap-3 px-4 pt-2 pb-3 sm:px-5 sm:py-4 sm:border-b border-line">
             <div className="flex flex-col gap-0.5 min-w-0">
-              <h2 id={titleId} className="text-md font-semibold text-ink">Keshbekni o'zgartirish</h2>
+              <h2 id={titleId} className="text-lg sm:text-md font-semibold text-ink">Keshbekni o'zgartirish</h2>
               <span className="text-sm text-ink-muted">{clientName} · balans: {formattedBalance} so'm</span>
             </div>
             <button
               onClick={handleClose}
               disabled={saving}
               aria-label="Yopish"
-              className="size-9 sm:size-8 shrink-0 rounded-item flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"
+              className="size-10 sm:size-8 shrink-0 rounded-item flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={18} className="text-ink-muted" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
+          <div className="px-4 pb-4 sm:p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
             {error && (
               <div role="alert" className="px-3.5 py-2.5 rounded-control text-sm font-medium bg-danger-soft text-danger-text">
                 {error}
@@ -130,7 +132,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 type="button"
                 onClick={() => setType("add")}
                 aria-pressed={type === "add"}
-                className={`flex items-center justify-center gap-2 h-8 rounded-item text-base font-medium transition-colors ${
+                className={`flex items-center justify-center gap-2 h-10 sm:h-8 rounded-item text-base font-medium transition-colors ${
                   type === "add" ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
@@ -141,7 +143,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 type="button"
                 onClick={() => setType("subtract")}
                 aria-pressed={type === "subtract"}
-                className={`flex items-center justify-center gap-2 h-8 rounded-item text-base font-medium transition-colors ${
+                className={`flex items-center justify-center gap-2 h-10 sm:h-8 rounded-item text-base font-medium transition-colors ${
                   type === "subtract" ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"
                 }`}
               >
@@ -160,7 +162,7 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
                 placeholder="10,000"
                 autoFocus
-                className="w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+                className="w-full h-control-md max-sm:h-16 max-sm:text-[32px] max-sm:font-semibold max-sm:text-center max-sm:tabular-nums border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
               />
             </div>
 
@@ -173,24 +175,24 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Masalan: bayram bonusi"
                 rows={2}
-                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors resize-none"
+                className="w-full border border-line rounded-control px-3 py-2 max-sm:min-h-20 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors resize-none"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex flex-wrap items-center justify-end gap-2 px-5 py-4 border-t border-line">
+          <div className="flex flex-wrap items-center justify-end gap-2 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:px-5 sm:py-4 border-t border-line max-sm:flex-nowrap">
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-3.5 h-control-md whitespace-nowrap rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+              className="px-3.5 h-control-md max-sm:h-12 max-sm:px-6 whitespace-nowrap rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !amount || !description.trim()}
-              className="px-4 h-control-md whitespace-nowrap rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="px-4 h-control-md max-sm:h-12 max-sm:flex-1 whitespace-nowrap rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>

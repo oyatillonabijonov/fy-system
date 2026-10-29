@@ -5,6 +5,8 @@ import { useAttachReceipt } from "@/hooks/useFinance"
 import { LABEL } from "@/components/moliya/PaymentActionModals"
 import { toast, errorDetail } from "@/lib/toast"
 
+const LABELED = "h-12 w-full rounded-full bg-mute-soft text-ink text-base font-semibold flex items-center justify-center gap-2 active:opacity-85"
+
 function fileProblem(f: File): string | null {
   if (!RECEIPT_ACCEPT.split(",").includes(f.type)) return "Faqat JPG, PNG, WEBP yoki PDF fayl"
   if (f.size > RECEIPT_MAX_BYTES) return "Fayl 10 MB dan katta"
@@ -32,7 +34,7 @@ export function ReceiptInput({ file, onChange }: { file: File | null; onChange: 
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-full border border-dashed border-line text-sm text-ink-muted hover:bg-mute-ghost-hover transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 max-sm:min-h-12 rounded-full border border-dashed border-line text-sm text-ink-muted hover:bg-mute-ghost-hover transition-colors"
         >
           <Paperclip size={16} /> Fayl tanlash — JPG, PNG, PDF, 10 MB gacha
         </button>
@@ -57,7 +59,8 @@ export function ReceiptInput({ file, onChange }: { file: File | null; onChange: 
 }
 
 // Table cell: open the receipt (signed link, 5 min) or attach one to a row that has none.
-export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; id: string; path: string | null; canAttach: boolean }) {
+// `labeled` (phone detail sheets): a full-width pill with words instead of the table's icon button.
+export function ReceiptCell({ kind, id, path, canAttach, labeled }: { kind: ReceiptKind; id: string; path: string | null; canAttach: boolean; labeled?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const attach = useAttachReceipt()
 
@@ -80,14 +83,14 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
         }}
         title="Chekni ochish"
         aria-label="Chekni ochish"
-        className="inline-flex items-center justify-center size-7 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"
+        className={labeled ? LABELED : "inline-flex items-center justify-center size-7 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"}
       >
-        <Paperclip size={16} />
+        <Paperclip size={16} />{labeled && " Chekni ko'rish"}
       </button>
     )
   }
 
-  if (!canAttach) return <span className="text-ink-faint">—</span>
+  if (!canAttach) return labeled ? null : <span className="text-ink-faint">—</span>
 
   return (
     <>
@@ -96,9 +99,9 @@ export function ReceiptCell({ kind, id, path, canAttach }: { kind: ReceiptKind; 
         disabled={attach.isPending}
         title="Chek biriktirish"
         aria-label="Chek biriktirish"
-        className="inline-flex items-center justify-center size-7 rounded-full text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"
+        className={labeled ? `${LABELED} disabled:opacity-50 disabled:animate-pulse` : "inline-flex items-center justify-center size-7 rounded-full text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"}
       >
-        <UploadSimple size={16} />
+        <UploadSimple size={16} />{labeled && " Chek biriktirish"}
       </button>
       <input
         ref={inputRef}

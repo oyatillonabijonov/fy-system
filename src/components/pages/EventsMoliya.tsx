@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Plus, Minus } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useFinanceFilters } from "@/hooks/useFinanceFilters"
-import { FinanceFilterBar } from "@/components/moliya/FinanceFilterBar"
+import { FinanceFilterBar, MobileFilterBar } from "@/components/moliya/FinanceFilterBar"
 import { FinanceKpis } from "@/components/moliya/FinanceKpis"
 import { PaymentsTab } from "@/components/moliya/PaymentsTab"
 import { DebtorsTab } from "@/components/moliya/DebtorsTab"
@@ -10,12 +10,14 @@ import { ExpensesTab } from "@/components/moliya/ExpensesTab"
 import { EventProfitTab } from "@/components/moliya/EventProfitTab"
 import { RecordPaymentModal, type RecordPaymentPreset } from "@/components/moliya/RecordPaymentModal"
 import { AddExpenseModal } from "@/components/moliya/ExpenseModals"
+import { Fab } from "@/components/ui/Fab"
+import { Segmented } from "@/components/moliya/mobile"
 
 const TABS = [
-  { id: "payments", label: "To'lovlar" },
-  { id: "debtors", label: "Qarzdorlar" },
-  { id: "expenses", label: "Xarajatlar" },
-  { id: "events", label: "Tadbir natijalari" },
+  { id: "payments", label: "To'lovlar", short: "To'lovlar" },
+  { id: "debtors", label: "Qarzdorlar", short: "Qarzdorlar" },
+  { id: "expenses", label: "Xarajatlar", short: "Xarajatlar" },
+  { id: "events", label: "Tadbir natijalari", short: "Natijalar" },
 ] as const
 type TabId = (typeof TABS)[number]["id"]
 
@@ -30,8 +32,8 @@ export function EventsMoliya() {
   const [addingExpense, setAddingExpense] = useState(false)
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-5 max-lg:gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 max-lg:hidden">
         <FinanceFilterBar />
         {editable && (
           <div className="flex items-center gap-2">
@@ -51,9 +53,19 @@ export function EventsMoliya() {
         )}
       </div>
 
+      <MobileFilterBar />
+
       <FinanceKpis filters={filters} />
 
-      <div role="tablist" aria-label="Moliya bo'limlari" className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+      <div className="lg:hidden">
+        <Segmented
+          label="Moliya bo'limlari"
+          options={TABS.map((t) => ({ id: t.id, label: t.short }))}
+          value={tab}
+          onChange={(id) => set({ tab: id === "payments" ? null : id })}
+        />
+      </div>
+      <div role="tablist" aria-label="Moliya bo'limlari" className="flex items-center gap-1 overflow-x-auto no-scrollbar max-lg:hidden">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -82,6 +94,11 @@ export function EventsMoliya() {
       )}
       {tab === "expenses" && <ExpensesTab filters={filters} canEdit={editable} />}
       {tab === "events" && <EventProfitTab filters={filters} />}
+
+      {editable && (tab === "expenses"
+        ? <Fab icon={<Minus size={20} weight="bold" />} label="Chiqim" onClick={() => setAddingExpense(true)} />
+        : <Fab icon={<Plus size={20} weight="bold" />} label="Kirim" onClick={() => setRecording(null)} />)}
+      {editable && <div className="h-20 lg:hidden" aria-hidden />}
 
       {recording !== undefined && <RecordPaymentModal preset={recording ?? undefined} onClose={() => setRecording(undefined)} />}
       {addingExpense && <AddExpenseModal defaultEventId={filters.eventId} onClose={() => setAddingExpense(false)} />}

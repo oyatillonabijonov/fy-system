@@ -1,6 +1,6 @@
-import { useState } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
+import { MobileNav } from "./components/layout/MobileNav"
 import { Dashboard } from "./components/pages/Dashboard"
 import { HomeDashboard } from "./components/pages/HomeDashboard"
 import { Mijozlar } from "./components/pages/Mijozlar"
@@ -27,7 +27,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   Warning,
   Phone,
-  List,
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
 import { useMedia } from "./hooks/useMedia"
@@ -36,26 +35,28 @@ import { useMedia } from "./hooks/useMedia"
 interface PageMeta {
   title: string
   desc: string
+  /** Phone/tablet header: the tab bar's word for the page */
+  short?: string
 }
 
 const PAGE_META: Record<string, PageMeta> = {
-  '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika." },
+  '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika.", short: 'Bosh sahifa' },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
-  '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari." },
+  '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari.", short: 'Sotuv' },
   '/sotuv/qongiroqlar': { title: "Qo'ng'iroqlar", desc: "Kiruvchi va chiquvchi qo'ng'iroqlar — qayta qo'ng'iroq, yozuv, bitim." },
   '/sms':           { title: 'SMS',             desc: "Mijozlarga reklama va eslatma SMS'lari — matn, tanlash, yuborish." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
-  '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet." },
-  '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek." },
+  '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet.", short: 'Tadbirlar' },
+  '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek.", short: 'Moliya' },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
-  '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali." },
-  '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash." },
+  '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali.", short: 'Faollik' },
+  '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash.", short: 'Profilim' },
   '/sozlamalar/integratsiyalar': { title: 'Integratsiyalar', desc: "Telegram guruhlar — bot qaysi guruhda nima qiladi." },
 }
 
 function pageMetaFor(pathname: string): PageMeta {
   if (/^\/hodimlar\/[^/]+/.test(pathname)) {
-    return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar." }
+    return { title: 'Xodim tafsilotlari', desc: "Profil, statistika va ruxsatnomalar.", short: 'Hodim' }
   }
   if (pathname.startsWith('/sotuv/bitim/')) return { title: 'Bitim', desc: "Mijoz, bosqich, vazifalar va lenta." }
   return PAGE_META[pathname] ?? { title: '', desc: '' }
@@ -94,22 +95,14 @@ function AppShell() {
   const navigate = useNavigate()
   const { user, hasAccess } = useAuth()
   const meta = pageMetaFor(location.pathname)
-  const desktop = useMedia("(min-width: 1024px)")
-  // below lg the sidebar is a drawer; it belongs to the page it was opened on, so navigating closes it
-  const [navFor, setNavFor] = useState<string | null>(null)
-  const closeNav = () => setNavFor(null)
+  const desktop = useMedia("(min-width: 1024px)")   // below lg the sidebar gives way to the bottom tab bar
 
 
 
   return (
     <PhoneProvider>
     <div className="app-ground h-dvh text-ink flex overflow-hidden bg-page">
-      {desktop ? <Sidebar /> : navFor === location.pathname && (
-        <div className="fixed inset-0 z-50 flex">
-          <button type="button" aria-label="Menyuni yopish" onClick={closeNav} className="absolute inset-0 bg-surface-overlay cursor-default" />
-          <div className="app-ground relative h-full bg-page"><Sidebar drawer onClose={closeNav} /></div>
-        </div>
-      )}
+      {desktop ? <Sidebar /> : <MobileNav />}
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
       <div className="app-main flex-1 flex flex-col lg:my-2 lg:mr-2 overflow-hidden min-w-0 bg-surface lg:rounded-overlay">
@@ -129,19 +122,11 @@ function AppShell() {
         )}
 
         {/* Header */}
-        <header className="h-16 px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-6 flex-shrink-0 border-b border-line">
-          {/* Left: menu (below lg) + page title */}
-          <div className="flex items-center gap-2 min-w-0">
-            {!desktop && (
-              <button type="button" onClick={() => setNavFor(location.pathname)} aria-label="Menyu"
-                className="size-9 -ml-1.5 shrink-0 rounded-full flex items-center justify-center text-ink hover:bg-mute-ghost-hover">
-                <List size={20} />
-              </button>
-            )}
-            <div className="flex flex-col min-w-0">
-              <h1 className="text-base sm:text-md font-semibold text-ink truncate">{meta.title}</h1>
-              <p className="text-sm text-ink-muted truncate max-sm:hidden">{meta.desc}</p>
-            </div>
+        <header className="box-content h-14 lg:h-16 pt-[env(safe-area-inset-top)] px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-6 flex-shrink-0 border-b border-line">
+          {/* Left: page title */}
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-lg lg:text-md font-semibold text-ink truncate">{desktop ? meta.title : meta.short ?? meta.title}</h1>
+            <p className="text-sm text-ink-muted truncate max-lg:hidden">{meta.desc}</p>
           </div>
 
           {/* Right: phone, reminders, profile */}
@@ -160,8 +145,8 @@ function AppShell() {
         </header>
 
         {/* Main scroll area */}
-        <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-5 overflow-y-auto no-scrollbar relative">
-          <div className="max-w-[1400px] mx-auto h-full">
+        <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-[calc(var(--tabbar-h)+24px)] lg:pb-5 overflow-y-auto no-scrollbar relative">
+          <div className="max-w-[1400px] mx-auto lg:h-full max-lg:min-h-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
@@ -169,7 +154,7 @@ function AppShell() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
-                className="h-full"
+                className="lg:h-full max-lg:min-h-full"
               >
                 <Outlet />
               </motion.div>

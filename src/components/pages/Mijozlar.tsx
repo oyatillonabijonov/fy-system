@@ -15,6 +15,10 @@ import {
     Camera,
     Check,
     WarningCircle,
+    Phone,
+    ChatCircleText,
+    MagnifyingGlass,
+    CaretRight,
 } from "@phosphor-icons/react"
 import { toast as notify } from "@/lib/toast"
 import { StatusBadge } from "@/components/ui/StatusBadge"
@@ -53,6 +57,10 @@ import { AdjustCashbackModal } from "@/components/cashback/AdjustCashbackModal"
 import type { CashbackTransaction } from "@/lib/supabase/queries/cashback"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
+import { Sheet } from "@/components/ui/Sheet"   // explicit .tsx: on a case-insensitive disk "Sheet" resolves to sheet.ts
+import { sheetMotion } from "@/components/ui/sheetStyles"
+import { Fab } from "@/components/ui/Fab"
+import { useMedia } from "@/hooks/useMedia"
 
 
 
@@ -89,7 +97,19 @@ function missingInfo(c: Customer): string[] {
     ].filter((x): x is string => !!x)
 }
 
+const initialsOf = (name: string) => name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
+
+// +998901234567 → +998 90 123 45 67 (phone lists only; stored value stays as is)
+function prettyPhone(p: string): string {
+    const m = /^\+998(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(p.trim())
+    return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : p
+}
+
 const columnHelper = createColumnHelper<Customer>()
+
+// Phone filter chips (a strip of pills, active = filled)
+const chipCls = (on: boolean) =>
+    `shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`
 
 const CASHBACK_TYPE: Record<CashbackTransaction["type"], { label: string; credit: boolean }> = {
     earned: { label: "Tadbirdan", credit: true },
@@ -157,6 +177,10 @@ export function Mijozlar() {
     const [savingNewCustomer, setSavingNewCustomer] = useState(false)
     const [addError, setAddError] = useState<string | null>(null)
     const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+    // Phone: "Tanlash" mode for bulk selection, and the status picker sheet
+    const phoneScreen = useMedia("(width < 40rem)")
+    const [selectMode, setSelectMode] = useState(false)
+    const [statusSheet, setStatusSheet] = useState(false)
 
     // App-wide notification (components/ui/Toaster)
     function showToast(message: string, type: "success" | "error") {
@@ -477,6 +501,10 @@ export function Mijozlar() {
         },
     })
 
+    const statusColumn = table.getColumn("holat")
+    const statusValue = statusColumn?.getFilterValue() as ClientActivityStatus | undefined
+    const noFilters = !noImage && !noPhone && !incomplete && !statusValue
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
@@ -599,6 +627,25 @@ export function Mijozlar() {
         cancelEdit()
     }
 
+    async function downloadPhoto(c: Customer) {
+        try {
+            const res = await fetch(c.image)
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = `${c.name.replace(/\s+/g, "_")}.jpg`
+            a.click()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+        } catch { /* ignore */ }
+    }
+
+    const drawerTabs = [
+        { id: 'malumotlar' as const, label: "Ma'lumotlar" },
+        { id: 'cashback' as const, label: 'Cashback' },
+        ...(hasAccess('sms') ? [{ id: 'sms' as const, label: 'SMS' }] : []),
+    ]
+
     function closeBulkDeleteConfirm() {
         if (!deleteClientsMutation.isPending) setBulkDeleteConfirm(false)
     }
@@ -615,7 +662,7 @@ export function Mijozlar() {
     const bulkDeletePanelRef = useDialog<HTMLDivElement>(closeBulkDeleteConfirm, bulkDeleteConfirm)
 
     return (
-        <div className="flex flex-col gap-6 min-h-full pb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+        <div className="flex flex-col gap-6 min-h-full pb-10 max-lg:pb-[calc(var(--tabbar-h)+88px)] animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
             {loading && (
                 <div className="flex items-center justify-center py-20">
                     <ThinkingOrb state="searching" size={64} theme="light" />
@@ -629,7 +676,7 @@ export function Mijozlar() {
             )}
             {!loading && !error && <>
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="max-lg:hidden grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
                     <div key={index} className="bg-surface border border-line rounded-surface p-3.5 md:p-5 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 md:flex md:flex-col md:items-stretch md:gap-3 transition-all">
                         <span className="col-start-2 row-start-1 text-base font-medium text-ink-muted">{stat.title}</span>
@@ -646,8 +693,61 @@ export function Mijozlar() {
 
             {/* Table Area */}
             <div className="flex flex-col gap-3">
+                {/* Phone: search, filter chips, one summary line */}
+                <div className="lg:hidden flex flex-col gap-3">
+                    <div className="relative">
+                        <MagnifyingGlass size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+                        <input
+                            type="text"
+                            inputMode="search"
+                            value={globalFilter ?? ''}
+                            onChange={e => setGlobalFilter(e.target.value)}
+                            placeholder="Ism, telefon yoki faoliyat"
+                            aria-label="Qidirish"
+                            className="h-11 w-full pl-10 pr-11 bg-surface-sunken border border-transparent focus:bg-surface focus:border-line-focus rounded-control text-base text-ink outline-hidden"
+                        />
+                        {globalFilter && (
+                            <button type="button" onClick={() => setGlobalFilter('')} aria-label="Tozalash"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 size-9 rounded-full flex items-center justify-center text-ink-muted">
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+                        <button type="button" aria-pressed={noFilters} className={chipCls(noFilters)}
+                            onClick={() => { setNoImage(false); setNoPhone(false); setIncomplete(false); statusColumn?.setFilterValue(undefined); table.setPageIndex(0) }}>
+                            Hammasi
+                        </button>
+                        {([["Rasmi yo'q", noImage, setNoImage], ["Raqami yo'q", noPhone, setNoPhone]] as const).map(([label, on, set]) => (
+                            <button key={label} type="button" aria-pressed={on} className={chipCls(on)} onClick={() => { set(!on); table.setPageIndex(0) }}>
+                                {label}
+                            </button>
+                        ))}
+                        <button type="button" aria-pressed={incomplete} className={chipCls(incomplete)} onClick={() => { setIncomplete(!incomplete); table.setPageIndex(0) }}>
+                            To'liq emas
+                            {incompleteCount > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-danger text-white text-xs font-semibold tabular-nums inline-flex items-center justify-center">{incompleteCount}</span>}
+                        </button>
+                        <button type="button" aria-haspopup="dialog" aria-pressed={!!statusValue} className={chipCls(!!statusValue)} onClick={() => setStatusSheet(true)}>
+                            {statusValue ? ACTIVITY_STATUS_META[statusValue].label : "Holat"}
+                            <CaretDown size={12} weight="bold" />
+                        </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 min-h-9">
+                        <p className="text-sm text-ink-muted tabular-nums">
+                            {table.getFilteredRowModel().rows.length} mijoz{stats[1].value !== "0" && ` · ${stats[1].value} yangi (30 kun)`}
+                        </p>
+                        {table.getFilteredRowModel().rows.length > 0 && (
+                            <button type="button"
+                                onClick={() => { setSelectMode(m => !m); setSelectedMijozlar([]) }}
+                                className="h-9 px-3 -mr-3 rounded-full text-sm font-medium text-ink">
+                                {selectMode ? "Bekor" : "Tanlash"}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Search & Actions */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start lg:items-center sm:justify-between">
+                <div className="max-lg:hidden flex flex-col gap-3 sm:flex-row sm:items-start lg:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 min-w-0">
                         <div className="relative w-full sm:w-auto">
                             <input 
@@ -703,8 +803,31 @@ export function Mijozlar() {
                     </div>
                 </div>
 
+                {/* Phone: inset grouped list (same rows, sorting, filters and paging as the table) */}
+                <div className="lg:hidden">
+                    {table.getRowModel().rows.length > 0 ? (
+                        <ul className="rounded-surface bg-surface-sunken overflow-hidden">
+                            {table.getRowModel().rows.map(row => (
+                                <ClientRow
+                                    key={row.id}
+                                    c={row.original}
+                                    selecting={selectMode}
+                                    selected={selectedMijozlar.includes(row.original.id)}
+                                    onOpen={() => setSelectedCustomer(row.original)}
+                                    onToggle={() => setSelectedMijozlar(ids => ids.includes(row.original.id) ? ids.filter(i => i !== row.original.id) : [...ids, row.original.id])}
+                                />
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="flex flex-col items-center gap-2 py-16 text-ink-muted">
+                            <Users size={32} weight="thin" />
+                            <span className="text-base">Ma'lumot topilmadi</span>
+                        </div>
+                    )}
+                </div>
+
                 {/* Table Data */}
-                <div className={tbl.scroll}>
+                <div className={`${tbl.scroll} max-lg:hidden`}>
                     <table className={tbl.table}>
                         <thead>
                             {table.getHeaderGroups().map(headerGroup => (
@@ -760,7 +883,7 @@ export function Mijozlar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-surface-overlay backdrop-blur-[3px]"
+                        className="fixed inset-0 flex items-end sm:items-center justify-center z-50 sm:p-4 bg-surface-overlay backdrop-blur-[3px]"
                         onClick={closeDetailsModal}
                     >
                     <motion.div
@@ -769,21 +892,24 @@ export function Mijozlar() {
                         aria-modal="true"
                         aria-labelledby={detailsTitleId}
                         tabIndex={-1}
-                        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                        {...(phoneScreen ? sheetMotion(true) : {
+                            initial: { opacity: 0, scale: 0.96, y: 16 },
+                            animate: { opacity: 1, scale: 1, y: 0 },
+                            exit: { opacity: 0, scale: 0.96, y: 16 },
+                            transition: { type: 'spring' as const, damping: 28, stiffness: 320 },
+                        })}
                         onClick={e => e.stopPropagation()}
-                        className="w-full max-w-[520px] max-h-[calc(100dvh-32px)] sm:max-h-[92vh] bg-surface-raised rounded-overlay flex flex-col overflow-hidden"
+                        className="w-full max-w-[520px] h-[94dvh] sm:h-auto sm:max-h-[92vh] bg-surface-raised rounded-t-[20px] sm:rounded-overlay flex flex-col overflow-hidden"
                     >
-                        <div className="flex flex-col min-h-0 overflow-y-auto">
+                        <div className="sm:hidden mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-mute-soft" />
+                        <div className="flex flex-col min-h-0 overflow-y-auto max-sm:flex-1 max-sm:pb-[env(safe-area-inset-bottom)]">
                             {missingInfo(selectedCustomer).length > 0 && (
                                 <div role="status" className="flex items-center gap-2 px-5 py-2.5 bg-danger-soft text-danger-dark text-sm font-medium">
                                     <WarningCircle size={16} className="shrink-0" />Yetishmaydi: {missingInfo(selectedCustomer).join(", ")}
                                 </div>
                             )}
                             {/* AVATAR + INFO */}
-                            <div className="relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
+                            <div className="max-lg:hidden relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}
                                 <button
                                     onClick={closeDetailsModal}
@@ -824,18 +950,7 @@ export function Mijozlar() {
                                 {/* Download button (visible only if image exists) */}
                                 {selectedCustomer.image && (
                                     <button
-                                        onClick={async () => {
-                                            try {
-                                                const res = await fetch(selectedCustomer.image)
-                                                const blob = await res.blob()
-                                                const url = URL.createObjectURL(blob)
-                                                const a = document.createElement("a")
-                                                a.href = url
-                                                a.download = `${selectedCustomer.name.replace(/\s+/g, "_")}.jpg`
-                                                a.click()
-                                                setTimeout(() => URL.revokeObjectURL(url), 1000)
-                                            } catch { /* ignore */ }
-                                        }}
+                                        onClick={() => downloadPhoto(selectedCustomer)}
                                         className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors"
                                     >
                                         <DownloadSimple size={12} weight="bold" />
@@ -845,12 +960,74 @@ export function Mijozlar() {
                             </div>
 
                             {/* TABS */}
-                            <div className="flex shrink-0 overflow-x-auto no-scrollbar border-b border-line bg-surface-raised sticky top-0 z-[5] pl-4">
-                                {([
-                                    { id: 'malumotlar' as const, label: "Ma'lumotlar" },
-                                    { id: 'cashback' as const, label: 'Cashback' },
-                                    ...(hasAccess('sms') ? [{ id: 'sms' as const, label: 'SMS' }] : []),
-                                ]).map(tab => (
+                            {/* Phone: header with the big avatar + quick actions, then a segmented control */}
+                            <div className="lg:hidden relative flex flex-col items-center gap-1 pt-3 pb-5 px-4">
+                                <button
+                                    onClick={closeDetailsModal}
+                                    aria-label="Yopish"
+                                    className="absolute top-1 right-2 size-10 flex items-center justify-center rounded-full text-ink-muted"
+                                >
+                                    <X size={20} />
+                                </button>
+                                <div className="relative">
+                                    <div className="size-24 rounded-full overflow-hidden bg-surface-sunken flex items-center justify-center">
+                                        {selectedCustomer.image ? (
+                                            <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover object-top" />
+                                        ) : (
+                                            <span className="text-2xl font-semibold text-ink-faint">{initialsOf(selectedCustomer.name)}</span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => document.getElementById('sidebar-image-upload')?.click()}
+                                        aria-label="Rasm yuklash"
+                                        className="absolute -right-1 -bottom-1 size-9 rounded-full bg-accent text-ink-on-accent border-2 border-surface-raised flex items-center justify-center"
+                                    >
+                                        <Camera size={16} />
+                                    </button>
+                                </div>
+                                <h2 className="mt-3 text-xl font-semibold text-ink text-center leading-tight break-words max-w-full">{selectedCustomer.name}</h2>
+                                {[selectedCustomer.role, selectedCustomer.company].some(Boolean) && (
+                                    <p className="text-base text-ink-muted text-center max-w-full">{[selectedCustomer.role, selectedCustomer.company].filter(Boolean).join(" · ")}</p>
+                                )}
+                                <div className={`mt-4 justify-center gap-6 ${drawerTab === 'malumotlar' && editAllMode ? "hidden" : "flex"}`}>
+                                    {([
+                                        { label: "Qo'ng'iroq", icon: <Phone size={22} weight="light" />, href: selectedCustomer.phone ? `tel:${selectedCustomer.phone}` : undefined },
+                                        ...(hasAccess('sms') ? [{ label: "SMS", icon: <ChatCircleText size={22} weight="light" />, onClick: () => { cancelEdit(); setDrawerTab('sms') } }] : []),
+                                        { label: "Tahrirlash", icon: <PencilSimple size={22} weight="light" />, onClick: () => { cancelEdit(); setDrawerTab('malumotlar'); startEditAll() } },
+                                    ] as { label: string; icon: React.ReactNode; href?: string; onClick?: () => void }[]).map(a => {
+                                        const inner = (
+                                            <>
+                                                <span className="size-12 rounded-full bg-surface-sunken flex items-center justify-center text-ink">{a.icon}</span>
+                                                <span className="text-sm text-ink-muted">{a.label}</span>
+                                            </>
+                                        )
+                                        const cls = "w-20 flex flex-col items-center gap-1.5 active:opacity-70"
+                                        return a.onClick
+                                            ? <button key={a.label} type="button" onClick={a.onClick} className={cls}>{inner}</button>
+                                            : a.href
+                                                ? <a key={a.label} href={a.href} className={cls}>{inner}</a>
+                                                : <span key={a.label} aria-disabled="true" className={`${cls} opacity-40`}>{inner}</span>
+                                    })}
+                                </div>
+                            </div>
+                            <div className="lg:hidden sticky top-0 z-[5] bg-surface-raised px-4 pb-3">
+                                <div role="tablist" className="grid p-1 rounded-full bg-surface-sunken" style={{ gridTemplateColumns: `repeat(${drawerTabs.length}, minmax(0, 1fr))` }}>
+                                    {drawerTabs.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            role="tab"
+                                            aria-selected={drawerTab === tab.id}
+                                            onClick={() => { cancelEdit(); setDrawerTab(tab.id) }}
+                                            className={`h-9 rounded-full text-sm font-medium transition-colors ${drawerTab === tab.id ? "bg-surface text-ink" : "text-ink-muted"}`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="max-lg:hidden flex shrink-0 overflow-x-auto no-scrollbar border-b border-line bg-surface-raised sticky top-0 z-[5] pl-4">
+                                {drawerTabs.map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => { cancelEdit(); setDrawerTab(tab.id) }}
@@ -869,13 +1046,17 @@ export function Mijozlar() {
 
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (
-                                <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-4">
+                                <div className="px-4 pb-6 lg:px-8 lg:py-6 flex flex-col gap-4">
                                     {/* Balance + next expiry */}
-                                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4 p-4 rounded-surface bg-surface-sunken">
+                                    <div className="flex flex-col items-start gap-3 max-lg:gap-4 lg:flex-row lg:justify-between lg:gap-4 p-4 max-lg:p-5 rounded-surface bg-surface-sunken">
                                         <div className="flex flex-col gap-1 min-w-0">
                                             <span className="text-sm text-ink-muted">Joriy balans</span>
-                                            <span className="text-xl font-semibold text-ink tabular-nums">
+                                            <span className="text-xl max-lg:hidden font-semibold text-ink tabular-nums">
                                                 {formatMoney(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
+                                            </span>
+                                            <span className="lg:hidden text-4xl font-semibold text-ink tabular-nums">
+                                                {formatNumber(journeyQuery.data?.totals.cashback_balance ?? selectedCustomer.cashbackBalance)}
+                                                <span className="ml-1.5 text-lg font-medium text-ink-muted">so'm</span>
                                             </span>
                                             {expiryQuery.data && (
                                                 <span className="text-sm text-warning-text">
@@ -888,7 +1069,7 @@ export function Mijozlar() {
                                             <button
                                                 type="button"
                                                 onClick={() => setAdjustOpen(true)}
-                                                className="flex-shrink-0 whitespace-nowrap px-3.5 h-control-md rounded-full bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
+                                                className="flex-shrink-0 whitespace-nowrap px-3.5 h-control-md max-lg:h-11 max-lg:w-full rounded-full bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
                                             >
                                                 O'zgartirish
                                             </button>
@@ -903,12 +1084,12 @@ export function Mijozlar() {
                                     ) : (journeyQuery.data?.cashback_history.length ?? 0) === 0 ? (
                                         <p className="text-sm text-ink-muted py-4 text-center">Hali keshbek harakati yo'q</p>
                                     ) : (
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col max-lg:rounded-surface max-lg:bg-surface-sunken max-lg:px-4">
                                             {journeyQuery.data!.cashback_history.map(t => {
                                                 const meta = CASHBACK_TYPE[t.type]
                                                 const value = Math.abs(Number(t.amount))
                                                 return (
-                                                    <div key={t.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-line last:border-0">
+                                                    <div key={t.id} className="flex items-center justify-between gap-3 py-2.5 max-lg:py-3 border-b border-line last:border-0">
                                                         <div className="flex flex-col gap-0.5 min-w-0">
                                                             <span className="text-base text-ink">{meta.label}</span>
                                                             <span className="text-xs text-ink-muted truncate">
@@ -936,8 +1117,8 @@ export function Mijozlar() {
                             )}
 
                             {/* TAB: Ma'lumotlar */}
-                            {drawerTab === 'malumotlar' && (
-                                <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-5">
+                            {drawerTab === 'malumotlar' && (<>
+                                <div className="max-lg:hidden px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-5">
                                     {/* Name */}
                                     {editAllMode ? (
                                         <>
@@ -1160,8 +1341,125 @@ export function Mijozlar() {
                                         </div>
                                     )}
                                 </div>
-                            )}
+                                {/* Phone: grouped fields, tap a row to edit it */}
+                                <div className="lg:hidden px-4 pb-6 flex flex-col gap-4">
+                                    {editAllMode ? (
+                                        <div className="flex flex-col gap-4">
+                                            {([
+                                                ["name", "Ism", "", "text"],
+                                                ["phone", "Telefon", "+998 90 123 45 67", "tel"],
+                                                ["email", "Email", "email@example.com", "email"],
+                                                ["activity", "Faoliyat", "", "text"],
+                                                ["company", "Kompaniya", "", "text"],
+                                                ["role", "Lavozim", "", "text"],
+                                                ["location", "Lokatsiya", "Shahar, tuman", "text"],
+                                            ] as const).map(([key, label, ph, mode]) => (
+                                                <label key={key} className="flex flex-col gap-1.5">
+                                                    <span className="text-sm text-ink-muted">{label}</span>
+                                                    <input
+                                                        value={editAllValues[key]}
+                                                        onChange={e => setEditAllValues(v => ({ ...v, [key]: e.target.value }))}
+                                                        placeholder={ph}
+                                                        inputMode={mode === "text" ? undefined : mode}
+                                                        className="h-12 px-4 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface border border-transparent focus:border-line-focus"
+                                                    />
+                                                </label>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="rounded-surface bg-surface-sunken overflow-hidden">
+                                                {([
+                                                    ["name", "Ism", selectedCustomer.name, "text"],
+                                                    ["phone", "Telefon", prettyPhone(selectedCustomer.phone), "tel"],
+                                                    ["email", "Email", selectedCustomer.email, "email"],
+                                                    ["activity", "Faoliyat", selectedCustomer.activity, "text"],
+                                                ] as const).map(([key, label, value, mode]) => (
+                                                    <div key={key} className="px-4 py-3 border-b border-line">
+                                                        {editingField === key ? (
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="text-sm text-ink-muted">{label}</span>
+                                                                <div className="flex items-center gap-1">
+                                                                    <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
+                                                                        onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
+                                                                        inputMode={mode === "text" ? undefined : mode}
+                                                                        placeholder={key === "phone" ? "+998 90 123 45 67" : key === "email" ? "email@example.com" : undefined}
+                                                                        className="flex-1 min-w-0 h-11 px-3 bg-surface rounded-control text-base text-ink outline-none border border-line-focus" />
+                                                                    <button onClick={saveEdit} aria-label="Saqlash" className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink"><Check size={18} /></button>
+                                                                    <button onClick={cancelEdit} aria-label="Bekor qilish" className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink-muted"><X size={18} /></button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button type="button" onClick={() => startEdit(key)} className="w-full flex items-center gap-3 text-left">
+                                                                <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                                                    <span className="text-sm text-ink-muted">{label}</span>
+                                                                    <span className="text-base text-ink break-words">{value || '—'}</span>
+                                                                </span>
+                                                                <PencilSimple size={16} className="shrink-0 text-ink-faint" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {([
+                                                    ["Lokatsiya", selectedCustomer.location],
+                                                    ["Kompaniya · lavozim", [selectedCustomer.company, selectedCustomer.role].filter(Boolean).join(" · ")],
+                                                    ["Qo'shilgan sana", selectedCustomer.joinDate],
+                                                ] as const).map(([label, value]) => (
+                                                    <div key={label} className="px-4 py-3 flex flex-col gap-0.5 border-b border-line last:border-b-0">
+                                                        <span className="text-sm text-ink-muted">{label}</span>
+                                                        <span className="text-base text-ink break-words">{value || '—'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {selectedCustomer.authUserId && (
+                                                <div className="rounded-surface bg-surface-sunken px-4 py-3 flex items-center justify-between gap-3">
+                                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                                        <span className="text-base text-ink">Hamjamiyat</span>
+                                                        <span className="text-sm text-ink-muted">
+                                                            {selectedCustomer.communityApproved ? "Tasdiqlangan — chat ochiq" : "Kutilmoqda — chat yopiq"}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setCommunityApproved.mutate(
+                                                            { clientId: selectedCustomer.id, approved: !selectedCustomer.communityApproved },
+                                                            { onSuccess: () => showToast(selectedCustomer.communityApproved ? "Hamjamiyat o'chirildi" : "Hamjamiyat tasdiqlandi", "success") }
+                                                        )}
+                                                        disabled={setCommunityApproved.isPending}
+                                                        aria-pressed={selectedCustomer.communityApproved}
+                                                        aria-label="Hamjamiyat"
+                                                        className="relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0"
+                                                        style={{ background: selectedCustomer.communityApproved ? "var(--ds-color-success-default)" : "var(--ds-color-mute-soft)" }}
+                                                    >
+                                                        <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-surface-raised rounded-full transition-transform duration-200"
+                                                            style={{ transform: selectedCustomer.communityApproved ? "translateX(20px)" : "translateX(0)" }} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="rounded-surface bg-surface-sunken overflow-hidden">
+                                                {selectedCustomer.image && (
+                                                    <button type="button" onClick={() => downloadPhoto(selectedCustomer)}
+                                                        className="w-full h-12 px-4 flex items-center gap-3 text-base text-ink border-b border-line">
+                                                        <DownloadSimple size={18} className="text-ink-muted" />Rasmni saqlash
+                                                    </button>
+                                                )}
+                                                <button type="button" onClick={() => setCustomerToDelete(selectedCustomer)}
+                                                    className="w-full h-12 px-4 flex items-center gap-3 text-base text-danger-text">
+                                                    <Trash size={18} />Mijozni o'chirish
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </>)}
                         </div>
+                        {drawerTab === 'malumotlar' && editAllMode && (
+                            <div className="lg:hidden shrink-0 flex gap-3 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line">
+                                <button onClick={cancelEditAll}
+                                    className="h-12 flex-1 rounded-full bg-mute-soft text-ink text-base font-semibold">Bekor qilish</button>
+                                <button onClick={saveEditAll} disabled={updateClientMutation.isPending}
+                                    className="h-12 flex-[1.4] rounded-full bg-accent text-ink-on-accent text-base font-semibold disabled:opacity-50">Saqlash</button>
+                            </div>
+                        )}
                     </motion.div>
                     </motion.div>
                 )}
@@ -1172,7 +1470,7 @@ export function Mijozlar() {
             {/* Add Customer Modal */}
             <AnimatePresence>
                 {isAddModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4">
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -1186,31 +1484,30 @@ export function Mijozlar() {
                             aria-modal="true"
                             aria-labelledby={addModalTitleId}
                             tabIndex={-1}
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-surface-raised rounded-overlay w-full max-w-xl relative overflow-hidden flex flex-col"
+                            {...sheetMotion(phoneScreen)}
+                            className="bg-surface-raised rounded-t-[20px] sm:rounded-overlay w-full max-w-xl max-h-[92dvh] sm:max-h-[calc(100dvh-2rem)] relative overflow-hidden flex flex-col"
                         >
+                            <div className="sm:hidden mx-auto mt-2 mb-1 h-1 w-9 shrink-0 rounded-full bg-mute-soft" />
                             <div className="p-4 sm:p-6 border-b border-line flex items-center justify-between bg-surface-raised">
                                 <h3 id={addModalTitleId} className="text-lg font-bold text-ink">Yangi mijoz qo'shish</h3>
                                 <button
                                     onClick={closeAddModal}
                                     aria-label="Yopish"
-                                    className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all"
+                                    className="p-1 max-lg:size-10 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:-mr-2 hover:bg-mute-ghost-hover rounded-full transition-all"
                                 >
                                     <X size={24} weight="light" className="text-ink-muted" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleAddCustomer} className="p-4 sm:p-6 overflow-y-auto max-h-[calc(100dvh-9rem)] sm:max-h-[80vh] no-scrollbar">
-                                <div className="grid grid-cols-1 gap-6">
+                            <form id={`${addFormId}-form`} onSubmit={handleAddCustomer} className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 lg:flex-none lg:max-h-[80vh] no-scrollbar">
+                                <div className="grid grid-cols-1 gap-6 max-lg:gap-5">
                                     {/* Image Upload */}
                                     <div className="flex flex-col items-center gap-4">
                                         <button
                                             type="button"
                                             onClick={() => document.getElementById('image-upload')?.click()}
                                             aria-label="Rasm yuklash"
-                                            className="w-28 h-28 rounded-control-lg border-2 border-dashed border-line bg-surface-sunken flex flex-col items-center justify-center text-ink-muted relative overflow-hidden group hover:border-line-focus hover:bg-surface transition-all cursor-pointer"
+                                            className="w-28 h-28 max-lg:size-24 rounded-control-lg max-lg:rounded-full border-2 border-dashed border-line bg-surface-sunken flex flex-col items-center justify-center text-ink-muted relative overflow-hidden group hover:border-line-focus hover:bg-surface transition-all cursor-pointer"
                                         >
                                             {newCustomer.image ? (
                                                 <>
@@ -1233,7 +1530,7 @@ export function Mijozlar() {
                                             onChange={handleImageChange}
                                             className="hidden"
                                         />
-                                        <p className="text-xs text-ink-muted font-medium text-center">
+                                        <p className="max-lg:hidden text-xs text-ink-muted font-medium text-center">
                                             Tavsiya etiladi: Kvadrat rasm, max 2MB
                                         </p>
                                     </div>
@@ -1248,7 +1545,7 @@ export function Mijozlar() {
                                                 value={newCustomer.name}
                                                 onChange={e => setNewCustomer({...newCustomer, name: e.target.value})}
                                                 placeholder="Masalan: Aziz Rahimov"
-                                                className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
+                                                className="w-full px-4 py-2 max-lg:h-12 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                             />
                                         </div>
                                     </div>
@@ -1274,14 +1571,14 @@ export function Mijozlar() {
                                             value={newCustomer.role}
                                             onChange={e => setNewCustomer({...newCustomer, role: e.target.value})}
                                             placeholder="Masalan: Direktor, Menejer"
-                                            className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
+                                            className="w-full px-4 py-2 max-lg:h-12 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-phone`} className="text-sm font-bold text-ink">TELEFON RAQAMI *</label>
-                                            <PhoneInput id={`${addFormId}-phone`} value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
+                                            <PhoneInput id={`${addFormId}-phone`} className="max-lg:h-12" value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
                                         {duplicateClient && (
                                             <div role="alert" className="sm:col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
@@ -1317,7 +1614,7 @@ export function Mijozlar() {
                                                 value={newCustomer.email}
                                                 onChange={e => setNewCustomer({...newCustomer, email: e.target.value})}
                                                 placeholder="example@mail.uz"
-                                                className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
+                                                className="w-full px-4 py-2 max-lg:h-12 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                             />
                                         </div>
                                     </div>
@@ -1329,7 +1626,7 @@ export function Mijozlar() {
                                             type="date"
                                             value={newCustomer.joinDate}
                                             onChange={e => setNewCustomer({...newCustomer, joinDate: e.target.value})}
-                                            className="w-full px-4 py-2 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
+                                            className="w-full px-4 py-2 max-lg:h-12 bg-surface-sunken border-transparent rounded-control text-base outline-hidden focus:bg-surface"
                                         />
                                     </div>
                                 </div>
@@ -1340,7 +1637,7 @@ export function Mijozlar() {
                                     </div>
                                 )}
 
-                                <div className="mt-8 flex gap-3">
+                                <div className="mt-8 flex gap-3 max-lg:hidden">
                                     <button
                                         type="button"
                                         onClick={closeAddModal}
@@ -1367,6 +1664,31 @@ export function Mijozlar() {
                                     </button>
                                 </div>
                             </form>
+                            <div className="lg:hidden shrink-0 flex gap-3 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line">
+                                <button
+                                    type="button"
+                                    onClick={closeAddModal}
+                                    disabled={savingNewCustomer}
+                                    className="h-12 flex-1 rounded-full bg-mute-soft text-ink text-base font-semibold disabled:opacity-50"
+                                >
+                                    Bekor qilish
+                                </button>
+                                <button
+                                    type="submit"
+                                    form={`${addFormId}-form`}
+                                    disabled={savingNewCustomer || !newCustomer.name.trim() || phoneTaken}
+                                    className={`h-12 flex-[1.4] rounded-full text-base font-semibold flex items-center justify-center gap-2 ${
+                                        savingNewCustomer || !newCustomer.name.trim() || phoneTaken ? "bg-mute-soft text-ink-faint" : "bg-accent text-ink-on-accent"
+                                    }`}
+                                >
+                                    {savingNewCustomer ? (
+                                        <>
+                                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                            Saqlanmoqda...
+                                        </>
+                                    ) : "Saqlash"}
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -1536,9 +1858,110 @@ export function Mijozlar() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Phone: status picker, bulk bar ("Tanlash" mode), primary action */}
+            <StatusSheet open={statusSheet} onClose={() => setStatusSheet(false)} column={statusColumn} table={table} />
+            {selectMode ? (
+                <div className="lg:hidden fixed inset-x-4 bottom-[calc(var(--tabbar-h)+12px)] z-30 flex items-center gap-2 p-2 pl-4 rounded-full bg-surface-raised border border-line">
+                    <span className="flex-1 min-w-0 text-base font-medium text-ink tabular-nums truncate">{selectedMijozlar.length} ta tanlandi</span>
+                    <button type="button" onClick={() => setBulkDeleteConfirm(true)} disabled={selectedMijozlar.length === 0 || deleteClientsMutation.isPending}
+                        className="h-11 px-4 rounded-full bg-danger-soft text-danger-text text-base font-semibold inline-flex items-center gap-2 disabled:opacity-40">
+                        <Trash size={18} />O'chirish
+                    </button>
+                </div>
+            ) : (
+                <Fab icon={<Plus size={20} weight="bold" />} label="Mijoz" onClick={() => setIsAddModalOpen(true)} />
+            )}
             </>}
         </div>
     )
+}
+
+/** Phone list row: avatar, name + "phone · company", call button, chevron. In "Tanlash" mode the trailing part is a check circle. */
+function ClientRow({ c, selecting, selected, onOpen, onToggle }: {
+    c: Customer; selecting: boolean; selected: boolean; onOpen: () => void; onToggle: () => void
+}) {
+    const missing = missingInfo(c)
+    const meta = c.phone ? prettyPhone(c.phone) : "Raqami yo'q"
+    const sub = c.company || c.role || c.activity
+    return (
+        <li className="relative flex items-center after:absolute after:bottom-0 after:left-[72px] after:right-0 after:h-px after:bg-line last:after:hidden active:bg-mute-ghost-hover">
+            <button type="button" onClick={selecting ? onToggle : onOpen} aria-pressed={selecting ? selected : undefined}
+                className="flex-1 min-w-0 flex items-center gap-3 pl-4 py-3 text-left">
+                <span className="size-11 shrink-0 rounded-full overflow-hidden bg-mute-soft flex items-center justify-center">
+                    {c.image
+                        ? <img src={c.image} alt="" className="size-full object-cover object-top" />
+                        : <span className="text-base font-medium text-ink-muted">{initialsOf(c.name)}</span>}
+                </span>
+                <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <span className="flex items-center gap-2 min-w-0">
+                        <span className="text-base font-medium text-ink truncate">{c.name}</span>
+                        {missing.length > 0 && (
+                            <span title={`Yetishmaydi: ${missing.join(", ")}`} aria-label={`Yetishmaydi: ${missing.join(", ")}`}
+                                className="shrink-0 inline-flex items-center gap-1 h-5 px-1.5 rounded-full bg-danger-soft text-danger-text text-xs font-medium">
+                                <WarningCircle size={12} weight="bold" />{missing.length}
+                            </span>
+                        )}
+                    </span>
+                    <span className={`text-sm truncate tabular-nums ${c.phone ? "text-ink-muted" : "text-danger-text"}`}>
+                        {meta}{sub && <span className="text-ink-muted"> · {sub}</span>}
+                    </span>
+                </span>
+            </button>
+            {selecting ? (
+                <span className="pr-4 pl-1 pointer-events-none" aria-hidden="true">
+                    <span className={`size-6 rounded-full border flex items-center justify-center ${selected ? "bg-accent border-accent text-ink-on-accent" : "border-ink-faint"}`}>
+                        {selected && <Check size={12} weight="bold" />}
+                    </span>
+                </span>
+            ) : (
+                <>
+                    {c.phone && (
+                        <a href={`tel:${c.phone}`} aria-label={`${c.name}ga qo'ng'iroq`}
+                            className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink active:bg-mute-ghost-hover">
+                            <Phone size={20} />
+                        </a>
+                    )}
+                    <CaretRight size={16} className={`shrink-0 text-ink-faint mr-3 ${c.phone ? "" : "ml-10"}`} aria-hidden="true" />
+                </>
+            )}
+        </li>
+    )
+}
+
+/** Phone: the "Holat" filter as a bottom sheet */
+function StatusSheet({ open, onClose, column, table }: {
+    open: boolean; onClose: () => void; column: Column<Customer, unknown> | undefined; table: Table<Customer>
+}) {
+    const value = column?.getFilterValue() as ClientActivityStatus | undefined
+    return (
+        <Sheet open={open} onClose={onClose} title="Holat bo'yicha">
+            <div className="rounded-surface bg-surface-sunken overflow-hidden">
+                {statusOptions(table).map(o => (
+                    <button key={o.label} type="button" onClick={() => { column?.setFilterValue(o.value); onClose() }}
+                        className="w-full min-h-12 px-4 flex items-center gap-3 text-left border-b border-line last:border-b-0 active:bg-mute-ghost-hover">
+                        <span className="flex-1 text-base text-ink">{o.label}</span>
+                        <span className="text-sm text-ink-muted tabular-nums">{o.count}</span>
+                        <span className="size-5 flex items-center justify-center text-ink">{value === o.value && <Check size={16} weight="bold" />}</span>
+                    </button>
+                ))}
+            </div>
+        </Sheet>
+    )
+}
+
+function statusOptions(table: Table<Customer>): { value: ClientActivityStatus | undefined; label: string; count: number }[] {
+    const counts = new Map<ClientActivityStatus, number>()
+    for (const r of table.getCoreRowModel().rows) {
+        const st = r.getValue<ClientActivityStatus>("holat")
+        counts.set(st, (counts.get(st) ?? 0) + 1)
+    }
+    return [
+        { value: undefined, label: "Barchasi", count: table.getCoreRowModel().rows.length },
+        ...(Object.keys(ACTIVITY_STATUS_META) as ClientActivityStatus[]).map((k) => ({
+            value: k, label: ACTIVITY_STATUS_META[k].label, count: counts.get(k) ?? 0,
+        })),
+    ]
 }
 
 function SortHeader({ column, label }: { column: Column<Customer, unknown>; label: string }) {
@@ -1580,17 +2003,7 @@ function StatusFilterHeader({ column, table }: { column: Column<Customer, unknow
         }
     }, [pos])
 
-    const counts = new Map<ClientActivityStatus, number>()
-    for (const r of table.getCoreRowModel().rows) {
-        const st = r.getValue<ClientActivityStatus>("holat")
-        counts.set(st, (counts.get(st) ?? 0) + 1)
-    }
-    const options: { value: ClientActivityStatus | undefined; label: string; count: number }[] = [
-        { value: undefined, label: "Barchasi", count: table.getCoreRowModel().rows.length },
-        ...(Object.keys(ACTIVITY_STATUS_META) as ClientActivityStatus[]).map((k) => ({
-            value: k, label: ACTIVITY_STATUS_META[k].label, count: counts.get(k) ?? 0,
-        })),
-    ]
+    const options = statusOptions(table)
 
     function toggle() {
         if (pos) return setPos(null)
