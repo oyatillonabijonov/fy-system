@@ -54,11 +54,11 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[8vh]">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
         initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-md bg-surface-raised rounded-overlay flex flex-col max-h-[84vh]">
+        className="relative w-full max-w-md bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[84vh]">
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
           <h3 id={titleId} className="text-md font-semibold text-ink">Voronka sozlamalari</h3>
           <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={20} /></button>
@@ -108,7 +108,7 @@ function StageRow({ stage, onSave, onUp, onDown, onDelete }: {
   stage: Stage; onSave: (p: Partial<Stage>) => void; onUp?: () => void; onDown?: () => void; onDelete?: () => void
 }) {
   const [name, setName] = useState(stage.name)
-  const iconBtn = "p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-30 disabled:pointer-events-none"
+  const iconBtn = "p-2.5 sm:p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-30 disabled:pointer-events-none"
   return (
     <div className="flex items-center gap-2 h-11 px-2 rounded-control bg-surface-sunken">
       <Popover width={176} trigger={(_, toggle) => (

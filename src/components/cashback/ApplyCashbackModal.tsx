@@ -97,11 +97,11 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto flex flex-col max-h-[calc(100dvh-32px)]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-            <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+            <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-md font-bold text-ink">Cashback bilan to'lash</h2>
               <span className="text-xs text-ink-muted">{participant.full_name}</span>
             </div>
@@ -109,22 +109,22 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
               onClick={onClose}
               disabled={busy}
               aria-label="Yopish"
-              className="p-1.5 rounded-full hover:bg-mute-ghost-hover transition-colors"
+              className="p-2 sm:p-1.5 shrink-0 rounded-full hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
-          <div className="p-5 flex flex-col gap-4">
+          <div className="p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-surface-sunken border border-line rounded-control p-3">
                 <p className="text-xs font-bold text-ink uppercase tracking-wider mb-1">Joriy balans</p>
-                <p className="text-md font-bold text-ink">{formatNumber(balance)} so'm</p>
+                <p className="text-md font-bold text-ink tabular-nums">{formatNumber(balance)} so'm</p>
               </div>
               <div className="bg-warning-soft border border-line rounded-control p-3">
                 <p className="text-xs font-bold text-warning-dark uppercase tracking-wider mb-1">Qarz</p>
-                <p className="text-md font-bold text-warning-dark">{formatNumber(debt)} so'm</p>
+                <p className="text-md font-bold text-warning-dark tabular-nums">{formatNumber(debt)} so'm</p>
               </div>
             </div>
 
@@ -155,18 +155,18 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
+          <div className="flex flex-wrap items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={onClose}
               disabled={busy}
-              className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 whitespace-nowrap rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleApply}
               disabled={busy || amount <= 0}
-              className={`px-5 py-2 rounded-full text-base font-bold text-ink-on-accent transition-colors ${
+              className={`px-5 py-2 whitespace-nowrap rounded-full text-base font-bold text-ink-on-accent transition-colors ${
                 busy || amount <= 0 ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >

@@ -75,17 +75,19 @@ function SellerTasks({ id, from, to, pipelineId }: { id: string; from: string; t
   if (isError) return <p className="px-4 py-3 text-sm text-danger-text">Vazifalar yuklanmadi</p>
   if (data.length === 0) return <p className="px-4 py-3 text-sm text-ink-muted">Davrda yakunlangan yoki kechikkan vazifa yo'q</p>
   return (
-    <ul className="flex flex-col bg-surface-sunken rounded-surface mx-2 my-2">
+    <ul className="flex flex-col bg-surface-sunken rounded-surface mx-2 my-2 sticky left-2 w-[calc(100vw-3rem)] lg:static lg:w-auto">
       {data.map((t) => {
         const late = t.is_done ? Date.parse(t.done_at!) > Date.parse(t.due_date) : true
         return (
-          <li key={t.id} className="flex items-center gap-3 px-4 py-2 border-b border-line last:border-0 text-sm">
-            {late ? <WarningCircle size={16} className="text-danger-text shrink-0" /> : <CheckCircle size={16} className="text-success-text shrink-0" />}
+          <li key={t.id} className="flex items-start sm:items-center gap-3 px-4 py-2 border-b border-line last:border-0 text-sm">
+            {late ? <WarningCircle size={16} className="text-danger-text shrink-0 mt-0.5 sm:mt-0" /> : <CheckCircle size={16} className="text-success-text shrink-0 mt-0.5 sm:mt-0" />}
+            <div className="flex flex-1 min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
             <Link to={`/sotuv/bitim/${t.lead_id}`} className="flex-1 min-w-0 truncate text-ink hover:underline">{t.text || kindLabel(t.kind)} · {t.lead?.name}</Link>
             <span className="text-ink-muted tabular-nums whitespace-nowrap">muddat {when(t.due_date)}</span>
             <span className={`tabular-nums whitespace-nowrap ${late ? "text-danger-text" : "text-success-text"}`}>
               {t.is_done ? `bajarildi ${when(t.done_at!)}` : "bajarilmagan"}
             </span>
+            </div>
           </li>
         )
       })}

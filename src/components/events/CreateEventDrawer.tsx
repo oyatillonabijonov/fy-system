@@ -313,14 +313,14 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               animate={{ x: 0 }}
               exit={{ x: 460 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col "
+              className="fixed top-0 right-0 bottom-0 w-full max-w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col "
             >
               {/* Header */}
               <div className="flex items-center justify-between p-5 pb-4 border-b border-line">
                 <h2 id={titleId} className="text-md font-bold text-ink">
                   {isEdit ? "Tadbirni tahrirlash" : "Yangi tadbir"}
                 </h2>
-                <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+                <button onClick={onClose} aria-label="Yopish" className="p-2 -m-0.5 sm:p-1.5 sm:m-0 rounded-item hover:bg-mute-ghost-hover transition-colors">
                   <X size={20} className="text-ink-muted" />
                 </button>
               </div>
@@ -352,7 +352,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={`${INPUT} ${touched && !startValid ? "border-danger" : ""}`}
+                      className={`${INPUT} min-w-0 ${touched && !startValid ? "border-danger" : ""}`}
                     />
                     <span className="text-ink-muted text-sm">—</span>
                     <input
@@ -361,7 +361,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       value={endDate}
                       min={startDate || undefined}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={`${INPUT} ${touched && !endValid ? "border-danger" : ""}`}
+                      className={`${INPUT} min-w-0 ${touched && !endValid ? "border-danger" : ""}`}
                     />
                   </div>
                   <span className="text-xs text-ink-muted">
@@ -432,15 +432,15 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                 <Field label="Tariflar" required>
                   <div className="flex flex-col gap-2">
                     {tariffs.map((t, i) => (
-                      <div key={t.key} className="flex items-center gap-2">
+                      <div key={t.key} className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                         <input
                           aria-label={`${i + 1}-tarif nomi`}
                           value={t.name}
                           onChange={(e) => setTariffs((rows) => rows.map((r) => (r.key === t.key ? { ...r, name: e.target.value } : r)))}
                           placeholder="Standart"
-                          className={`${INPUT} flex-1 ${touched && !t.name.trim() ? "border-danger" : ""}`}
+                          className={`${INPUT} basis-full sm:basis-0 sm:flex-1 ${touched && !t.name.trim() ? "border-danger" : ""}`}
                         />
-                        <div className="relative w-[170px] shrink-0">
+                        <div className="relative flex-1 min-w-0 sm:flex-none sm:w-[170px] sm:shrink-0">
                           <input
                             aria-label={`${i + 1}-tarif narxi`}
                             inputMode="numeric"

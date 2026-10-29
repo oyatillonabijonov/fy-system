@@ -712,6 +712,7 @@ select:not(.appearance-none):not([multiple]) {
 :root[data-photo="field"]  { --photo: url("/images/bg-field.jpg"); }
 :root[data-photo] .app-ground { background: var(--photo) center / cover; }
 :root[data-photo] .app-main { margin: 12px 12px 12px 0; }
+@media (width < 64rem) { :root[data-photo] .app-main { margin: 0; } }   /* phone/tablet: full bleed, sidebar is a drawer */
 :root[data-photo] aside.sidebar {
   margin: 12px;
   height: calc(100% - 24px);

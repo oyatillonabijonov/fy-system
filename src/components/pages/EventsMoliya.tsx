@@ -37,13 +37,13 @@ export function EventsMoliya() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAddingExpense(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 whitespace-nowrap bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-colors"
             >
               <Minus size={16} /> Chiqim
             </button>
             <button
               onClick={() => setRecording(null)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 whitespace-nowrap bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-colors"
             >
               <Plus size={16} /> Kirim
             </button>
@@ -53,14 +53,14 @@ export function EventsMoliya() {
 
       <FinanceKpis filters={filters} />
 
-      <div role="tablist" aria-label="Moliya bo'limlari" className="flex items-center gap-1">
+      <div role="tablist" aria-label="Moliya bo'limlari" className="flex items-center gap-1 overflow-x-auto no-scrollbar">
         {TABS.map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => set({ tab: t.id === "payments" ? null : t.id })}
-            className={`h-control-md px-3.5 rounded-full whitespace-nowrap text-base font-medium transition-colors ${
+            className={`h-control-md px-3.5 rounded-full shrink-0 whitespace-nowrap text-base font-medium transition-colors ${
               tab === t.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"
             }`}
           >

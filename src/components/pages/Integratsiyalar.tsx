@@ -13,8 +13,8 @@ import { confirmAction } from "@/lib/confirm"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
-const primaryBtn = "flex items-center gap-2 px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
-const softBtn = "flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+const primaryBtn = "flex items-center gap-2 px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+const softBtn = "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
 // Group avatars: the same data palette as Vazifalar, as a wash under ink initials
 const PALETTE = ["#7F77DD", "#1D9E75", "#D85A30", "#D4537E", "#378ADD", "#BA7517", "#639922"]
@@ -50,7 +50,7 @@ export function Integratsiyalar() {
           <thead>
             <tr>
               <th className={tbl.th}>Guruh</th>
-              {GROUP_ROLES.map((r) => <th key={r.id} className={`${tbl.th} text-center`} title={r.desc}>{r.short}</th>)}
+              {GROUP_ROLES.map((r) => <th key={r.id} className={`${tbl.th} text-center max-md:hidden`} title={r.desc}>{r.short}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -90,7 +90,7 @@ function Telephony() {
       <div className={tbl.scroll}>
         <table className={tbl.table}>
           <thead>
-            <tr><th className={tbl.th}>Ichki raqam</th><th className={tbl.th}>Holat</th><th className={tbl.th}>Hodim</th></tr>
+            <tr><th className={tbl.th}>Ichki raqam</th><th className={`${tbl.th} max-md:hidden`}>Holat</th><th className={tbl.th}>Hodim</th></tr>
           </thead>
           <tbody>
             {isLoading ? <tr><td colSpan={3} className={tbl.empty}>Yuklanmoqda…</td></tr>
@@ -98,13 +98,17 @@ function Telephony() {
               : exts.length === 0 ? <tr><td colSpan={3} className={tbl.empty}>OnlinePBX'da ichki raqam yo'q</td></tr>
               : exts.map((e) => {
                 const owner = users.find((u) => u.pbx_ext === e.num)
+                const state = !e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"
+                const dot = `size-2 rounded-full ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`
                 return (
                   <tr key={e.num} className={tbl.tr}>
-                    <td className={`${tbl.td} font-medium tabular-nums`}>{e.num}{e.name ? <span className="ml-2 text-sm text-ink-muted font-normal">{e.name}</span> : null}</td>
-                    <td className={tbl.td}>
-                      <span className="inline-flex items-center gap-2 text-sm text-ink-muted">
-                        <span className={`size-2 rounded-full ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`} />
-                        {!e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"}
+                    <td className={`${tbl.td} font-medium tabular-nums`}>{e.num}{e.name ? <span className="ml-2 text-sm text-ink-muted font-normal max-md:block max-md:ml-0">{e.name}</span> : null}
+                      <span className="md:hidden flex items-center gap-2 text-sm text-ink-muted font-normal whitespace-nowrap"><span className={dot} />{state}</span>
+                    </td>
+                    <td className={`${tbl.td} max-md:hidden`}>
+                      <span className="inline-flex items-center gap-2 text-sm text-ink-muted whitespace-nowrap">
+                        <span className={dot} />
+                        {state}
                       </span>
                     </td>
                     <td className={tbl.td}>
@@ -130,13 +134,40 @@ function LeadSources() {
   const { data: sources = [], isLoading, error } = useLeadSources(true)
   const { data: pipelines = [] } = usePipelines()
   const update = useUpdateLeadSource()
+  const pipelineSelect = (s: LeadSource) => (
+    <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
+      aria-label={`${s.label}: voronka`} className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
+      <option value="">Tanlanmagan</option>
+      {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+    </select>
+  )
+  const leadsInfo = (s: LeadSource) => `${s.leads_count} ta${s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
+  const callNote = <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
   return (
     <section className="flex flex-col gap-4 mt-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-md font-semibold text-ink">Lid manbalari</h2>
         <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
       </div>
-      <div className={tbl.scroll}>
+      {/* Phones: one card per source, so the address and its copy button are never off-screen */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {isLoading ? <div className={tbl.empty}>Yuklanmoqda…</div>
+          : error ? <div className={`${tbl.empty} text-danger-text`}>{error.message}</div>
+          : sources.map((s) => (
+            <div key={s.id} className="flex flex-col gap-3 p-4 rounded-surface bg-surface-sunken">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-base font-medium text-ink">{s.label}</span>
+                <Switch on={s.enabled} label={`${s.label}: yoqilgan`} onChange={(v) => update.mutate({ id: s.id, patch: { enabled: v } })} />
+              </div>
+              {s.id === "call" ? callNote : <HookUrl source={s} />}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {pipelineSelect(s)}
+                <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{leadsInfo(s)}</span>
+              </div>
+            </div>
+          ))}
+      </div>
+      <div className={`${tbl.scroll} max-md:hidden`}>
         <table className={tbl.table}>
           <thead>
             <tr>
@@ -150,19 +181,9 @@ function LeadSources() {
               : sources.map((s) => (
                 <tr key={s.id} className={tbl.tr}>
                   <td className={`${tbl.td} font-medium whitespace-nowrap`}>{s.label}</td>
-                  <td className={tbl.td}>{s.id === "call"
-                    ? <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
-                    : <HookUrl source={s} />}</td>
-                  <td className={tbl.td}>
-                    <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
-                      aria-label={`${s.label}: voronka`} className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
-                      <option value="">Tanlanmagan</option>
-                      {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  </td>
-                  <td className={`${tbl.td} text-sm text-ink-muted whitespace-nowrap tabular-nums`}>
-                    {s.leads_count} ta{s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
-                  </td>
+                  <td className={tbl.td}>{s.id === "call" ? callNote : <HookUrl source={s} />}</td>
+                  <td className={tbl.td}>{pipelineSelect(s)}</td>
+                  <td className={`${tbl.td} text-sm text-ink-muted whitespace-nowrap tabular-nums`}>{leadsInfo(s)}</td>
                   <td className={`${tbl.td} text-center`}>
                     <Switch on={s.enabled} label={`${s.label}: yoqilgan`} onChange={(v) => update.mutate({ id: s.id, patch: { enabled: v } })} />
                   </td>
@@ -178,7 +199,7 @@ function LeadSources() {
 function HookUrl({ source }: { source: LeadSource }) {
   const url = leadHookUrl(source)
   return (
-    <div className="flex flex-col gap-1 max-w-[440px]">
+    <div className="flex flex-col gap-1 min-w-0 max-w-[440px]">
       <div className="flex items-center gap-2">
         <code className="min-w-0 truncate text-sm text-ink-muted">{url}</code>
         <CopyBtn value={url} />
@@ -193,7 +214,7 @@ function CopyBtn({ value }: { value: string }) {
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-sm text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-9 sm:h-7 px-2.5 rounded-full text-sm whitespace-nowrap text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
       {copied ? <Check size={12} weight="bold" /> : <Copy size={16} />}{copied ? "Nusxalandi" : "Nusxa"}
     </button>
   )
@@ -226,11 +247,13 @@ function GroupRow({ group: g, onOpen }: { group: TelegramGroup; onOpen: () => vo
           <div className="min-w-0 flex flex-col">
             <span className="font-medium text-ink truncate">{g.title || "Nomsiz guruh"}</span>
             <GroupHint g={g} />
+            {/* phones: the switches live in the group dialog, so list what is on here */}
+            <span className="md:hidden text-sm text-ink-faint">{GROUP_ROLES.filter((r) => g[r.id]).map((r) => r.short).join(" · ") || "Hech narsa yoqilmagan"}</span>
           </div>
         </div>
       </td>
       {GROUP_ROLES.map((r) => (
-        <td key={r.id} className={`${tbl.td} text-center`}>
+        <td key={r.id} className={`${tbl.td} text-center max-md:hidden`}>
           <Switch on={g[r.id]} label={`${g.title}: ${r.label}`} onChange={(v) => update.mutate({ chatId: g.chat_id, patch: { [r.id]: v } })} />
         </td>
       ))}
@@ -267,14 +290,14 @@ function Modal({ title, onClose, children, footer }: { title: string; onClose: (
   const headingId = useId()
   const ref = useDialog<HTMLDivElement>(onClose, true)
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[10vh]">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[10vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div ref={ref} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1}
         initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-lg bg-surface-raised rounded-overlay flex flex-col max-h-[84vh]">
+        className="relative w-full max-w-lg bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-32px)] sm:max-h-[84vh]">
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
           <h3 id={headingId} className="text-base font-semibold text-ink">{title}</h3>
-          <button type="button" onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+          <button type="button" onClick={onClose} aria-label="Yopish" className="p-2 sm:p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
             <X size={20} className="text-ink-muted" />
           </button>
         </div>
@@ -297,7 +320,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
     <Modal title="Guruh sozlamalari" onClose={onClose} footer={<>
       <button type="button" disabled={remove.isPending}
         onClick={async () => { if (await confirmAction({ title: "Guruhni olib tashlash", message: `"${g.title || g.chat_id}" ro'yxatdan olib tashlansinmi? Bot bu guruhga boshqa yozmaydi.`, confirmLabel: "Olib tashlash" })) remove.mutate(g.chat_id, { onSuccess: onClose }) }}
-        className="flex items-center gap-2 px-3 h-control-md rounded-full text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
+        className="flex items-center gap-2 px-3 h-control-md rounded-full whitespace-nowrap text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
         <Trash size={16} /> Olib tashlash
       </button>
       <div className="flex-1" />

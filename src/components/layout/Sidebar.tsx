@@ -10,6 +10,7 @@ import { Code, Funnel, Kanban, PhoneCall, ChatText,
     User,
     SidebarSimple,
     CaretDown,
+    X,
     Bank,
     ClockCounterClockwise,
     CheckCircle,
@@ -88,20 +89,22 @@ const prefetchMap: Record<string, { key: readonly string[]; fn: () => Promise<un
     Tadbirlar: { key: [...EVENTS_KEY], fn: () => import("@/lib/supabase/queries/events").then(m => m.getEvents()) },
 }
 
-export function Sidebar() {
+/** `drawer` = the phone/tablet menu: always expanded, the collapse button closes it */
+export function Sidebar({ drawer = false, onClose }: { drawer?: boolean; onClose?: () => void }) {
     const navigate = useNavigate()
     const location = useLocation()
     const { user, hasAccess } = useAuth()
     const isAdminUser = user?.role === "admin"
 
-    const [isCollapsed, setIsCollapsed] = useState(() => {
+    const [collapsedPref, setIsCollapsed] = useState(() => {
         try {
             return localStorage.getItem('fy_sidebar_collapsed') === 'true'
         } catch { return false }
     })
     useEffect(() => {
-        try { localStorage.setItem('fy_sidebar_collapsed', String(isCollapsed)) } catch { /* private browsing */ }
-    }, [isCollapsed])
+        try { localStorage.setItem('fy_sidebar_collapsed', String(collapsedPref)) } catch { /* private browsing */ }
+    }, [collapsedPref])
+    const isCollapsed = !drawer && collapsedPref
 
     const { themeId, setThemeId, photo, setPhoto } = useTheme()
     const scope = useSidebarScope()
@@ -190,7 +193,7 @@ export function Sidebar() {
     return (
         <motion.aside
             initial={false}
-            animate={{ width: isCollapsed ? 68 : 264 }}
+            animate={{ width: drawer ? 280 : isCollapsed ? 68 : 264 }}
             transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
             data-theme={scope}
             className="sidebar h-full flex flex-col overflow-hidden flex-shrink-0 px-4 py-5 text-ink"
@@ -206,12 +209,12 @@ export function Sidebar() {
                 )}
                 <button
                     type="button"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    aria-label={isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
+                    onClick={() => drawer ? onClose?.() : setIsCollapsed(!isCollapsed)}
+                    aria-label={drawer ? "Menyuni yopish" : isCollapsed ? "Menyuni yoyish" : "Menyuni yig'ish"}
                     aria-expanded={!isCollapsed}
                     className="h-control-md w-9 rounded-full flex items-center justify-center flex-shrink-0 text-ink transition-colors hover:bg-mute-ghost-hover"
                 >
-                    <SidebarSimple size={20} />
+                    {drawer ? <X size={20} /> : <SidebarSimple size={20} />}
                 </button>
             </div>
 

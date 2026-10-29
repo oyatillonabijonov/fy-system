@@ -20,7 +20,7 @@ export function RoleField({ value, onChange, locked }: { value: UserRole; onChan
             aria-checked={value === r}
             disabled={locked}
             onClick={() => onChange(r)}
-            className={`h-8 rounded-item text-base font-medium transition-colors disabled:cursor-not-allowed ${value === r ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
+            className={`h-8 rounded-item text-sm sm:text-base font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed ${value === r ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
           >
             {ROLE_LABELS[r]}
           </button>

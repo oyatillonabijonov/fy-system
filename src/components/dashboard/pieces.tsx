@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Dashboard (delta() next to its cards) */
 // Shared Dashboard pieces (cards, KPI tiles, lists, charts) — moved from pages/Dashboard.tsx in 080.
-import { useState, type ReactNode } from "react"
+import { useState, type CSSProperties, type ReactNode } from "react"
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react"
 import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
 import { formatNumber } from "@/lib/format"
@@ -24,9 +24,9 @@ export function Section({ title, desc, children }: { title: string; desc: string
 
 export function Card({ title, aside, className = "", children }: { title?: string; aside?: string; className?: string; children: ReactNode }) {
     return (
-        <div className={`bg-surface-sunken rounded-surface p-5 flex flex-col gap-4 min-w-0 ${className}`}>
+        <div className={`bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-4 min-w-0 ${className}`}>
             {title && (
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5">
                     <h3 className="text-base font-semibold text-ink">{title}</h3>
                     {aside && <span className="text-sm text-ink-muted">{aside}</span>}
                 </div>
@@ -52,15 +52,18 @@ export function DeltaBadge({ value, invert = false }: { value: number | null; in
 }
 
 /** `invert`: growth is bad news (e.g. Yutqazilgan) — the badge turns red on ↑ */
-export function KpiCard({ label, icon, value, unit, sub, delta: d, invert }: { label: string; icon: ReactNode; value: string; unit?: string; sub: string; delta: number | null; invert?: boolean }) {
+export function KpiCard({ className = "", label, icon, value, unit, sub, delta: d, invert }: { className?: string; label: string; icon: ReactNode; value: string; unit?: string; sub: string; delta: number | null; invert?: boolean }) {
     return (
-        <div className="bg-surface-sunken rounded-surface p-5 flex flex-col gap-3 min-w-0">
-            <div className="flex items-center justify-between">
+        <div className={`@container bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-3 min-w-0 ${className}`}>
+            <div className="flex items-center justify-between gap-2">
                 <span className="text-base font-medium text-ink-muted">{label}</span>
-                <span className="size-8 rounded-control-sm bg-surface flex items-center justify-center text-ink">{icon}</span>
+                <span className="size-8 shrink-0 rounded-control-sm bg-surface flex items-center justify-center text-ink">{icon}</span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
+            <div className="flex items-center gap-x-2 gap-y-1 sm:gap-y-2 flex-wrap">
+                {/* a long figure shrinks to the card's width instead of spilling out (~0.6em per character) */}
+                <span className="text-xl sm:text-2xl font-semibold tabular-nums text-ink whitespace-nowrap">
+                    <span style={{ fontSize: `min(1em, ${(100 / (0.6 * value.length)).toFixed(1)}cqi)` }}>{value}</span>
+                </span>
                 {unit && <span className="text-base text-ink-muted">{unit}</span>}
                 <DeltaBadge value={d} invert={invert} />
             </div>
@@ -103,12 +106,12 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
         <div role="tablist" aria-label="Voronka" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface flex-wrap">
           {pipelines.map(([id, name]) => (
             <button key={id} role="tab" aria-selected={id === pid} onClick={() => { setPicked(id); setHover(null) }}
-              className={`h-7 px-3 rounded-item text-sm font-medium transition-colors ${id === pid ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>{name}</button>
+              className={`h-7 px-3 shrink-0 whitespace-nowrap rounded-item text-sm font-medium transition-colors ${id === pid ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>{name}</button>
           ))}
         </div>
       )}
 
-      <div className="flex items-baseline gap-2">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-2xl font-semibold tabular-nums text-ink">{formatNumber(head ? head.open : total)}</span>
         <span className="text-base text-ink-muted">{head ? `${head.name} · ${share(head.open)}%` : "ochiq bitim"}</span>
         {(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0)) > 0 && (
@@ -138,7 +141,8 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
         ))}
       </div>
 
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+      {/* all stages in one row only when the card is wide enough for their names, else two per row */}
+      <div className="@container"><div className="grid grid-cols-2 gap-1.5 @lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": stages.length } as CSSProperties}>
         {stages.map((r, i) => (
           <div key={r.stage_id} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
             className="bg-surface rounded-control px-3 py-2 min-w-0 transition-opacity duration-200" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
@@ -149,7 +153,7 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
             <span className="text-md font-semibold tabular-nums text-ink">{formatNumber(r.open)}</span>
           </div>
         ))}
-      </div>
+      </div></div>
       </div>
     </div>
   )

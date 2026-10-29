@@ -303,7 +303,7 @@ function PreferencesRows() {
           {[true, false].map((v) => (
             <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
               onClick={() => { setSound(v); setSoundOn(v) }}
-              className={`h-8 px-4 rounded-item text-base font-medium transition-colors ${sound === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+              className={`h-8 px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${sound === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
               {v ? "Yoqilgan" : "O'chirilgan"}
             </button>
           ))}
@@ -320,9 +320,9 @@ const labelCls = "text-sm font-medium text-ink-muted"
 const inputCls =
   "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const softBtn =
-  "flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 const primaryBtn =
-  "px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+  "px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
 
 /** One settings group: title + hint on the left, controls on the right, hairline between groups */
 function SettingsRow({ id, title, desc, last, children }: { id?: string; title: string; desc: string; last?: boolean; children: React.ReactNode }) {

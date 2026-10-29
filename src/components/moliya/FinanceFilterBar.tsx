@@ -4,7 +4,7 @@ import { useFinanceFilters } from "@/hooks/useFinanceFilters"
 import { PERIOD_LABELS, type Period } from "@/lib/period"
 
 const SELECT =
-  "h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
+  "h-control-md max-w-full pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
 
 export function FinanceFilterBar() {
   const { period, get, set } = useFinanceFilters()
@@ -74,7 +74,7 @@ export function FinanceFilterBar() {
       {active && (
         <button
           onClick={() => set({ period: null, from: null, to: null, event: null, seller: null, method: null })}
-          className="px-3 h-control-md text-sm font-semibold text-ink-muted hover:text-ink transition-colors"
+          className="px-3 h-control-md whitespace-nowrap text-sm font-semibold text-ink-muted hover:text-ink transition-colors"
         >
           Filtrlarni tozalash
         </button>

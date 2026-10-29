@@ -20,7 +20,7 @@ export function Login() {
       <div className="absolute inset-0 bg-black/25" />
 
       <div className="relative z-10 w-full max-w-[400px]">
-        <div className="bg-surface border border-line rounded-overlay p-8 flex flex-col gap-7">
+        <div className="bg-surface border border-line rounded-overlay p-6 sm:p-8 flex flex-col gap-7">
           <div className="flex flex-col items-center gap-5 text-center">
             <img
               src={themeId === "dark" ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}

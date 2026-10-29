@@ -97,7 +97,7 @@ function CallRowView({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
           </span>
         </span>
       </td>
-      <td className={tbl.td}>
+      <td className={`${tbl.td} whitespace-nowrap`}>
         <span className="block font-medium">{c.client?.full_name ?? formatPhone(phone)}</span>
         {c.client && <span className="block text-sm text-ink-muted tabular-nums">{formatPhone(phone)}</span>}
       </td>

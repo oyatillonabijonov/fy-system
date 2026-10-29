@@ -74,7 +74,7 @@ export function SalesTasks({ today }: { today: string }) {
 export function DoneButton({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" aria-label="Bajarildi" title="Bajarildi" onClick={(e) => { e.stopPropagation(); onClick() }}
-      className="w-6 h-6 rounded-full border border-line flex items-center justify-center text-transparent hover:text-success-text hover:border-success-text transition-colors">
+      className="relative w-6 h-6 rounded-full border border-line flex items-center justify-center text-transparent before:absolute before:-inset-2.5 before:content-[''] hover:text-success-text hover:border-success-text transition-colors">
       <Check size={12} weight="bold" />
     </button>
   )

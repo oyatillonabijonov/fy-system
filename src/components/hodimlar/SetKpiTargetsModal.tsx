@@ -102,12 +102,12 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto max-sm:max-h-[calc(100dvh-32px)] max-sm:overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-lg font-bold text-ink">KPI maqsadlari</h2>
               <span className="text-xs text-ink-muted">
                 {user.full_name} · {MONTHS[period.month - 1]} {period.year}
@@ -117,7 +117,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
+              className="p-2 sm:p-1.5 shrink-0 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
@@ -148,7 +148,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor={`${uid}-leads`} className="text-sm font-medium text-ink-muted">Yopilishi kerak lidlar</label>
                 <input
@@ -193,14 +193,14 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 rounded-full text-base font-medium whitespace-nowrap text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-full text-base font-bold transition-colors ${
+              className={`px-5 py-2 rounded-full text-base font-bold whitespace-nowrap transition-colors ${
                 saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >

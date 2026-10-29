@@ -15,7 +15,7 @@ export function FinancePanel({ from, to }: { from: string; to: string }) {
   const upcoming = useMemo(() => events.filter((e) => e.date && e.date >= today).sort((a, b) => a.date!.localeCompare(b.date!)).slice(0, 3), [events, today])
   const { data: counts = {} } = useParticipantCounts(upcoming.map((e) => e.id))
   const row = (label: string, value: string, tone = "text-ink") => (
-    <div className="flex items-center justify-between gap-3 text-base"><span className="text-ink-muted">{label}</span><span className={`font-medium tabular-nums ${tone}`}>{value}</span></div>
+    <div className="flex items-center justify-between gap-3 text-base"><span className="text-ink-muted">{label}</span><span className={`font-medium tabular-nums whitespace-nowrap ${tone}`}>{value}</span></div>
   )
   return (
     <Card title="Moliya">
@@ -29,7 +29,7 @@ export function FinancePanel({ from, to }: { from: string; to: string }) {
       <div className="flex flex-col gap-1 pt-1 border-t border-line">
         <span className="text-sm font-semibold text-ink pt-2">Yaqin tadbirlar</span>
         {upcoming.length === 0 ? <p className="text-sm text-ink-muted">Hozircha yo'q</p> : upcoming.map((e) => (
-          <div key={e.id} className="flex items-center justify-between gap-3 text-sm">
+          <div key={e.id} className="flex flex-col gap-0.5 py-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-0 text-sm">
             <span className="truncate text-ink">{e.name}</span>
             <span className="text-ink-muted tabular-nums whitespace-nowrap">{formatDate(e.date)} · {counts[e.id] ?? 0} kishi</span>
           </div>
