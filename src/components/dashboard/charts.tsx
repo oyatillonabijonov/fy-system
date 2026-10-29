@@ -41,14 +41,18 @@ export function MixDonut({ rows, totalLabel, grey = false }: { rows: MixRow[]; t
           </div>
         </div>
       </div>
-      <div className="flex min-w-0 flex-col">
+      {/* a narrow card puts the hint under the name, so neither the name nor the hint is cut or broken */}
+      <div className="@container flex min-w-0 flex-col">
         {shown.map((r, i) => (
           <div key={r.key} className="flex items-center gap-2 py-1.5">
             <span className="chart-swatch size-2.5 shrink-0 rounded-[3px]" style={{ "--sw-l": color(i)[0], "--sw-d": color(i)[1] } as CSSProperties} />
-            <span className="truncate text-sm text-ink-muted">{r.label}</span>
-            <span className="ml-auto flex items-baseline gap-1.5 text-sm tabular-nums">
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm text-ink-muted">{r.label}</span>
+              {r.hint && <span className="whitespace-nowrap text-xs text-ink-faint @[17rem]:hidden">{r.hint}</span>}
+            </span>
+            <span className="ml-auto flex shrink-0 items-baseline gap-1.5 whitespace-nowrap text-sm tabular-nums">
               <span className="font-semibold text-ink">{formatNumber(r.value)}</span>
-              {r.hint && <span className="text-xs text-ink-faint">{r.hint}</span>}
+              {r.hint && <span className="hidden text-xs text-ink-faint @[17rem]:inline">{r.hint}</span>}
             </span>
           </div>
         ))}

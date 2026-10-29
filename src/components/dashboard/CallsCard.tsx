@@ -19,7 +19,7 @@ export function CallsCard({ calls: c, sellers }: { calls: SalesDashboard["calls"
   const callers = sellers.filter((s) => s.calls_in + s.calls_out > 0)
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-surface-sunken rounded-surface p-5">
           <DotRing id="answered" value={answered} color="#059669" caption={`Kiruvchiga javob berildi · ${formatNumber(c.in - c.missed)} / ${formatNumber(c.in)}`} />
         </div>
@@ -27,11 +27,11 @@ export function CallsCard({ calls: c, sellers }: { calls: SalesDashboard["calls"
           <DotRing id="callback" value={back} caption={`Javobsizga qayta qo'ng'iroq · ${formatNumber(c.missed_called_back)} / ${formatNumber(c.missed)}`} />
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {tiles.map((t) => (
-          <div key={t.label} className="bg-surface-sunken rounded-surface px-4 py-3 flex flex-col gap-1 min-w-0">
-            <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted">{t.icon}{t.label}</span>
-            <span className={`text-lg font-semibold tabular-nums ${t.danger ? "text-danger-text" : "text-ink"}`}>{t.value}</span>
+          <div key={t.label} className="bg-surface-sunken rounded-surface px-3 sm:px-4 py-3 flex flex-col gap-1 min-w-0">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted whitespace-nowrap">{t.icon}{t.label}</span>
+            <span className={`text-base sm:text-lg font-semibold tabular-nums ${t.danger ? "text-danger-text" : "text-ink"}`}>{t.value}</span>
             {t.hint && <span className="text-xs text-ink-faint">{t.hint}</span>}
           </div>
         ))}

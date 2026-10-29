@@ -29,7 +29,7 @@ export function Vazifalar() {
       <div role="tablist" aria-label="Vazifalar" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface-sunken">
         {([["event", "Tadbirlar bo'yicha"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={`h-8 px-4 rounded-item text-base font-medium transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+            className={`h-8 px-3 sm:px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
             {label}
           </button>
         ))}
@@ -102,8 +102,8 @@ function EventTasks() {
       <div className="flex flex-wrap items-center gap-3">
         {owners.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-ink-muted">Mas'ul:</span>
-            <div className="flex items-center -space-x-1.5">
+            <span className="text-sm text-ink-muted whitespace-nowrap">Mas'ul:</span>
+            <div className="flex flex-wrap items-center gap-1.5 lg:gap-0 lg:-space-x-1.5">
               {owners.map((o) => (
                 <button key={o.key} type="button" onClick={() => setOwnerFilter(ownerFilter === o.key ? "" : o.key)}
                   title={o.name} aria-label={o.name} aria-pressed={ownerFilter === o.key}
@@ -113,7 +113,7 @@ function EventTasks() {
               ))}
             </div>
             {ownerFilter && (
-              <button type="button" onClick={() => setOwnerFilter("")} className="h-7 px-2.5 rounded-full text-sm text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+              <button type="button" onClick={() => setOwnerFilter("")} className="h-7 px-2.5 rounded-full text-sm whitespace-nowrap text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
                 {owners.find((o) => o.key === ownerFilter)?.name.split(" ")[0]} · tozalash
               </button>
             )}
@@ -121,24 +121,24 @@ function EventTasks() {
         )}
         <div className="flex-1" />
         {tasks.length > 0 && (
-          <span className="flex items-center gap-1.5 text-sm text-ink-muted tabular-nums">
+          <span className="flex items-center gap-1.5 text-sm text-ink-muted tabular-nums whitespace-nowrap">
             <CheckCircle size={16} />{done}/{tasks.length} bajarildi
           </span>
         )}
         <div role="radiogroup" aria-label="Ko'rinish" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {([["list", "Ro'yxat", Rows], ["kanban", "Kanban", Kanban]] as const).map(([id, label, Icon]) => (
             <button key={id} role="radio" aria-checked={view === id} onClick={() => setView(id)}
-              className={`h-7 px-3 flex items-center gap-1.5 rounded-item text-sm font-medium transition-colors ${view === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+              className={`h-7 px-3 flex items-center gap-1.5 rounded-item text-sm font-medium whitespace-nowrap transition-colors ${view === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
               <Icon size={16} />{label}
             </button>
           ))}
         </div>
         {eventId && (
-          <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-full text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors">
+          <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-full text-base font-medium whitespace-nowrap text-ink hover:bg-mute-ghost-hover transition-colors">
             <Copy size={16} />Nusxa olish
           </button>
         )}
-        <button onClick={() => setEditing({ task: null })} className="h-control-md px-4 flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
+        <button onClick={() => setEditing({ task: null })} className="h-control-md px-4 flex items-center gap-1.5 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">
           <Plus size={16} />Vazifa
         </button>
       </div>
@@ -194,8 +194,8 @@ function SectionList({ tasks, sections, today, onOpen, onAdd }: {
               className="w-full flex items-center gap-3 px-3 h-11 bg-surface-sunken text-left">
               <CaretDown size={16} className={`text-ink-muted transition-transform ${open ? "" : "-rotate-90"}`} />
               <SectionChip name={section} color={color} />
-              <span className="text-sm text-ink-muted tabular-nums">{done}/{rows.length}</span>
-              <span className="w-28 h-1.5 rounded-full bg-mute-soft overflow-hidden">
+              <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{done}/{rows.length}</span>
+              <span className="w-20 sm:w-28 shrink-0 h-1.5 rounded-full bg-mute-soft overflow-hidden">
                 <span className="block h-full rounded-full" style={{ width: `${(done / rows.length) * 100}%`, backgroundColor: color }} />
               </span>
             </button>

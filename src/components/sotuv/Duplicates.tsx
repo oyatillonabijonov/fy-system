@@ -14,11 +14,11 @@ export function Duplicates({ onClose }: { onClose: () => void }) {
   const { data: groups = [], isLoading } = useDuplicateLeads()
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[8vh]">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
         initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-2xl bg-surface-raised rounded-overlay flex flex-col max-h-[84vh]">
+        className="relative w-full max-w-2xl bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[84vh]">
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
           <h3 id={titleId} className="text-md font-semibold text-ink">Dublikat bitimlar {groups.length > 0 && <span className="text-ink-faint tabular-nums">· {groups.length}</span>}</h3>
           <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={20} /></button>
@@ -62,17 +62,17 @@ function Group({ name, phone, leads }: { name: string; phone: string | null; lea
       </div>
       <div role="radiogroup" aria-label={`${name}: qoladigan bitim`} className="flex flex-col gap-1">
         {leads.map((l) => (
-          <label key={l.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-control cursor-pointer transition-colors ${keep === l.id ? "bg-surface" : "hover:bg-surface/60"}`}>
+          <label key={l.id} className={`flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1 px-3 py-2.5 rounded-control cursor-pointer transition-colors ${keep === l.id ? "bg-surface" : "hover:bg-surface/60"}`}>
             <input type="radio" name={group} checked={keep === l.id} onChange={() => setKeep(l.id)} className="sr-only" />
             <span className={`size-5 shrink-0 rounded-full flex items-center justify-center border ${keep === l.id ? "bg-accent border-transparent text-ink-on-accent" : "border-line"}`}>
               {keep === l.id && <Check size={12} weight="bold" />}
             </span>
-            <span className="flex-1 min-w-0">
+            <span className="flex-1 min-w-[10rem] sm:min-w-0">
               <span className="block text-base text-ink truncate">{l.name}</span>
               <span className="block text-sm text-ink-muted truncate">{l.pipeline} › {l.stage}{l.responsible ? ` · ${l.responsible}` : ""} · {new Date(l.created_at).toLocaleDateString("ru-RU")}</span>
             </span>
-            {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums">{formatNumber(l.price)}</span>}
-            {keep === l.id && <span className="text-sm font-medium text-ink">Qoladi</span>}
+            {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{formatNumber(l.price)}</span>}
+            {keep === l.id && <span className="text-sm font-medium text-ink whitespace-nowrap">Qoladi</span>}
           </label>
         ))}
       </div>

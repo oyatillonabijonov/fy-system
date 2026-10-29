@@ -223,16 +223,16 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
           aria-labelledby={titleId}
           tabIndex={-1}
           initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="bg-surface-raised rounded-overlay w-full max-w-md relative overflow-hidden flex flex-col max-h-[90vh]"
+          className="bg-surface-raised rounded-overlay w-full max-w-md relative overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh]"
         >
-          <div className="p-5 border-b border-line flex items-center justify-between">
+          <div className="p-5 border-b border-line flex items-center justify-between shrink-0">
             <h3 id={titleId} className="text-md font-semibold text-ink">To'lov qo'shish</h3>
-            <button onClick={guardedClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
+            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 sm:p-1 sm:m-0 hover:bg-mute-ghost-hover rounded-full transition-all">
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
   
-          <div className="p-5 flex flex-col gap-4 overflow-y-auto">
+          <div className="p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
             {error && (
               <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                 {error}
@@ -323,7 +323,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
                   />
                 </div>
                 {suggestion && (
-                  <div role="alert" className="flex items-center justify-between gap-2 px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
+                  <div role="alert" className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
                     <span className="text-ink-muted">Bu raqam <span className="font-bold text-ink">{suggestion.full_name}</span>ga tegishli.</span>
                     <button onClick={() => pick(suggestion)} className="shrink-0 font-bold text-ink underline">Shu mijozni tanlash</button>
                   </div>
@@ -349,7 +349,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
   
             {/* 3a. Already in the event → current state */}
             {enrolled && (
-              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-3 py-2 rounded-control bg-surface-sunken border border-line text-sm">
                 <span className="text-ink-muted">Kelishuv {formatMoney(enrolled.price)} · to'langan {formatMoney(enrolled.paid)}</span>
                 <span className={`font-bold whitespace-nowrap tabular-nums ${debt > 0 ? "text-danger-text" : "text-success-text"}`}>
                   {debt > 0 ? `Qarz ${formatMoney(debt)}` : "Qarz yo'q"}
@@ -430,13 +430,13 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
               ))}
             </div>
   
-            <div className="flex gap-3">
-              <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-1.5 sm:flex-1 min-w-0">
                 <label htmlFor={dateId} className={LABEL}>To'lov sanasi</label>
                 <input id={dateId} type="date" value={date} max={tashkentToday()} onChange={(e) => setDate(e.target.value || tashkentToday())} className={INPUT} />
               </div>
               {amountNum > 0 && !overDebt && remaining > 0 && (
-                <div className="flex flex-col gap-1.5 flex-1">
+                <div className="flex flex-col gap-1.5 sm:flex-1 min-w-0">
                   <label htmlFor={dueId} className={LABEL}>Keyingi to'lov sanasi</label>
                   <input id={dueId} type="date" value={due} min={date} onChange={(e) => setDue(e.target.value)} className={INPUT} />
                 </div>
@@ -458,7 +458,7 @@ export function RecordPaymentModal({ preset, onClose }: { preset?: RecordPayment
             )}
           </div>
   
-          <div className="p-5 pt-0 flex gap-3">
+          <div className="p-5 pt-0 flex gap-3 shrink-0">
             <button
               onClick={onClose}
               disabled={record.isPending}

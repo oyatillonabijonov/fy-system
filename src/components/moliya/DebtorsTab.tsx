@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<DebtStatus, string> = {
 }
 
 const SELECT =
-  "h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
+  "h-control-md max-w-full pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
 
 // Receivables aging, counted from the enrolment day.
 function aging(days: number): { label: string; variant: "neutral" | "warning" | "danger" } {
@@ -63,7 +63,7 @@ export function DebtorsTab({ filters, canEdit, onPay }: { filters: FinanceFilter
             <option key={s} value={s}>{STATUS_LABEL[s]}</option>
           ))}
         </select>
-        {!isLoading && <span className="text-sm text-ink-muted tabular-nums">{rows.length} ta</span>}
+        {!isLoading && <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{rows.length} ta</span>}
       </div>
 
       {isLoading ? (

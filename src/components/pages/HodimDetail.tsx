@@ -50,7 +50,7 @@ import { formatDate, formatNumber, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 
 const softBtn =
-  "flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -469,7 +469,7 @@ function DangerZone({
           : "Foydalanuvchini qayta faollashtirsangiz, u darhol tizimga kira oladi."}
       </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {confirm ? (
           <>
             <button
@@ -482,7 +482,7 @@ function DangerZone({
             <button
               onClick={handleToggle}
               disabled={busy}
-              className={`flex items-center gap-2 px-4 h-control-md rounded-full text-base font-medium transition-colors disabled:opacity-50 ${
+              className={`flex items-center gap-2 px-4 h-control-md rounded-full text-base font-medium whitespace-nowrap transition-colors disabled:opacity-50 ${
                 user.is_active ? "bg-danger text-white" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
@@ -510,12 +510,12 @@ function DangerZone({
         </p>
         {remove.error && <p role="alert" className="mt-2 text-sm font-medium text-danger-text">{remove.error.message}</p>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {confirmDelete ? (
           <>
             <button onClick={() => setConfirmDelete(false)} disabled={remove.isPending} className={softBtn}>Bekor qilish</button>
             <button onClick={() => remove.mutate(user.id, { onSuccess: onDeleted })} disabled={remove.isPending}
-              className="flex items-center gap-2 px-4 h-control-md rounded-full text-base font-medium bg-danger text-white transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 h-control-md rounded-full text-base font-medium whitespace-nowrap bg-danger text-white transition-colors disabled:opacity-50">
               <Trash size={16} />
               {remove.isPending ? "O'chirilmoqda…" : "Ha, butunlay o'chir"}
             </button>
@@ -563,7 +563,7 @@ function KpiSection({
           <p className="text-sm text-ink-muted">Oylik maqsadlar va natijalar</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <PeriodSelector period={period} onChange={onPeriodChange} />
           {canEdit && (
             <button
@@ -678,7 +678,7 @@ function PeriodSelector({
     else onChange({ year: period.year, month: m })
   }
   return (
-    <div className="flex items-center h-control-md rounded-full bg-mute-soft">
+    <div className="flex items-center h-control-md rounded-full bg-mute-soft shrink-0">
       <button
         type="button"
         onClick={prev}

@@ -57,8 +57,8 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
   }, [active, selected])
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
+    <div className="flex items-start sm:items-center gap-2">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 sm:overflow-x-auto no-scrollbar flex-1 min-w-0">
 
         {tabEvents.map((e) => {
           const isSel = e.id === selectedId
@@ -68,7 +68,7 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
               onClick={() => onSelect(e.id)}
               title={e.name}
               aria-current={isSel ? "true" : undefined}
-              className={`flex items-center gap-2 h-control-md px-3.5 rounded-full max-w-[220px] shrink-0 whitespace-nowrap text-base font-medium transition-colors ${
+              className={`flex items-center gap-2 h-control-md px-3.5 rounded-full max-w-full sm:max-w-[220px] shrink-0 whitespace-nowrap text-base font-medium transition-colors ${
                 isSel
                   ? "bg-mute-soft text-ink"
                   : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"

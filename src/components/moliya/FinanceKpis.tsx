@@ -57,12 +57,12 @@ function Kpi({
   danger?: boolean
 }) {
   return (
-    <div className="bg-surface border border-line rounded-surface p-4 flex flex-col gap-2">
-      <span className="flex items-center gap-2 text-sm font-semibold text-ink-muted">{icon} {label}</span>
+    <div className="bg-surface border border-line rounded-surface p-3.5 sm:p-4 flex flex-col gap-2 min-w-0">
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink-muted [&>svg]:shrink-0">{icon} {label}</span>
       {loading ? (
         <div className="animate-pulse bg-surface-sunken rounded-item h-7 w-28" />
       ) : (
-        <span className={`text-lg font-bold leading-none tabular-nums ${danger ? "text-danger-text" : "text-ink"}`}>{value}</span>
+        <span className={`text-base sm:text-lg font-bold leading-none tabular-nums whitespace-nowrap ${danger ? "text-danger-text" : "text-ink"}`}>{value}</span>
       )}
       {hint && <span className="text-xs text-ink-muted">{hint}</span>}
     </div>

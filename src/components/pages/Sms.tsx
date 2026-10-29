@@ -188,7 +188,7 @@ function Compose({ onSent }: { onSent: () => void }) {
                 <th className={`${tbl.th} w-10`}>
                   <input type="checkbox" aria-label="Hammasini tanlash" checked={allVisible} onChange={toggleAll} className="size-4 accent-[var(--ds-color-bg-inverted)]" />
                 </th>
-                <th className={tbl.th}>Ism</th><th className={tbl.th}>Telefon</th><th className={tbl.th}>Turi</th>
+                <th className={tbl.th}>Ism</th><th className={tbl.th}>Telefon</th><th className={`${tbl.th} max-sm:hidden`}>Turi</th>
               </tr>
             </thead>
             <tbody>
@@ -201,10 +201,10 @@ function Compose({ onSent }: { onSent: () => void }) {
                     </td>
                     <td className={`${tbl.td} ${picked.has(p.id) ? tbl.tdSelected : ""}`}>
                       {p.full_name}
-                      {p.sms_opt_out && <span className="ml-2 text-sm text-ink-faint">reklama rad etgan</span>}
+                      {p.sms_opt_out && <span className="ml-2 max-sm:ml-0 max-sm:block text-sm text-ink-faint">reklama rad etgan</span>}
                     </td>
                     <td className={`${tbl.td} tabular-nums whitespace-nowrap ${picked.has(p.id) ? tbl.tdSelected : ""}`}>{formatPhone(p.phone)}</td>
-                    <td className={`${tbl.td} text-ink-muted ${picked.has(p.id) ? tbl.tdSelected : ""}`}>{p.is_customer ? "Mijoz" : "Lid"}</td>
+                    <td className={`${tbl.td} text-ink-muted max-sm:hidden ${picked.has(p.id) ? tbl.tdSelected : ""}`}>{p.is_customer ? "Mijoz" : "Lid"}</td>
                   </tr>
                 ))}
             </tbody>

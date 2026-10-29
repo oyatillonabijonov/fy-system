@@ -46,39 +46,40 @@ export function Dashboard() {
   return (
     <div className="flex flex-col gap-6 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar">
           {PERIODS.map((p) => (
             <button key={p.id} type="button" onClick={() => setPeriod(p.id)} aria-pressed={period === p.id}
-              className={`px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${period === p.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}>
+              className={`shrink-0 whitespace-nowrap px-3 sm:px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${period === p.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}>
               {p.label}
             </button>
           ))}
         </div>
         <select value={pipelineId ?? ""} onChange={(e) => setPipelineId(e.target.value || null)} aria-label="Voronka"
-          className="h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus">
+          className="w-full sm:w-auto h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus">
           <option value="">Barcha voronkalar</option>
           {d?.pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </div>
 
       {error && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-surface bg-danger-soft text-danger-dark text-base">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-surface bg-danger-soft text-danger-dark text-base">
           <span>Ma'lumot yuklanmadi: {error.message}</span>
-          <button type="button" onClick={() => void refetch()} className="h-control-sm px-3 rounded-full bg-surface text-ink text-sm font-medium">Qayta urinish</button>
+          <button type="button" onClick={() => void refetch()} className="h-control-sm px-3 rounded-full bg-surface text-ink text-sm font-medium whitespace-nowrap shrink-0">Qayta urinish</button>
         </div>
       )}
 
       {!d ? (!error || isLoading) && <Skeleton className="h-[420px] rounded-surface" /> : (
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           <div className="flex flex-col gap-8 min-w-0">
             <Section title="Sotuv natijasi" desc="Tanlangan davr, oldingi shuncha davrga nisbatan">
-              <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
+              {/* columns follow the space left by the sidebar and the right column: 5 in a row only when each card can hold its figure */}
+              <div className="@container"><div className="grid grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-5 gap-3">
                 <KpiCard label="Yangi bitimlar" icon={<UserPlus size={16} />} value={formatNumber(d.kpi.new)} sub="davrda ochilgan" delta={delta(d.kpi.new, d.kpi_prev.new)} />
                 <KpiCard label="Yutilgan" icon={<Handshake size={16} />} value={formatNumber(d.kpi.won)} sub="davrda yopilgan" delta={delta(d.kpi.won, d.kpi_prev.won)} />
                 <KpiCard label="Yutqazilgan" icon={<XCircle size={16} />} value={formatNumber(d.kpi.lost)} sub="davrda yopilgan" delta={delta(d.kpi.lost, d.kpi_prev.lost)} invert />
                 <KpiCard label="Konversiya" icon={<Percent size={16} />} value={d.kpi.conversion === null ? "—" : `${d.kpi.conversion}%`} sub="yutilgan ÷ yopilgan" delta={null} />
-                <KpiCard label="Yutilgan summa" icon={<Coins size={16} />} value={formatNumber(d.kpi.won_sum)} unit="so'm" sub="bitim narxi bo'yicha" delta={delta(d.kpi.won_sum, d.kpi_prev.won_sum)} />
-              </div>
+                <KpiCard className="col-span-2 @4xl:col-span-1" label="Yutilgan summa" icon={<Coins size={16} />} value={formatNumber(d.kpi.won_sum)} unit="so'm" sub="bitim narxi bo'yicha" delta={delta(d.kpi.won_sum, d.kpi_prev.won_sum)} />
+              </div></div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-3 xl:col-span-2">
                   <Card title="Voronka" aside="ochiq bitimlar, hozir" className="flex-1"><Funnel rows={d.funnel} /></Card>
@@ -98,7 +99,7 @@ export function Dashboard() {
               <CallsCard calls={d.calls} sellers={d.sellers} />
             </Section>
           </div>
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-0">
+          <aside className="flex flex-col gap-4 xl:sticky xl:top-0">
             <AttentionPanel a={d.attention} />
             {hasAccess("tadbirlar-moliya") && <FinancePanel from={from} to={to} />}
           </aside>

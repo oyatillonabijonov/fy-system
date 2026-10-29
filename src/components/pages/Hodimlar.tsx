@@ -43,22 +43,22 @@ export function Hodimlar() {
     <div className="flex flex-col gap-4 pb-10">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
           {ROLE_FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setRole(f.id)}
               aria-pressed={role === f.id}
-              className={`flex items-center gap-1.5 px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${role === f.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+              className={`flex items-center gap-1.5 px-3.5 h-control-md rounded-full text-base font-medium whitespace-nowrap shrink-0 transition-colors ${role === f.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
             >
               {f.label}
               <span className="text-sm text-ink-faint tabular-nums">{count(f.id)}</span>
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 min-w-0 sm:flex-none">
             <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
             <input
               type="search"
@@ -66,13 +66,13 @@ export function Hodimlar() {
               aria-label="Qidirish"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64 h-control-md pl-9 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus"
+              className="w-full sm:w-64 h-control-md pl-9 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus"
             />
           </div>
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 h-control-md bg-accent text-ink-on-accent rounded-full text-base font-medium hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-2 px-4 h-control-md shrink-0 whitespace-nowrap bg-accent text-ink-on-accent rounded-full text-base font-medium hover:bg-accent-hover transition-colors"
           >
             <Plus size={16} />
             Yangi xodim

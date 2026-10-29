@@ -53,7 +53,7 @@ export function PhoneWidget() {
         <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite"
           drag dragControls={drag} dragListener={false} dragMomentum={false} dragElastic={0} dragConstraints={area} onDragEnd={savePos}
           initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-          className="pointer-events-auto absolute bottom-2 right-2 w-[320px] rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
+          className="pointer-events-auto absolute bottom-2 right-2 w-[320px] max-w-full rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"
           style={{ boxShadow: "var(--toast-shadow)", x, y }}>
           <div className="flex items-start gap-3 cursor-grab active:cursor-grabbing touch-none select-none" onPointerDown={(e) => drag.start(e)} title="Sudrab boshqa joyga qo'ying">
             <span className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${call.state === "ringing" ? "bg-success-soft text-success-text animate-pulse" : "bg-surface-sunken text-ink-muted"}`}>

@@ -74,7 +74,7 @@ function LeadView({ lead }: { lead: Lead }) {
         <ArrowLeft size={16} />{pipeline?.name ?? "Sotuv bo'limi"}
       </Link>
 
-      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)] items-start">
+      <div className="grid gap-4 grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)] items-start">
         {/* Left: the deal */}
         <aside className="rounded-surface bg-surface-sunken p-5 flex flex-col gap-5 lg:sticky lg:top-4">
           <div className="flex flex-col gap-3">
@@ -241,9 +241,9 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
       </div>
       <div className="border-t border-line p-4 flex flex-col gap-3 bg-surface-sunken rounded-b-surface">
         {open.length > 0 ? open.map((t) => (
-          <div key={t.id} className="flex items-center gap-3 rounded-control bg-surface px-3 py-2.5">
+          <div key={t.id} className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1.5 rounded-control bg-surface px-3 py-2.5">
             <DoneButton onClick={() => setClosing(t)} />
-            <span className="flex-1 min-w-0 text-base text-ink truncate">{kindLabel(t.kind)}{t.text ? `: ${t.text}` : ""}</span>
+            <span className="flex-1 min-w-[10rem] sm:min-w-0 text-base text-ink break-words sm:truncate">{kindLabel(t.kind)}{t.text ? `: ${t.text}` : ""}</span>
             {t.assignee && <PersonDot name={t.assignee.full_name} url={t.assignee.avatar_url} />}
             <TaskChip kind={t.kind} due={t.due_date} today={today} />
           </div>
@@ -265,7 +265,7 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
       <div className="flex gap-3 py-2">
         <span className="w-7 h-7 rounded-full bg-info-soft text-info-text flex items-center justify-center shrink-0"><Tray size={16} /></span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-sm text-ink-muted">
+          <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
             <span className="font-medium text-ink">{title}</span>
             <span className="tabular-nums ml-auto">{when(note.created_at)}</span>
           </div>
@@ -307,7 +307,7 @@ function CallItem({ call }: { call: Call }) {
     <div className="flex gap-3 py-2">
       <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${missed ? "bg-danger-soft text-danger-text" : "bg-surface-sunken text-ink-muted"}`}><Icon size={16} /></span>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-        <div className="flex items-center gap-2 text-sm text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <span className={missed ? "text-danger-text" : "text-ink"}>{callLabel(call)}</span>
           {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
           {call.staff && <span className="truncate">· {call.staff.full_name}</span>}
@@ -325,7 +325,7 @@ function DoneItem({ task }: { task: SalesTask }) {
     <div className="flex gap-3 py-2">
       <span className="w-7 h-7 rounded-full bg-success-soft text-success-text flex items-center justify-center shrink-0"><CheckCircle size={16} /></span>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 text-sm text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <Icon size={16} /><span className="text-ink">{kindLabel(task.kind)}{task.text ? `: ${task.text}` : ""}</span>
           <span className="tabular-nums ml-auto">{when(task.done_at!)}</span>
         </div>

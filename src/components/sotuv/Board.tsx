@@ -37,13 +37,15 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
 
   return (
     <DragDropContext onDragStart={() => setDragging(true)} onDragEnd={onDragEnd}>
+      {/* Below lg the board is a swipe strip: EdgeScroll's arrows would sit on the cards */}
+      <div className="max-lg:[&_button[aria-label$=ustunlar]]:hidden">
       <EdgeScroll dragging={dragging} className="flex gap-3 pb-2 min-h-[60vh]">
         {stages.map((s) => {
           const col = leads.filter((l) => l.stage_id === s.id)
           const sum = col.reduce((a, l) => a + l.price, 0)
           const open = !s.is_won && !s.is_lost
           return (
-            <div key={s.id} className="w-[272px] shrink-0 flex flex-col rounded-surface bg-surface-sunken p-2">
+            <div key={s.id} className="w-[85vw] sm:w-[272px] shrink-0 flex flex-col rounded-surface bg-surface-sunken p-2">
               <div className="px-2 pt-1 pb-2">
                 <div className="flex items-center gap-2">
                   <StageDot color={s.color} />
@@ -99,6 +101,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
           )
         })}
       </EdgeScroll>
+      </div>
     </DragDropContext>
   )
 }

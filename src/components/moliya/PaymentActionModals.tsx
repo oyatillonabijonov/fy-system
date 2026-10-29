@@ -59,15 +59,15 @@ export function ModalShell({
           aria-labelledby={titleId}
           tabIndex={-1}
           initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="bg-surface-raised rounded-overlay w-full max-w-sm relative flex flex-col"
+          className="bg-surface-raised rounded-overlay w-full max-w-sm relative flex flex-col max-h-[calc(100dvh-2rem)]"
         >
-          <div className="p-5 border-b border-line flex items-center justify-between">
+          <div className="p-5 border-b border-line flex items-center justify-between gap-3 shrink-0">
             <h3 id={titleId} className="text-md font-semibold text-ink">{title}</h3>
-            <button onClick={guardedClose} aria-label="Yopish" className="p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
+            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 sm:p-1 sm:m-0 shrink-0 hover:bg-mute-ghost-hover rounded-full transition-all">
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
-          <div className="p-5 flex flex-col gap-4">
+          <div className="p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
             {error && (
               <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                 {error}
@@ -75,7 +75,7 @@ export function ModalShell({
             )}
             {children}
           </div>
-          <div className="p-5 pt-0 flex gap-3">
+          <div className="p-5 pt-0 flex gap-3 shrink-0">
             <button
               onClick={onClose}
               disabled={pending}

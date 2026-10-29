@@ -93,14 +93,14 @@ function CreateForm({ onClose, onCreated }: Omit<CreateUserModalProps, "isOpen">
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised border border-line rounded-overlay w-full max-w-lg pointer-events-auto max-h-[90vh] flex flex-col"
+          className="bg-surface-raised border border-line rounded-overlay w-full max-w-lg pointer-events-auto max-h-[calc(100dvh-32px)] sm:max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <div className="flex items-center justify-between px-4 sm:px-6 pt-5 pb-4">
             <h2 id={titleId} className="text-md font-semibold text-ink">
               {created ? "Xodim qo'shildi" : "Yangi xodim"}
             </h2>
-            <button type="button" onClick={onClose} disabled={saving} aria-label="Yopish" className="size-8 rounded-item flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover transition-colors">
+            <button type="button" onClick={onClose} disabled={saving} aria-label="Yopish" className="size-9 sm:size-8 shrink-0 rounded-item flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -109,7 +109,7 @@ function CreateForm({ onClose, onCreated }: Omit<CreateUserModalProps, "isOpen">
             <Credentials {...created} onDone={onClose} />
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto px-6 pb-2 flex flex-col gap-5">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-2 flex flex-col gap-5">
                 {error && (
                   <div role="alert" className="px-3.5 py-2.5 rounded-control bg-danger-soft text-sm font-medium text-danger-text">{error}</div>
                 )}
@@ -149,7 +149,7 @@ function CreateForm({ onClose, onCreated }: Omit<CreateUserModalProps, "isOpen">
                 <ModuleAccessField role={role} value={grants} onChange={setGrants} />
               </div>
 
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line">
+              <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-line">
                 <button type="button" onClick={onClose} disabled={saving} className={softBtn}>Bekor qilish</button>
                 <button type="submit" disabled={saving} className={primaryBtn}>
                   {saving ? "Qo'shilmoqda…" : "Xodimni qo'shish"}
@@ -176,7 +176,7 @@ function Credentials({ email, password, onDone }: { email: string; password: str
 
   return (
     <div className="flex flex-col">
-      <div className="px-6 pb-2 flex flex-col gap-4">
+      <div className="px-4 sm:px-6 pb-2 flex flex-col gap-4">
         <p className="text-base text-ink-muted">
           Quyidagi ma'lumotlarni xodimga bering. Birinchi kirishda u parolni o'zgartirishi so'raladi.
         </p>
@@ -187,11 +187,11 @@ function Credentials({ email, password, onDone }: { email: string; password: str
           </div>
           <div className="flex items-center justify-between gap-4 py-2.5">
             <dt className="text-base text-ink-muted">Parol</dt>
-            <dd className="text-base text-ink font-mono">{password}</dd>
+            <dd className="text-base text-ink font-mono break-all text-right">{password}</dd>
           </div>
         </dl>
       </div>
-      <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line mt-4">
+      <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-line mt-4">
         <button type="button" onClick={copy} className={softBtn}>
           {copied ? <Check size={16} /> : <Copy size={16} />}
           {copied ? "Nusxalandi" : "Nusxalash"}
@@ -205,9 +205,9 @@ function Credentials({ email, password, onDone }: { email: string; password: str
 const inputCls =
   "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const softBtn =
-  "flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 const primaryBtn =
-  "px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+  "px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (

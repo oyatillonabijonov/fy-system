@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { Dashboard } from "./components/pages/Dashboard"
@@ -26,8 +27,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
   Warning,
   Phone,
+  List,
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
+import { useMedia } from "./hooks/useMedia"
 
 
 interface PageMeta {
@@ -81,7 +84,7 @@ function PhoneStatus() {
   const [dot, text] = status === "ready" ? ["bg-success", "Tayyor"] : status === "connecting" ? ["bg-warning", "Ulanmoqda"] : ["bg-danger", "Aloqa yo'q"]
   return (
     <span title={`Telefon: ichki raqam ${ext} · ${text}`} className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken text-sm text-ink-muted tabular-nums">
-      <Phone size={16} className="text-ink" />{ext}<span className={`size-2 rounded-full ${dot}`} />
+      <Phone size={16} className="text-ink" /><span className="max-sm:hidden">{ext}</span><span className={`size-2 rounded-full ${dot}`} />
     </span>
   )
 }
@@ -91,19 +94,28 @@ function AppShell() {
   const navigate = useNavigate()
   const { user, hasAccess } = useAuth()
   const meta = pageMetaFor(location.pathname)
+  const desktop = useMedia("(min-width: 1024px)")
+  // below lg the sidebar is a drawer; it belongs to the page it was opened on, so navigating closes it
+  const [navFor, setNavFor] = useState<string | null>(null)
+  const closeNav = () => setNavFor(null)
 
 
 
   return (
     <PhoneProvider>
-    <div className="app-ground h-screen text-ink flex overflow-hidden bg-page">
-      <Sidebar />
+    <div className="app-ground h-dvh text-ink flex overflow-hidden bg-page">
+      {desktop ? <Sidebar /> : navFor === location.pathname && (
+        <div className="fixed inset-0 z-50 flex">
+          <button type="button" aria-label="Menyuni yopish" onClick={closeNav} className="absolute inset-0 bg-surface-overlay cursor-default" />
+          <div className="app-ground relative h-full bg-page"><Sidebar drawer onClose={closeNav} /></div>
+        </div>
+      )}
 
       {/* Main content panel — a card inset on the page ground, joined to the sidebar by the shared background */}
-      <div className="app-main flex-1 flex flex-col my-2 mr-2 overflow-hidden min-w-0 bg-surface rounded-overlay ">
+      <div className="app-main flex-1 flex flex-col lg:my-2 lg:mr-2 overflow-hidden min-w-0 bg-surface lg:rounded-overlay">
         {/* First login with an admin-issued temporary password */}
         {user?.must_change_password && location.pathname !== "/sozlamalar" && (
-          <div role="alert" className="flex items-center gap-3 px-6 py-2.5 bg-danger text-white text-base flex-shrink-0">
+          <div role="alert" className="flex items-center gap-3 px-4 sm:px-6 py-2.5 bg-danger text-white text-base flex-shrink-0">
             <Warning size={18} className="flex-shrink-0" />
             <span className="flex-1 min-w-0">Siz vaqtincha parol bilan kirdingiz. Xavfsizlik uchun parolingizni o'zgartiring.</span>
             <button
@@ -117,15 +129,23 @@ function AppShell() {
         )}
 
         {/* Header */}
-        <header className="h-16 px-6 flex items-center justify-between gap-6 flex-shrink-0 border-b border-line">
-          {/* Left: page title */}
-          <div className="flex flex-col min-w-0">
-            <h1 className="text-md font-semibold text-ink truncate">{meta.title}</h1>
-            <p className="text-sm text-ink-muted truncate">{meta.desc}</p>
+        <header className="h-16 px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-6 flex-shrink-0 border-b border-line">
+          {/* Left: menu (below lg) + page title */}
+          <div className="flex items-center gap-2 min-w-0">
+            {!desktop && (
+              <button type="button" onClick={() => setNavFor(location.pathname)} aria-label="Menyu"
+                className="size-9 -ml-1.5 shrink-0 rounded-full flex items-center justify-center text-ink hover:bg-mute-ghost-hover">
+                <List size={20} />
+              </button>
+            )}
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-base sm:text-md font-semibold text-ink truncate">{meta.title}</h1>
+              <p className="text-sm text-ink-muted truncate max-sm:hidden">{meta.desc}</p>
+            </div>
           </div>
 
           {/* Right: phone, reminders, profile */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <PhoneStatus />
             {hasAccess("sotuv-crmn") && <SalesReminders />}
 
@@ -140,7 +160,7 @@ function AppShell() {
         </header>
 
         {/* Main scroll area */}
-        <main className="flex-1 px-6 pt-6 pb-5 overflow-y-auto no-scrollbar relative">
+        <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-5 overflow-y-auto no-scrollbar relative">
           <div className="max-w-[1400px] mx-auto h-full">
             <AnimatePresence mode="wait">
               <motion.div

@@ -47,28 +47,28 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[8vh]">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div
         ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1}
         initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-xl bg-surface-raised rounded-overlay flex flex-col max-h-[84vh]"
+        className="relative w-full max-w-xl bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-32px)] sm:max-h-[84vh]"
       >
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
           <span id={headingId} className="text-xs font-medium uppercase tracking-wide text-ink-faint truncate">{t.event?.name ?? "Umumiy vazifalar"}{t.section ? ` › ${t.section}` : ""}</span>
           <span className="flex items-center gap-1">
             {canDelete && (
-              <button onClick={del} aria-label="O'chirish" title="O'chirish" className="p-1.5 rounded-item text-ink-muted hover:text-danger-text hover:bg-danger-soft transition-colors">
+              <button onClick={del} aria-label="O'chirish" title="O'chirish" className="p-2 sm:p-1.5 rounded-item text-ink-muted hover:text-danger-text hover:bg-danger-soft transition-colors">
                 <Trash size={18} />
               </button>
             )}
-            <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+            <button onClick={onClose} aria-label="Yopish" className="p-2 sm:p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
               <X size={20} className="text-ink-muted" />
             </button>
           </span>
         </div>
 
-        <div className="flex-1 min-h-0 px-5 py-5 flex flex-col gap-5">
+        <div className="flex-1 min-h-0 px-5 py-5 flex flex-col gap-5 max-sm:overflow-y-auto max-sm:[&>*]:shrink-0">
           <textarea value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveTitle}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur() } }}
             rows={2} aria-label="Vazifa nomi"
@@ -145,12 +145,12 @@ function Instructions({ taskId }: { taskId: string }) {
   return (
     <section className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-medium text-ink-muted flex items-center gap-1.5"><Paperclip size={16} /> Yo'riqnoma{items.length ? ` · ${items.length}` : ""}</h4>
+        <h4 className="text-sm font-medium text-ink-muted flex items-center gap-1.5 whitespace-nowrap"><Paperclip size={16} /> Yo'riqnoma{items.length ? ` · ${items.length}` : ""}</h4>
         <div className="flex-1" />
-        <button type="button" onClick={() => setLinking((v) => !v)} className="flex items-center gap-1 h-7 px-2.5 rounded-full text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors">
+        <button type="button" onClick={() => setLinking((v) => !v)} className="flex items-center gap-1 h-9 sm:h-7 px-3 sm:px-2.5 rounded-full text-sm font-medium whitespace-nowrap text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors">
           <Plus size={12} weight="bold" /> Havola
         </button>
-        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="flex items-center gap-1 h-7 px-2.5 rounded-full text-sm font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors disabled:opacity-50">
+        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="flex items-center gap-1 h-9 sm:h-7 px-3 sm:px-2.5 rounded-full text-sm font-medium whitespace-nowrap text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors disabled:opacity-50">
           <Plus size={12} weight="bold" /> {addFile.isPending ? "Yuklanmoqda…" : "Fayl"}
         </button>
         <input ref={fileRef} type="file" accept={ATTACH_ACCEPT} onChange={pick} className="hidden" />
@@ -165,7 +165,7 @@ function Instructions({ taskId }: { taskId: string }) {
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveLink() } }}
             className="sm:w-44 h-9 px-2.5 rounded-item bg-surface text-base text-ink placeholder:text-ink-faint focus:outline-none" />
           <button type="button" onClick={saveLink} disabled={!url.trim() || busy}
-            className="h-9 px-4 rounded-item bg-accent text-ink-on-accent text-base font-medium disabled:opacity-40">Qo'shish</button>
+            className="h-9 px-4 rounded-item bg-accent text-ink-on-accent text-base font-medium whitespace-nowrap disabled:opacity-40">Qo'shish</button>
         </div>
       )}
       {error && <p role="alert" className="text-sm font-medium text-danger-text">{error}</p>}
@@ -183,7 +183,7 @@ function Instructions({ taskId }: { taskId: string }) {
               </button>
               {(a.created_by === user?.id || user?.role === "admin") && (
                 <button type="button" aria-label="O'chirish" title="O'chirish" onClick={async () => { if (await confirmAction({ title: "Yo'riqnomani o'chirish", message: `"${a.title}" o'chirilsinmi?` })) remove.mutate(a.id) }}
-                  className="p-1.5 rounded-item text-ink-muted opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-danger-text hover:bg-danger-soft transition">
+                  className="p-2 sm:p-1.5 rounded-item text-ink-muted sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 hover:text-danger-text hover:bg-danger-soft transition">
                   <Trash size={16} />
                 </button>
               )}

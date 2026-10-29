@@ -10,7 +10,7 @@ export function ClientSms({ clientId, optOut }: { clientId: string; optOut: bool
   const setOptOut = useSetSmsOptOut()
   const [on, setOn] = useState(optOut)   // the card holds a snapshot of the client
   return (
-    <div className="px-8 py-6 flex flex-col gap-4">
+    <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-4">
       <label className="flex items-center justify-between gap-4 p-4 rounded-surface bg-surface-sunken cursor-pointer">
         <span className="flex flex-col gap-0.5">
           <span className="text-base font-medium text-ink">Reklama SMS'i yubormang</span>
@@ -25,9 +25,9 @@ export function ClientSms({ clientId, optOut }: { clientId: string; optOut: bool
         : data.length === 0 ? <p className="text-sm text-ink-muted py-6 text-center">SMS yuborilmagan</p>
         : data.map((m) => (
           <div key={m.id} className="flex flex-col gap-1 pb-3 border-b border-line last:border-b-0">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-ink-muted tabular-nums">{when(m.created_at)}</span>
-              <span className={SMS_STATUS[m.status].cls} title={m.error ?? undefined}>{SMS_STATUS[m.status].label}</span>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-ink-muted tabular-nums whitespace-nowrap">{when(m.created_at)}</span>
+              <span className={`${SMS_STATUS[m.status].cls} shrink-0 whitespace-nowrap`} title={m.error ?? undefined}>{SMS_STATUS[m.status].label}</span>
             </div>
             <p className="text-base text-ink whitespace-pre-wrap">{m.text}</p>
           </div>

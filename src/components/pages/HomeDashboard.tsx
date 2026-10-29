@@ -81,7 +81,7 @@ function UpcomingEvents() {
               key={e.id}
               type="button"
               onClick={() => open(e.id)}
-              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover rounded-surface p-5 flex flex-col gap-3 transition-colors"
+              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover rounded-surface p-4 sm:p-5 flex flex-col gap-3 transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <span className="text-base font-semibold text-ink line-clamp-2">{e.name}</span>
@@ -132,10 +132,10 @@ function ClientStats() {
             hint={isLoading ? undefined : `O'tgan oy: ${formatNumber(lastMonth)}`}
           />
         </div>
-        <div className="lg:col-span-2 bg-surface-sunken rounded-surface p-5 flex flex-col gap-2 min-w-0">
+        <div className="lg:col-span-2 bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-2 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-base font-semibold text-ink">Oxirgi qo'shilganlar</h3>
-            <button type="button" onClick={() => navigate("/mijozlar")} className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+            <button type="button" onClick={() => navigate("/mijozlar")} className="flex items-center gap-1.5 shrink-0 whitespace-nowrap text-sm font-medium text-ink-muted hover:text-ink transition-colors">
               Barchasi <ArrowRight size={16} />
             </button>
           </div>
@@ -181,8 +181,8 @@ function Section({ title, desc, children }: { title: string; desc: string; child
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-surface-sunken rounded-surface px-5 py-4 flex flex-col gap-1.5">
-      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted">{icon}{label}</span>
+    <div className="bg-surface-sunken rounded-surface px-4 sm:px-5 py-4 flex flex-col gap-1.5 min-w-0">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted whitespace-nowrap">{icon}{label}</span>
       <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
       {hint && <span className="text-sm text-ink-faint">{hint}</span>}
     </div>

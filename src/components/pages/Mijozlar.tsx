@@ -410,7 +410,7 @@ export function Mijozlar() {
             cell: (info) => (
                 <div className="flex items-center justify-end gap-1 pr-2">
                     <button
-                        className="size-8 flex items-center justify-center hover:bg-mute-ghost-hover rounded-full transition-colors text-ink"
+                        className="size-9 lg:size-8 flex items-center justify-center hover:bg-mute-ghost-hover rounded-full transition-colors text-ink"
                         title="Ko'rish"
                         aria-label="Ko'rish"
                         onClick={(e) => {
@@ -421,7 +421,7 @@ export function Mijozlar() {
                         <Eye size={18} />
                     </button>
                     <button
-                        className="size-8 flex items-center justify-center hover:bg-danger-soft rounded-full transition-colors text-ink hover:text-danger-text"
+                        className="size-9 lg:size-8 flex items-center justify-center hover:bg-danger-soft rounded-full transition-colors text-ink hover:text-danger-text"
                         title="O'chirish"
                         aria-label="O'chirish"
                         onClick={(e) => {
@@ -631,15 +631,15 @@ export function Mijozlar() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
-                    <div key={index} className="bg-surface border border-line rounded-surface p-5 flex flex-col gap-3 transition-all">
-                        <span className="text-base font-medium text-ink-muted">{stat.title}</span>
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 ${stat.bg} rounded-control-sm flex items-center justify-center`}>
+                    <div key={index} className="bg-surface border border-line rounded-surface p-3.5 md:p-5 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 md:flex md:flex-col md:items-stretch md:gap-3 transition-all">
+                        <span className="col-start-2 row-start-1 text-base font-medium text-ink-muted">{stat.title}</span>
+                        <div className="contents md:flex md:items-center md:gap-3">
+                            <div className={`col-start-1 row-start-1 row-span-2 w-10 h-10 ${stat.bg} rounded-control-sm flex items-center justify-center`}>
                                 <stat.icon size={20} className={stat.color} />
                             </div>
-                            <span className="text-xl font-bold text-ink">{stat.value}</span>
+                            <span className="col-start-3 row-start-1 row-span-2 text-xl font-bold text-ink tabular-nums">{stat.value}</span>
                         </div>
-                        <span className="text-xs text-ink-faint">{stat.subtitle}</span>
+                        <span className="col-start-2 row-start-2 text-xs text-ink-faint">{stat.subtitle}</span>
                     </div>
                 ))}
             </div>
@@ -647,38 +647,38 @@ export function Mijozlar() {
             {/* Table Area */}
             <div className="flex flex-col gap-3">
                 {/* Search & Actions */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start lg:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="relative w-full sm:w-auto">
                             <input 
                                 type="text" 
                                 value={globalFilter ?? ''}
                                 onChange={e => setGlobalFilter(e.target.value)}
                                 placeholder="Ism, telefon yoki faoliyat bo'yicha qidirish..." 
-                                className="pl-9 pr-4 py-2 bg-surface-sunken border-transparent focus:bg-surface focus:border-line-focus rounded-control text-base w-80 transition-all outline-hidden font-medium"
+                                className="pl-9 pr-4 py-2 bg-surface-sunken border-transparent focus:bg-surface focus:border-line-focus rounded-control text-base w-full sm:w-80 transition-all outline-hidden font-medium"
                             />
                             <Users size={16} className="text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
                             {([["Rasmi yo'q", noImage, setNoImage], ["Raqami yo'q", noPhone, setNoPhone]] as const).map(([label, on, set]) => (
                                 <button key={label} type="button" aria-pressed={on} onClick={() => { set(!on); table.setPageIndex(0) }}
-                                    className={`h-control-md px-3.5 inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
+                                    className={`h-control-md px-3.5 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${on ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
                                     {on && <Check size={12} weight="bold" />}{label}
                                 </button>
                             ))}
                             <button type="button" aria-pressed={incomplete} onClick={() => { setIncomplete(!incomplete); table.setPageIndex(0) }}
-                                className={`h-control-md px-3.5 inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${incomplete ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
+                                className={`h-control-md px-3.5 shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full text-base font-medium transition-colors ${incomplete ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink-muted hover:text-ink hover:bg-surface-sunken-hover"}`}>
                                 {incomplete && <Check size={12} weight="bold" />}To'liq emas
                                 {incompleteCount > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-danger text-white text-xs font-semibold tabular-nums inline-flex items-center justify-center">{incompleteCount}</span>}
                             </button>
                         </div>
                         {selectedMijozlar.length > 0 && (
-                            <div className="flex items-center gap-2 pl-4 border-l border-line">
+                            <div className="flex flex-wrap items-center gap-2 sm:pl-4 sm:border-l border-line">
                                 <span className="text-base font-bold text-ink">{selectedMijozlar.length} ta tanlandi</span>
                                 <button
                                     onClick={() => setBulkDeleteConfirm(true)}
                                     disabled={deleteClientsMutation.isPending}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-soft hover:bg-danger-soft text-danger-text rounded-full text-sm font-bold transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-soft hover:bg-danger-soft text-danger-text rounded-full text-sm font-bold whitespace-nowrap transition-colors disabled:opacity-50"
                                 >
                                     <Trash size={16} />
                                     Tanlanganlarni o'chirish
@@ -692,10 +692,10 @@ export function Mijozlar() {
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 order-first sm:order-none">
                         <button 
                             onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
+                            className="flex w-full sm:w-auto items-center justify-center gap-2 whitespace-nowrap px-4 py-2 bg-accent text-ink-on-accent rounded-full text-base font-bold hover:bg-accent-hover transition-all active:scale-95"
                         >
                             <Plus size={16} />
                             Yangi mijoz
@@ -729,7 +729,7 @@ export function Mijozlar() {
                                         className={`${tbl.tr} cursor-pointer`}
                                     >
                                         {row.getVisibleCells().map(cell => (
-                                            <td key={cell.id} className={`${tbl.td} ${cell.column.id === "activity" ? "w-full" : ""} ${row.getIsSelected() ? tbl.tdSelected : ""}`}>
+                                            <td key={cell.id} className={`${tbl.td} ${cell.column.id === "activity" ? "w-full min-w-40" : ""} ${row.getIsSelected() ? tbl.tdSelected : ""}`}>
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </td>
                                         ))}
@@ -774,16 +774,16 @@ export function Mijozlar() {
                         exit={{ opacity: 0, scale: 0.96, y: 16 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                         onClick={e => e.stopPropagation()}
-                        className="w-[520px] max-h-[92vh] bg-surface-raised rounded-overlay flex flex-col overflow-hidden"
+                        className="w-full max-w-[520px] max-h-[calc(100dvh-32px)] sm:max-h-[92vh] bg-surface-raised rounded-overlay flex flex-col overflow-hidden"
                     >
-                        <div className="flex flex-col">
+                        <div className="flex flex-col min-h-0 overflow-y-auto">
                             {missingInfo(selectedCustomer).length > 0 && (
                                 <div role="status" className="flex items-center gap-2 px-5 py-2.5 bg-danger-soft text-danger-dark text-sm font-medium">
                                     <WarningCircle size={16} className="shrink-0" />Yetishmaydi: {missingInfo(selectedCustomer).join(", ")}
                                 </div>
                             )}
                             {/* AVATAR + INFO */}
-                            <div className="relative flex flex-col items-center pt-6 pb-6 px-8 border-b border-line gap-3">
+                            <div className="relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}
                                 <button
                                     onClick={closeDetailsModal}
@@ -794,7 +794,7 @@ export function Mijozlar() {
                                 </button>
                                 {/* Circle avatar */}
                                 <div className="relative group flex-shrink-0">
-                                    <div className="w-[120px] h-[120px] rounded-full overflow-hidden bg-surface-sunken flex items-center justify-center">
+                                    <div className="w-24 h-24 sm:w-[120px] sm:h-[120px] rounded-full overflow-hidden bg-surface-sunken flex items-center justify-center">
                                         {selectedCustomer.image ? (
                                             <img src={selectedCustomer.image} alt="" className="w-full h-full object-cover object-top" />
                                         ) : (
@@ -845,7 +845,7 @@ export function Mijozlar() {
                             </div>
 
                             {/* TABS */}
-                            <div className="flex border-b border-line bg-surface-raised sticky top-0 z-[5] pl-4">
+                            <div className="flex shrink-0 overflow-x-auto no-scrollbar border-b border-line bg-surface-raised sticky top-0 z-[5] pl-4">
                                 {([
                                     { id: 'malumotlar' as const, label: "Ma'lumotlar" },
                                     { id: 'cashback' as const, label: 'Cashback' },
@@ -854,7 +854,7 @@ export function Mijozlar() {
                                     <button
                                         key={tab.id}
                                         onClick={() => { cancelEdit(); setDrawerTab(tab.id) }}
-                                        className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                                        className={`px-4 py-2.5 shrink-0 whitespace-nowrap text-sm font-semibold border-b-2 transition-colors ${
                                             drawerTab === tab.id
                                                 ? 'border-line-focus text-ink'
                                                 : 'border-transparent text-ink-muted'
@@ -869,9 +869,9 @@ export function Mijozlar() {
 
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (
-                                <div className="px-8 py-6 flex flex-col gap-4">
+                                <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-4">
                                     {/* Balance + next expiry */}
-                                    <div className="flex items-start justify-between gap-4 p-4 rounded-surface bg-surface-sunken">
+                                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4 p-4 rounded-surface bg-surface-sunken">
                                         <div className="flex flex-col gap-1 min-w-0">
                                             <span className="text-sm text-ink-muted">Joriy balans</span>
                                             <span className="text-xl font-semibold text-ink tabular-nums">
@@ -888,7 +888,7 @@ export function Mijozlar() {
                                             <button
                                                 type="button"
                                                 onClick={() => setAdjustOpen(true)}
-                                                className="flex-shrink-0 px-3.5 h-control-md rounded-full bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
+                                                className="flex-shrink-0 whitespace-nowrap px-3.5 h-control-md rounded-full bg-surface text-base font-medium text-ink hover:bg-mute-ghost-hover transition-colors"
                                             >
                                                 O'zgartirish
                                             </button>
@@ -937,7 +937,7 @@ export function Mijozlar() {
 
                             {/* TAB: Ma'lumotlar */}
                             {drawerTab === 'malumotlar' && (
-                                <div className="px-8 py-6 flex flex-col gap-5">
+                                <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col gap-5">
                                     {/* Name */}
                                     {editAllMode ? (
                                         <>
@@ -994,7 +994,7 @@ export function Mijozlar() {
                                                     <span className="text-sm text-ink-muted">Ism</span>
                                                     {editingField !== "name" && (
                                                         <button type="button" onClick={() => startEdit("name")} aria-label="Tahrirlash"
-                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="p-3 -m-3 text-ink-muted opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -1003,9 +1003,9 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
+                                                            className="flex-1 min-w-0 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.name}</span>
@@ -1017,7 +1017,7 @@ export function Mijozlar() {
                                                     <span className="text-sm text-ink-muted">Telefon</span>
                                                     {editingField !== "phone" && (
                                                         <button type="button" onClick={() => startEdit("phone")} aria-label="Tahrirlash"
-                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="p-3 -m-3 text-ink-muted opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -1026,10 +1026,10 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
+                                                            className="flex-1 min-w-0 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="+998 90 123 45 67" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.phone || '—'}</span>
@@ -1041,7 +1041,7 @@ export function Mijozlar() {
                                                     <span className="text-sm text-ink-muted">Email</span>
                                                     {editingField !== "email" && (
                                                         <button type="button" onClick={() => startEdit("email")} aria-label="Tahrirlash"
-                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="p-3 -m-3 text-ink-muted opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -1050,10 +1050,10 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
+                                                            className="flex-1 min-w-0 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface"
                                                             placeholder="email@example.com" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink truncate">{selectedCustomer.email || '—'}</span>
@@ -1065,7 +1065,7 @@ export function Mijozlar() {
                                                     <span className="text-sm text-ink-muted">Faoliyat</span>
                                                     {editingField !== "activity" && (
                                                         <button type="button" onClick={() => startEdit("activity")} aria-label="Tahrirlash"
-                                                            className="text-ink-muted opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                            className="p-3 -m-3 text-ink-muted opacity-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer">
                                                             <PencilSimple size={12} weight="bold" />
                                                         </button>
                                                     )}
@@ -1074,9 +1074,9 @@ export function Mijozlar() {
                                                     <div className="flex items-center gap-2">
                                                         <input autoFocus value={editValue} onChange={e => setEditValue(e.target.value)}
                                                             onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") { e.preventDefault(); cancelEdit() } }}
-                                                            className="flex-1 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
-                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
-                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-1.5 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
+                                                            className="flex-1 min-w-0 px-3 py-2 bg-surface-sunken rounded-control text-base text-ink outline-none focus:bg-surface" />
+                                                        <button onClick={saveEdit} aria-label="Saqlash" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><Check size={16} className="text-ink" /></button>
+                                                        <button onClick={cancelEdit} aria-label="Bekor qilish" className="p-2.5 sm:p-1.5 shrink-0 hover:bg-mute-ghost-hover rounded-full"><X size={16} className="text-ink-muted" /></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-base text-ink">{selectedCustomer.activity || '—'}</span>
@@ -1125,34 +1125,34 @@ export function Mijozlar() {
                                     )}
                                     {/* Action buttons */}
                                     {editAllMode ? (
-                                        <div className="flex gap-3 mt-6 mb-6">
+                                        <div className="flex flex-wrap gap-3 mt-6 mb-6">
                                             <button
                                                 onClick={saveEditAll}
                                                 disabled={updateClientMutation.isPending}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50"
+                                                className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors disabled:opacity-50"
                                             >
                                                 <Check size={16} />
                                                 Saqlash
                                             </button>
                                             <button
                                                 onClick={cancelEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-ink-muted bg-mute-soft hover:bg-mute-soft-hover transition-colors"
+                                                className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-semibold text-ink-muted bg-mute-soft hover:bg-mute-soft-hover transition-colors"
                                             >
                                                 Bekor qilish
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex gap-3 mt-6 mb-6">
+                                        <div className="flex flex-wrap gap-3 mt-6 mb-6">
                                             <button
                                                 onClick={startEditAll}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
+                                                className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-semibold bg-accent text-ink-on-accent hover:bg-accent-hover transition-colors"
                                             >
                                                 <PencilSimple size={16} />
                                                 O'zgartirish
                                             </button>
                                             <button
                                                 onClick={() => setCustomerToDelete(selectedCustomer)}
-                                                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-danger-text bg-danger-soft hover:bg-danger-soft transition-colors"
+                                                className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-semibold text-danger-text bg-danger-soft hover:bg-danger-soft transition-colors"
                                             >
                                                 <Trash size={16} />
                                                 O'chirish
@@ -1191,7 +1191,7 @@ export function Mijozlar() {
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             className="bg-surface-raised rounded-overlay w-full max-w-xl relative overflow-hidden flex flex-col"
                         >
-                            <div className="p-6 border-b border-line flex items-center justify-between bg-surface-raised">
+                            <div className="p-4 sm:p-6 border-b border-line flex items-center justify-between bg-surface-raised">
                                 <h3 id={addModalTitleId} className="text-lg font-bold text-ink">Yangi mijoz qo'shish</h3>
                                 <button
                                     onClick={closeAddModal}
@@ -1202,7 +1202,7 @@ export function Mijozlar() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleAddCustomer} className="p-6 overflow-y-auto max-h-[80vh] no-scrollbar">
+                            <form onSubmit={handleAddCustomer} className="p-4 sm:p-6 overflow-y-auto max-h-[calc(100dvh-9rem)] sm:max-h-[80vh] no-scrollbar">
                                 <div className="grid grid-cols-1 gap-6">
                                     {/* Image Upload */}
                                     <div className="flex flex-col items-center gap-4">
@@ -1238,7 +1238,7 @@ export function Mijozlar() {
                                         </p>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-name`} className="text-sm font-bold text-ink">ISM FAMILYASI *</label>
                                             <input
@@ -1278,13 +1278,13 @@ export function Mijozlar() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-phone`} className="text-sm font-bold text-ink">TELEFON RAQAMI *</label>
                                             <PhoneInput id={`${addFormId}-phone`} value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
                                         {duplicateClient && (
-                                            <div role="alert" className="col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
+                                            <div role="alert" className="sm:col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
                                                 <span className="flex-1 min-w-0">
                                                     Bu raqam bilan mijoz allaqachon bor: <span className="font-semibold">{duplicateClient.name}</span>
                                                 </span>
@@ -1298,7 +1298,7 @@ export function Mijozlar() {
                                             </div>
                                         )}
                                         {!duplicateClient && newPhone && duplicateLead && (
-                                            <div role="alert" className="col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
+                                            <div role="alert" className="sm:col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
                                                 <span className="flex-1 min-w-0">
                                                     Bu raqam Sotuv bo'limida lid sifatida bor: <span className="font-semibold">{duplicateLead.full_name}</span>
                                                 </span>

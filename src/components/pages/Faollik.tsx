@@ -119,7 +119,7 @@ const initials = (name: string | null) =>
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 const selectCls =
-  "h-control-md pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
+  "h-control-md pl-3 pr-8 min-w-0 flex-1 basis-[calc(50%-4px)] sm:flex-none sm:basis-auto rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
 
 export function Faollik() {
   const [period, setPeriod] = useState<PeriodId>("7d")
@@ -161,21 +161,21 @@ export function Faollik() {
     <div className="flex flex-col gap-4 pb-10">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto no-scrollbar">
           {PERIODS.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => reset(setPeriod)(p.id)}
               aria-pressed={period === p.id}
-              className={`px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${period === p.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
+              className={`shrink-0 whitespace-nowrap px-3 sm:px-3.5 h-control-md rounded-full text-base font-medium transition-colors ${period === p.id ? "bg-mute-soft text-ink" : "text-ink-muted hover:bg-mute-ghost-hover hover:text-ink"}`}
             >
               {p.label}
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
             <input
               type="search"
@@ -183,7 +183,7 @@ export function Faollik() {
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Ism yoki obyekt bo'yicha"
               aria-label="Qidirish"
-              className="w-64 h-control-md pl-9 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus"
+              className="w-full sm:w-64 h-control-md pl-9 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus"
             />
           </div>
           <select value={actorId} onChange={(e) => reset(setActorId)(e.target.value)} aria-label="Hodim" className={selectCls}>
@@ -204,7 +204,7 @@ export function Faollik() {
             <button
               type="button"
               onClick={() => { setActorId(""); setEntity(""); setAction(""); setSearchInput(""); setPage(0) }}
-              className="h-control-md px-3 rounded-full text-base text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors"
+              className="h-control-md px-3 shrink-0 whitespace-nowrap rounded-full text-base text-ink-muted hover:bg-mute-ghost-hover hover:text-ink transition-colors"
             >
               Tozalash
             </button>
@@ -325,13 +325,13 @@ function LogDrawer({ log, onClose, avatarUrl }: { log: ActivityLog | null; onClo
                   {ENTITY_LABELS[log.entity_type] ?? log.entity_type} · {log.entity_name ?? "—"}
                 </p>
               </div>
-              <button type="button" onClick={onClose} aria-label="Yopish" className="size-8 -mt-1 -mr-1 rounded-item flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover transition-colors">
+              <button type="button" onClick={onClose} aria-label="Yopish" className="size-9 sm:size-8 shrink-0 -mt-1 -mr-1 rounded-item flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover transition-colors">
                 <X size={18} />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto no-scrollbar p-5 flex flex-col gap-6">
-              <dl className="grid grid-cols-[120px_1fr] gap-y-2.5 text-base">
+              <dl className="grid grid-cols-[88px_1fr] sm:grid-cols-[120px_1fr] gap-x-3 sm:gap-x-0 gap-y-2.5 text-base">
                 <dt className="text-ink-muted">Vaqt</dt>
                 <dd className="text-ink tabular-nums">
                   {formatDate(log.created_at, "long")}, {new Date(log.created_at).toLocaleTimeString("uz-UZ")}

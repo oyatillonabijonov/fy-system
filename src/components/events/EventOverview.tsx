@@ -83,18 +83,18 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   return (
     <div className="flex flex-col gap-5">
       {/* Event header: name + actions */}
-      <div className="flex items-center justify-between gap-4 px-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 px-1">
         <h2 className="text-lg font-semibold text-ink leading-tight">{event.name}</h2>
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 h-control-md rounded-full text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-full whitespace-nowrap text-base font-medium text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors"
           >
             <PencilSimple size={16} /> Tahrirlash
           </button>
           <button
             onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 h-control-md rounded-full text-base font-medium text-danger-text bg-danger-soft hover:bg-danger-soft-hover transition-colors"
+            className="flex items-center gap-1.5 px-3 h-control-md rounded-full whitespace-nowrap text-base font-medium text-danger-text bg-danger-soft hover:bg-danger-soft-hover transition-colors"
           >
             <Trash size={16} /> O'chirish
           </button>
@@ -120,7 +120,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                   {initials(manager.full_name)}
                 </span>
               )}
-              <span className="truncate">{manager.full_name}</span>
+              <span className="sm:truncate">{manager.full_name}</span>
             </span>
           ) : (
             "—"
@@ -130,12 +130,12 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
 
       {/* Participants table */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2 px-1">
-          <span className="text-base font-bold text-ink">Ishtirokchilar ({participants.length})</span>
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-1">
+          <span className="text-base font-bold text-ink whitespace-nowrap">Ishtirokchilar ({participants.length})</span>
+          <div className="flex flex-wrap items-center gap-2">
             <Popover width={220} trigger={(open, toggle) => (
               <button onClick={toggle} aria-haspopup="menu" aria-expanded={open} disabled={exporting}
-                className="flex items-center gap-2 px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                className="flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Export size={16} />
                 {exporting ? "Tayyorlanmoqda..." : "Dizayn materiallar"}
                 <CaretDown size={12} weight="bold" />
@@ -160,7 +160,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             </Popover>
             <button
               onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }}
-              className="flex items-center gap-2 px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
+              className="flex items-center gap-2 px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors"
             >
               <Plus size={16} />
               Ishtirokchi qo'shish
@@ -176,9 +176,9 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         ) : (
           <>
             {/* Two-column list, filled column by column (1–10 left, 11–20 right); no header row */}
-            <ul className="lg:columns-2 gap-x-8">
+            <ul className="xl:columns-2 gap-x-8">
               {paged.pageItems.map((p) => (
-                <li key={p.id} className="break-inside-avoid flex items-center gap-2.5 h-12 border-b border-line text-base">
+                <li key={p.id} className="break-inside-avoid flex items-center gap-2.5 min-h-12 py-1.5 sm:py-0 sm:h-12 border-b border-line text-base">
                   <span className="size-6 rounded-full overflow-hidden shrink-0 bg-mute-soft flex items-center justify-center">
                     {p.photo_url ? (
                       <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
@@ -186,9 +186,11 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                       <span className="text-xs font-medium text-ink-muted">{initials(p.full_name)}</span>
                     )}
                   </span>
-                  <span className="flex-1 min-w-0 truncate text-ink">{p.full_name}</span>
-                  <span className="shrink-0 max-w-[40%] truncate text-sm text-ink-muted" title="Tarif · Sotuvchi">
-                    {p.tariff_name ?? "Individual"} · {p.seller_name ?? "—"}
+                  <span className="flex-1 min-w-0 flex flex-col sm:contents">
+                    <span className="flex-1 min-w-0 truncate text-ink">{p.full_name}</span>
+                    <span className="sm:shrink-0 sm:max-w-[40%] min-w-0 truncate text-sm text-ink-muted" title="Tarif · Sotuvchi">
+                      {p.tariff_name ?? "Individual"} · {p.seller_name ?? "—"}
+                    </span>
                   </span>
                   {confirmingId === p.id ? (
                     <span className="flex items-center gap-2 shrink-0 text-sm">
@@ -211,7 +213,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                         disabled={p.paid > 0}
                         title={p.paid > 0 ? "To'lovi bor — Moliya orqali bekor qilinadi" : "O'chirish"}
                         aria-label={p.paid > 0 ? `${p.full_name}: to'lovi bor — o'chirib bo'lmaydi` : `${p.full_name}ni o'chirish`}
-                        className="shrink-0 size-7 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        className="shrink-0 size-9 sm:size-7 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
                       >
                         <Trash size={16} />
                       </button>
@@ -243,12 +245,12 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
 
 function InfoCard({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-sunken rounded-surface p-5 flex flex-col gap-3 min-w-0">
-      <div className="flex items-center justify-between">
-        <span className="text-base font-medium text-ink-muted">{label}</span>
-        <span className="size-8 rounded-control-sm bg-surface flex items-center justify-center text-ink">{icon}</span>
+    <div className="bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-3 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm sm:text-base font-medium text-ink-muted">{label}</span>
+        <span className="size-8 rounded-control-sm bg-surface flex items-center justify-center text-ink shrink-0">{icon}</span>
       </div>
-      <div className="min-h-9 flex items-end text-md font-medium text-ink min-w-0 truncate">{children}</div>
+      <div className="min-h-9 flex items-end text-md font-medium text-ink min-w-0 break-words sm:truncate">{children}</div>
     </div>
   )
 }

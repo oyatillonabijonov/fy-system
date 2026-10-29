@@ -107,25 +107,25 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-y-auto"
+          className="bg-surface-raised rounded-overlay w-full max-w-2xl pointer-events-auto max-h-[calc(100dvh-32px)] sm:max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-line sticky top-0 bg-surface-raised z-10">
-            <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 gap-3 border-b border-line sticky top-0 bg-surface-raised z-10">
+            <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-lg font-bold text-ink">Profilni tahrirlash</h2>
-              <span className="text-xs text-ink-muted">{user.full_name} · {user.email}</span>
+              <span className="text-xs text-ink-muted break-words">{user.full_name} · {user.email}</span>
             </div>
             <button
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors"
+              className="p-2 sm:p-1.5 shrink-0 rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
-          <div className="p-6 flex flex-col gap-6">
+          <div className="p-4 sm:p-6 flex flex-col gap-6">
             {error && (
               <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
@@ -254,18 +254,18 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line sticky bottom-0 bg-surface-raised">
+          <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-line sticky bottom-0 bg-surface-raised">
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 rounded-full text-base font-medium whitespace-nowrap text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-full text-base font-bold transition-colors ${
+              className={`px-5 py-2 rounded-full text-base font-bold whitespace-nowrap transition-colors ${
                 saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >

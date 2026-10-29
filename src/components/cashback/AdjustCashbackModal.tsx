@@ -97,12 +97,12 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised border border-line rounded-overlay w-full max-w-md pointer-events-auto"
+          className="bg-surface-raised border border-line rounded-overlay w-full max-w-md pointer-events-auto flex flex-col max-h-[calc(100dvh-32px)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-            <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+            <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-md font-semibold text-ink">Keshbekni o'zgartirish</h2>
               <span className="text-sm text-ink-muted">{clientName} · balans: {formattedBalance} so'm</span>
             </div>
@@ -110,14 +110,14 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
               onClick={handleClose}
               disabled={saving}
               aria-label="Yopish"
-              className="size-8 rounded-item flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"
+              className="size-9 sm:size-8 shrink-0 rounded-item flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={18} className="text-ink-muted" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="p-5 flex flex-col gap-4">
+          <div className="p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
             {error && (
               <div role="alert" className="px-3.5 py-2.5 rounded-control text-sm font-medium bg-danger-soft text-danger-text">
                 {error}
@@ -179,18 +179,18 @@ function AdjustForm({ onClose, clientId, clientName, currentBalance, onSuccess }
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
+          <div className="flex flex-wrap items-center justify-end gap-2 px-5 py-4 border-t border-line">
             <button
               onClick={handleClose}
               disabled={saving}
-              className="px-3.5 h-control-md rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+              className="px-3.5 h-control-md whitespace-nowrap rounded-full bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving || !amount || !description.trim()}
-              className="px-4 h-control-md rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="px-4 h-control-md whitespace-nowrap rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>

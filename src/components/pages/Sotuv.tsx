@@ -116,7 +116,7 @@ export function Sotuv() {
             {eventName && <> · Tadbir: <span className="text-ink">{eventName}</span></>}
           </span>
         )}
-        <div className="flex-1" />
+        <div className="flex-1 max-sm:hidden" />
         <div role="radiogroup" aria-label="Ko'rinish" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {([["kanban", "Kanban", Kanban], ["list", "Ro'yxat", Rows], ["tasks", "Vazifalar", CheckSquare]] as const).map(([id, label, Icon]) => (
             <button key={id} role="radio" aria-checked={view === id} onClick={() => set("v", id === "kanban" ? null : id)}
