@@ -80,14 +80,16 @@ export function Dashboard() {
                 <KpiCard label="Yutilgan summa" icon={<Coins size={16} />} value={formatNumber(d.kpi.won_sum)} unit="so'm" sub="bitim narxi bo'yicha" delta={delta(d.kpi.won_sum, d.kpi_prev.won_sum)} />
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-                <Card title="Voronka" aside="ochiq bitimlar, hozir" className="xl:col-span-2"><Funnel rows={d.funnel} /></Card>
+                <div className="flex flex-col gap-3 xl:col-span-2">
+                  <Card title="Voronka" aside="ochiq bitimlar, hozir" className="flex-1"><Funnel rows={d.funnel} /></Card>
+                  <Card title="Kunlik dinamika"><DailyBars rows={d.daily} /></Card>
+                </div>
                 <div className="flex flex-col gap-3">
                   <Card title="Konversiya" aside="yutilgan ÷ yopilgan"><ScoreGauge value={d.kpi.conversion} caption={`${formatNumber(d.kpi.won)} yutilgan · ${formatNumber(d.kpi.lost)} yutqazilgan`} /></Card>
                   <Card title="Manbalar"><MixDonut totalLabel="yangi bitim" rows={d.by_source.map((r) => ({ key: r.source ?? "none", label: sourceLabel(r.source), value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>
                   {!pipelineId && <Card title="Voronkalar"><MixDonut grey totalLabel="yangi bitim" rows={d.by_pipeline.map((r) => ({ key: r.id, label: r.name, value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>}
                 </div>
               </div>
-              <Card title="Kunlik dinamika"><DailyBars rows={d.daily} /></Card>
             </Section>
             <Section title="Sotuvchilar" desc="Bitimlar va vazifalar; qatorni bosing — vazifalar ro'yxati">
               <SellersTable rows={d.sellers} from={from} to={to} pipelineId={pipelineId} />
