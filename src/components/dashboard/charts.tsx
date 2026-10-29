@@ -104,3 +104,47 @@ export function DailyBars({ rows }: { rows: { day: string; new: number; won: num
     </div>
   )
 }
+
+// Konversiya bands (% of closed bitimlar won)
+const BANDS = [
+  { key: "low", label: "Past", from: 0, value: 20, colors: { light: ["#e11d48"], dark: ["#fb7185"] } },
+  { key: "fair", label: "O'rtacha", from: 20, value: 20, colors: { light: ["#f59e0b"], dark: ["#fbbf24"] } },
+  { key: "good", label: "Yaxshi", from: 40, value: 20, colors: { light: ["#84cc16"], dark: ["#a3e635"] } },
+  { key: "great", label: "A'lo", from: 60, value: 40, colors: { light: ["#059669"], dark: ["#34d399"] } },
+]
+
+/** Semicircle gauge split into bands, the value in the middle ("Reliability Score") */
+export function ScoreGauge({ value, caption }: { value: number | null; caption: string }) {
+  const band = value === null ? null : [...BANDS].reverse().find((b) => value >= b.from) ?? BANDS[0]
+  const config: ChartConfig = Object.fromEntries(BANDS.map((b) => [b.key, { label: b.label, colors: b.colors }]))
+  return (
+    <div className="flex flex-col">
+      <div className={`relative mx-auto aspect-square w-full max-w-48 ${ON_CARD}`}>
+        <EChartsPieChart data={[...BANDS].reverse()} config={config} dataKey="value" nameKey="key" className="h-full w-full">
+          <EChartsPieChart.Pie innerRadius="74%" outerRadius="94%" paddingAngle={6} cornerRadius={10} startAngle={-30} endAngle={210} />
+        </EChartsPieChart>
+        <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 text-ink-faint" aria-hidden>
+          <path d="M 23.15 65.5 A 31 31 0 1 1 76.85 65.5" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeDasharray="0.1 5" />
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span className="text-4xl font-semibold tabular-nums text-ink">{value === null ? "—" : `${Math.round(value)}%`}</span>
+        </div>
+      </div>
+      <div className="-mt-6 text-center">
+        <p className="text-sm font-medium text-ink">{band ? `Konversiya ${band.label.toLowerCase()}` : "Yopilgan bitim yo'q"}</p>
+        <p className="text-xs text-ink-muted">{caption}</p>
+      </div>
+      <div className="pt-4">
+        <div className="flex text-[11px] text-ink-faint tabular-nums">
+          {BANDS.map((b) => <span key={b.key} style={{ flexGrow: b.value, flexBasis: 0 }}>{b.from}%</span>)}
+          <span>100%</span>
+        </div>
+        <div className="mt-1 flex gap-1">
+          {BANDS.map((b) => (
+            <span key={b.key} className="chart-swatch h-1.5 rounded-full" style={{ flexGrow: b.value, flexBasis: 0, "--sw-l": b.colors.light[0], "--sw-d": b.colors.dark[0] } as CSSProperties} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

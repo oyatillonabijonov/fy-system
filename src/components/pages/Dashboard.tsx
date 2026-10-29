@@ -7,7 +7,7 @@ import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { formatNumber } from "@/lib/format"
 import { Section, Card, KpiCard, Funnel, delta } from "@/components/dashboard/pieces"
-import { MixDonut, DailyBars } from "@/components/dashboard/charts"
+import { MixDonut, DailyBars, ScoreGauge } from "@/components/dashboard/charts"
 import { SellersTable } from "@/components/dashboard/SellersTable"
 import { CallsCard } from "@/components/dashboard/CallsCard"
 import { AttentionPanel } from "@/components/dashboard/AttentionPanel"
@@ -82,6 +82,7 @@ export function Dashboard() {
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
                 <Card title="Voronka" aside="ochiq bitimlar, hozir" className="xl:col-span-2"><Funnel rows={d.funnel} /></Card>
                 <div className="flex flex-col gap-3">
+                  <Card title="Konversiya" aside="yutilgan ÷ yopilgan"><ScoreGauge value={d.kpi.conversion} caption={`${formatNumber(d.kpi.won)} yutilgan · ${formatNumber(d.kpi.lost)} yutqazilgan`} /></Card>
                   <Card title="Manbalar"><MixDonut totalLabel="yangi bitim" rows={d.by_source.map((r) => ({ key: r.source ?? "none", label: sourceLabel(r.source), value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>
                   {!pipelineId && <Card title="Voronkalar"><MixDonut grey totalLabel="yangi bitim" rows={d.by_pipeline.map((r) => ({ key: r.id, label: r.name, value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card>}
                 </div>
