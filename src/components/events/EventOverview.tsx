@@ -12,8 +12,10 @@ import {
   BookOpen,
   IdentificationBadge,
   Signpost,
+  DotsThree,
+  Phone,
 } from "@phosphor-icons/react"
-import { type Event } from "@/lib/supabase/queries/events"
+import { type Event, type Participant } from "@/lib/supabase/queries/events"
 import { useParticipants, useDeleteParticipant } from "@/hooks/useEvents"
 import { useUsers } from "@/hooks/useUsers"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
@@ -24,6 +26,9 @@ import { formatDate, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 import { Pager, usePaged } from "@/components/ui/Pager"
 import { toast } from "@/lib/toast"
+import { Sheet } from "@/components/ui/Sheet"
+import { Fab } from "@/components/ui/Fab"
+import { confirmAction } from "@/lib/confirm"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -41,6 +46,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   const [exporting, setExporting] = useState(false)
   const [stickersOpen, setStickersOpen] = useState(false)
   const [signsOpen, setSignsOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [rowFor, setRowFor] = useState<Participant | null>(null)
 
   const { data: participants = [], isLoading } = useParticipants(event.id)
   const deleteParticipant = useDeleteParticipant(event.id)
@@ -80,8 +87,131 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
     }
   }
 
+  const manage = (fn: () => void) => { setMenuOpen(false); fn() }
+  const menuRow = "w-full min-h-14 px-4 flex items-center gap-3 text-left text-base text-ink border-b border-line last:border-0 active:bg-mute-ghost-hover disabled:opacity-40"
+  const circle = "size-10 shrink-0 rounded-full bg-surface flex items-center justify-center"
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Phones and tablets: header card, grouped participant list, Fab */}
+      <div className="lg:hidden flex flex-col gap-5">
+        <div className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-semibold text-ink leading-snug pt-1.5">{event.name}</h2>
+            <button type="button" onClick={() => setMenuOpen(true)} aria-label="Tadbir amallari" aria-haspopup="dialog"
+              className="size-10 -mr-1 -mt-1 shrink-0 rounded-full bg-surface flex items-center justify-center text-ink">
+              <DotsThree size={22} weight="bold" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-2 text-base text-ink">
+            <span className="flex items-center gap-2.5"><CalendarBlank size={18} className="text-ink-muted shrink-0" /><span className="tabular-nums">{dateLabel}</span></span>
+            <span className="flex items-center gap-2.5 min-w-0"><MapPin size={18} className="text-ink-muted shrink-0" /><span className="truncate">{event.location || "—"}</span></span>
+            <span className="flex items-center gap-2.5 min-w-0">
+              <UserCircle size={18} className="text-ink-muted shrink-0" />
+              {manager ? <span className="truncate">{manager.full_name}</span> : "—"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-ink-muted px-1">Ishtirokchilar · {participants.length}</h3>
+          {isLoading ? (
+            <div className="py-10 flex items-center justify-center"><ThinkingOrb state="searching" size={20} theme="light" /></div>
+          ) : participants.length === 0 ? (
+            <div className="rounded-surface bg-surface-sunken py-10 flex flex-col items-center gap-2 text-ink-muted">
+              <UsersThree size={32} weight="thin" />
+              <span className="text-base">Hali ishtirokchi qo'shilmagan</span>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-surface bg-surface-sunken overflow-hidden">
+                {paged.pageItems.map((p) => (
+                  <div key={p.id} className="relative flex items-center border-b border-line last:border-0">
+                    <button type="button" onClick={() => setRowFor(p)}
+                      className="flex-1 min-w-0 min-h-16 pl-4 py-3 flex items-center gap-3 text-left active:bg-mute-ghost-hover">
+                      <span className="size-10 rounded-full overflow-hidden shrink-0 bg-surface flex items-center justify-center">
+                        {p.photo_url
+                          ? <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
+                          : <span className="text-sm font-medium text-ink-muted">{initials(p.full_name)}</span>}
+                      </span>
+                      <span className="flex-1 min-w-0 flex flex-col">
+                        <span className="text-base font-medium text-ink truncate">{p.full_name}</span>
+                        <span className="text-sm text-ink-muted truncate">{p.tariff_name ?? "Individual"} · {p.seller_name ?? "—"}</span>
+                      </span>
+                    </button>
+                    {p.phone
+                      ? <a href={`tel:${p.phone}`} aria-label={`${p.full_name}: ${formatPhone(p.phone)}`} className={`${circle} mx-3 text-ink`}><Phone size={18} /></a>
+                      : <span className="size-10 mx-3 shrink-0" />}
+                  </div>
+                ))}
+              </div>
+              <Pager page={paged.page} pageCount={paged.pageCount} total={participants.length} onPage={paged.setPage} />
+            </>
+          )}
+        </div>
+
+        <Fab icon={<Plus size={20} weight="bold" />} label="Ishtirokchi" onClick={() => { setEnrollKey((k) => k + 1); setEnrollOpen(true) }} />
+
+        <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Tadbir">
+          <div className="flex flex-col gap-4">
+            <div className="rounded-surface bg-surface-sunken overflow-hidden">
+              <button type="button" disabled={participants.length === 0 || exporting} onClick={() => manage(() => void handleExportBooklet())} className={menuRow}>
+                <span className={circle}><BookOpen size={18} /></span>{exporting ? "Tayyorlanmoqda..." : "Booklet export"}
+              </button>
+              <button type="button" onClick={() => manage(() => setStickersOpen(true))} className={menuRow}>
+                <span className={circle}><IdentificationBadge size={18} /></span>Sticker export
+              </button>
+              <button type="button" onClick={() => manage(() => setSignsOpen(true))} className={menuRow}>
+                <span className={circle}><Signpost size={18} /></span>Navigatsiya
+              </button>
+            </div>
+            <div className="rounded-surface bg-surface-sunken overflow-hidden">
+              <button type="button" onClick={() => manage(onEdit)} className={menuRow}>
+                <span className={circle}><PencilSimple size={18} /></span>Tahrirlash
+              </button>
+              <button type="button" onClick={() => manage(handleDelete)} className={`${menuRow} text-danger-text`}>
+                <span className={`${circle} text-danger-text`}><Trash size={18} /></span>Tadbirni o'chirish
+              </button>
+            </div>
+          </div>
+        </Sheet>
+
+        <Sheet open={!!rowFor} onClose={() => setRowFor(null)} title={rowFor?.full_name ?? ""}>
+          {rowFor && (
+            <div className="flex flex-col gap-4">
+              <div className="rounded-surface bg-surface-sunken overflow-hidden">
+                <div className="min-h-14 px-4 py-2 flex items-center justify-between gap-4 border-b border-line">
+                  <span className="text-sm text-ink-muted">Tarif</span>
+                  <span className="text-base text-ink truncate">{rowFor.tariff_name ?? "Individual"}</span>
+                </div>
+                <div className="min-h-14 px-4 py-2 flex items-center justify-between gap-4">
+                  <span className="text-sm text-ink-muted">Sotuvchi</span>
+                  <span className="text-base text-ink truncate">{rowFor.seller_name ?? "—"}</span>
+                </div>
+              </div>
+              {rowFor.phone && (
+                <a href={`tel:${rowFor.phone}`} className="h-12 rounded-full bg-accent text-ink-on-accent text-base font-semibold flex items-center justify-center gap-2">
+                  <Phone size={18} /> {formatPhone(rowFor.phone)}
+                </a>
+              )}
+              <button type="button" disabled={rowFor.paid > 0}
+                onClick={async () => {
+                  const p = rowFor
+                  if (await confirmAction({ title: "Ishtirokchini o'chirish", message: `${p.full_name} tadbirdan o'chirilsinmi?`, confirmLabel: "O'chirish", danger: true })) {
+                    deleteParticipant.mutate(p.id)
+                    setRowFor(null)
+                  }
+                }}
+                className="h-12 rounded-full bg-danger-soft text-danger-text text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-40">
+                <Trash size={18} /> O'chirish
+              </button>
+              {rowFor.paid > 0 && <p className="text-sm text-ink-muted text-center -mt-2">To'lovi bor — Moliya orqali bekor qilinadi</p>}
+            </div>
+          )}
+        </Sheet>
+      </div>
+
+      <div className="hidden lg:contents">
       {/* Event header: name + actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 px-1">
         <h2 className="text-lg font-semibold text-ink leading-tight">{event.name}</h2>
@@ -225,6 +355,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             <Pager page={paged.page} pageCount={paged.pageCount} total={participants.length} onPage={paged.setPage} />
           </>
         )}
+      </div>
+
       </div>
 
       {signsOpen && <SignExportModal event={event} onClose={() => setSignsOpen(false)} />}

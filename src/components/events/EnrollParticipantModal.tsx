@@ -7,6 +7,8 @@ import { useUsers } from "@/hooks/useUsers"
 import { useDialog } from "@/hooks/useDialog"
 import { formatMoney, formatPhone } from "@/lib/format"
 import { MoneyInput } from "@/components/moliya/RecordPaymentModal"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 
 interface EnrollParticipantModalProps {
   isOpen: boolean
@@ -25,7 +27,7 @@ function initials(name: string): string {
 }
 
 const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const LABEL = "text-sm font-medium text-ink-muted"
 
 function ClientAvatar({ c }: { c: PickedClient }) {
@@ -52,6 +54,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   const tariffId = useId()
   const sellerId = useId()
   const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
+  const onPhone = useMedia("(width < 40rem)")
 
   const [mode, setMode] = useState<"search" | "new">("search")
   const [query, setQuery] = useState("")
@@ -138,7 +141,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className={sheet.wrap}>
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
@@ -149,17 +152,18 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-surface-raised rounded-overlay w-full max-w-md relative overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh]"
+            {...sheetMotion(onPhone)}
+            className={`${sheet.panel} sm:max-w-md overflow-hidden`}
           >
-            <div className="p-5 border-b border-line flex items-center justify-between shrink-0">
-              <h3 id={titleId} className="text-md font-bold text-ink">Ishtirokchi qo'shish</h3>
-              <button onClick={onClose} aria-label="Yopish" className="p-2 -m-1 sm:p-1 sm:m-0 hover:bg-mute-ghost-hover rounded-full transition-all">
+            <div className={sheet.grabber} />
+            <div className="px-4 pt-2 pb-3 sm:p-5 sm:border-b border-line flex items-center justify-between shrink-0">
+              <h3 id={titleId} className="text-lg sm:text-md font-semibold sm:font-bold text-ink">Ishtirokchi qo'shish</h3>
+              <button onClick={onClose} aria-label="Yopish" className="size-10 sm:size-auto -mr-2 sm:mr-0 flex items-center justify-center sm:p-1 hover:bg-mute-ghost-hover rounded-full transition-all">
                 <X size={20} className="text-ink-muted" />
               </button>
             </div>
 
-            <div className="p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
+            <div className="px-4 py-2 sm:p-5 flex flex-col gap-4 overflow-y-auto overscroll-contain min-h-0">
               {error && (
                 <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                   {error}
@@ -195,7 +199,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                             key={c.id}
                             disabled={added}
                             onClick={() => pick(c)}
-                            className={`w-full flex items-center gap-2.5 p-2 rounded-item transition-colors text-left ${added ? "opacity-50 cursor-not-allowed" : "hover:bg-mute-ghost-hover"}`}
+                            className={`w-full flex items-center gap-2.5 p-2 max-sm:min-h-14 rounded-item transition-colors text-left ${added ? "opacity-50 cursor-not-allowed" : "hover:bg-mute-ghost-hover"}`}
                           >
                             <ClientAvatar c={c} />
                             <span className="flex flex-col min-w-0 flex-1">
@@ -301,18 +305,18 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
               </div>
             </div>
 
-            <div className="p-5 pt-0 flex gap-3 shrink-0">
+            <div className="p-4 sm:p-5 sm:pt-0 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-5 max-sm:border-t border-line flex gap-3 shrink-0">
               <button
                 onClick={onClose}
                 disabled={enroll.isPending}
-                className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 max-sm:h-12 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 px-4 py-2.5 max-sm:h-12 max-sm:flex-[1.6] rounded-full text-base font-bold transition-all flex items-center justify-center gap-2 ${
                   canSubmit ? "bg-accent text-ink-on-accent hover:bg-accent-hover active:scale-95" : "bg-mute-soft text-ink-muted cursor-not-allowed"
                 }`}
               >

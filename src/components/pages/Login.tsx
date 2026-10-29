@@ -14,13 +14,13 @@ export function Login() {
   if (!authLoading && user) return <Navigate to="/dashboard" replace />
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-screen max-sm:min-h-dvh relative overflow-hidden flex items-center justify-center p-4 max-sm:p-0 max-sm:bg-surface">
       {/* Club photo background; a light shade keeps the footer text readable */}
-      <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-black/25" />
+      <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover max-sm:hidden" />
+      <div className="absolute inset-0 bg-black/25 max-sm:hidden" />
 
-      <div className="relative z-10 w-full max-w-[400px]">
-        <div className="bg-surface border border-line rounded-overlay p-6 sm:p-8 flex flex-col gap-7">
+      <div className="relative z-10 w-full max-w-[400px] max-sm:max-w-none max-sm:min-h-dvh max-sm:flex max-sm:flex-col">
+        <div className="bg-surface border border-line rounded-overlay p-6 sm:p-8 flex flex-col gap-7 max-sm:flex-1 max-sm:justify-center max-sm:border-0 max-sm:rounded-none max-sm:px-6 max-sm:pt-[max(24px,env(safe-area-inset-top))]">
           <div className="flex flex-col items-center gap-5 text-center">
             <img
               src={themeId === "dark" ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
@@ -28,7 +28,7 @@ export function Login() {
               className="h-8 w-auto"
             />
             <div className="flex flex-col gap-1">
-              <h1 className="text-lg font-semibold text-ink">Tizimga kirish</h1>
+              <h1 className="text-lg max-sm:text-xl font-semibold text-ink">Tizimga kirish</h1>
               <p className="text-base text-ink-muted">Ish hisobingiz email va paroli bilan kiring</p>
             </div>
           </div>
@@ -36,7 +36,7 @@ export function Login() {
           <LoginForm onSuccess={() => navigate("/dashboard", { replace: true })} />
         </div>
 
-        <p className="text-center text-sm text-white/85 mt-5">
+        <p className="text-center text-sm text-white/85 max-sm:text-ink-faint mt-5 max-sm:mt-0 max-sm:pt-2 max-sm:pb-[max(20px,env(safe-area-inset-bottom))]">
           © 2026 Fikr Yetakchilari · Biznes Klub
         </p>
       </div>
@@ -89,7 +89,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           id={emailId}
           type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           required autoFocus placeholder="email@example.com"
-          className="w-full h-control-lg px-3.5 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
+          className="w-full h-control-lg max-sm:h-12 px-3.5 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
         />
       </div>
 
@@ -100,11 +100,11 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
             id={passwordId}
             type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
             required placeholder="••••••••"
-            className="w-full h-control-lg px-3.5 pr-11 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
+            className="w-full h-control-lg max-sm:h-12 px-3.5 pr-11 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
           />
           <button type="button" onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 size-8 rounded-item flex items-center justify-center text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors" tabIndex={-1}>
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 size-8 max-sm:size-10 rounded-item flex items-center justify-center text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors" tabIndex={-1}>
             {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
           </button>
         </div>
@@ -115,7 +115,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       <button type="submit" disabled={loading}
-        className="w-full h-control-lg mt-1 bg-accent text-ink-on-accent rounded-full text-base font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 group">
+        className="w-full h-control-lg max-sm:h-12 mt-1 bg-accent text-ink-on-accent rounded-full text-base font-medium max-sm:font-semibold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 group">
         {loading ? (
           <><span className="w-4 h-4 border-2 border-ink-on-accent/30 border-t-ink-on-accent rounded-full animate-spin" />Kirilmoqda...</>
         ) : (

@@ -6,6 +6,8 @@ import { useSpendCashback } from "@/hooks/useCashback"
 import { PARTICIPANTS_KEY } from "@/hooks/useEvents"
 import type { Participant } from "@/lib/supabase/queries/events"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { formatNumber } from "@/lib/format"
 
 interface ApplyCashbackModalProps {
@@ -37,6 +39,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
   const titleId = useId()
   const amountId = useId()
   const panelRef = useDialog<HTMLDivElement>(() => { if (!busy) onClose() })
+  const phone = useMedia("(width < 40rem)")
 
   async function handleApply() {
     setError(null)
@@ -85,11 +88,9 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
         onClick={() => !busy && onClose()}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
+        {...sheetMotion(phone)}
+        {...(phone ? {} : { transition: { type: "spring" as const, damping: 25, stiffness: 300 } })}
+        className="fixed inset-0 flex items-end sm:items-center justify-center z-[110] pointer-events-none sm:p-4"
       >
         <div
           ref={panelRef}
@@ -97,25 +98,26 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto flex flex-col max-h-[calc(100dvh-32px)]"
+          className="bg-surface-raised rounded-t-[20px] sm:rounded-overlay w-full sm:max-w-md pointer-events-auto flex flex-col max-h-[92dvh] sm:max-h-[calc(100dvh-32px)]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-line">
+          <div className={sheet.grabber} />
+          <div className="flex items-center justify-between gap-3 px-4 pt-2 pb-3 sm:px-5 sm:py-4 sm:border-b border-line">
             <div className="flex flex-col gap-0.5 min-w-0">
-              <h2 id={titleId} className="text-md font-bold text-ink">Cashback bilan to'lash</h2>
+              <h2 id={titleId} className="text-lg sm:text-md font-bold text-ink">Cashback bilan to'lash</h2>
               <span className="text-xs text-ink-muted">{participant.full_name}</span>
             </div>
             <button
               onClick={onClose}
               disabled={busy}
               aria-label="Yopish"
-              className="p-2 sm:p-1.5 shrink-0 rounded-full hover:bg-mute-ghost-hover transition-colors"
+              className="p-2 max-sm:size-10 max-sm:flex max-sm:items-center max-sm:justify-center sm:p-1.5 shrink-0 rounded-full hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
-          <div className="p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
+          <div className="px-4 pb-4 sm:p-5 flex flex-col gap-4 min-h-0 overflow-y-auto">
             {/* Summary */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-surface-sunken border border-line rounded-control p-3">
@@ -142,7 +144,7 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
                 value={amount ? formatNumber(amount) : ""}
                 onChange={(e) => setAmount(Math.min(Number(e.target.value.replace(/\D/g, "")), maxApplicable))}
                 autoFocus
-                className="w-full border border-line rounded-control px-3 py-2 text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
+                className="w-full border border-line rounded-control px-3 py-2 max-sm:h-16 max-sm:text-[32px] max-sm:font-semibold max-sm:text-center max-sm:tabular-nums text-base text-ink focus:outline-none focus:border-line-focus transition-colors"
               />
               <span className="text-xs text-ink-muted">
                 Maksimum: <strong>{formatNumber(maxApplicable)} so'm</strong>
@@ -155,18 +157,18 @@ function ApplyForm({ onClose, participant, balance, onSuccess }: InnerProps) {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 px-5 py-4 border-t border-line">
+          <div className="flex flex-wrap items-center justify-end gap-2 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:px-5 sm:py-4 border-t border-line max-sm:flex-nowrap">
             <button
               onClick={onClose}
               disabled={busy}
-              className="px-4 py-2 whitespace-nowrap rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 max-sm:h-12 max-sm:py-0 max-sm:bg-mute-soft max-sm:text-ink whitespace-nowrap rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleApply}
               disabled={busy || amount <= 0}
-              className={`px-5 py-2 whitespace-nowrap rounded-full text-base font-bold text-ink-on-accent transition-colors ${
+              className={`px-5 py-2 max-sm:h-12 max-sm:py-0 max-sm:flex-1 whitespace-nowrap rounded-full text-base font-bold text-ink-on-accent transition-colors ${
                 busy || amount <= 0 ? "bg-mute-soft cursor-not-allowed" : "bg-accent hover:bg-accent-hover"
               }`}
             >

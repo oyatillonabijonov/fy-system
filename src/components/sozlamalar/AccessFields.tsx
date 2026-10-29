@@ -11,7 +11,7 @@ export function RoleField({ value, onChange, locked }: { value: UserRole; onChan
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium text-ink-muted">Rol</span>
-      <div role="radiogroup" aria-label="Rol" className="grid grid-cols-3 gap-1 p-1 rounded-control bg-surface-sunken">
+      <div role="radiogroup" aria-label="Rol" className="grid grid-cols-3 gap-1 p-1 rounded-control max-sm:rounded-full bg-surface-sunken">
         {(["xodim", "manager", "admin"] as UserRole[]).map((r) => (
           <button
             key={r}
@@ -20,7 +20,7 @@ export function RoleField({ value, onChange, locked }: { value: UserRole; onChan
             aria-checked={value === r}
             disabled={locked}
             onClick={() => onChange(r)}
-            className={`h-8 rounded-item text-sm sm:text-base font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed ${value === r ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
+            className={`h-8 max-sm:h-10 rounded-item max-sm:rounded-full text-sm sm:text-base font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed ${value === r ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}
           >
             {ROLE_LABELS[r]}
           </button>
@@ -60,7 +60,7 @@ export function ModuleAccessField({ role, value, onChange }: { role: UserRole; v
         {MODULES.map((m) => {
           const on = m.id in value
           return (
-            <div key={m.id} className="py-3 border-b border-line last:border-0">
+            <div key={m.id} className="py-3 max-sm:min-h-16 border-b border-line last:border-0">
               <label className="flex items-center gap-3 cursor-pointer">
                 <span className="flex-1 min-w-0">
                   <span className="block text-base text-ink">{m.label}</span>

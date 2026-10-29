@@ -1,6 +1,9 @@
 import { useId, useState } from "react"
 import { motion } from "framer-motion"
-import { Plus, Trash, X, TelegramLogo, Copy, Check } from "@phosphor-icons/react"
+import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight } from "@phosphor-icons/react"
+import { Fab } from "@/components/ui/Fab"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { useAuth } from "@/context/AuthContext"
 import { usePipelines } from "@/hooks/useSotuv"
 import { useDialog } from "@/hooks/useDialog"
@@ -12,9 +15,9 @@ import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type Lead
 import { confirmAction } from "@/lib/confirm"
 
 const BOT = "@fymoliyabot"
-const inputCls = "w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
-const primaryBtn = "flex items-center gap-2 px-4 h-control-md rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
-const softBtn = "flex items-center gap-2 px-3.5 h-control-md rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+const primaryBtn = "flex items-center justify-center gap-2 px-4 h-control-md max-sm:h-12 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+const softBtn = "flex items-center justify-center gap-2 px-3.5 h-control-md max-sm:h-12 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
 // Group avatars: the same data palette as Vazifalar, as a wash under ink initials
 const PALETTE = ["#7F77DD", "#1D9E75", "#D85A30", "#D4537E", "#378ADD", "#BA7517", "#639922"]
@@ -32,20 +35,41 @@ export function Integratsiyalar() {
   const open = groups.find((g) => g.chat_id === openId)
 
   return (
-    <div className="flex flex-col gap-5 pb-10">
+    <div className="flex flex-col gap-5 pb-10 max-lg:pb-20">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-md font-semibold text-ink">
+          <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted max-lg:px-1">
             Telegram guruhlar {groups.length > 0 && <span className="text-ink-faint font-medium tabular-nums">· {groups.length}</span>}
           </h2>
-          <p className="text-sm text-ink-muted">{BOT} ni guruhga qo'shing — u shu ro'yxatga o'zi tushadi. Har bir xabar faqat yoqilgan guruhlarga boradi.</p>
+          <p className="text-sm text-ink-muted max-lg:hidden">{BOT} ni guruhga qo'shing — u shu ro'yxatga o'zi tushadi. Har bir xabar faqat yoqilgan guruhlarga boradi.</p>
         </div>
-        <button type="button" onClick={() => setAdding(true)} className={primaryBtn}>
+        <button type="button" onClick={() => setAdding(true)} className={`${primaryBtn} max-lg:hidden`}>
           <Plus size={16} /> Guruh qo'shish
         </button>
       </div>
+      <Fab icon={<Plus size={20} weight="bold" />} label="Guruh" onClick={() => setAdding(true)} />
 
-      <div className={tbl.scroll}>
+      {/* Phones and tablets: one row per group; the switches are in its sheet */}
+      <div className="lg:hidden rounded-surface bg-surface-sunken overflow-hidden">
+        {isLoading ? <p className="py-10 text-center text-base text-ink-muted">Yuklanmoqda…</p>
+          : error ? <p className="py-10 text-center text-base text-danger-text">{error.message}</p>
+          : groups.length === 0 ? <div className="py-8 px-4 flex justify-center"><EmptySteps /></div>
+          : pageItems.map((g) => (
+            <button key={g.chat_id} type="button" onClick={() => setOpenId(g.chat_id)}
+              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+              <GroupAvatar g={g} />
+              <span className="flex-1 min-w-0 flex flex-col">
+                <span className="text-base font-medium text-ink truncate">{g.title || "Nomsiz guruh"}</span>
+                {isGone(g) ? <span className="text-sm text-danger-text truncate">Bot guruhdan chiqarilgan</span>
+                  : !GROUP_ROLES.some((r) => g[r.id]) ? <span className="text-sm text-warning-dark truncate">Sozlanmagan — ishlarni yoqing</span>
+                  : <span className="text-sm text-ink-muted truncate">{GROUP_ROLES.filter((r) => g[r.id]).map((r) => r.short).join(" · ")}</span>}
+              </span>
+              <CaretRight size={16} className="text-ink-faint shrink-0" />
+            </button>
+          ))}
+      </div>
+
+      <div className={`${tbl.scroll} max-lg:hidden`}>
         <table className={tbl.table}>
           <thead>
             <tr>
@@ -81,13 +105,46 @@ function Telephony() {
   const { data: users = [] } = useUsers()
   const setExt = useSetStaffExt()
   const staff = users.filter((u) => u.is_active)
+  const ownerSelect = (num: string, extra = "") => {
+    const owner = users.find((u) => u.pbx_ext === num)
+    return (
+      <select value={owner?.id ?? ""} aria-label={`${num}: hodim`}
+        onChange={(ev) => ev.target.value ? setExt.mutate({ userId: ev.target.value, ext: num }) : owner && setExt.mutate({ userId: owner.id, ext: null })}
+        className={`h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none ${extra}`}>
+        <option value="">Biriktirilmagan</option>
+        {staff.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.pbx_ext && u.pbx_ext !== num ? ` (${u.pbx_ext})` : ""}</option>)}
+      </select>
+    )
+  }
   return (
-    <section className="flex flex-col gap-4 mt-6">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-md font-semibold text-ink">Telefoniya · OnlinePBX</h2>
-        <p className="text-sm text-ink-muted">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.</p>
+    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2">
+      <div className="flex flex-col gap-1 max-lg:px-1">
+        <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">Telefoniya · OnlinePBX</h2>
+        <p className="text-sm text-ink-muted max-lg:hidden">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.</p>
       </div>
-      <div className={tbl.scroll}>
+      {/* Phones and tablets: one card per internal number */}
+      <div className="lg:hidden rounded-surface bg-surface-sunken overflow-hidden">
+        {isLoading ? <p className="py-10 text-center text-base text-ink-muted">Yuklanmoqda…</p>
+          : error ? <p className="py-10 px-4 text-center text-base text-danger-text">OnlinePBX bilan aloqa yo'q ({error.message})</p>
+          : exts.length === 0 ? <p className="py-10 text-center text-base text-ink-muted">OnlinePBX'da ichki raqam yo'q</p>
+          : exts.map((e) => {
+            const state = !e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"
+            const dot = `size-2 rounded-full shrink-0 ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`
+            return (
+              <div key={e.num} className="px-4 py-3 flex flex-col gap-2.5 border-b border-line last:border-0">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 flex items-baseline gap-2">
+                    <span className="text-base font-semibold tabular-nums text-ink">{e.num}</span>
+                    {e.name && <span className="text-sm text-ink-muted truncate">{e.name}</span>}
+                  </span>
+                  <span className="shrink-0 flex items-center gap-2 text-sm text-ink-muted whitespace-nowrap"><span className={dot} />{state}</span>
+                </div>
+                {ownerSelect(e.num, "w-full h-11")}
+              </div>
+            )
+          })}
+      </div>
+      <div className={`${tbl.scroll} max-lg:hidden`}>
         <table className={tbl.table}>
           <thead>
             <tr><th className={tbl.th}>Ichki raqam</th><th className={`${tbl.th} max-md:hidden`}>Holat</th><th className={tbl.th}>Hodim</th></tr>
@@ -97,7 +154,6 @@ function Telephony() {
               : error ? <tr><td colSpan={3} className={`${tbl.empty} text-danger-text`}>OnlinePBX bilan aloqa yo'q ({error.message})</td></tr>
               : exts.length === 0 ? <tr><td colSpan={3} className={tbl.empty}>OnlinePBX'da ichki raqam yo'q</td></tr>
               : exts.map((e) => {
-                const owner = users.find((u) => u.pbx_ext === e.num)
                 const state = !e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"
                 const dot = `size-2 rounded-full ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`
                 return (
@@ -111,14 +167,7 @@ function Telephony() {
                         {state}
                       </span>
                     </td>
-                    <td className={tbl.td}>
-                      <select value={owner?.id ?? ""} aria-label={`${e.num}: hodim`}
-                        onChange={(ev) => ev.target.value ? setExt.mutate({ userId: ev.target.value, ext: e.num }) : owner && setExt.mutate({ userId: owner.id, ext: null })}
-                        className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
-                        <option value="">Biriktirilmagan</option>
-                        {staff.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.pbx_ext && u.pbx_ext !== e.num ? ` (${u.pbx_ext})` : ""}</option>)}
-                      </select>
-                    </td>
+                    <td className={tbl.td}>{ownerSelect(e.num)}</td>
                   </tr>
                 )
               })}
@@ -136,7 +185,7 @@ function LeadSources() {
   const update = useUpdateLeadSource()
   const pipelineSelect = (s: LeadSource) => (
     <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
-      aria-label={`${s.label}: voronka`} className="h-8 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
+      aria-label={`${s.label}: voronka`} className="h-8 max-lg:h-11 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
       <option value="">Tanlanmagan</option>
       {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
     </select>
@@ -144,17 +193,17 @@ function LeadSources() {
   const leadsInfo = (s: LeadSource) => `${s.leads_count} ta${s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
   const callNote = <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
   return (
-    <section className="flex flex-col gap-4 mt-6">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-md font-semibold text-ink">Lid manbalari</h2>
-        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
+    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2">
+      <div className="flex flex-col gap-1 max-lg:px-1">
+        <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">Lid manbalari</h2>
+        <p className="text-sm text-ink-muted max-lg:hidden">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
       </div>
       {/* Phones: one card per source, so the address and its copy button are never off-screen */}
-      <div className="flex flex-col gap-3 md:hidden">
+      <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:hidden">
         {isLoading ? <div className={tbl.empty}>Yuklanmoqda…</div>
           : error ? <div className={`${tbl.empty} text-danger-text`}>{error.message}</div>
           : sources.map((s) => (
-            <div key={s.id} className="flex flex-col gap-3 p-4 rounded-surface bg-surface-sunken">
+            <div key={s.id} className="flex flex-col gap-3 p-4 rounded-surface bg-surface-sunken min-w-0">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-base font-medium text-ink">{s.label}</span>
                 <Switch on={s.enabled} label={`${s.label}: yoqilgan`} onChange={(v) => update.mutate({ id: s.id, patch: { enabled: v } })} />
@@ -167,7 +216,7 @@ function LeadSources() {
             </div>
           ))}
       </div>
-      <div className={`${tbl.scroll} max-md:hidden`}>
+      <div className={`${tbl.scroll} max-lg:hidden`}>
         <table className={tbl.table}>
           <thead>
             <tr>
@@ -214,7 +263,7 @@ function CopyBtn({ value }: { value: string }) {
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-9 sm:h-7 px-2.5 rounded-full text-sm whitespace-nowrap text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-10 lg:h-7 px-2.5 rounded-full text-sm whitespace-nowrap text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
       {copied ? <Check size={12} weight="bold" /> : <Copy size={16} />}{copied ? "Nusxalandi" : "Nusxa"}
     </button>
   )
@@ -223,7 +272,7 @@ function CopyBtn({ value }: { value: string }) {
 function GroupAvatar({ g }: { g: TelegramGroup }) {
   const c = PALETTE[hash(String(g.chat_id)) % PALETTE.length]
   return (
-    <span className={`size-9 shrink-0 rounded-full flex items-center justify-center text-sm font-semibold text-ink ${isGone(g) ? "opacity-40" : ""}`}
+    <span className={`size-10 lg:size-9 shrink-0 rounded-full flex items-center justify-center text-sm font-semibold text-ink ${isGone(g) ? "opacity-40" : ""}`}
       style={{ backgroundColor: `${c}33` }}>
       {initials(g.title)}
     </span>
@@ -289,20 +338,22 @@ function EmptySteps() {
 function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: React.ReactNode; footer: React.ReactNode }) {
   const headingId = useId()
   const ref = useDialog<HTMLDivElement>(onClose, true)
+  const onPhone = useMedia("(width < 40rem)")
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[10vh]">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-start justify-center sm:p-4 sm:pt-[10vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div ref={ref} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1}
-        initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-lg bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-32px)] sm:max-h-[84vh]">
-        <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
-          <h3 id={headingId} className="text-base font-semibold text-ink">{title}</h3>
-          <button type="button" onClick={onClose} aria-label="Yopish" className="p-2 sm:p-1.5 rounded-item hover:bg-mute-ghost-hover transition-colors">
+        {...(onPhone ? sheetMotion(true) : { initial: { scale: 0.97, opacity: 0, y: 12 }, animate: { scale: 1, opacity: 1, y: 0 } })}
+        className="relative w-full sm:max-w-lg bg-surface-raised rounded-t-[20px] sm:rounded-overlay flex flex-col max-h-[92dvh] sm:max-h-[84vh]">
+        <div className={sheet.grabber} />
+        <div className="flex items-center justify-between px-4 sm:px-5 h-12 sm:h-14 sm:border-b border-line shrink-0">
+          <h3 id={headingId} className="text-lg sm:text-base font-semibold text-ink">{title}</h3>
+          <button type="button" onClick={onClose} aria-label="Yopish" className="size-10 sm:size-auto -mr-2 sm:mr-0 flex items-center justify-center sm:p-1.5 rounded-full sm:rounded-item hover:bg-mute-ghost-hover transition-colors">
             <X size={20} className="text-ink-muted" />
           </button>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 flex flex-col gap-5">{children}</div>
-        <div className="flex items-center gap-2 px-5 py-3 border-t border-line shrink-0">{footer}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-3 sm:py-5 flex flex-col gap-5">{children}</div>
+        <div className="flex items-center gap-2 px-4 sm:px-5 py-3 max-sm:pb-[calc(12px+env(safe-area-inset-bottom))] border-t border-line shrink-0">{footer}</div>
       </motion.div>
     </div>
   )
@@ -324,7 +375,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
         <Trash size={16} /> Olib tashlash
       </button>
       <div className="flex-1" />
-      <button type="button" onClick={onClose} className={softBtn}>Tayyor</button>
+      <button type="button" onClick={onClose} className={`${softBtn} max-sm:flex-1`}>Tayyor</button>
     </>}>
       <div className="flex items-center gap-3">
         <GroupAvatar g={g} />
@@ -371,7 +422,7 @@ function AddModal({ onClose }: { onClose: () => void }) {
     <Modal title="Guruh qo'shish" onClose={onClose} footer={<>
       <div className="flex-1" />
       <button type="button" onClick={onClose} className={softBtn}>Bekor qilish</button>
-      <button type="button" onClick={submit} disabled={!valid || add.isPending} className={primaryBtn}>{add.isPending ? "Saqlanmoqda…" : "Qo'shish"}</button>
+      <button type="button" onClick={submit} disabled={!valid || add.isPending} className={`${primaryBtn} max-sm:flex-1`}>{add.isPending ? "Saqlanmoqda…" : "Qo'shish"}</button>
     </>}>
       <p className="text-sm text-ink-muted leading-relaxed p-3 rounded-control bg-surface-sunken">
         Eng osoni — {BOT} ni guruhga qo'shing: guruh jadvalga o'zi tushadi, ID kiritish shart emas. Qo'lda qo'shish faqat bot allaqachon guruhda bo'lsa kerak.

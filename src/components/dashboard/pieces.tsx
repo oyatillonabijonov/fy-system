@@ -76,7 +76,7 @@ export function KpiCard({ className = "", label, icon, value, unit, sub, delta: 
  *  is a column sized to its count that tapers into the next, a share pill in the middle and a
  *  name/value footer; hovering a stage dims the rest and puts it in the headline. "Hammasi" shows
  *  one voronka at a time behind tabs. */
-export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
+export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel"]; compact?: boolean }) {
   // By id: two voronkalar may share a name
   const pipelines = [...new Map(rows.map((r) => [r.pipeline_id, r.pipeline])).entries()]
   const [picked, setPicked] = useState<string | null>(null)
@@ -102,14 +102,21 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      {pipelines.length > 1 && (
+      {pipelines.length > 1 && (compact ? (
+        <div role="tablist" aria-label="Voronka" className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">
+          {pipelines.map(([id, name]) => (
+            <button key={id} role="tab" aria-selected={id === pid} onClick={() => { setPicked(id); setHover(null) }}
+              className={`h-8 px-3 shrink-0 whitespace-nowrap rounded-full text-sm font-medium transition-colors ${id === pid ? "bg-accent text-ink-on-accent" : "bg-surface text-ink-muted"}`}>{name}</button>
+          ))}
+        </div>
+      ) : (
         <div role="tablist" aria-label="Voronka" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface flex-wrap">
           {pipelines.map(([id, name]) => (
             <button key={id} role="tab" aria-selected={id === pid} onClick={() => { setPicked(id); setHover(null) }}
               className={`h-7 px-3 shrink-0 whitespace-nowrap rounded-item text-sm font-medium transition-colors ${id === pid ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>{name}</button>
           ))}
         </div>
-      )}
+      ))}
 
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-2xl font-semibold tabular-nums text-ink">{formatNumber(head ? head.open : total)}</span>
@@ -122,7 +129,7 @@ export function Funnel({ rows }: { rows: SalesDashboard["funnel"] }) {
       {/* the row stretches the card to the right-hand column's height: keep the funnel's own
           proportions and sit it (with its footer) in the middle of whatever space is left */}
       <div className="my-auto flex flex-col gap-4">
-      <div className="relative h-60" onMouseLeave={() => setHover(null)}>
+      <div className={`relative ${compact ? "h-36" : "h-60"}`} onMouseLeave={() => setHover(null)}>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full block" aria-hidden>
           {stages.map((r, i) => (
             <g key={r.stage_id} onMouseEnter={() => setHover(i)} className="transition-opacity duration-200"

@@ -47,6 +47,9 @@ const queryClient = new QueryClient({
   },
 })
 
+// installed app (PWA): lets it open without a network — see public/sw.js
+if ('serviceWorker' in navigator && import.meta.env.PROD) void navigator.serviceWorker.register('/sw.js')
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

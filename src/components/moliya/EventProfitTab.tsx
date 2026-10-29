@@ -2,7 +2,9 @@ import { useEventProfit } from "@/hooks/useFinance"
 import type { FinanceFilters } from "@/lib/supabase/queries/finance"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
-import { formatDate, formatMoney } from "@/lib/format"
+import { ChartBar } from "@phosphor-icons/react"
+import { Empty, Loading, Money } from "@/components/moliya/mobile"
+import { formatDate, formatMoney, formatNumber } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 
 // Per-event breakdown of the KPIs: with the same period/event filter the
@@ -16,14 +18,62 @@ export function EventProfitTab({ filters }: { filters: FinanceFilters }) {
     <div className="flex flex-col gap-3">
       {ignoredFilters && <span className="text-sm text-ink-muted">Sotuvchi va usul filtrlari bu jadvalga taalluqli emas</span>}
       {isLoading ? (
-        <div className="py-10 flex items-center justify-center">
-          <ThinkingOrb state="searching" size={20} theme="light" />
-        </div>
+        <>
+          <div className="py-10 flex items-center justify-center max-lg:hidden">
+            <ThinkingOrb state="searching" size={20} theme="light" />
+          </div>
+          <div className="lg:hidden"><Loading /></div>
+        </>
       ) : rows.length === 0 ? (
-        <div className="py-10 text-center text-base text-ink-muted">Bu davrda pul harakati yo'q</div>
+        <>
+          <div className="py-10 text-center text-base text-ink-muted max-lg:hidden">Bu davrda pul harakati yo'q</div>
+          <div className="lg:hidden"><Empty icon={<ChartBar size={32} weight="thin" />} text="Bu davrda pul harakati yo'q" /></div>
+        </>
       ) : (
         <>
-          <div className={tbl.scroll}>
+          <div className="grid md:grid-cols-2 gap-2 lg:hidden items-start">
+            {paged.pageItems.map((r) => {
+              const pct = r.agreed > 0 ? Math.min(100, Math.round((r.collected / r.agreed) * 100)) : 0
+              return (
+                <div key={r.event_id ?? "general"} className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-base font-semibold text-ink">{r.event_id ? r.event_name : "Umumiy xarajatlar"}</span>
+                      <span className="text-sm text-ink-muted">{r.event_id ? formatDate(r.event_date) : "Tadbirga bog'lanmagan"}</span>
+                    </span>
+                    <span className="flex flex-col items-end shrink-0">
+                      <span className="text-sm text-ink-muted">Foyda</span>
+                      <Money value={r.profit} sign unit={false} className={`text-lg font-semibold ${r.profit < 0 ? "text-danger-text" : "text-success-text"}`} />
+                    </span>
+                  </div>
+                  {r.event_id && r.agreed > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="flex items-baseline justify-between gap-2 text-sm">
+                        <span className="text-ink-muted">Yig'ildi · {pct}%</span>
+                        <span className="text-ink tabular-nums whitespace-nowrap">{formatNumber(r.collected)} / {formatNumber(r.agreed)}</span>
+                      </span>
+                      <span className="h-1.5 rounded-full bg-mute-soft overflow-hidden">
+                        <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    {r.event_id && (
+                      <span className="flex flex-col">
+                        <span className="text-sm text-ink-muted">Qarz</span>
+                        <Money value={r.debt} unit={false} className={`text-base font-semibold ${r.debt > 0 ? "text-danger-text" : "text-ink"}`} />
+                      </span>
+                    )}
+                    <span className="flex flex-col">
+                      <span className="text-sm text-ink-muted">Xarajat</span>
+                      <Money value={r.expense} unit={false} className="text-base font-semibold text-ink" />
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className={`${tbl.scroll} max-lg:hidden`}>
             <table className={tbl.table}>
               <thead>
                 <tr>

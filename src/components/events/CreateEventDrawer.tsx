@@ -13,6 +13,7 @@ import { useUsers } from "@/hooks/useUsers"
 import { useEventTariffs, TARIFFS_KEY } from "@/hooks/useEvents"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
 import { formatNumber, formatDate } from "@/lib/format"
 
 interface CreateEventDrawerProps {
@@ -24,7 +25,7 @@ interface CreateEventDrawerProps {
 
 const LABEL = "text-sm font-medium text-ink-muted"
 const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 interface TariffRow {
   key: string
@@ -84,7 +85,7 @@ function ManagerSelect({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`w-full flex items-center justify-between gap-2 border rounded-control px-3 py-2 text-base transition-colors ${
+        className={`w-full flex items-center justify-between gap-2 border rounded-control px-3 py-2 max-sm:h-12 text-base transition-colors ${
           invalid ? "border-danger" : "border-line focus:border-line-focus"
         }`}
       >
@@ -183,6 +184,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const tariffsLoadedFor = useRef<string | null>(null)
 
   const panelRef = useDialog<HTMLDivElement>(onClose, isOpen)
+  const phone = useMedia("(width < 40rem)")
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -309,24 +311,24 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               aria-modal="true"
               aria-labelledby={titleId}
               tabIndex={-1}
-              initial={{ x: 460 }}
-              animate={{ x: 0 }}
-              exit={{ x: 460 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 w-full max-w-[460px] bg-surface-raised border-l border-line z-50 flex flex-col "
+              {...(phone
+                ? { initial: { y: "100%" }, animate: { y: 0 }, exit: { y: "100%" }, transition: { duration: 0.22, ease: [0.2, 0, 0, 1] as const } }
+                : { initial: { x: 460 }, animate: { x: 0 }, exit: { x: 460 }, transition: { type: "spring" as const, damping: 30, stiffness: 300 } })}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-[460px] max-sm:top-3 max-sm:max-w-none max-sm:rounded-t-[20px] bg-surface-raised border-l max-sm:border-l-0 border-line z-50 flex flex-col "
             >
+              <div className="sm:hidden mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-mute-soft" />
               {/* Header */}
-              <div className="flex items-center justify-between p-5 pb-4 border-b border-line">
-                <h2 id={titleId} className="text-md font-bold text-ink">
+              <div className="flex items-center justify-between p-5 pb-4 max-sm:px-4 max-sm:pt-2 max-sm:pb-3 sm:border-b border-line">
+                <h2 id={titleId} className="text-md max-sm:text-lg font-bold text-ink">
                   {isEdit ? "Tadbirni tahrirlash" : "Yangi tadbir"}
                 </h2>
-                <button onClick={onClose} aria-label="Yopish" className="p-2 -m-0.5 sm:p-1.5 sm:m-0 rounded-item hover:bg-mute-ghost-hover transition-colors">
+                <button onClick={onClose} aria-label="Yopish" className="p-2 -m-0.5 max-sm:size-10 max-sm:m-0 max-sm:-mr-2 max-sm:flex max-sm:items-center max-sm:justify-center sm:p-1.5 sm:m-0 rounded-item max-sm:rounded-full hover:bg-mute-ghost-hover transition-colors">
                   <X size={20} className="text-ink-muted" />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-5 max-sm:px-4 flex flex-col gap-4">
                 {error && (
                   <div className="px-3 py-2 rounded-surface text-sm font-medium bg-danger-soft text-danger-dark border border-danger-soft">
                     {error}
@@ -456,7 +458,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                           onClick={() => setTariffs((rows) => rows.filter((r) => r.key !== t.key))}
                           disabled={tariffs.length === 1}
                           aria-label={`${i + 1}-tarifni o'chirish`}
-                          className="shrink-0 size-9 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                          className="shrink-0 size-9 max-sm:size-11 flex items-center justify-center rounded-full text-ink-faint hover:text-danger-text hover:bg-danger-soft transition-colors disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <Trash size={16} />
                         </button>
@@ -465,7 +467,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     <button
                       type="button"
                       onClick={() => setTariffs((rows) => [...rows, blankTariff()])}
-                      className="self-start flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink transition-colors"
+                      className="self-start flex items-center gap-1.5 text-sm max-sm:h-10 font-medium text-ink-muted hover:text-ink transition-colors"
                     >
                       <Plus size={12} weight="bold" /> Tarif qo'shish
                     </button>
@@ -477,18 +479,18 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
+              <div className="flex items-center justify-end gap-2 px-5 py-4 max-sm:p-4 max-sm:pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line">
                 <button
                   onClick={onClose}
                   disabled={saving}
-                  className="px-4 py-2 rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
+                  className="px-4 py-2 max-sm:h-12 max-sm:bg-mute-soft max-sm:text-ink rounded-full text-base font-medium text-ink-muted hover:text-ink transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className={`px-5 py-2 rounded-full text-base font-bold transition-colors ${
+                  className={`px-5 py-2 max-sm:h-12 max-sm:flex-1 rounded-full text-base font-bold transition-colors ${
                     saving ? "bg-mute-soft text-ink-muted cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
                   }`}
                 >

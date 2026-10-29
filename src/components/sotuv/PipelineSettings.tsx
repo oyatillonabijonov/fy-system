@@ -2,6 +2,8 @@ import { useId, useState } from "react"
 import { motion } from "framer-motion"
 import { X, Trash, ArrowUp, ArrowDown, Plus } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent } from "@/hooks/useSotuv"
 import { useEvents } from "@/hooks/useEvents"
 import { formatDate } from "@/lib/format"
@@ -19,6 +21,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
 }) {
   const titleId = useId()
   const panelRef = useDialog<HTMLDivElement>(onClose, true)
+  const phone = useMedia("(width < 40rem)")
   const rename = useRenamePipeline()
   const del = useDeletePipeline()
   const save = useSaveStage()
@@ -54,16 +57,17 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh]">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-start justify-center sm:p-4 sm:pt-[8vh]">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
-        initial={{ scale: 0.97, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-md bg-surface-raised rounded-overlay flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[84vh]">
+        {...(phone ? sheetMotion(true) : { initial: { scale: 0.97, opacity: 0, y: 12 }, animate: { scale: 1, opacity: 1, y: 0 } })}
+        className="relative w-full sm:max-w-md bg-surface-raised rounded-t-[20px] sm:rounded-overlay flex flex-col max-h-[92dvh] sm:max-h-[84vh]">
+        <div className={sheet.grabber} />
         <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
           <h3 id={titleId} className="text-md font-semibold text-ink">Voronka sozlamalari</h3>
           <button onClick={onClose} aria-label="Yopish" className="p-1.5 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={20} /></button>
         </div>
-        <div className="p-5 flex flex-col gap-5 overflow-y-auto">
+        <div className="p-5 max-sm:pb-[calc(20px+env(safe-area-inset-bottom))] flex flex-col gap-5 overflow-y-auto overscroll-contain">
           {error && <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">{error}</div>}
           <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Voronka nomi"
             onBlur={() => { const v = name.trim(); if (v && v !== pipeline.name) rename.mutate({ id: pipeline.id, name: v }, { onError }); else setName(pipeline.name) }}

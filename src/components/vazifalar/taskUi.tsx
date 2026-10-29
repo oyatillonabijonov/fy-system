@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- small shared pieces of the Vazifalar page */
-import { CaretDown, ChatCircle, CheckCircle, Circle, CircleHalf, XCircle, CalendarBlank, Paperclip } from "@phosphor-icons/react"
+import { useRef } from "react"
+import { CaretDown, ChatCircle, CheckCircle, Circle, CircleHalf, XCircle, CalendarBlank, Paperclip, Check, X } from "@phosphor-icons/react"
 import { STATUS_VARIANTS, type StatusVariant } from "@/lib/constants/theme"
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { formatDate } from "@/lib/format"
@@ -138,5 +139,41 @@ export function StatusSelect({ value, onChange, label }: { value: TaskStatus; on
       </select>
       <CaretDown size={12} weight="bold" className="absolute right-2 pointer-events-none" style={{ color: v.text }} />
     </span>
+  )
+}
+
+const HOLD_MS = 450
+
+/** The status as a drawn circle: empty ring, half-filled, green check, red cross */
+export function StatusGlyph({ status, size = 28 }: { status: TaskStatus; size?: number }) {
+  return (
+    <span aria-hidden className={`relative rounded-full flex items-center justify-center shrink-0 transition-colors ${
+      status === "todo" ? "border-2 border-ink-faint"
+      : status === "in_progress" ? "border-2 border-info"
+      : status === "done" ? "bg-success text-white"
+      : "bg-danger text-white"}`} style={{ width: size, height: size }}>
+      {status === "in_progress" && <span className="absolute inset-[3px] rounded-full" style={{ background: "linear-gradient(90deg, var(--ds-color-info-default) 50%, transparent 50%)" }} />}
+      {status === "done" && <Check size={size * 0.57} weight="bold" />}
+      {status === "failed" && <X size={size * 0.5} weight="bold" />}
+    </span>
+  )
+}
+
+/** Phone/tablet status circle (28px): a tap completes (or reopens) the task, a long press opens the status sheet */
+export function StatusCircle({ status, label, onToggle, onHold }: { status: TaskStatus; label: string; onToggle: () => void; onHold: () => void }) {
+  const timer = useRef<number | null>(null)
+  const held = useRef(false)
+  const stop = () => { if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null } }
+  return (
+    <button type="button"
+      aria-label={`${label}: ${statusLabel(status)}. ${status === "done" ? "Qayta ochish" : "Bajarildi deb belgilash"}`}
+      onPointerDown={(e) => { e.stopPropagation(); held.current = false; stop(); timer.current = window.setTimeout(() => { held.current = true; onHold() }, HOLD_MS) }}
+      onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}
+      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); stop(); if (!held.current) { held.current = true; onHold() } }}
+      onClick={(e) => { e.stopPropagation(); if (held.current) { held.current = false; return } onToggle() }}
+      onKeyDown={(e) => e.stopPropagation()}
+      className="size-11 -ml-2.5 -my-2 shrink-0 flex items-center justify-center rounded-full select-none [-webkit-touch-callout:none] touch-manipulation">
+      <StatusGlyph status={status} />
+    </button>
   )
 }

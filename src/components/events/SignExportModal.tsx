@@ -2,7 +2,8 @@ import { useState } from "react"
 import { Plus, Trash } from "@phosphor-icons/react"
 import { type Event } from "@/lib/supabase/queries/events"
 import { SIGN_STYLES, DIRECTIONS, type Direction } from "@/lib/signs/drawSigns"
-import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { ModalOrSheet } from "@/components/events/ModalOrSheet"
 
 const rgb = (c: [number, number, number]) => `rgb(${c.join(",")})`
 interface Row { key: number; place: string; direction: Direction }
@@ -35,7 +36,7 @@ export function SignExportModal({ event, onClose }: { event: Event; onClose: () 
   }
 
   return (
-    <ModalShell title="Navigatsiya" error={error} submitLabel="PDF yuklab olish"
+    <ModalOrSheet title="Navigatsiya" error={error} submitLabel="PDF yuklab olish"
       canSubmit={signs.length > 0} pending={pending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <span className={LABEL}>Dizayn</span>
@@ -61,18 +62,18 @@ export function SignExportModal({ event, onClose }: { event: Event; onClose: () 
         <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
           {rows.map((r) => (
             <div key={r.key} className="flex items-center gap-2">
-              <input value={r.place} onChange={(e) => set(r.key, { place: e.target.value })} placeholder="Joy nomi" aria-label="Joy nomi" className={`${INPUT} flex-1 min-w-0`} />
+              <input value={r.place} onChange={(e) => set(r.key, { place: e.target.value })} placeholder="Joy nomi" aria-label="Joy nomi" className={`${INPUT} max-sm:h-12 flex-1 min-w-0`} />
               <select value={r.direction} onChange={(e) => set(r.key, { direction: e.target.value as Direction })} aria-label="Yo'nalish"
-                className={`${INPUT} !w-32 shrink-0`}>
+                className={`${INPUT} max-sm:h-12 !w-32 max-sm:!w-36 shrink-0`}>
                 {DIRECTIONS.map((d) => <option key={d.id} value={d.id}>{d.glyph} {d.label}</option>)}
               </select>
               <button type="button" onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))} aria-label="Belgini olib tashlash"
-                className="p-2 rounded-full text-ink-muted hover:bg-mute-ghost-hover shrink-0"><Trash size={16} /></button>
+                className="p-2 max-sm:size-10 max-sm:flex max-sm:items-center max-sm:justify-center rounded-full text-ink-muted hover:bg-mute-ghost-hover shrink-0"><Trash size={16} /></button>
             </div>
           ))}
         </div>
         <button type="button" onClick={() => setRows((rs) => [...rs, row("", "up")])}
-          className="self-start flex items-center gap-1.5 h-8 px-3 rounded-full bg-mute-soft text-sm font-medium text-ink hover:bg-mute-soft-hover">
+          className="self-start flex items-center gap-1.5 h-8 max-sm:h-10 px-3 rounded-full bg-mute-soft text-sm font-medium text-ink hover:bg-mute-soft-hover">
           <Plus size={12} weight="bold" /> Belgi qo'shish
         </button>
       </div>
@@ -80,6 +81,6 @@ export function SignExportModal({ event, onClose }: { event: Event; onClose: () 
       <p className="text-sm text-ink-muted -mt-1">
         {signs.length ? `${signs.length} ta belgi · ${Math.ceil(signs.length / 2)} ta A4 varaq (varaqda 2 ta)` : "Kamida bitta joy nomini yozing"}
       </p>
-    </ModalShell>
+    </ModalOrSheet>
   )
 }

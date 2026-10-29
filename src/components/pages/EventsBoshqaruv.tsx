@@ -56,7 +56,7 @@ export function EventsBoshqaruv() {
   }
 
   return (
-    <div className="flex flex-col gap-5 min-h-full pb-10">
+    <div className="flex flex-col gap-5 min-h-full pb-10 max-lg:pb-20">
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-4">
           <CalendarBlank size={64} weight="thin" className="text-ink-faint" />

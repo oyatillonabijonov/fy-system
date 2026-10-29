@@ -16,9 +16,9 @@ export function HomeDashboard() {
   const clients = hasAccess("mijozlar")
 
   return (
-    <div className="flex flex-col gap-8 pb-10">
+    <div className="flex flex-col gap-6 lg:gap-8 pb-6 lg:pb-10">
       <div className="flex flex-col gap-0.5 px-1">
-        <h2 className="text-xl font-semibold text-ink">Salom, {user?.full_name.split(" ")[0]}</h2>
+        <h2 className="text-2xl lg:text-xl font-semibold text-ink">Salom, {user?.full_name.split(" ")[0]}</h2>
         <p className="text-base text-ink-muted capitalize">{formatDate(new Date(), "long")}</p>
       </div>
 
@@ -75,13 +75,13 @@ function UpcomingEvents() {
       ) : upcoming.length === 0 ? (
         <Empty text="Rejalashtirilgan tadbir yo'q" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-4">
           {upcoming.map((e) => (
             <button
               key={e.id}
               type="button"
               onClick={() => open(e.id)}
-              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover rounded-surface p-4 sm:p-5 flex flex-col gap-3 transition-colors"
+              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover max-lg:active:bg-mute-ghost-hover rounded-surface p-4 sm:p-5 flex flex-col gap-3 transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <span className="text-base font-semibold text-ink line-clamp-2">{e.name}</span>
@@ -122,8 +122,8 @@ function ClientStats() {
 
   return (
     <Section title="Mijozlar" desc="Klub bazasi va yangi qo'shilganlar">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-4">
           <Stat icon={<Users size={16} />} label="Jami mijozlar" value={isLoading ? "…" : formatNumber(data.length)} />
           <Stat
             icon={<UserPlus size={16} />}
@@ -135,7 +135,7 @@ function ClientStats() {
         <div className="lg:col-span-2 bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-2 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-base font-semibold text-ink">Oxirgi qo'shilganlar</h3>
-            <button type="button" onClick={() => navigate("/mijozlar")} className="flex items-center gap-1.5 shrink-0 whitespace-nowrap text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+            <button type="button" onClick={() => navigate("/mijozlar")} className="flex items-center gap-1.5 shrink-0 whitespace-nowrap text-sm font-medium text-ink-muted hover:text-ink transition-colors max-lg:h-10 max-lg:px-3 max-lg:-mr-3">
               Barchasi <ArrowRight size={16} />
             </button>
           </div>
@@ -144,8 +144,8 @@ function ClientStats() {
           ) : (
             <div className="flex flex-col">
               {recent.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 py-2.5 border-b border-line last:border-0 min-w-0">
-                  <span className="size-8 rounded-full flex-shrink-0 overflow-hidden bg-surface flex items-center justify-center text-xs font-semibold text-ink-muted">
+                <div key={c.id} className="flex items-center gap-3 py-2.5 max-lg:min-h-16 border-b border-line last:border-0 min-w-0">
+                  <span className="size-8 max-lg:size-10 rounded-full flex-shrink-0 overflow-hidden bg-surface flex items-center justify-center text-xs font-semibold text-ink-muted">
                     {c.image
                       ? <img src={c.image} alt="" className="w-full h-full object-cover object-top" />
                       : c.full_name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
@@ -171,8 +171,8 @@ function Section({ title, desc, children }: { title: string; desc: string; child
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-0.5 px-1">
-        <h2 className="text-md font-semibold text-ink">{title}</h2>
-        <p className="text-sm text-ink-muted">{desc}</p>
+        <h2 className="text-base sm:text-md font-semibold text-ink">{title}</h2>
+        <p className="max-sm:hidden text-sm text-ink-muted">{desc}</p>
       </div>
       {children}
     </section>
@@ -182,7 +182,7 @@ function Section({ title, desc, children }: { title: string; desc: string; child
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="bg-surface-sunken rounded-surface px-4 sm:px-5 py-4 flex flex-col gap-1.5 min-w-0">
-      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted whitespace-nowrap">{icon}{label}</span>
+      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted whitespace-nowrap"><span className="max-sm:hidden">{icon}</span>{label}</span>
       <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
       {hint && <span className="text-sm text-ink-faint">{hint}</span>}
     </div>

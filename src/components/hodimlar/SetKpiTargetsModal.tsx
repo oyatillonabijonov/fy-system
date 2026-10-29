@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import { useUpsertKpiTarget } from "@/hooks/useKpi"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import type { KpiTarget } from "@/lib/supabase/queries/kpi"
 import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { formatNumber } from "@/lib/format"
@@ -30,7 +32,7 @@ const MONTHS = [
 ]
 
 const inputCls =
-  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 
 function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProps) {
   const [revenueTarget, setRevenueTarget] = useState<string>(
@@ -50,6 +52,7 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
   const uid = useId()
   const titleId = useId()
   const panelRef = useDialog<HTMLDivElement>(() => !saving && onClose())
+  const onPhone = useMedia("(width < 40rem)")
 
   async function handleSubmit() {
     setError(null)
@@ -81,32 +84,26 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
   }
 
   return (
-    <>
+    <div className={sheet.wrap}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-surface-overlay backdrop-blur-[2px] z-[110]"
+        className="absolute inset-0 bg-surface-overlay backdrop-blur-[2px]"
         onClick={() => !saving && onClose()}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed inset-0 flex items-center justify-center z-[110] pointer-events-none p-4"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        {...sheetMotion(onPhone)}
+        className={`${sheet.panel} sm:max-w-md`}
       >
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          tabIndex={-1}
-          className="bg-surface-raised rounded-overlay w-full max-w-md pointer-events-auto max-sm:max-h-[calc(100dvh-32px)] max-sm:overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+          <div className={sheet.grabber} />
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 sm:border-b border-line shrink-0">
             <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-lg font-bold text-ink">KPI maqsadlari</h2>
               <span className="text-xs text-ink-muted">
@@ -117,14 +114,14 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
               onClick={onClose}
               disabled={saving}
               aria-label="Yopish"
-              className="p-2 sm:p-1.5 shrink-0 rounded-item hover:bg-mute-ghost-hover transition-colors"
+              className="size-10 sm:size-auto -mr-2 sm:mr-0 flex items-center justify-center sm:p-1.5 shrink-0 rounded-full sm:rounded-item hover:bg-mute-ghost-hover transition-colors"
             >
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
 
           {/* Form */}
-          <div className="p-5 flex flex-col gap-4">
+          <div className="p-4 sm:p-5 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {error && (
               <div className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark border border-line">
                 {error}
@@ -189,27 +186,26 @@ function SetForm({ onClose, user, period, existingTarget, onSuccess }: InnerProp
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
+          <div className="flex items-center justify-end gap-2 px-4 sm:px-5 py-4 max-sm:pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line shrink-0">
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-full text-base font-medium whitespace-nowrap text-ink-muted hover:text-ink transition-colors"
+              className="px-4 py-2 max-sm:h-12 max-sm:bg-mute-soft max-sm:text-ink rounded-full text-base font-medium whitespace-nowrap text-ink-muted hover:text-ink transition-colors"
             >
               Bekor qilish
             </button>
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className={`px-5 py-2 rounded-full text-base font-bold whitespace-nowrap transition-colors ${
+              className={`px-5 py-2 max-sm:h-12 max-sm:flex-1 rounded-full text-base font-bold whitespace-nowrap transition-colors ${
                 saving ? "bg-mute-soft text-ink-faint cursor-not-allowed" : "bg-accent text-ink-on-accent hover:bg-accent-hover"
               }`}
             >
               {saving ? "Saqlanmoqda..." : "Saqlash"}
             </button>
           </div>
-        </div>
       </motion.div>
-    </>
+    </div>
   )
 }
 

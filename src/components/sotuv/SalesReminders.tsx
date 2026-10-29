@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type MouseEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Bell } from "@phosphor-icons/react"
+import { Bell, CheckCircle } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { SOTUV_KEY } from "@/hooks/useSotuv"
 import { getMyOpenTasks, fromDue, kindLabel } from "@/lib/supabase/queries/sotuv"
 import { toast } from "@/lib/toast"
 import { tashkentToday } from "@/lib/period"
 import { Popover } from "@/components/vazifalar/pickers"
-import { TaskChip } from "./ui"
+import { Sheet } from "@/components/ui/Sheet"
+import { useMedia } from "@/hooks/useMedia"
+import { TaskChip, EmptyNote, KIND_ICON } from "./ui"
 
 const KEY = "fy_reminded"   // task id → the deadline already announced (a moved deadline re-arms it)
 
@@ -28,6 +30,8 @@ export function SalesReminders() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [now, setNow] = useState(() => Date.now())
+  const phone = useMedia("(width < 40rem)")
+  const [sheetOpen, setSheetOpen] = useState(false)
   const { data: tasks } = useQuery({
     queryKey: [...SOTUV_KEY, "my-reminders", user?.id],
     queryFn: () => getMyOpenTasks(user!.id),
@@ -53,19 +57,54 @@ export function SalesReminders() {
   }, [tasks, now])
 
   const due = (tasks ?? []).filter((t) => remindAt(t.due_date) <= now)
+  const bell = (open: boolean, toggle: (e: MouseEvent<HTMLElement>) => void) => (
+    <button type="button" onClick={toggle} aria-expanded={open}
+      aria-label={due.length ? `Eslatmalar: ${due.length} ta vazifa vaqti keldi` : "Eslatmalar"}
+      className="relative size-9 shrink-0 rounded-full bg-surface-sunken flex items-center justify-center text-ink hover:bg-surface-sunken-hover transition-colors">
+      <Bell size={16} />
+      {due.length > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-danger text-white text-xs font-semibold tabular-nums flex items-center justify-center">
+          {due.length > 99 ? "99+" : due.length}
+        </span>
+      )}
+    </button>
+  )
+
+  // Phone: the list is a bottom sheet (a 360px popover under the bell doesn't fit)
+  if (phone) {
+    const go = (path: string) => { setSheetOpen(false); navigate(path) }
+    const today = tashkentToday()
+    return (
+      <>
+        {bell(sheetOpen, () => setSheetOpen(true))}
+        <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Vaqti kelgan vazifalar"
+          footer={<button type="button" onClick={() => go("/sotuv?v=tasks")} className="h-12 flex-1 rounded-full bg-surface-sunken text-ink text-base font-semibold">Barcha vazifalar</button>}>
+          {due.length === 0 ? <EmptyNote icon={CheckCircle} text="Hozircha yo'q" /> : (
+            <ul className="rounded-surface bg-surface-sunken overflow-hidden">
+              {due.map((t) => {
+                const Icon = KIND_ICON[t.kind]
+                return (
+                  <li key={t.id} className="border-b border-line last:border-b-0">
+                    <button type="button" onClick={() => go(`/sotuv/bitim/${t.lead_id}`)} className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left active:bg-mute-ghost-hover">
+                      <Icon size={20} className="text-ink-muted shrink-0" />
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-base font-medium text-ink line-clamp-2">{t.text || kindLabel(t.kind)}</span>
+                        {t.lead && <span className="block text-sm text-ink-muted line-clamp-1">{t.lead.name}</span>}
+                      </span>
+                      <TaskChip kind={t.kind} due={t.due_date} today={today} />
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </Sheet>
+      </>
+    )
+  }
+
   return (
-    <Popover width={360} trigger={(open, toggle) => (
-      <button type="button" onClick={toggle} aria-expanded={open}
-        aria-label={due.length ? `Eslatmalar: ${due.length} ta vazifa vaqti keldi` : "Eslatmalar"}
-        className="relative size-9 shrink-0 rounded-full bg-surface-sunken flex items-center justify-center text-ink hover:bg-surface-sunken-hover transition-colors">
-        <Bell size={16} />
-        {due.length > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-danger text-white text-xs font-semibold tabular-nums flex items-center justify-center">
-            {due.length > 99 ? "99+" : due.length}
-          </span>
-        )}
-      </button>
-    )}>
+    <Popover width={360} trigger={bell}>
       {(close) => (
         <div className="flex flex-col">
           <p className="px-2.5 pt-1.5 pb-2 text-sm font-semibold text-ink">Vaqti kelgan vazifalar</p>

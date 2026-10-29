@@ -1,23 +1,28 @@
 import { useEffect, useId, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel, Copy } from "@phosphor-icons/react"
+import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel, Copy, DotsThree, CaretRight, CalendarBlank } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { usePipelines, useStages, useLeads, useCreatePipeline, useDuplicateLeads, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeLeads, sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
 import { useEvents } from "@/hooks/useEvents"
+import { useMedia } from "@/hooks/useMedia"
+import { Sheet } from "@/components/ui/Sheet"
+import { Fab } from "@/components/ui/Fab"
 import { formatDate, formatNumber } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
-import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { FormSheet } from "@/components/sotuv/FormSheet"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { Board } from "@/components/sotuv/Board"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { PipelineSettings } from "@/components/sotuv/PipelineSettings"
 import { SalesTasks } from "@/components/sotuv/SalesTasks"
 import { Duplicates } from "@/components/sotuv/Duplicates"
-import { TaskChip, NoTaskChip, StageDot } from "@/components/sotuv/ui"
+import { LeadCards } from "@/components/sotuv/LeadCards"
+import { TaskChip, NoTaskChip, StageDot, SotuvSegments } from "@/components/sotuv/ui"
 
 const LAST_PIPELINE = "fy_last_crm_pipeline_id"
 type View = "kanban" | "list" | "tasks"
@@ -28,6 +33,7 @@ export function Sotuv() {
   const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
   const view = (params.get("v") as View | null) ?? "kanban"
+  const mobile = useMedia("(width < 64rem)")
   const { data: pipelines = [], isLoading } = usePipelines()
   const saved = (() => { try { return localStorage.getItem(LAST_PIPELINE) } catch { return null } })()
   const wanted = params.get("p") ?? saved
@@ -40,6 +46,7 @@ export function Sotuv() {
   const [creating, setCreating] = useState<{ stageId: string | null } | null>(null)
   const [settings, setSettings] = useState(false)
   const [dups, setDups] = useState(false)
+  const [menu, setMenu] = useState(false)
   const { data: duplicates = [] } = useDuplicateLeads()
   const today = tashkentToday()
   const { data: events = [] } = useEvents()
@@ -81,6 +88,90 @@ export function Sotuv() {
         <p className="text-base text-ink-muted">Hali voronka yo'q.</p>
         {isAdmin && <button onClick={newPipeline} className="h-control-md px-4 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors">Voronka yaratish</button>}
         {namingDialog}
+      </div>
+    )
+  }
+
+  const dialogs = (
+    <>
+      {creating && pipeline && (
+        <LeadCreate pipelineId={pipeline.id} stages={stages} stageId={creating.stageId}
+          onClose={() => setCreating(null)} onCreated={(id) => navigate(`/sotuv/bitim/${id}`)} />
+      )}
+      {dups && <Duplicates onClose={() => setDups(false)} />}
+      {namingDialog}
+      {settings && pipeline && (
+        <PipelineSettings pipeline={pipeline} stages={stages} onClose={() => setSettings(false)} onDeleted={() => { setSettings(false); set("p", null) }} />
+      )}
+    </>
+  )
+
+  if (mobile) {
+    // The phone shows cards unless Kanban was asked for; "list" (the desktop table) is the same cards
+    const mview = view === "tasks" ? "tasks" : params.get("v") === "kanban" ? "board" : "cards"
+    return (
+      <div className="flex flex-col gap-3 pb-20">
+        <SotuvSegments active={mview === "tasks" ? "tasks" : "deals"}
+          onPick={(t) => t === "calls" ? navigate("/sotuv/qongiroqlar") : set("v", t === "tasks" ? "tasks" : null)} />
+
+        {mview !== "tasks" && (
+          <>
+            <div role="tablist" aria-label="Voronkalar" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+              {pipelines.map((p) => (
+                <button key={p.id} role="tab" aria-selected={p.id === pid} onClick={() => pick(p.id)}
+                  className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${p.id === pid ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex-1 min-w-0 flex items-center gap-2 h-11 px-4 rounded-full bg-surface-sunken">
+                <MagnifyingGlass size={18} className="text-ink-muted shrink-0" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism, bitim yoki telefon" aria-label="Qidirish"
+                  className="flex-1 min-w-0 bg-transparent text-base text-ink placeholder:text-ink-muted focus:outline-none" />
+              </label>
+              <button type="button" aria-pressed={mview === "board"} onClick={() => set("v", mview === "board" ? null : "kanban")}
+                aria-label={mview === "board" ? "Ro'yxat ko'rinishi" : "Kanban ko'rinishi"}
+                className={`size-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${mview === "board" ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+                {mview === "board" ? <Rows size={20} /> : <Kanban size={20} />}
+              </button>
+              {(isAdmin || duplicates.length > 0 || eventName) && (
+                <button type="button" onClick={() => setMenu(true)} aria-label="Yana"
+                  className="relative size-11 shrink-0 rounded-full bg-surface-sunken text-ink flex items-center justify-center">
+                  <DotsThree size={22} weight="bold" />
+                  {duplicates.length > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-warning" />}
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-ink-muted tabular-nums px-1">
+              <span className="font-semibold text-ink">{openLeads.length} ochiq</span> · {formatNumber(openLeads.reduce((a, l) => a + l.price, 0))} so'm
+            </p>
+          </>
+        )}
+
+        {mview === "tasks" ? <SalesTasks today={today} />
+          : leadsLoading || !pipeline ? <div className="bg-surface-sunken rounded-surface py-12 text-center text-base text-ink-muted">Yuklanmoqda…</div>
+          : mview === "board" ? <Board stages={stages} leads={shown} today={today} onOpen={open} onAdd={(stageId) => setCreating({ stageId })} />
+          : <LeadCards stages={stages} leads={shown} today={today} onOpen={open} />}
+
+        {mview !== "tasks" && pipeline && <Fab icon={<Plus size={20} weight="bold" />} label="Bitim" onClick={() => setCreating({ stageId: null })} />}
+
+        <Sheet open={menu} onClose={() => setMenu(false)} title={pipeline?.name ?? "Voronka"}>
+          <div className="flex flex-col gap-2">
+            {eventName && (
+              <div className="flex items-center gap-3 min-h-14 px-4 rounded-surface bg-surface-sunken">
+                <CalendarBlank size={20} className="text-ink-muted shrink-0" />
+                <span className="flex-1 min-w-0"><span className="block text-sm text-ink-muted">Tadbir</span><span className="block text-base font-medium text-ink line-clamp-2">{eventName}</span></span>
+              </div>
+            )}
+            {duplicates.length > 0 && (
+              <MenuRow icon={<Copy size={20} />} label={`Dublikatlar · ${duplicates.length}`} tone="warning" onClick={() => { setMenu(false); setDups(true) }} />
+            )}
+            {isAdmin && pipeline && <MenuRow icon={<GearSix size={20} />} label="Voronka sozlamalari" onClick={() => { setMenu(false); setSettings(true) }} />}
+            {isAdmin && <MenuRow icon={<Plus size={20} />} label="Yangi voronka" onClick={() => { setMenu(false); newPipeline() }} />}
+          </div>
+        </Sheet>
+        {dialogs}
       </div>
     )
   }
@@ -151,16 +242,17 @@ export function Sotuv() {
         <Board stages={stages} leads={shown} today={today} onOpen={open} onAdd={(stageId) => setCreating({ stageId })} />
       )}
 
-      {creating && pipeline && (
-        <LeadCreate pipelineId={pipeline.id} stages={stages} stageId={creating.stageId}
-          onClose={() => setCreating(null)} onCreated={(id) => navigate(`/sotuv/bitim/${id}`)} />
-      )}
-      {dups && <Duplicates onClose={() => setDups(false)} />}
-      {namingDialog}
-      {settings && pipeline && (
-        <PipelineSettings pipeline={pipeline} stages={stages} onClose={() => setSettings(false)} onDeleted={() => { setSettings(false); set("p", null) }} />
-      )}
+      {dialogs}
     </div>
+  )
+}
+
+function MenuRow({ icon, label, tone, onClick }: { icon: React.ReactNode; label: string; tone?: "warning"; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`flex items-center gap-3 min-h-14 px-4 rounded-surface text-left active:opacity-85 ${tone === "warning" ? "bg-warning-soft text-warning-dark" : "bg-surface-sunken text-ink"}`}>
+      {icon}<span className="flex-1 text-base font-medium">{label}</span><CaretRight size={16} className="text-ink-faint" />
+    </button>
   )
 }
 
@@ -217,13 +309,13 @@ function NewPipeline({ pending, onSubmit, onClose }: {
   const id = useId()
   const submit = () => { if (name.trim()) onSubmit(name.trim(), (e) => setError(e.message)) }
   return (
-    <ModalShell title="Yangi voronka" error={error} submitLabel="Yaratish" canSubmit={!!name.trim()} pending={pending} onSubmit={submit} onClose={onClose}>
+    <FormSheet title="Yangi voronka" error={error} submitLabel="Yaratish" canSubmit={!!name.trim()} pending={pending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={id} className={LABEL}>Voronka nomi</label>
         <input id={id} autoFocus value={name} maxLength={60} onChange={(e) => { setName(e.target.value); setError(null) }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit() } }}
-          placeholder="Masalan: Tog' safari" className={INPUT} />
+          placeholder="Masalan: Tog' safari" className={`${INPUT} max-sm:h-12`} />
       </div>
-    </ModalShell>
+    </FormSheet>
   )
 }

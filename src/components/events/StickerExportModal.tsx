@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { type Event, type Participant } from "@/lib/supabase/queries/events"
 import { STICKER_STYLES, PER_SHEET, type StickerStyle } from "@/lib/stickers/drawStickers"
-import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { ModalOrSheet } from "@/components/events/ModalOrSheet"
 import { useUsers } from "@/hooks/useUsers"
 
 const rgb = (c: [number, number, number]) => `rgb(${c.join(",")})`
@@ -43,10 +44,10 @@ function PickList({ title, empty, items, picked, onChange }: {
             className="text-sm text-ink hover:underline">{all ? "Hammasini olib tashlash" : "Hammasini belgilash"}</button>
         )}
       </div>
-      <div className="max-h-40 overflow-y-auto rounded-control border border-line">
+      <div className="max-h-40 max-sm:max-h-52 overflow-y-auto rounded-control border border-line">
         {items.length === 0 ? <p className="px-3 py-4 text-sm text-ink-muted text-center">{empty}</p>
           : items.map((i) => (
-            <label key={i.id} className="flex items-center gap-2.5 px-3 h-9 text-base text-ink cursor-pointer hover:bg-mute-ghost-hover border-b border-line last:border-b-0">
+            <label key={i.id} className="flex items-center gap-2.5 px-3 h-9 max-sm:h-11 text-base text-ink cursor-pointer hover:bg-mute-ghost-hover border-b border-line last:border-b-0">
               <input type="checkbox" checked={picked.has(i.id)} onChange={() => toggle(i.id)} className="size-4 accent-[var(--ds-color-bg-inverted)]" />
               <span className="truncate">{i.name}</span>
             </label>
@@ -90,7 +91,7 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
   }
 
   return (
-    <ModalShell title="Ism stikerlari" error={error} submitLabel="PDF yuklab olish"
+    <ModalOrSheet title="Ism stikerlari" error={error} submitLabel="PDF yuklab olish"
       canSubmit={names.length > 0} pending={pending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <span className={LABEL}>Dizayn</span>
@@ -107,7 +108,7 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
 
       <label className="flex flex-col gap-1.5">
         <span className={LABEL}>Pastki yozuv</span>
-        <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Biznes nonushta 3.0" className={INPUT} />
+        <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Biznes nonushta 3.0" className={`${INPUT} max-sm:h-12`} />
       </label>
 
       <PickList title="Ishtirokchilar" empty="Ishtirokchi yo'q — ismlarni pastga yozing"
@@ -122,6 +123,6 @@ export function StickerExportModal({ event, participants, onClose }: { event: Ev
       <p className="text-sm text-ink-muted -mt-1">
         {names.length ? `${names.length} ta stiker · ${sheets} ta A4 varaq (varaqda 14 ta)` : "Kamida bitta ism tanlang"}
       </p>
-    </ModalShell>
+    </ModalOrSheet>
   )
 }

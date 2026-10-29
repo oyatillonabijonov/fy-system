@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus, MagnifyingGlass } from "@phosphor-icons/react"
+import { Plus, MagnifyingGlass, CaretRight } from "@phosphor-icons/react"
+import { Fab } from "@/components/ui/Fab"
 import { useUsers } from "@/hooks/useUsers"
 import { CreateUserModal } from "@/components/sozlamalar/CreateUserModal"
 import { ROLE_LABELS, type UserProfile, type UserRole } from "@/lib/supabase/queries/auth"
@@ -40,9 +41,48 @@ export function Hodimlar() {
   const count = (id: UserRole | "all") => (id === "all" ? users.length : users.filter((u) => u.role === id).length)
 
   return (
-    <div className="flex flex-col gap-4 pb-10">
+    <div className="flex flex-col gap-4 pb-10 max-lg:pb-20">
+      {/* Phones and tablets: role chips, search, staff as a grouped list */}
+      <div className="lg:hidden flex flex-col gap-3">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+          {ROLE_FILTERS.map((f) => (
+            <button key={f.id} type="button" onClick={() => setRole(f.id)} aria-pressed={role === f.id}
+              className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 ${role === f.id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+              {f.label}
+              <span className={`tabular-nums ${role === f.id ? "text-ink-on-accent/70" : "text-ink-faint"}`}>{count(f.id)}</span>
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <MagnifyingGlass size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+          <input type="search" placeholder="Ism, email yoki lavozim" aria-label="Qidirish" value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-12 pl-10 pr-3 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus" />
+        </div>
+        <div className="rounded-surface bg-surface-sunken overflow-hidden">
+          {isLoading ? <p className="py-10 text-center text-base text-ink-muted">Yuklanmoqda…</p>
+            : filteredUsers.length === 0 ? <p className="py-10 text-center text-base text-ink-muted">{search || role !== "all" ? "Mos keluvchi xodim topilmadi" : "Hali xodim qo'shilmagan"}</p>
+            : paged.pageItems.map((u) => (
+              <button key={u.id} type="button" onClick={() => navigate(`/hodimlar/${u.id}`)}
+                className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+                <span className="size-10 rounded-full shrink-0 overflow-hidden bg-surface flex items-center justify-center text-sm font-semibold text-ink-muted">
+                  {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : getInitials(u.full_name)}
+                </span>
+                <span className="flex-1 min-w-0 flex flex-col">
+                  <span className={`text-base font-medium truncate ${u.is_active ? "text-ink" : "text-ink-muted"}`}>{u.full_name}</span>
+                  <span className="text-sm text-ink-muted truncate">{ROLE_LABELS[u.role]}{u.department ? ` · ${departmentLabel(u.department)}` : ""}</span>
+                </span>
+                {u.is_active
+                  ? <span className="size-2.5 rounded-full bg-success shrink-0" role="img" aria-label="Faol" />
+                  : <span className="h-6 px-2 rounded-full bg-surface text-xs font-medium text-ink-muted flex items-center shrink-0">Faol emas</span>}
+                <CaretRight size={16} className="text-ink-faint shrink-0" />
+              </button>
+            ))}
+        </div>
+        <Fab icon={<Plus size={20} weight="bold" />} label="Hodim" onClick={() => setShowCreate(true)} />
+      </div>
+
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="max-lg:hidden flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1 max-w-full overflow-x-auto no-scrollbar">
           {ROLE_FILTERS.map((f) => (
             <button
@@ -81,7 +121,7 @@ export function Hodimlar() {
       </div>
 
       {/* Users table */}
-      <div className={tbl.scroll}>
+      <div className={`${tbl.scroll} max-lg:hidden`}>
         <table className={tbl.table}>
           <thead>
             <tr>

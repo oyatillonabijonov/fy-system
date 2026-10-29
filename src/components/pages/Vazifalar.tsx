@@ -1,7 +1,10 @@
 import { useId, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { AnimatePresence } from "framer-motion"
 import { Plus, Copy, Rows, Kanban, CheckCircle, CaretDown, CalendarBlank, Tray } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
+import { useMedia } from "@/hooks/useMedia"
+import { Fab } from "@/components/ui/Fab"
 import { useEvents } from "@/hooks/useEvents"
 import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks, useTaskCounts } from "@/hooks/useTasks"
 import type { Task, TaskStatus } from "@/lib/supabase/queries/tasks"
@@ -11,6 +14,7 @@ import { TaskPanel } from "@/components/vazifalar/TaskPanel"
 import { TaskKanban } from "@/components/vazifalar/TaskKanban"
 import { StatusSelect, StatusMark, Owner, DueChip, CommentCount, AttachCount, SectionChip, sectionColor } from "@/components/vazifalar/taskUi"
 import { PersonDot } from "@/components/vazifalar/pickers"
+import { MobileTabs, MobileEvent, MobileMine, MobileCopy } from "@/components/vazifalar/MobileTasks"
 import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 
 const GENERAL = "umumiy"
@@ -23,17 +27,20 @@ export function Vazifalar() {
   const [params, setParams] = useSearchParams()
   const tab = params.get("tab") === "mine" ? "mine" : "event"
   const setTab = (t: "mine" | "event") => setParams((p) => { p.set("tab", t); return p }, { replace: true })
+  const mobile = useMedia("(width < 64rem)")
 
   return (
-    <div className="flex flex-col gap-5 pb-10">
-      <div role="tablist" aria-label="Vazifalar" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface-sunken">
-        {([["event", "Tadbirlar bo'yicha"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (
-          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={`h-8 px-3 sm:px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+    <div className={mobile ? "flex flex-col gap-4 pb-[72px]" : "flex flex-col gap-5 pb-10"}>
+      {mobile ? <MobileTabs tab={tab} setTab={setTab} /> : (
+        <div role="tablist" aria-label="Vazifalar" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface-sunken">
+          {([["event", "Tadbirlar bo'yicha"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+              className={`h-8 px-3 sm:px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {tab === "mine" ? <MyTasks /> : <EventTasks />}
     </div>
   )
@@ -42,6 +49,7 @@ export function Vazifalar() {
 // ─── Tadbirlar bo'yicha ─────────────────────────────────────────────────────
 
 function EventTasks() {
+  const mobile = useMedia("(width < 64rem)")
   const [params, setParams] = useSearchParams()
   const { data: events = [] } = useEvents()
   const today = tashkentToday()
@@ -85,6 +93,36 @@ function EventTasks() {
   const sections = useMemo(() => [...new Set(tasks.map((t) => t.section).filter((s): s is string => !!s))], [tasks])
   const done = tasks.filter((t) => t.status === "done").length
   const nextSort = tasks.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1
+
+  const dialogs = (
+    <AnimatePresence>
+      {editing && (editing.task ? (
+        <TaskPanel key={editing.task.id} task={editing.task} onClose={() => setEditing(null)} />
+      ) : (
+        <TaskCreate key="new"
+          defaults={{ event_id: eventId, section: editing.section, status: editing.status }}
+          nextSortOrder={nextSort}
+          onClose={() => setEditing(null)}
+        />
+      ))}
+    </AnimatePresence>
+  )
+
+  if (mobile) {
+    return (
+      <>
+        <MobileEvent
+          events={ordered} selected={selected} onSelect={setEvent} counts={counts} isPast={isPast} today={today} generalId={GENERAL}
+          eventId={eventId} tasks={tasks} shown={shown} sections={sections} owners={owners} ownerFilter={ownerFilter} onOwnerFilter={setOwnerFilter}
+          isLoading={isLoading} view={view} onView={setView}
+          onOpen={(t) => setEditing({ task: t })} onAdd={(d) => setEditing({ task: null, ...d })} onCopy={() => setCopying(true)}
+        />
+        <Fab icon={<Plus size={20} weight="bold" />} label="Vazifa" onClick={() => setEditing({ task: null })} />
+        {dialogs}
+        {copying && eventId && <MobileCopy toEventId={eventId} events={ordered} onClose={() => setCopying(false)} />}
+      </>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -153,15 +191,7 @@ function EventTasks() {
         <SectionList tasks={shown} sections={sections} today={today} onOpen={(t) => setEditing({ task: t })} onAdd={(section) => setEditing({ task: null, section })} />
       )}
 
-      {editing && (editing.task ? (
-        <TaskPanel task={editing.task} onClose={() => setEditing(null)} />
-      ) : (
-        <TaskCreate
-          defaults={{ event_id: eventId, section: editing.section, status: editing.status }}
-          nextSortOrder={nextSort}
-          onClose={() => setEditing(null)}
-        />
-      ))}
+      {dialogs}
       {copying && eventId && <CopyModal toEventId={eventId} onClose={() => setCopying(false)} />}
     </div>
   )
@@ -271,9 +301,11 @@ function CopyModal({ toEventId, onClose }: { toEventId: string; onClose: () => v
 // ─── Mening vazifalarim ─────────────────────────────────────────────────────
 
 function MyTasks() {
+  const mobile = useMedia("(width < 64rem)")
   const { user } = useAuth()
   const { data: tasks = [], isLoading } = useMyTasks(user?.id)
   const [editing, setEditing] = useState<Task | null>(null)
+  const [creating, setCreating] = useState(false)
   const today = tashkentToday()
   const weekEnd = addDays(today, 7)
 
@@ -285,6 +317,22 @@ function MyTasks() {
     }
     return b.filter(([, rows]) => rows.length)
   }, [tasks, today, weekEnd])
+
+  if (mobile) {
+    return (
+      <>
+        <MobileMine tasks={tasks} isLoading={isLoading} today={today} onOpen={setEditing} onCreate={() => setCreating(true)} />
+        <Fab icon={<Plus size={20} weight="bold" />} label="Vazifa" onClick={() => setCreating(true)} />
+        <AnimatePresence>
+          {editing && <TaskPanel key={editing.id} task={editing} onClose={() => setEditing(null)} />}
+          {creating && (
+            <TaskCreate key="new" defaults={{ event_id: null, assignee_id: user?.id ?? null }}
+              nextSortOrder={tasks.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1} onClose={() => setCreating(false)} />
+          )}
+        </AnimatePresence>
+      </>
+    )
+  }
 
   if (isLoading) return <Empty text="Yuklanmoqda…" />
   if (tasks.length === 0) return <Empty text="Sizda ochiq vazifa yo'q" />

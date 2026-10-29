@@ -5,8 +5,11 @@ import { useCreateLead } from "@/hooks/useSotuv"
 import { Link } from "react-router-dom"
 import { ArrowRight, WarningCircle } from "@phosphor-icons/react"
 import { findClientByPhone, SOURCES, type PhoneMatch, type Stage } from "@/lib/supabase/queries/sotuv"
-import { ModalShell, INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { INPUT as BASE_INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
+import { FormSheet } from "./FormSheet"
 import { PhoneInput } from "@/components/ui/PhoneInput"
+
+const INPUT = `${BASE_INPUT} max-sm:h-12`
 
 /** New deal: a client (a phone already in the base reuses that client), amount, source, owner */
 export function LeadCreate({ pipelineId, stages, stageId, initialPhone, onClose, onCreated }: {
@@ -49,7 +52,7 @@ export function LeadCreate({ pipelineId, stages, stageId, initialPhone, onClose,
   }
 
   return (
-    <ModalShell title="Yangi bitim" error={error} submitLabel={existing?.open.length ? "Baribir yangi ochish" : "Qo'shish"} canSubmit={canSubmit} pending={create.isPending} onSubmit={submit} onClose={onClose}>
+    <FormSheet title="Yangi bitim" error={error} submitLabel={existing?.open.length ? "Baribir yangi ochish" : "Qo'shish"} canSubmit={canSubmit} pending={create.isPending} onSubmit={submit} onClose={onClose}>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={ids.phone} className={LABEL}>Telefon</label>
         <PhoneInput id={ids.phone} value={f.phone} onChange={(phone) => set({ phone })} />
@@ -105,6 +108,6 @@ export function LeadCreate({ pipelineId, stages, stageId, initialPhone, onClose,
           </select>
         </div>
       </div>
-    </ModalShell>
+    </FormSheet>
   )
 }

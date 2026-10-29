@@ -5,16 +5,40 @@ import type { PaymentMethod } from "@/lib/supabase/queries/payments"
 import type { PaymentRow } from "@/lib/supabase/queries/finance"
 import { useRefundPayment, useSettleNoShow, useVoidPayment } from "@/hooks/useFinance"
 import { useDialog } from "@/hooks/useDialog"
+import { useMedia } from "@/hooks/useMedia"
+import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { formatMoney, formatNumber } from "@/lib/format"
 
 export const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:min-h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 export const LABEL = "text-sm font-medium text-ink-muted"
 const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "naqd", label: "Naqd" },
   { value: "karta", label: "Karta" },
   { value: "transfer", label: "Transfer" },
 ]
+
+/** Naqd / Karta / Transfer: outlined pills on desktop, a segmented control on a phone */
+export function MethodPicker({ value, onChange }: { value: PaymentMethod; onChange: (m: PaymentMethod) => void }) {
+  return (
+    <div className="flex gap-2 max-sm:grid max-sm:grid-cols-3 max-sm:gap-0 max-sm:p-1 max-sm:rounded-full max-sm:bg-surface-sunken" role="group" aria-label="To'lov usuli">
+      {METHODS.map((m) => (
+        <button
+          key={m.value}
+          onClick={() => onChange(m.value)}
+          aria-pressed={value === m.value}
+          className={`flex-1 py-2 max-sm:h-10 max-sm:py-0 rounded-full text-sm font-semibold border transition-colors ${
+            value === m.value
+              ? "bg-accent text-ink-on-accent border-transparent max-sm:bg-surface max-sm:text-ink"
+              : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover max-sm:bg-transparent max-sm:border-transparent"
+          }`}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 // Both modals are mounted only while open, so their state starts fresh.
 export function ModalShell({
@@ -42,12 +66,13 @@ export function ModalShell({
   const guardedClose = () => !pending && onClose()
   const panelRef = useDialog<HTMLDivElement>(guardedClose, true)
   const enabled = canSubmit && !pending
+  const phone = useMedia("(width < 40rem)")
   // Mounted only while open (the parent renders it conditionally) — AnimatePresence
   // here only plays the enter animation; the exit can't run because the parent
   // unmounts the whole tree in the same tick it stops rendering this component.
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className={sheet.wrap}>
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={guardedClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
@@ -58,16 +83,17 @@ export function ModalShell({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="bg-surface-raised rounded-overlay w-full max-w-sm relative flex flex-col max-h-[calc(100dvh-2rem)]"
+          {...sheetMotion(phone)}
+          className={`${sheet.panel} sm:max-w-sm`}
         >
-          <div className="p-5 border-b border-line flex items-center justify-between gap-3 shrink-0">
-            <h3 id={titleId} className="text-md font-semibold text-ink">{title}</h3>
-            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 sm:p-1 sm:m-0 shrink-0 hover:bg-mute-ghost-hover rounded-full transition-all">
+          <div className={sheet.grabber} />
+          <div className="px-4 pt-2 pb-3 sm:p-5 sm:border-b sm:border-line flex items-center justify-between gap-3 shrink-0">
+            <h3 id={titleId} className="text-lg sm:text-md font-semibold text-ink">{title}</h3>
+            <button onClick={guardedClose} aria-label="Yopish" className="p-2 -m-1 max-sm:size-10 max-sm:m-0 max-sm:-mr-2 max-sm:flex max-sm:items-center max-sm:justify-center sm:p-1 sm:m-0 shrink-0 hover:bg-mute-ghost-hover rounded-full transition-all">
               <X size={20} className="text-ink-muted" />
             </button>
           </div>
-          <div className="p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
+          <div className="px-4 pb-4 sm:p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
             {error && (
               <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">
                 {error}
@@ -75,18 +101,18 @@ export function ModalShell({
             )}
             {children}
           </div>
-          <div className="p-5 pt-0 flex gap-3 shrink-0">
+          <div className="p-4 pb-[calc(16px+env(safe-area-inset-bottom))] border-t border-line sm:border-t-0 sm:p-5 sm:pt-0 flex gap-3 shrink-0">
             <button
               onClick={onClose}
               disabled={pending}
-              className="flex-1 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
+              className="flex-1 max-sm:flex-none max-sm:px-6 max-sm:h-12 max-sm:py-0 px-4 py-2.5 bg-mute-soft text-ink rounded-full text-base font-bold hover:bg-mute-soft-hover transition-all disabled:opacity-50"
             >
               Yopish
             </button>
             <button
               onClick={onSubmit}
               disabled={!enabled}
-              className={`flex-1 px-4 py-2.5 rounded-full text-base font-bold transition-all ${
+              className={`flex-1 max-sm:h-12 max-sm:py-0 px-4 py-2.5 rounded-full text-base font-bold transition-all ${
                 enabled
                   ? danger
                     ? "bg-danger text-white hover:opacity-90"
@@ -175,20 +201,7 @@ export function RefundModal({ payment, onClose }: { payment: PaymentRow; onClose
           className={`${INPUT} ${amountNum > max ? "border-danger-text" : ""}`}
         />
       </div>
-      <div className="flex gap-2">
-        {METHODS.map((m) => (
-          <button
-            key={m.value}
-            onClick={() => setMethod(m.value)}
-            aria-pressed={method === m.value}
-            className={`flex-1 py-2 rounded-full text-sm font-semibold border transition-colors ${
-              method === m.value ? "bg-accent text-ink-on-accent border-transparent" : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <MethodPicker value={method} onChange={setMethod} />
       <div className="flex flex-col gap-1.5">
         <label htmlFor={noteId} className={LABEL}>Izoh</label>
         <input id={noteId} value={note} onChange={(e) => setNote(e.target.value)} className={INPUT} placeholder="Masalan: tadbirga kela olmadi" />
@@ -254,20 +267,7 @@ export function NoShowModal({ payment, onClose }: { payment: PaymentRow; onClose
         </span>
       </div>
       {refund > 0 && (
-        <div className="flex gap-2">
-          {METHODS.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => setMethod(m.value)}
-              aria-pressed={method === m.value}
-              className={`flex-1 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                method === m.value ? "bg-accent text-ink-on-accent border-transparent" : "bg-surface text-ink-muted border-line hover:bg-mute-ghost-hover"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <MethodPicker value={method} onChange={setMethod} />
       )}
       <div className="flex flex-col gap-1.5">
         <label htmlFor={noteId} className={LABEL}>Izoh</label>
