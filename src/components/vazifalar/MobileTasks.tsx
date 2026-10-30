@@ -22,10 +22,10 @@ type EventOpt = { id: string; name: string; date: string | null; end_date: strin
 
 export function MobileTabs({ tab, setTab }: { tab: "mine" | "event"; setTab: (t: "mine" | "event") => void }) {
   return (
-    <div role="tablist" aria-label="Vazifalar" className="grid grid-cols-2 p-1 rounded-full bg-surface-sunken">
+    <div role="tablist" aria-label="Vazifalar" className="grid grid-cols-2 p-1 rounded-full bg-fill">
       {([["mine", "Mening vazifalarim"], ["event", "Tadbirlar bo'yicha"]] as const).map(([id, label]) => (
         <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-          className={`h-10 rounded-full text-base font-medium whitespace-nowrap transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted"}`}>
+          className={`h-9 rounded-full text-sm font-medium whitespace-nowrap transition-colors active:opacity-80 ${tab === id ? "bg-card text-ink" : "text-ink-muted"}`}>
           {label}
         </button>
       ))}
@@ -43,8 +43,8 @@ function EmptyState({ icon: Ico, text, children }: { icon: Icon; text: string; c
   )
 }
 
-const pillBtn = "h-11 px-5 rounded-full bg-accent text-ink-on-accent text-base font-medium whitespace-nowrap active:opacity-85"
-const ghostBtn = "h-11 px-5 rounded-full bg-surface text-ink text-base font-medium whitespace-nowrap active:bg-mute-ghost-hover"
+const pillBtn = "h-11 px-5 rounded-full bg-accent text-ink-on-accent text-base font-medium whitespace-nowrap active:opacity-80"
+const ghostBtn = "h-11 px-5 rounded-full bg-surface text-ink text-base font-medium whitespace-nowrap active:opacity-80"
 
 function Skeleton() {
   return (
@@ -91,11 +91,9 @@ function TaskItem({ task: t, today, context, dueTime, owner, onOpen, toggle, hol
     if (t.section) meta.push(<span key="s">{t.section}</span>)
   }
   if (due) meta.push(<span key="d" className={`whitespace-nowrap tabular-nums ${late ? "text-danger-text font-medium" : now ? "text-warning-text font-medium" : ""}`}>{due}</span>)
-  if (t.status === "in_progress") meta.push(<span key="p" className="whitespace-nowrap text-info-text font-medium">Jarayonda</span>)
-  if (t.status === "failed") meta.push(<span key="f" className="whitespace-nowrap text-danger-text font-medium">Bajarilmadi</span>)
   return (
     <div role="button" tabIndex={0} onClick={() => onOpen(t)} onKeyDown={(e) => { if (e.key === "Enter") onOpen(t) }}
-      className="flex items-start gap-3 px-4 py-3 min-h-16 border-b border-line last:border-b-0 cursor-pointer select-none active:bg-mute-ghost-hover transition-colors">
+      className="flex items-start gap-3 px-4 py-3 min-h-16 border-b border-line last:border-b-0 cursor-pointer select-none active:bg-surface-sunken-hover transition-colors">
       <StatusCircle status={t.status} label={t.title} onToggle={() => toggle(t)} onHold={() => hold(t)} />
       <div className="flex-1 min-w-0">
         <p className={`text-base font-medium leading-snug line-clamp-2 break-words ${t.status === "done" ? "text-ink-muted line-through" : "text-ink"}`}>{t.title}</p>
@@ -142,11 +140,12 @@ export function MobileMine({ tasks, isLoading, today, onOpen, onCreate }: { task
     )
   }
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {buckets.map(({ title, rows, time }) => (
         <section key={title}>
-          <h2 className={`px-1 mb-2 text-sm font-semibold ${title === "Muddati o'tgan" ? "text-danger-text" : "text-ink-muted"}`}>
-            {title} · <span className="tabular-nums">{rows.length}</span>
+          <h2 className="min-h-10 px-1 flex items-center gap-2 text-base font-semibold text-ink [&>span]:mt-0.5">
+            {title}
+            <span className={`text-sm font-medium tabular-nums ${title === "Muddati o'tgan" ? "text-danger-text" : "text-ink-muted"}`}>{rows.length}</span>
           </h2>
           <div className="rounded-surface bg-surface-sunken overflow-hidden">
             {rows.map((t) => <TaskItem key={t.id} task={t} today={today} context dueTime={time} onOpen={onOpen} toggle={st.toggle} hold={st.hold} />)}
@@ -197,17 +196,18 @@ export function MobileEvent({
       {tasks.length > 0 && (
         <section className="rounded-surface bg-surface-sunken p-4">
           <div className="flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-ink-muted">Bajarildi</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-ink leading-none">{done}<span className="font-medium text-ink-faint">/{tasks.length}</span></p>
-            </div>
+            <p className="flex-1 min-w-0 flex items-baseline gap-1.5 whitespace-nowrap">
+              <span className="text-3xl font-semibold tabular-nums text-ink leading-none">{done}</span>
+              <span className="text-xl font-medium tabular-nums text-ink-muted leading-none">/ {tasks.length}</span>
+              <span className="text-base text-ink-muted truncate">bajarildi</span>
+            </p>
             {owners.length > 0 && (
               <button type="button" onClick={() => setOwnersOpen(true)} aria-label="Mas'ul bo'yicha saralash"
-                className={`h-10 flex items-center rounded-full ${active ? "gap-2 pl-1.5 pr-3 bg-surface text-ink text-base font-medium" : "pl-1 pr-1"}`}>
+                className={`h-10 shrink-0 flex items-center rounded-full active:opacity-80 ${active ? "gap-2 pl-1.5 pr-3 bg-surface text-ink text-base font-medium" : "pl-1 pr-1"}`}>
                 {active ? (
                   <>
                     <PersonDot name={active.name} url={active.url} outside={active.outside} size={28} />
-                    <span className="whitespace-nowrap">{active.name.split(" ")[0]}</span>
+                    <span className="max-w-24 truncate">{active.name.split(" ")[0]}</span>
                   </>
                 ) : (
                   <span className="flex -space-x-2">
@@ -215,7 +215,7 @@ export function MobileEvent({
                       <span key={o.key} className="rounded-full ring-2 ring-surface-sunken"><PersonDot name={o.name} url={o.url} outside={o.outside} size={30} /></span>
                     ))}
                     {owners.length > 4 && (
-                      <span className="size-[30px] rounded-full ring-2 ring-surface-sunken bg-mute-soft text-xs font-semibold text-ink-muted tabular-nums flex items-center justify-center">+{owners.length - 4}</span>
+                      <span className="size-[30px] rounded-full ring-2 ring-surface-sunken bg-surface text-xs font-semibold text-ink-muted tabular-nums flex items-center justify-center">+{owners.length - 4}</span>
                     )}
                   </span>
                 )}
@@ -223,12 +223,12 @@ export function MobileEvent({
             )}
             {hasMenu && (
               <button type="button" onClick={() => setMenuOpen(true)} aria-label="Amallar"
-                className="size-10 shrink-0 rounded-full bg-surface text-ink flex items-center justify-center active:bg-mute-ghost-hover">
+                className="size-10 shrink-0 rounded-full bg-surface text-ink flex items-center justify-center active:opacity-80">
                 <DotsThree size={22} weight="bold" />
               </button>
             )}
           </div>
-          <div className="mt-3 h-2 rounded-full bg-mute-soft overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Bajarilgan vazifalar">
+          <div className="mt-3 h-2 rounded-full bg-surface overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Bajarilgan vazifalar">
             <div className={`h-full rounded-full ${pct === 100 ? "bg-success" : "bg-accent"}`} style={{ width: `${pct}%` }} />
           </div>
         </section>
@@ -255,10 +255,10 @@ export function MobileEvent({
             const open = !collapsed.has(section)
             return (
               <section key={section}>
-                <button type="button" onClick={() => toggle(section)} aria-expanded={open} className="w-full flex items-center gap-2 min-h-10 px-1 mb-1 text-left">
-                  <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <button type="button" onClick={() => toggle(section)} aria-expanded={open} className="w-full flex items-center gap-2 min-h-10 px-1 rounded-item text-left active:bg-mute-ghost-hover transition-colors">
+                  <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                   <span className="text-base font-semibold text-ink leading-tight">{section}</span>
-                  <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{secDone}/{rows.length}</span>
+                  <span className="text-sm font-medium text-ink-muted tabular-nums whitespace-nowrap">{secDone}/{rows.length}</span>
                   <span className="flex-1" />
                   <CaretDown size={16} className={`shrink-0 text-ink-muted transition-transform ${open ? "" : "-rotate-90"}`} />
                 </button>
@@ -266,8 +266,8 @@ export function MobileEvent({
                   <div className="rounded-surface bg-surface-sunken overflow-hidden">
                     {rows.map((t) => <TaskItem key={t.id} task={t} today={today} owner onOpen={onOpen} toggle={st.toggle} hold={st.hold} />)}
                     <button type="button" onClick={() => onAdd({ section: section === NO_SECTION ? null : section })}
-                      className="w-full flex items-center gap-3 px-4 min-h-12 text-base font-medium text-ink-muted active:bg-mute-ghost-hover">
-                      <span className="size-7 -ml-0.5 flex items-center justify-center"><Plus size={16} weight="bold" /></span>Vazifa qo'shish
+                      className="w-full flex items-center gap-3 px-4 min-h-11 text-base text-ink-muted active:bg-surface-sunken-hover transition-colors">
+                      <span className="size-7 -ml-0.5 flex items-center justify-center"><Plus size={16} /></span>Vazifa qo'shish
                     </button>
                   </div>
                 )}
@@ -347,10 +347,10 @@ function EventStrip({ events, selected, onSelect, counts, isPast, generalId }: {
     const on = selected === id
     return (
       <button key={id} ref={on ? activeRef : undefined} type="button" role="tab" aria-selected={on} onClick={() => onSelect(id)}
-        className={`shrink-0 h-10 pl-3.5 pr-2.5 rounded-full text-base font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
-          on ? "bg-accent text-ink-on-accent" : `bg-surface-sunken ${past ? "text-ink-muted" : "text-ink"}`}`}>
+        className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors active:opacity-80 ${
+          on ? "bg-accent text-ink-on-accent" : `bg-card ${past ? "text-ink-muted" : "text-ink"}`}`}>
         {icon}{label}
-        <span className={`min-w-6 h-6 px-1.5 rounded-full text-sm tabular-nums flex items-center justify-center ${on ? "bg-ink-on-accent/20" : "bg-surface"}`}>{count ?? 0}</span>
+        {!!count && <span className={`text-sm font-normal tabular-nums ${on ? "opacity-60" : "text-ink-muted"}`}>{count}</span>}
       </button>
     )
   }

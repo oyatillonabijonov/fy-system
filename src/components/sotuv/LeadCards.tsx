@@ -4,10 +4,7 @@ import { sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv
 import { formatNumber } from "@/lib/format"
 import { Pager, usePaged } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
-import { CallButton, EmptyNote, NoTaskChip, StageDot, TaskChip } from "./ui"
-
-const chip = "shrink-0 h-9 px-3 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors"
-const on = (v: boolean) => (v ? "bg-mute-soft text-ink" : "text-ink-muted")
+import { ChipCount, EmptyNote, NoTaskChip, RowCall, SECTION, StageDot, TaskChip, chip } from "./ui"
 
 /** Phone: the deals of one voronka as a stage-grouped list — a chip per bosqich (tap = only that one), a card per deal */
 export function LeadCards({ stages, leads, today, onOpen }: {
@@ -33,29 +30,28 @@ export function LeadCards({ stages, leads, today, onOpen }: {
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Bosqichlar" className="flex gap-1 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
-        <button role="tab" aria-selected={stageId === null} onClick={() => setPicked(null)}
-          className={`${chip} ${on(stageId === null)}`}>
-          Ochiq<span className="tabular-nums text-ink-muted">{openCount}</span>
+      <div role="tablist" aria-label="Bosqichlar" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+        <button role="tab" aria-selected={stageId === null} onClick={() => setPicked(null)} className={chip(stageId === null)}>
+          Ochiq<ChipCount n={openCount} />
         </button>
         {stages.map((s) => (
-          <button key={s.id} role="tab" aria-selected={stageId === s.id} onClick={() => setPicked(s.id)}
-            className={`${chip} ${on(stageId === s.id)}`}>
-            <StageDot color={s.color} />{s.name}<span className="tabular-nums text-ink-muted">{count(s.id)}</span>
+          <button key={s.id} role="tab" aria-selected={stageId === s.id} onClick={() => setPicked(s.id)} className={chip(stageId === s.id)}>
+            <StageDot color={s.color} />{s.name}<ChipCount n={count(s.id)} />
           </button>
         ))}
       </div>
 
       {rows.length === 0 ? <EmptyNote icon={Funnel} text="Bitim topilmadi" /> : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           {groups.map((g, i) => {
             const all = leads.filter((l) => l.stage_id === g.stage.id)
             return (
-              <section key={`${g.stage.id}-${i}`} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 px-1">
+              <section key={`${g.stage.id}-${i}`}>
+                <div className={`${SECTION} flex items-center gap-2`}>
                   <StageDot color={g.stage.color} />
-                  <h2 className="text-sm font-semibold text-ink-muted">{g.stage.name} · {all.length}</h2>
-                  <span className="ml-auto text-sm text-ink-muted tabular-nums">{formatNumber(all.reduce((a, l) => a + l.price, 0))}</span>
+                  <h2>{g.stage.name}</h2>
+                  <span className="text-sm font-normal text-ink-muted tabular-nums">{all.length}</span>
+                  <span className="ml-auto text-sm font-normal text-ink-muted tabular-nums">{formatNumber(all.reduce((a, l) => a + l.price, 0))}</span>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {g.items.map((l) => <DealCard key={l.id} lead={l} stage={g.stage} today={today} onOpen={() => onOpen(l)} />)}
@@ -79,26 +75,22 @@ function DealCard({ lead: l, stage, today, onOpen }: { lead: Lead; stage: Stage;
   return (
     // A div, not a button: the call button lives inside (same pattern as the Kanban card)
     <article role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter") onOpen() }} aria-label={`${title} — bitimni ochish`}
-      className={`rounded-surface bg-surface-sunken p-4 flex flex-col gap-3 cursor-pointer active:bg-surface-sunken-hover ${stage.is_lost ? "opacity-60" : ""}`}>
-      <div className="flex items-start gap-3">
+      className={`rounded-surface bg-surface-sunken p-4 flex flex-col gap-3 cursor-pointer transition-colors active:bg-surface-sunken-hover ${stage.is_lost ? "opacity-60" : ""}`}>
+      <div className="flex items-center gap-3">
         <PersonDot name={title} url={l.client?.image} size={40} />
         <div className="flex-1 min-w-0">
-          <span className="block text-base font-semibold text-ink line-clamp-2">{title}</span>
+          <span className="block text-base font-semibold text-ink line-clamp-1">{title}</span>
           {meta && <span className="block text-sm text-ink-muted line-clamp-1">{meta}</span>}
         </div>
-        {l.price > 0 && <span className="shrink-0 text-base font-semibold text-ink tabular-nums">{formatNumber(l.price)}</span>}
+        {phone && <span onClick={(e) => e.stopPropagation()} className="shrink-0"><RowCall phone={phone} /></span>}
       </div>
-      <div className="flex items-center gap-3 min-h-10">
+      <div className="flex items-center gap-3 min-h-8">
         <div className="flex-1 min-w-0">
           {closed
             ? <span className="text-sm text-ink-muted">{stage.name}{l.closed_at ? ` · ${new Date(l.closed_at).toLocaleDateString("ru-RU")}` : ""}</span>
             : l.next_task ? <TaskChip lg kind={l.next_task.kind} due={l.next_task.due_date} today={today} /> : <NoTaskChip lg />}
         </div>
-        {phone && (
-          <span onClick={(e) => e.stopPropagation()} className="shrink-0">
-            <CallButton phone={phone} className="size-10 shrink-0 rounded-full bg-success text-white flex items-center justify-center active:opacity-85 disabled:opacity-40" />
-          </span>
-        )}
+        {l.price > 0 && <span className="shrink-0 text-base font-semibold text-ink tabular-nums">{formatNumber(l.price)}</span>}
       </div>
     </article>
   )

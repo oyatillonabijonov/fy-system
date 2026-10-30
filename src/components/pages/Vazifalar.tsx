@@ -30,7 +30,7 @@ export function Vazifalar() {
   const mobile = useMedia("(width < 64rem)")
 
   return (
-    <div className={mobile ? "flex flex-col gap-4 pb-[72px]" : "flex flex-col gap-5 pb-10"}>
+    <div className={mobile ? "flex flex-col gap-4 pb-[88px]" : "flex flex-col gap-5 pb-10"}>
       {mobile ? <MobileTabs tab={tab} setTab={setTab} /> : (
         <div role="tablist" aria-label="Vazifalar" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface-sunken">
           {([["event", "Tadbirlar bo'yicha"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (

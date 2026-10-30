@@ -3,9 +3,11 @@ import type { FinanceFilters } from "@/lib/supabase/queries/finance"
 import { tbl } from "@/components/ui/table"
 import { Pager, usePaged } from "@/components/ui/Pager"
 import { ChartBar } from "@phosphor-icons/react"
-import { Empty, Loading, Money } from "@/components/moliya/mobile"
+import { Empty, Loading, Money, Progress } from "@/components/moliya/mobile"
 import { formatDate, formatMoney, formatNumber } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
+
+const UNIT = "text-xs font-medium text-ink-muted"
 
 // Per-event breakdown of the KPIs: with the same period/event filter the
 // profits add up to "Sof cashflow". The general-expenses row comes last.
@@ -36,38 +38,33 @@ export function EventProfitTab({ filters }: { filters: FinanceFilters }) {
               const pct = r.agreed > 0 ? Math.min(100, Math.round((r.collected / r.agreed) * 100)) : 0
               return (
                 <div key={r.event_id ?? "general"} className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="flex flex-col min-w-0">
-                      <span className="text-base font-semibold text-ink">{r.event_id ? r.event_name : "Umumiy xarajatlar"}</span>
-                      <span className="text-sm text-ink-muted">{r.event_id ? formatDate(r.event_date) : "Tadbirga bog'lanmagan"}</span>
-                    </span>
-                    <span className="flex flex-col items-end shrink-0">
-                      <span className="text-sm text-ink-muted">Foyda</span>
-                      <Money value={r.profit} sign unit={false} className={`text-lg font-semibold ${r.profit < 0 ? "text-danger-text" : "text-success-text"}`} />
-                    </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-base font-medium text-ink">{r.event_id ? r.event_name : "Umumiy xarajatlar"}</span>
+                    <span className="text-sm text-ink-muted">{r.event_id ? formatDate(r.event_date) : "Tadbirga bog'lanmagan"}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm text-ink-muted">Foyda</span>
+                    <Money
+                      value={r.profit}
+                      sign
+                      unitClassName={UNIT}
+                      className={`text-2xl leading-8 font-semibold ${r.profit < 0 ? "text-danger-text" : "text-success-text"}`}
+                    />
                   </div>
                   {r.event_id && r.agreed > 0 && (
                     <div className="flex flex-col gap-1.5">
-                      <span className="flex items-baseline justify-between gap-2 text-sm">
-                        <span className="text-ink-muted">Yig'ildi · {pct}%</span>
-                        <span className="text-ink tabular-nums whitespace-nowrap">{formatNumber(r.collected)} / {formatNumber(r.agreed)}</span>
-                      </span>
-                      <span className="h-1.5 rounded-full bg-mute-soft overflow-hidden">
-                        <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                      <Progress pct={pct} />
+                      <span className="flex items-baseline justify-between gap-2 text-sm text-ink-muted">
+                        <span className="tabular-nums">Yig'ildi · {pct}%</span>
+                        <span className="tabular-nums whitespace-nowrap">{formatNumber(r.collected)} / {formatNumber(r.agreed)}</span>
                       </span>
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-muted border-t border-line pt-3">
                     {r.event_id && (
-                      <span className="flex flex-col">
-                        <span className="text-sm text-ink-muted">Qarz</span>
-                        <Money value={r.debt} unit={false} className={`text-base font-semibold ${r.debt > 0 ? "text-danger-text" : "text-ink"}`} />
-                      </span>
+                      <span>Qarz <Money value={r.debt} unit={false} className={`font-medium ${r.debt > 0 ? "text-danger-text" : "text-ink"}`} /></span>
                     )}
-                    <span className="flex flex-col">
-                      <span className="text-sm text-ink-muted">Xarajat</span>
-                      <Money value={r.expense} unit={false} className="text-base font-semibold text-ink" />
-                    </span>
+                    <span>Xarajat <Money value={r.expense} unit={false} className="font-medium text-ink" /></span>
                   </div>
                 </div>
               )

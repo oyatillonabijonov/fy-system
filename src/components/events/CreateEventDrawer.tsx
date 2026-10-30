@@ -25,7 +25,7 @@ interface CreateEventDrawerProps {
 
 const LABEL = "text-sm font-medium text-ink-muted"
 const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus"
 
 interface TariffRow {
   key: string
@@ -86,7 +86,7 @@ function ManagerSelect({
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className={`w-full flex items-center justify-between gap-2 border rounded-control px-3 py-2 max-sm:h-12 text-base transition-colors ${
-          invalid ? "border-danger" : "border-line focus:border-line-focus"
+          invalid ? "border-danger" : "border-line focus:border-line-focus max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus"
         }`}
       >
         {selected ? (
@@ -366,7 +366,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                       className={`${INPUT} min-w-0 ${touched && !endValid ? "border-danger" : ""}`}
                     />
                   </div>
-                  <span className="text-xs text-ink-muted">
+                  <span className="text-xs max-sm:text-sm text-ink-muted">
                     {startDate
                       ? endDate
                         ? `${formatDate(startDate)} — ${formatDate(endDate)} (ko'p kunlik)`
@@ -390,7 +390,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">%</span>
                   </div>
-                  <span className="text-xs text-ink-muted">Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi</span>
+                  <span className="text-xs text-ink-muted max-sm:hidden">Har bir ishtirokchiga avtomatik keshbek shu foizda hisoblanadi</span>
                 </Field>
 
                 {/* 5. Location */}
@@ -471,7 +471,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     >
                       <Plus size={12} weight="bold" /> Tarif qo'shish
                     </button>
-                    <span className="text-xs text-ink-muted">
+                    <span className="text-xs text-ink-muted max-sm:hidden">
                       Narx mijoz tadbirga yozilganda unga qo'yiladi. Keyin tarif narxini o'zgartirsangiz, avval yozilganlarga ta'sir qilmaydi.
                     </span>
                   </div>

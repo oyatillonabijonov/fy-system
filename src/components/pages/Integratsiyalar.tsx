@@ -1,6 +1,6 @@
 import { useId, useState } from "react"
 import { motion } from "framer-motion"
-import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight } from "@phosphor-icons/react"
+import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown } from "@phosphor-icons/react"
 import { Fab } from "@/components/ui/Fab"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
@@ -15,7 +15,7 @@ import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type Lead
 import { confirmAction } from "@/lib/confirm"
 
 const BOT = "@fymoliyabot"
-const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
 const primaryBtn = "flex items-center justify-center gap-2 px-4 h-control-md max-sm:h-12 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
 const softBtn = "flex items-center justify-center gap-2 px-3.5 h-control-md max-sm:h-12 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 
@@ -38,8 +38,8 @@ export function Integratsiyalar() {
     <div className="flex flex-col gap-5 pb-10 max-lg:pb-20">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted max-lg:px-1">
-            Telegram guruhlar {groups.length > 0 && <span className="text-ink-faint font-medium tabular-nums">· {groups.length}</span>}
+          <h2 className="text-md font-semibold text-ink max-lg:text-base max-lg:px-1">
+            Telegram guruhlar {groups.length > 0 && <span className="text-ink-faint max-lg:text-ink-muted font-medium tabular-nums">· {groups.length}</span>}
           </h2>
           <p className="text-sm text-ink-muted max-lg:hidden">{BOT} ni guruhga qo'shing — u shu ro'yxatga o'zi tushadi. Har bir xabar faqat yoqilgan guruhlarga boradi.</p>
         </div>
@@ -56,7 +56,7 @@ export function Integratsiyalar() {
           : groups.length === 0 ? <div className="py-8 px-4 flex justify-center"><EmptySteps /></div>
           : pageItems.map((g) => (
             <button key={g.chat_id} type="button" onClick={() => setOpenId(g.chat_id)}
-              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-surface-sunken-hover">
               <GroupAvatar g={g} />
               <span className="flex-1 min-w-0 flex flex-col">
                 <span className="text-base font-medium text-ink truncate">{g.title || "Nomsiz guruh"}</span>
@@ -116,10 +116,25 @@ function Telephony() {
       </select>
     )
   }
+  /** phones: the owner as a value on the right of the row, like an iOS Settings picker */
+  const ownerValue = (num: string) => {
+    const owner = users.find((u) => u.pbx_ext === num)
+    return (
+      <span className="relative shrink-0 max-w-[56%] flex items-center">
+        <select value={owner?.id ?? ""} aria-label={`${num}: hodim`}
+          onChange={(ev) => ev.target.value ? setExt.mutate({ userId: ev.target.value, ext: num }) : owner && setExt.mutate({ userId: owner.id, ext: null })}
+          className={`h-11 w-full appearance-none bg-transparent pl-2 pr-6 text-right text-base truncate focus:outline-none ${owner ? "text-ink" : "text-ink-muted"}`}>
+          <option value="">Biriktirilmagan</option>
+          {staff.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.pbx_ext && u.pbx_ext !== num ? ` (${u.pbx_ext})` : ""}</option>)}
+        </select>
+        <CaretDown size={12} weight="bold" className="absolute right-0 text-ink-muted pointer-events-none" />
+      </span>
+    )
+  }
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2">
+    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
       <div className="flex flex-col gap-1 max-lg:px-1">
-        <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">Telefoniya · OnlinePBX</h2>
+        <h2 className="text-md font-semibold text-ink max-lg:text-base">Telefoniya · OnlinePBX</h2>
         <p className="text-sm text-ink-muted max-lg:hidden">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.</p>
       </div>
       {/* Phones and tablets: one card per internal number */}
@@ -131,15 +146,12 @@ function Telephony() {
             const state = !e.enabled ? "O'chirilgan" : e.registered ? "Telefon ulangan" : "Hozir ulanmagan"
             const dot = `size-2 rounded-full shrink-0 ${!e.enabled ? "bg-mute-soft-hover" : e.registered ? "bg-success" : "bg-warning"}`
             return (
-              <div key={e.num} className="px-4 py-3 flex flex-col gap-2.5 border-b border-line last:border-0">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 flex items-baseline gap-2">
-                    <span className="text-base font-semibold tabular-nums text-ink">{e.num}</span>
-                    {e.name && <span className="text-sm text-ink-muted truncate">{e.name}</span>}
-                  </span>
-                  <span className="shrink-0 flex items-center gap-2 text-sm text-ink-muted whitespace-nowrap"><span className={dot} />{state}</span>
-                </div>
-                {ownerSelect(e.num, "w-full h-11")}
+              <div key={e.num} className="min-h-16 pl-4 pr-3 py-2 flex items-center gap-3 border-b border-line last:border-0">
+                <span className="flex-1 min-w-0 flex flex-col">
+                  <span className="text-base font-semibold tabular-nums text-ink">{e.num}</span>
+                  <span className="flex items-center gap-2 text-sm text-ink-muted whitespace-nowrap"><span className={dot} />{state}</span>
+                </span>
+                {ownerValue(e.num)}
               </div>
             )
           })}
@@ -185,7 +197,7 @@ function LeadSources() {
   const update = useUpdateLeadSource()
   const pipelineSelect = (s: LeadSource) => (
     <select value={s.pipeline_id ?? ""} onChange={(e) => update.mutate({ id: s.id, patch: { pipeline_id: e.target.value || null } })}
-      aria-label={`${s.label}: voronka`} className="h-8 max-lg:h-11 px-3 rounded-full border border-line bg-surface text-sm text-ink focus:outline-none">
+      aria-label={`${s.label}: voronka`} className="h-8 max-lg:h-11 px-3 rounded-full border border-line max-lg:border-transparent bg-surface text-sm max-lg:text-base text-ink focus:outline-none">
       <option value="">Tanlanmagan</option>
       {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
     </select>
@@ -193,9 +205,9 @@ function LeadSources() {
   const leadsInfo = (s: LeadSource) => `${s.leads_count} ta${s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
   const callNote = <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2">
+    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
       <div className="flex flex-col gap-1 max-lg:px-1">
-        <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">Lid manbalari</h2>
+        <h2 className="text-md font-semibold text-ink max-lg:text-base">Lid manbalari</h2>
         <p className="text-sm text-ink-muted max-lg:hidden">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
       </div>
       {/* Phones: one card per source, so the address and its copy button are never off-screen */}
@@ -249,22 +261,24 @@ function HookUrl({ source }: { source: LeadSource }) {
   const url = leadHookUrl(source)
   return (
     <div className="flex flex-col gap-1 min-w-0 max-w-[440px]">
-      <div className="flex items-center gap-2">
-        <code className="min-w-0 truncate text-sm text-ink-muted">{url}</code>
-        <CopyBtn value={url} />
+      {/* phones: the address is a long unreadable string, so only the copy buttons show */}
+      <div className="flex items-center gap-2 max-lg:flex-wrap">
+        <code className="min-w-0 truncate text-sm text-ink-muted max-lg:hidden">{url}</code>
+        <CopyBtn value={url} phoneLabel="Manzilni nusxalash" />
+        {/* Meta asks for a separate "verify token" when the callback is registered */}
+        {source.id === "meta" && <span className="lg:hidden"><CopyBtn value={source.token} phoneLabel="Verify token" /></span>}
       </div>
-      {/* Meta asks for a separate "verify token" when the callback is registered */}
-      {source.id === "meta" && <div className="flex items-center gap-2 text-sm text-ink-faint">Verify token: <CopyBtn value={source.token} /></div>}
+      {source.id === "meta" && <div className="max-lg:hidden flex items-center gap-2 text-sm text-ink-faint">Verify token: <CopyBtn value={source.token} /></div>}
     </div>
   )
 }
 
-function CopyBtn({ value }: { value: string }) {
+function CopyBtn({ value, phoneLabel }: { value: string; phoneLabel?: string }) {
   const [copied, setCopied] = useState(false)
   const copy = () => navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
   return (
-    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-10 lg:h-7 px-2.5 rounded-full text-sm whitespace-nowrap text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
-      {copied ? <Check size={12} weight="bold" /> : <Copy size={16} />}{copied ? "Nusxalandi" : "Nusxa"}
+    <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-1.5 h-10 lg:h-7 px-2.5 max-lg:px-3.5 rounded-full text-sm whitespace-nowrap text-ink-muted max-lg:text-ink max-lg:bg-surface hover:text-ink hover:bg-mute-ghost-hover max-lg:active:opacity-80 transition-colors">
+      {copied ? <Check size={12} weight="bold" /> : <Copy size={16} />}{copied ? "Nusxalandi" : <>{phoneLabel && <span className="lg:hidden">{phoneLabel}</span>}<span className={phoneLabel ? "max-lg:hidden" : ""}>Nusxa</span></>}
     </button>
   )
 }
@@ -297,7 +311,7 @@ function GroupRow({ group: g, onOpen }: { group: TelegramGroup; onOpen: () => vo
             <span className="font-medium text-ink truncate">{g.title || "Nomsiz guruh"}</span>
             <GroupHint g={g} />
             {/* phones: the switches live in the group dialog, so list what is on here */}
-            <span className="md:hidden text-sm text-ink-faint">{GROUP_ROLES.filter((r) => g[r.id]).map((r) => r.short).join(" · ") || "Hech narsa yoqilmagan"}</span>
+            <span className="md:hidden text-sm text-ink-muted">{GROUP_ROLES.filter((r) => g[r.id]).map((r) => r.short).join(" · ") || "Hech narsa yoqilmagan"}</span>
           </div>
         </div>
       </td>
@@ -314,8 +328,8 @@ function Switch({ on, label, onChange }: { on: boolean; label: string; onChange:
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label}
       onClick={(e) => { e.stopPropagation(); onChange(!on) }}
-      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${on ? "bg-[var(--switch-on)]" : "bg-mute-soft-hover"}`}>
-      <span className={`absolute top-0.5 size-4 rounded-full bg-surface transition-all ${on ? "left-[18px]" : "left-0.5"}`} />
+      className={`relative inline-flex h-5 w-9 max-lg:h-7 max-lg:w-12 shrink-0 rounded-full transition-colors ${on ? "bg-[var(--switch-on)]" : "bg-mute-soft-hover"}`}>
+      <span className={`absolute top-0.5 size-4 max-lg:size-6 rounded-full bg-surface max-lg:bg-surface-raised transition-all ${on ? "left-[18px] max-lg:left-[22px]" : "left-0.5"}`} />
     </button>
   )
 }
@@ -383,7 +397,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
           <input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Guruh nomi"
             onBlur={() => title.trim() && title.trim() !== g.title ? save({ title: title.trim() }) : setTitle(g.title)}
             className="w-full bg-transparent text-md font-semibold text-ink rounded-control -mx-1 px-1 hover:bg-mute-ghost-hover focus:bg-transparent focus:outline-none" />
-          <span className="text-sm text-ink-faint tabular-nums">{g.chat_id} · {status}</span>
+          <span className="text-sm text-ink-faint max-lg:text-ink-muted tabular-nums">{g.chat_id} · {status}</span>
         </div>
       </div>
 
@@ -392,7 +406,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
         <textarea value={note} rows={2} onChange={(e) => setNote(e.target.value)}
           onBlur={() => note.trim() !== g.note && save({ note: note.trim() })}
           placeholder="Masalan: Moliya jamoasi — faqat to'lovlar va xarajatlar"
-          className="w-full resize-none border border-line rounded-control px-3 py-2 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors" />
+          className="w-full resize-none border border-line rounded-control px-3 py-2 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors" />
       </label>
 
       <div className="flex flex-col rounded-surface bg-surface-sunken">
@@ -424,14 +438,14 @@ function AddModal({ onClose }: { onClose: () => void }) {
       <button type="button" onClick={onClose} className={softBtn}>Bekor qilish</button>
       <button type="button" onClick={submit} disabled={!valid || add.isPending} className={`${primaryBtn} max-sm:flex-1`}>{add.isPending ? "Saqlanmoqda…" : "Qo'shish"}</button>
     </>}>
-      <p className="text-sm text-ink-muted leading-relaxed p-3 rounded-control bg-surface-sunken">
+      <p className="max-lg:hidden text-sm text-ink-muted leading-relaxed p-3 rounded-control bg-surface-sunken">
         Eng osoni — {BOT} ni guruhga qo'shing: guruh jadvalga o'zi tushadi, ID kiritish shart emas. Qo'lda qo'shish faqat bot allaqachon guruhda bo'lsa kerak.
       </p>
       <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit() }}>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-ink-muted">Guruh ID si</span>
           <input autoFocus value={id} onChange={(e) => setId(e.target.value)} placeholder="-1003022982993" inputMode="numeric" className={inputCls} />
-          <span className="text-sm text-ink-faint">Minus bilan boshlanadi</span>
+          <span className="text-sm text-ink-faint max-lg:text-ink-muted">Minus bilan boshlanadi</span>
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-ink-muted">Nomi</span>

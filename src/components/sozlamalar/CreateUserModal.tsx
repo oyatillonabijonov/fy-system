@@ -128,7 +128,7 @@ function CreateForm({ onClose, onCreated }: Omit<CreateUserModalProps, "isOpen">
                     </div>
                   </Field>
                 </div>
-                <p className="-mt-3 text-sm text-ink-faint">Xodim birinchi kirganda o'z parolini o'rnatadi.</p>
+                <p className="-mt-3 max-sm:hidden text-sm text-ink-faint">Xodim birinchi kirganda o'z parolini o'rnatadi.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Bo'lim" htmlFor={`${uid}-dep`}>
@@ -199,7 +199,7 @@ function Credentials({ email, password, onDone }: { email: string; password: str
 }
 
 const inputCls =
-  "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus"
 const softBtn =
   "flex items-center justify-center gap-2 px-3.5 h-control-md max-sm:h-12 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
 const primaryBtn =

@@ -64,7 +64,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
                           // A div, not a button: Space must reach the drag handle (keyboard drag), Enter opens
                           <div ref={drag.innerRef} {...drag.draggableProps} {...drag.dragHandleProps}
                             role="button" tabIndex={0} onClick={() => onOpen(l)} onKeyDown={(e) => { if (e.key === "Enter") onOpen(l) }}
-                            className={`rounded-control bg-surface px-3 py-2.5 flex flex-col gap-1.5 cursor-pointer transition-colors hover:bg-surface-raised ${dragSnap.isDragging ? "ring-1 ring-line" : ""} ${s.is_lost ? "opacity-60" : ""}`}>
+                            className={`rounded-control bg-surface px-3 py-2.5 flex flex-col gap-1.5 cursor-pointer transition-colors hover:bg-surface-raised max-lg:active:bg-fill ${dragSnap.isDragging ? "ring-1 ring-line" : ""} ${s.is_lost ? "opacity-60" : ""}`}>
                             {/* AmoCRM's card: client, mas'ul · when it came in / the deal's own name or the form's last answer / chips */}
                             <div className="flex items-baseline gap-2">
                               <span className="flex-1 min-w-0 text-base leading-snug line-clamp-2">
@@ -76,11 +76,11 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
                             {(() => {
                               // ponytail: the form's last answer (the site's turnover question); a per-voronka "card field" setting if one answer isn't enough
                               const sub = l.client && l.name !== l.client.full_name ? l.name : l.fields.at(-1)?.v
-                              return sub && <span className="text-base text-ink truncate">{sub}</span>
+                              return sub && <span className="text-base text-ink truncate max-lg:text-sm max-lg:text-ink-muted">{sub}</span>
                             })()}
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {l.source && l.source !== "manual" && <span className="inline-flex items-center h-6 px-2 rounded-full text-sm bg-surface-sunken text-ink-muted whitespace-nowrap">{sourceLabel(l.source)}</span>}
-                              {open && (l.next_task ? <TaskChip kind={l.next_task.kind} due={l.next_task.due_date} today={today} /> : <NoTaskChip />)}
+                              {open && (l.next_task ? <TaskChip onGrey kind={l.next_task.kind} due={l.next_task.due_date} today={today} /> : <NoTaskChip />)}
                               {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums">{shortMoney(l.price)}</span>}
                             </div>
                           </div>

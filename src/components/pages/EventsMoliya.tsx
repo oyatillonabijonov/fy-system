@@ -57,7 +57,7 @@ export function EventsMoliya() {
 
       <FinanceKpis filters={filters} />
 
-      <div className="lg:hidden">
+      <div className="lg:hidden sticky -top-4 sm:-top-6 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-ground">
         <Segmented
           label="Moliya bo'limlari"
           options={TABS.map((t) => ({ id: t.id, label: t.short }))}
@@ -95,10 +95,11 @@ export function EventsMoliya() {
       {tab === "expenses" && <ExpensesTab filters={filters} canEdit={editable} />}
       {tab === "events" && <EventProfitTab filters={filters} />}
 
-      {editable && (tab === "expenses"
+      {/* Qarzdorlar: every card carries its own "To'lov", so no floating button there */}
+      {editable && tab !== "debtors" && (tab === "expenses"
         ? <Fab icon={<Minus size={20} weight="bold" />} label="Chiqim" onClick={() => setAddingExpense(true)} />
         : <Fab icon={<Plus size={20} weight="bold" />} label="Kirim" onClick={() => setRecording(null)} />)}
-      {editable && <div className="h-20 lg:hidden" aria-hidden />}
+      {editable && tab !== "debtors" && <div className="h-20 lg:hidden" aria-hidden />}
 
       {recording !== undefined && <RecordPaymentModal preset={recording ?? undefined} onClose={() => setRecording(undefined)} />}
       {addingExpense && <AddExpenseModal defaultEventId={filters.eventId} onClose={() => setAddingExpense(false)} />}

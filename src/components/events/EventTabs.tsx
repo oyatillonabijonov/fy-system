@@ -86,7 +86,7 @@ export function EventTabs({ events, selectedId, onSelect, onCreate }: EventTabsP
       <div className="rounded-surface bg-surface-sunken overflow-hidden">
         {archive.map((e) => (
           <button key={e.id} type="button" onClick={() => { onSelect(e.id); setArchiveSheet(false) }}
-            className="w-full min-h-14 px-4 py-2 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+            className="w-full min-h-14 px-4 py-2 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-surface-sunken-hover">
             <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: eventTint(e.name) }} />
             <span className="flex-1 min-w-0 flex flex-col">
               <span className="text-base font-medium text-ink truncate">{e.name}</span>

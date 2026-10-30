@@ -1,4 +1,5 @@
-import { PhoneIncoming, PhoneOutgoing, PhoneX, Clock } from "@phosphor-icons/react"
+import { useState } from "react"
+import { PhoneIncoming, PhoneOutgoing, PhoneX, Clock, CaretDown } from "@phosphor-icons/react"
 import type { SalesDashboard, SalesSeller } from "@/lib/supabase/queries/salesDashboard"
 import { secs } from "@/components/sotuv/ui"
 import { tbl } from "@/components/ui/table"
@@ -64,67 +65,76 @@ export function CallsCard({ calls: c, sellers }: { calls: SalesDashboard["calls"
   )
 }
 
-/** Phone version: two progress bars, four compact tiles and the callers as an inset list */
+/** Phone version: the three counts and one "answered" bar; the rest (talk time, call-back bar, the callers)
+ *  sits behind "Batafsil" */
 export function CallsMobile({ calls: c, sellers }: { calls: SalesDashboard["calls"]; sellers: SalesSeller[] }) {
+  const [more, setMore] = useState(false)
   const back = c.missed ? Math.round((c.missed_called_back / c.missed) * 100) : null
   const answered = c.in ? Math.round(((c.in - c.missed) / c.in) * 100) : null
-  const bars = [
-    { label: "Kiruvchiga javob berildi", value: answered, of: `${formatNumber(c.in - c.missed)} / ${formatNumber(c.in)}`, fill: "bg-success" },
-    { label: "Javobsizga qayta qo'ng'iroq", value: back, of: `${formatNumber(c.missed_called_back)} / ${formatNumber(c.missed)}`, fill: "bg-info" },
-  ]
-  const tiles = [
-    { label: "Kiruvchi", value: formatNumber(c.in) },
-    { label: "Chiquvchi", value: formatNumber(c.out) },
+  const counts = [
+    { label: "Kiruvchi", value: formatNumber(c.in), danger: false },
+    { label: "Chiquvchi", value: formatNumber(c.out), danger: false },
     { label: "Javobsiz", value: formatNumber(c.missed), danger: c.missed > 0 },
-    { label: "Gaplashilgan", value: secs(c.talk_sec), hint: `o'rtacha ${secs(c.avg_talk_sec)}` },
   ]
   const callers = sellers.filter((s) => s.calls_in + s.calls_out > 0)
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-3 gap-2">
-        {tiles.slice(0, 3).map((t) => (
-          <div key={t.label} className="bg-surface-sunken rounded-surface p-4 flex flex-col gap-1 min-w-0">
+    <div className="bg-surface-sunken rounded-surface p-4 flex flex-col gap-4">
+      <div className="grid grid-cols-3 divide-x divide-line">
+        {counts.map((t, i) => (
+          <div key={t.label} className={`flex flex-col gap-1 min-w-0 ${i > 0 ? "pl-4" : ""}`}>
             <span className="text-sm text-ink-muted truncate">{t.label}</span>
             <span className={`text-2xl font-semibold tabular-nums ${t.danger ? "text-danger-text" : "text-ink"}`}>{t.value}</span>
           </div>
         ))}
       </div>
-      <div className="bg-surface-sunken rounded-surface px-4 py-3 flex items-center justify-between gap-3">
-        <span className="flex flex-col min-w-0">
-          <span className="flex items-center gap-1.5 text-sm text-ink-muted"><Clock size={16} />Gaplashilgan</span>
-          <span className="text-xs text-ink-faint">{tiles[3].hint}</span>
-        </span>
-        <span className="text-xl font-semibold tabular-nums text-ink whitespace-nowrap">{tiles[3].value}</span>
-      </div>
-      <div className="bg-surface-sunken rounded-surface p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-        {bars.map((b) => (
-          <div key={b.label} className="flex flex-col gap-2 min-w-0">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm text-ink-muted truncate">{b.label}</span>
-              <span className="text-base font-semibold tabular-nums text-ink">{b.value === null ? "—" : `${b.value}%`}</span>
-            </div>
-            <div className="h-2 rounded-full bg-mute-soft overflow-hidden"><div className={`h-full rounded-full ${b.fill}`} style={{ width: `${b.value ?? 0}%` }} /></div>
-            <span className="text-xs text-ink-faint tabular-nums">{b.of}</span>
+      <Bar label="Javob berildi" value={answered} fill="bg-success" />
+      <button type="button" onClick={() => setMore(!more)} aria-expanded={more}
+        className="-mb-1 h-10 -mx-1 px-1 flex items-center justify-between rounded-full text-sm font-medium text-ink-muted active:opacity-80">
+        Batafsil
+        <CaretDown size={16} className={`text-ink-faint transition-transform ${more ? "rotate-180" : ""}`} />
+      </button>
+      {more && (
+        <div className="flex flex-col gap-4 pt-3 border-t border-line">
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex flex-col min-w-0">
+              <span className="text-base text-ink">Gaplashilgan</span>
+              <span className="text-sm text-ink-muted tabular-nums">o'rtacha {secs(c.avg_talk_sec)}</span>
+            </span>
+            <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{secs(c.talk_sec)}</span>
           </div>
-        ))}
-      </div>
-      {callers.length > 0 && (
-        <div className="bg-surface-sunken rounded-surface overflow-hidden">
-          {callers.map((s) => (
-            <div key={s.id} className="min-h-16 px-4 py-3 flex items-center gap-3 border-b border-line last:border-0">
-              <PersonDot name={s.full_name} url={s.avatar_url} size={40} />
-              <span className="flex-1 min-w-0">
-                <span className="block text-base font-medium text-ink truncate">{s.full_name}</span>
-                <span className="block text-sm text-ink-muted tabular-nums truncate">{formatNumber(s.calls_in)} kiruvchi · {formatNumber(s.calls_out)} chiquvchi</span>
-              </span>
-              <span className="shrink-0 flex flex-col items-end gap-0.5">
-                <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{secs(s.talk_sec)}</span>
-                {s.calls_missed > 0 && <span className="text-xs font-medium text-danger-text tabular-nums">{s.calls_missed} javobsiz</span>}
-              </span>
+          <Bar label="Javobsizga qayta qo'ng'iroq" value={back} fill="bg-info" />
+          {callers.length > 0 && (
+            <div className="flex flex-col">
+              {callers.map((s) => (
+                <div key={s.id} className="min-h-14 py-2 flex items-center gap-3 border-t border-line first:border-t-0">
+                  <PersonDot name={s.full_name} url={s.avatar_url} size={40} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-base font-medium text-ink truncate">{s.full_name}</span>
+                    <span className="block text-sm text-ink-muted tabular-nums truncate">{formatNumber(s.calls_in)} kiruvchi · {formatNumber(s.calls_out)} chiquvchi</span>
+                  </span>
+                  <span className="shrink-0 flex flex-col items-end gap-0.5">
+                    <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{secs(s.talk_sec)}</span>
+                    {s.calls_missed > 0 && <span className="h-5 px-2 inline-flex items-center rounded-full bg-danger-soft text-danger-dark text-xs font-medium tabular-nums">{s.calls_missed} javobsiz</span>}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Label + percentage over a track that stays visible on a white card (bg-fill) */
+function Bar({ label, value, fill }: { label: string; value: number | null; fill: string }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-base text-ink truncate">{label}</span>
+        <span className="text-base font-semibold tabular-nums text-ink">{value === null ? "—" : `${value}%`}</span>
+      </div>
+      <div className="h-2 rounded-full bg-fill overflow-hidden"><div className={`h-full rounded-full ${fill}`} style={{ width: `${value ?? 0}%` }} /></div>
     </div>
   )
 }

@@ -3,9 +3,9 @@ import { Paperclip, UploadSimple, X } from "@phosphor-icons/react"
 import { RECEIPT_ACCEPT, RECEIPT_MAX_BYTES, receiptUrl, type ReceiptKind } from "@/lib/supabase/queries/finance"
 import { useAttachReceipt } from "@/hooks/useFinance"
 import { LABEL } from "@/components/moliya/PaymentActionModals"
+import { TILE, TileIcon } from "@/components/moliya/mobile"
 import { toast, errorDetail } from "@/lib/toast"
 
-const LABELED = "h-12 w-full rounded-full bg-mute-soft text-ink text-base font-semibold flex items-center justify-center gap-2 active:opacity-85"
 
 function fileProblem(f: File): string | null {
   if (!RECEIPT_ACCEPT.split(",").includes(f.type)) return "Faqat JPG, PNG, WEBP yoki PDF fayl"
@@ -59,7 +59,7 @@ export function ReceiptInput({ file, onChange }: { file: File | null; onChange: 
 }
 
 // Table cell: open the receipt (signed link, 5 min) or attach one to a row that has none.
-// `labeled` (phone detail sheets): a full-width pill with words instead of the table's icon button.
+// `labeled` (phone detail sheets): a round icon with its label underneath instead of the table's icon button.
 export function ReceiptCell({ kind, id, path, canAttach, labeled }: { kind: ReceiptKind; id: string; path: string | null; canAttach: boolean; labeled?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const attach = useAttachReceipt()
@@ -83,9 +83,9 @@ export function ReceiptCell({ kind, id, path, canAttach, labeled }: { kind: Rece
         }}
         title="Chekni ochish"
         aria-label="Chekni ochish"
-        className={labeled ? LABELED : "inline-flex items-center justify-center size-7 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"}
+        className={labeled ? TILE : "inline-flex items-center justify-center size-7 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors"}
       >
-        <Paperclip size={16} />{labeled && " Chekni ko'rish"}
+        {labeled ? <><TileIcon><Paperclip size={20} /></TileIcon>Chek ko'rish</> : <Paperclip size={16} />}
       </button>
     )
   }
@@ -99,9 +99,9 @@ export function ReceiptCell({ kind, id, path, canAttach, labeled }: { kind: Rece
         disabled={attach.isPending}
         title="Chek biriktirish"
         aria-label="Chek biriktirish"
-        className={labeled ? `${LABELED} disabled:opacity-50 disabled:animate-pulse` : "inline-flex items-center justify-center size-7 rounded-full text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"}
+        className={labeled ? `${TILE} disabled:animate-pulse` : "inline-flex items-center justify-center size-7 rounded-full text-ink-faint border border-dashed border-line hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-50 disabled:animate-pulse"}
       >
-        <UploadSimple size={16} />{labeled && " Chek biriktirish"}
+        {labeled ? <><TileIcon><UploadSimple size={20} /></TileIcon>Chek qo'shish</> : <UploadSimple size={16} />}
       </button>
       <input
         ref={inputRef}

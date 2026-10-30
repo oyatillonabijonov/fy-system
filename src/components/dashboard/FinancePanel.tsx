@@ -18,16 +18,17 @@ export function FinancePanel({ from, to, mobile = false }: { from: string; to: s
     <div className="flex items-center justify-between gap-3 text-base"><span className="text-ink-muted">{label}</span><span className={`font-medium tabular-nums whitespace-nowrap ${tone}`}>{value}</span></div>
   )
   if (mobile) {
+    // The section title ("Moliya") is drawn by the page, outside the card
     const pct = allTime.data?.agreed ? Math.round((allTime.data.collected / allTime.data.agreed) * 100) : null
     const debt = allTime.data?.debt ?? 0
     return (
-      <Card title="Moliya">
+      <div className="bg-surface-sunken rounded-surface p-4 flex flex-col gap-4 min-w-0">
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-sm text-ink-muted">Kelishuvdan yig'ildi (jami)</span>
-            <span className="text-base font-semibold tabular-nums text-ink">{pct === null ? "—" : `${pct}%`}</span>
+            <span className="text-3xl font-semibold tabular-nums text-ink">{pct === null ? "—" : `${pct}%`}</span>
           </div>
-          <div className="h-2 rounded-full bg-mute-soft overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct ?? 0}%` }} /></div>
+          <div className="h-2 rounded-full bg-fill overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct ?? 0}%` }} /></div>
         </div>
         <div className="flex flex-col">
           {[
@@ -35,17 +36,17 @@ export function FinancePanel({ from, to, mobile = false }: { from: string; to: s
             { label: "Xarajat", value: formatMoney(period.data?.expense), tone: "text-ink" },
             { label: "Qarzdorlik (jami)", value: formatMoney(debt), tone: debt ? "text-danger-text" : "text-ink" },
           ].map((r) => (
-            <div key={r.label} className="min-h-12 flex items-center justify-between gap-3 border-b border-line last:border-0 text-base">
+            <div key={r.label} className="min-h-11 flex items-center justify-between gap-3 border-t border-line text-base">
               <span className="text-ink-muted">{r.label}</span>
               <span className={`font-semibold tabular-nums whitespace-nowrap ${r.tone}`}>{r.value}</span>
             </div>
           ))}
         </div>
         {upcoming.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold text-ink-muted">Yaqin tadbirlar</span>
+          <div className="flex flex-col">
+            <span className="pb-1 text-sm font-semibold text-ink-muted">Yaqin tadbirlar</span>
             {upcoming.map((e) => (
-              <div key={e.id} className="rounded-control bg-surface px-3 py-2.5 flex items-center justify-between gap-3">
+              <div key={e.id} className="min-h-12 py-2 border-t border-line flex items-center justify-between gap-3">
                 <span className="min-w-0 flex-1">
                   <span className="block text-base font-medium text-ink truncate">{e.name}</span>
                   <span className="block text-sm text-ink-muted tabular-nums">{formatDate(e.date)}</span>
@@ -55,7 +56,7 @@ export function FinancePanel({ from, to, mobile = false }: { from: string; to: s
             ))}
           </div>
         )}
-      </Card>
+      </div>
     )
   }
   return (

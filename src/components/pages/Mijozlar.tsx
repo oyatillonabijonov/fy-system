@@ -725,7 +725,7 @@ export function Mijozlar() {
                         ))}
                         <button type="button" aria-pressed={incomplete} className={chipCls(incomplete)} onClick={() => { setIncomplete(!incomplete); table.setPageIndex(0) }}>
                             To'liq emas
-                            {incompleteCount > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-danger text-white text-xs font-semibold tabular-nums inline-flex items-center justify-center">{incompleteCount}</span>}
+                            {incompleteCount > 0 && <span className={`text-xs tabular-nums ${incomplete ? "opacity-70" : "text-ink-muted"}`}>{incompleteCount}</span>}
                         </button>
                         <button type="button" aria-haspopup="dialog" aria-pressed={!!statusValue} className={chipCls(!!statusValue)} onClick={() => setStatusSheet(true)}>
                             {statusValue ? ACTIVITY_STATUS_META[statusValue].label : "Holat"}
@@ -1063,7 +1063,7 @@ export function Mijozlar() {
                                                     {formatNumber(expiryQuery.data.amount)} so'm {formatDate(expiryQuery.data.expires_on)} da kuyadi
                                                 </span>
                                             )}
-                                            <span className="text-xs text-ink-faint">Keshbek tadbirdan so'ng tushadi va 12 oy amal qiladi</span>
+                                            <span className="max-lg:hidden text-xs text-ink-faint">Keshbek tadbirdan so'ng tushadi va 12 oy amal qiladi</span>
                                         </div>
                                         {canEdit("tadbirlar-moliya") && (
                                             <button
@@ -1092,7 +1092,7 @@ export function Mijozlar() {
                                                     <div key={t.id} className="flex items-center justify-between gap-3 py-2.5 max-lg:py-3 border-b border-line last:border-0">
                                                         <div className="flex flex-col gap-0.5 min-w-0">
                                                             <span className="text-base text-ink">{meta.label}</span>
-                                                            <span className="text-xs text-ink-muted truncate">
+                                                            <span className="text-xs max-lg:text-sm text-ink-muted truncate">
                                                                 {formatDate(t.created_at)}{t.description ? ` · ${t.description}` : ''}
                                                             </span>
                                                         </div>
@@ -1375,7 +1375,7 @@ export function Mijozlar() {
                                                     ["email", "Email", selectedCustomer.email, "email"],
                                                     ["activity", "Faoliyat", selectedCustomer.activity, "text"],
                                                 ] as const).map(([key, label, value, mode]) => (
-                                                    <div key={key} className="px-4 py-3 border-b border-line">
+                                                    <div key={key} className={`px-4 py-3 border-b border-line ${editingField === key ? "" : "active:bg-surface-sunken-hover"}`}>
                                                         {editingField === key ? (
                                                             <div className="flex flex-col gap-1.5">
                                                                 <span className="text-sm text-ink-muted">{label}</span>
@@ -1395,7 +1395,6 @@ export function Mijozlar() {
                                                                     <span className="text-sm text-ink-muted">{label}</span>
                                                                     <span className="text-base text-ink break-words">{value || '—'}</span>
                                                                 </span>
-                                                                <PencilSimple size={16} className="shrink-0 text-ink-faint" />
                                                             </button>
                                                         )}
                                                     </div>
@@ -1578,7 +1577,7 @@ export function Mijozlar() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1.5">
                                             <label htmlFor={`${addFormId}-phone`} className="text-sm font-bold text-ink">TELEFON RAQAMI *</label>
-                                            <PhoneInput id={`${addFormId}-phone`} className="max-lg:h-12" value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
+                                            <PhoneInput id={`${addFormId}-phone`} className="max-lg:h-12 max-lg:bg-surface-sunken max-lg:border-transparent" value={newCustomer.phone} onChange={(full) => setNewCustomer(prev => ({ ...prev, phone: full }))} />
                                         </div>
                                         {duplicateClient && (
                                             <div role="alert" className="sm:col-span-2 flex items-center gap-3 px-3.5 py-2.5 rounded-control bg-danger-soft text-sm text-danger-text">
@@ -1885,7 +1884,7 @@ function ClientRow({ c, selecting, selected, onOpen, onToggle }: {
     const meta = c.phone ? prettyPhone(c.phone) : "Raqami yo'q"
     const sub = c.company || c.role || c.activity
     return (
-        <li className="relative flex items-center after:absolute after:bottom-0 after:left-[72px] after:right-0 after:h-px after:bg-line last:after:hidden active:bg-mute-ghost-hover">
+        <li className="relative flex items-center after:absolute after:bottom-0 after:left-[72px] after:right-0 after:h-px after:bg-line last:after:hidden active:bg-surface-sunken-hover">
             <button type="button" onClick={selecting ? onToggle : onOpen} aria-pressed={selecting ? selected : undefined}
                 className="flex-1 min-w-0 flex items-center gap-3 pl-4 py-3 text-left">
                 <span className="size-11 shrink-0 rounded-full overflow-hidden bg-mute-soft flex items-center justify-center">
@@ -1910,7 +1909,7 @@ function ClientRow({ c, selecting, selected, onOpen, onToggle }: {
             </button>
             {selecting ? (
                 <span className="pr-4 pl-1 pointer-events-none" aria-hidden="true">
-                    <span className={`size-6 rounded-full border flex items-center justify-center ${selected ? "bg-accent border-accent text-ink-on-accent" : "border-ink-faint"}`}>
+                    <span className={`size-6 rounded-full border flex items-center justify-center ${selected ? "bg-accent border-accent text-ink-on-accent" : "border-ink-muted"}`}>
                         {selected && <Check size={12} weight="bold" />}
                     </span>
                 </span>
@@ -1918,11 +1917,11 @@ function ClientRow({ c, selecting, selected, onOpen, onToggle }: {
                 <>
                     {c.phone && (
                         <a href={`tel:${c.phone}`} aria-label={`${c.name}ga qo'ng'iroq`}
-                            className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink active:bg-mute-ghost-hover">
-                            <Phone size={20} />
+                            className="size-10 shrink-0 mr-2 rounded-full bg-surface flex items-center justify-center text-ink active:opacity-80">
+                            <Phone size={18} />
                         </a>
                     )}
-                    <CaretRight size={16} className={`shrink-0 text-ink-faint mr-3 ${c.phone ? "" : "ml-10"}`} aria-hidden="true" />
+                    <CaretRight size={16} className={`shrink-0 text-ink-faint mr-4 ${c.phone ? "" : "ml-12"}`} aria-hidden="true" />
                 </>
             )}
         </li>

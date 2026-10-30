@@ -61,7 +61,7 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
         </>
       ) : (
         <>
-          <div className="flex flex-col gap-5 lg:hidden">
+          <div className="flex flex-col gap-6 lg:hidden">
             {days.map((g) => (
               <section key={g.day}>
                 <GroupHeader>{dayLabel(g.day)}</GroupHeader>
@@ -143,7 +143,7 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
         <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Xarajat">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-1 pt-1 pb-2">
-              <Avatar icon={CATEGORY_ICON[picked.category]} />
+              <Avatar icon={CATEGORY_ICON[picked.category]} inSheet />
               <span className="text-md font-semibold text-ink mt-1">{EXPENSE_CATEGORY_LABEL[picked.category]}</span>
               <Money value={-picked.amount} className={`text-[32px] leading-10 font-semibold text-ink mt-2 ${picked.voided_at ? "line-through opacity-50" : ""}`} />
               {picked.voided_at && <span className="h-6 px-2 rounded-full bg-warning-soft text-warning-dark text-xs font-medium flex items-center">Bekor qilingan</span>}
@@ -155,7 +155,9 @@ export function ExpensesTab({ filters, canEdit }: { filters: FinanceFilters; can
               {picked.note && <KV label="Izoh">{picked.note}</KV>}
               {picked.voided_at && picked.void_reason && <KV label="Bekor sababi">{picked.void_reason}</KV>}
             </div>
-            <ReceiptCell kind="expense" id={picked.id} path={picked.receipt_path} canAttach={canEdit && !picked.voided_at} labeled />
+            <div className="flex justify-center empty:hidden">
+              <ReceiptCell kind="expense" id={picked.id} path={picked.receipt_path} canAttach={canEdit && !picked.voided_at} labeled />
+            </div>
             {canEdit && !picked.voided_at && (
               <button type="button" onClick={() => { setSheetOpen(false); setVoiding(picked) }} className={BTN_DANGER}><Prohibit size={18} /> Bekor qilish</button>
             )}

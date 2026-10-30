@@ -117,13 +117,13 @@ export function MobileFilterBar() {
     <div className="flex flex-col gap-2 lg:hidden">
       <div className="flex items-center gap-2">
         <label className="relative flex-1 min-w-0">
-          <CalendarBlank size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+          <CalendarBlank size={20} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
           <CaretDown size={12} weight="bold" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
           <select
             aria-label="Davr"
             value={period}
             onChange={(e) => set({ period: e.target.value === "all" ? null : e.target.value, from: null, to: null })}
-            className="w-full h-10 appearance-none pl-10 pr-9 rounded-full bg-surface-sunken text-sm font-medium text-ink outline-none focus-visible:ring-2 ring-line-focus"
+            className="w-full h-11 appearance-none pl-10 pr-9 rounded-full bg-surface-sunken text-base font-medium text-ink outline-none focus-visible:ring-2 ring-line-focus"
           >
             {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
               <option key={p} value={p}>{PERIOD_LABELS[p]}</option>
@@ -133,9 +133,9 @@ export function MobileFilterBar() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="h-10 pl-3.5 pr-4 shrink-0 rounded-full bg-surface-sunken text-sm font-medium text-ink flex items-center gap-2 active:bg-mute-soft"
+          className="h-11 pl-4 pr-4 shrink-0 rounded-full bg-surface-sunken text-base font-medium text-ink flex items-center gap-2 active:opacity-80"
         >
-          <SlidersHorizontal size={16} /> Filtr
+          <SlidersHorizontal size={20} /> Filtr
           {active.length > 0 && (
             <span className="min-w-5 h-5 px-1 rounded-full bg-accent text-ink-on-accent text-xs font-semibold flex items-center justify-center tabular-nums">{active.length}</span>
           )}
@@ -150,7 +150,7 @@ export function MobileFilterBar() {
             value={get("from") ?? ""}
             max={get("to") ?? undefined}
             onChange={(e) => set({ from: e.target.value || null })}
-            className="h-10 min-w-0 px-3 rounded-full bg-surface-sunken text-sm text-ink outline-none"
+            className="h-11 min-w-0 px-4 rounded-full bg-surface-sunken text-base text-ink outline-none"
           />
           <input
             type="date"
@@ -158,7 +158,7 @@ export function MobileFilterBar() {
             value={get("to") ?? ""}
             min={get("from") ?? undefined}
             onChange={(e) => set({ to: e.target.value || null })}
-            className="h-10 min-w-0 px-3 rounded-full bg-surface-sunken text-sm text-ink outline-none"
+            className="h-11 min-w-0 px-4 rounded-full bg-surface-sunken text-base text-ink outline-none"
           />
         </div>
       )}
@@ -171,7 +171,7 @@ export function MobileFilterBar() {
               type="button"
               onClick={() => set({ [a.key]: null })}
               aria-label={`${a.label} filtrini olib tashlash`}
-              className="shrink-0 h-8 pl-3 pr-2 rounded-full bg-mute-soft text-sm font-medium text-ink flex items-center gap-1.5"
+              className="shrink-0 h-9 pl-3.5 pr-3 rounded-full bg-surface-sunken text-sm font-medium text-ink flex items-center gap-1.5 active:opacity-80"
             >
               {a.label} <X size={12} weight="bold" className="text-ink-muted" />
             </button>

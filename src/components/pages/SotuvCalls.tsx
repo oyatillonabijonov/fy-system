@@ -12,7 +12,7 @@ import { Pager } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { useMedia } from "@/hooks/useMedia"
-import { CallButton, EmptyNote, Recording, SotuvSegments, callLabel, secs } from "@/components/sotuv/ui"
+import { EmptyNote, Recording, ROUND_BTN, ROW_BTN, RowCall, SotuvSegments, callLabel, chip, secs } from "@/components/sotuv/ui"
 
 const FILTERS: [CallFilter, string][] = [["all", "Hammasi"], ["in", "Kiruvchi"], ["out", "Chiquvchi"], ["missed", "Javobsiz"]]
 const when = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent" })
@@ -45,13 +45,10 @@ export function SotuvCalls() {
         <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
           {FILTERS.map(([id, label]) => (
-            <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)}
-              className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${filter === id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>{label}</button>
+            <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)} className={chip(filter === id)}>{label}</button>
           ))}
-          <button type="button" aria-pressed={mine} onClick={() => { setMine(!mine); setPage(0) }}
-            className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${mine ? "bg-accent text-ink-on-accent border-transparent" : "border-line text-ink"}`}>Mening</button>
+          <button type="button" aria-pressed={mine} onClick={() => { setMine(!mine); setPage(0) }} className={chip(mine)}>Mening</button>
         </div>
-        <p className="text-sm text-ink-muted tabular-nums px-1"><span className="font-semibold text-ink">{total} ta</span> qo'ng'iroq</p>
         {isLoading ? <EmptyNote icon={PhoneX} text="Yuklanmoqda…" />
           : rows.length === 0 ? <EmptyNote icon={PhoneX} text="Qo'ng'iroq yo'q" />
           : <ul className="rounded-surface bg-surface-sunken overflow-hidden">
@@ -111,7 +108,7 @@ export function SotuvCalls() {
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 
-/** Phone: one call as a list row — direction, who, staff · when · how long; ▶ and call on the right; a tap opens (or makes) the bitim */
+/** Phone: one call as a list row — direction in a neutral circle, who, staff · when · how long; ▶ and call on the right; a tap opens (or makes) the bitim */
 function CallRowCard({ call: c, onCreate }: { call: CallRow; onCreate: (phone: string) => void }) {
   const navigate = useNavigate()
   const [listening, setListening] = useState(false)
@@ -119,26 +116,27 @@ function CallRowCard({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
   const Icon = c.direction === "in" ? PhoneIncoming : PhoneOutgoing
   const phone = c.phone ? canonPhone(c.phone) : ""
   const who = c.client?.full_name ?? formatPhone(phone)
-  const meta = [c.staff?.full_name.split(" ")[0] ?? c.ext, when(c.started_at), missed ? "Javobsiz" : clock(c.talk_time)].filter(Boolean).join(" · ")
+  const meta = [c.staff?.full_name.split(" ")[0] ?? c.ext, when(c.started_at)].filter(Boolean).join(" · ")
   const act = c.lead_id ? () => navigate(`/sotuv/bitim/${c.lead_id}`) : phone ? () => onCreate(phone) : undefined
-  const round = "size-10 shrink-0 rounded-full flex items-center justify-center"
   return (
     <li className="border-b border-line last:border-b-0">
       <div role={act ? "button" : undefined} tabIndex={act ? 0 : undefined} onClick={act} onKeyDown={(e) => { if (act && e.key === "Enter") act() }}
         aria-label={act ? (c.lead_id ? `${who} — bitimni ochish` : `${who} — bitim yaratish`) : undefined}
-        className={`min-h-16 px-4 py-3 flex items-center gap-3 ${act ? "cursor-pointer active:bg-mute-ghost-hover" : ""}`}>
-        <span className={`${round} ${missed ? "bg-danger-soft text-danger-text" : "bg-surface text-ink-muted"}`}><Icon size={20} /></span>
+        className={`min-h-16 px-4 py-3 flex items-center gap-3 transition-colors ${act ? "cursor-pointer active:bg-surface-sunken-hover" : ""}`}>
+        <span className={`${ROW_BTN} ${missed ? "text-danger" : "text-ink-muted"}`}><Icon size={20} /></span>
         <span className="flex-1 min-w-0 flex flex-col">
-          <span className={`text-base font-medium line-clamp-1 ${missed ? "text-danger-text" : "text-ink"}`}>{who}</span>
-          <span className="text-sm text-ink-muted line-clamp-2">{meta}</span>
+          <span className="text-base font-medium text-ink line-clamp-1">{who}</span>
+          <span className="text-sm text-ink-muted line-clamp-1">
+            {meta} · {missed ? <span className="text-danger-text">Javobsiz</span> : <span className="tabular-nums">{clock(c.talk_time)}</span>}
+          </span>
           {!c.lead_id && phone && <span className="mt-1 self-start inline-flex items-center gap-1 h-6 px-2 rounded-full bg-warning-soft text-warning-text text-xs font-medium"><Plus size={12} weight="bold" />Bitim yaratish</span>}
         </span>
         <span onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           {!missed && (
             <button type="button" onClick={() => setListening((v) => !v)} aria-pressed={listening} aria-label={listening ? "Yozuvni yopish" : "Yozuvni tinglash"}
-              className={`${round} ${listening ? "bg-accent text-ink-on-accent" : "bg-surface text-ink"}`}>{listening ? <X size={16} /> : <Play size={16} weight="fill" />}</button>
+              className={listening ? `${ROUND_BTN} bg-accent text-ink-on-accent` : `${ROW_BTN} text-ink`}>{listening ? <X size={16} /> : <Play size={16} weight="fill" />}</button>
           )}
-          {phone && <CallButton phone={phone} className={`${round} bg-success text-white active:opacity-85 disabled:opacity-40`} />}
+          {phone && <RowCall phone={phone} />}
         </span>
       </div>
       {listening && <div className="px-4 pb-3 flex flex-col"><Recording uuid={c.uuid} auto /></div>}

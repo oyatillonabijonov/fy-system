@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 import { formatMoney, formatNumber } from "@/lib/format"
 
 // Inline-edit the agreed price (chegirma / individual deal).
-// `large` (phone detail sheet): a 44px pill instead of the table's inline text.
+// `large` (phone detail sheet): a 44px tap target that shows only its pressed state, instead of the table's inline text.
 export function PriceCell({ value, onSave, large }: { value: number; onSave: (v: number) => void; large?: boolean }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState("")
@@ -16,7 +16,7 @@ export function PriceCell({ value, onSave, large }: { value: number; onSave: (v:
     return (
       <button
         onClick={() => { setVal(value ? String(Math.round(value)) : ""); closed.current = false; setEditing(true) }}
-        className={large ? "h-11 px-4 rounded-full bg-mute-soft inline-flex items-center gap-2 text-base font-medium text-ink tabular-nums" : "group/price inline-flex items-center gap-1 text-base text-ink tabular-nums"}
+        className={large ? "h-11 px-3 -mr-3 rounded-full inline-flex items-center gap-2 text-base text-ink tabular-nums active:bg-mute-soft" : "group/price inline-flex items-center gap-1 text-base text-ink tabular-nums"}
         title="Kelishuv summasini tahrirlash"
       >
         {formatMoney(value)}
@@ -73,11 +73,15 @@ export function CashbackPercentCell({
     return (
       <button
         onClick={() => { setVal(percent !== null ? String(percent) : ""); closed.current = false; setEditing(true) }}
-        className={large ? "h-11 px-4 rounded-full bg-mute-soft inline-flex items-center gap-2 justify-end" : "inline-flex items-center gap-1.5 justify-end"}
+        className={large ? "h-11 px-3 -mr-3 rounded-full inline-flex items-center gap-2 justify-end active:bg-mute-soft" : "inline-flex items-center gap-1.5 justify-end"}
         title="Keshbek foizini tahrirlash (bo'sh = tadbir standarti)"
       >
-        <StatusBadge label={`${effective}%`} variant={percent !== null ? "warning" : "neutral"} />
-        {earned > 0 && <span className="text-xs text-ink-muted tabular-nums">{formatMoney(earned)}</span>}
+        {large ? (
+          <span className={`text-base tabular-nums ${percent !== null ? "text-warning-text" : "text-ink"}`}>{effective}%</span>
+        ) : (
+          <StatusBadge label={`${effective}%`} variant={percent !== null ? "warning" : "neutral"} />
+        )}
+        {earned > 0 && <span className={`${large ? "text-sm" : "text-xs"} text-ink-muted tabular-nums`}>{formatMoney(earned)}</span>}
       </button>
     )
   }

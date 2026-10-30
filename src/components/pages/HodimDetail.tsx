@@ -50,7 +50,7 @@ import { formatDate, formatNumber, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
 
 const softBtn =
-  "flex items-center max-lg:justify-center gap-2 px-3.5 h-control-md max-lg:h-11 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center max-lg:justify-center gap-2 px-3.5 h-control-md max-lg:h-11 rounded-full whitespace-nowrap bg-mute-soft max-lg:bg-surface text-base font-medium text-ink hover:bg-mute-soft-hover max-lg:hover:bg-surface active:opacity-80 transition-colors disabled:opacity-50"
 
 function getInitials(name: string): string {
   return name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()
@@ -421,7 +421,7 @@ function MobileProfile({ user, canEditAvatar, uploading, onAvatarClick, onAvatar
   onPermissions: () => void
 }) {
   const tg = user.telegram?.replace(/^@/, "")
-  const action = "flex flex-col items-center gap-1.5 min-w-0 text-xs font-medium text-ink-muted"
+  const action = "flex flex-col items-center gap-1.5 min-w-0 text-sm text-ink-muted active:opacity-70"
   const circle = "size-12 rounded-full bg-surface flex items-center justify-center text-ink"
   return (
     <div className="lg:hidden rounded-surface bg-surface-sunken p-4 flex flex-col gap-4">
@@ -452,7 +452,7 @@ function MobileProfile({ user, canEditAvatar, uploading, onAvatarClick, onAvatar
             </span>
           </p>
           {user.avatar_url && canEditAvatar && (
-            <button type="button" onClick={onAvatarDelete} className="self-start h-8 text-sm text-ink-faint">Rasmni o'chirish</button>
+            <button type="button" onClick={onAvatarDelete} className="self-start h-8 text-sm text-ink-muted">Rasmni o'chirish</button>
           )}
         </div>
       </div>
@@ -470,7 +470,7 @@ function MobileProfile({ user, canEditAvatar, uploading, onAvatarClick, onAvatar
 function InfoGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold text-ink-muted px-1">{title}</h2>
+      <h2 className="text-base font-semibold text-ink px-1">{title}</h2>
       <div className="rounded-surface bg-surface-sunken overflow-hidden">{children}</div>
     </section>
   )
@@ -560,9 +560,9 @@ function DangerZone({
   return (
     <div className="flex flex-col gap-3">
     <div className="bg-surface-sunken rounded-surface p-5 max-lg:p-4 flex flex-wrap items-center justify-between gap-4 max-lg:flex-col max-lg:items-stretch">
-      <div>
+      <div className="max-lg:hidden">
       <h2 className="text-base font-semibold text-ink mb-1">Hisobni {user.is_active ? "faolsizlantirish" : "qayta faollashtirish"}</h2>
-      <p className="text-sm text-ink-muted">
+      <p className="max-lg:hidden text-sm text-ink-muted">
         {user.is_active
           ? "Faolsizlantirilgan foydalanuvchi tizimga kira olmaydi, lekin ma'lumotlari saqlanadi."
           : "Foydalanuvchini qayta faollashtirsangiz, u darhol tizimga kira oladi."}
@@ -658,7 +658,7 @@ function KpiSection({
       {/* Header */}
       <div className="flex items-end justify-between flex-wrap gap-3 px-1 max-lg:flex-col max-lg:items-stretch max-lg:gap-2">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-md font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">KPI ko'rsatkichlari</h2>
+          <h2 className="text-md font-semibold text-ink max-lg:text-base">KPI ko'rsatkichlari</h2>
           <p className="text-sm text-ink-muted max-lg:hidden">Oylik maqsadlar va natijalar</p>
         </div>
 
@@ -668,7 +668,7 @@ function KpiSection({
             <button
               onClick={onEdit}
               aria-label={kpi?.target ? "Maqsadlarni tahrirlash" : "Maqsad belgilash"}
-              className={`${softBtn} max-lg:size-11 max-lg:px-0 max-lg:shrink-0`}
+              className={`${softBtn} max-lg:size-11 max-lg:px-0 max-lg:shrink-0 max-lg:bg-surface-sunken!`}
             >
               <PencilSimple size={16} />
               <span className="max-lg:hidden">{kpi?.target ? "Maqsadlarni tahrirlash" : "Maqsad belgilash"}</span>
@@ -746,7 +746,7 @@ function KpiBar({ label, target, actual, progress, unit, fmt = (n: number) => n.
         {progress >= 100 && <span className="h-6 px-2 rounded-full bg-success-soft text-xs font-medium text-success-text flex items-center">Bajarildi</span>}
       </div>
       <span className="text-2xl font-semibold tabular-nums text-ink">{pct}%</span>
-      <div role="progressbar" aria-label={label} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="h-2 rounded-full bg-surface overflow-hidden">
+      <div role="progressbar" aria-label={label} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="h-2 rounded-full bg-fill overflow-hidden">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
       </div>
       <span className="text-sm text-ink-muted tabular-nums">{fmt(actual)} / {fmt(target)} {unit}</span>
@@ -806,7 +806,7 @@ function PeriodSelector({
     else onChange({ year: period.year, month: m })
   }
   return (
-    <div className="flex items-center h-control-md max-lg:h-11 rounded-full bg-mute-soft shrink-0 max-lg:flex-1 max-lg:justify-between">
+    <div className="flex items-center h-control-md max-lg:h-11 rounded-full bg-mute-soft max-lg:bg-surface-sunken shrink-0 max-lg:flex-1 max-lg:justify-between">
       <button
         type="button"
         onClick={prev}

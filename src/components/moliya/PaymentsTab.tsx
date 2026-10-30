@@ -9,7 +9,7 @@ import { ReceiptCell } from "@/components/moliya/Receipt"
 import { tbl } from "@/components/ui/table"
 import { Pager, PAGE_SIZE } from "@/components/ui/Pager"
 import { Sheet } from "@/components/ui/Sheet"
-import { Avatar, BTN_DANGER, BTN_SECONDARY, Empty, GROUP, GroupHeader, KV, Loading, Money, ROW, dayLabel, groupByDay } from "@/components/moliya/mobile"
+import { Avatar, BTN_DANGER, Empty, GROUP, GroupHeader, KV, Loading, Money, ROW, TILE, TileIcon, dayLabel, groupByDay } from "@/components/moliya/mobile"
 import { tashkentClock, tashkentToday } from "@/lib/period"
 import { formatDate, formatMoney, formatPhone } from "@/lib/format"
 import { ThinkingOrb } from "thinking-orbs"
@@ -55,7 +55,7 @@ export function PaymentsTab({ filters, canEdit }: { filters: FinanceFilters; can
         </>
       ) : (
         <>
-          <div className="flex flex-col gap-5 lg:hidden">
+          <div className="flex flex-col gap-6 lg:hidden">
             {days.map((g) => (
               <section key={g.day}>
                 <GroupHeader>{dayLabel(g.day)}</GroupHeader>
@@ -187,7 +187,7 @@ function PaymentSheet({ p, open, canEdit, onClose, onVoid, onRefund, onNoShow }:
     <Sheet open={open} onClose={onClose} title={refund ? "Qaytarish" : "To'lov"}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col items-center gap-1 pt-1 pb-2">
-          <Avatar name={p.client_name} />
+          <Avatar name={p.client_name} inSheet />
           <span className="text-md font-semibold text-ink mt-1">{p.client_name}</span>
           <span className="text-base text-ink-muted">{formatPhone(p.client_phone)}</span>
           <Money
@@ -206,19 +206,21 @@ function PaymentSheet({ p, open, canEdit, onClose, onVoid, onRefund, onNoShow }:
           {p.note && <KV label="Izoh">{p.note}</KV>}
           {voided && p.void_reason && <KV label="Bekor sababi">{p.void_reason}</KV>}
         </div>
-        <ReceiptCell kind="payment" id={p.id} path={p.receipt_path} canAttach={canEdit && !voided} labeled />
-        {canEdit && !voided && (
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2 empty:hidden">
+        {canEdit && !voided ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-center gap-2">
+              <ReceiptCell kind="payment" id={p.id} path={p.receipt_path} canAttach labeled />
               {p.kind === "payment" && p.participant_cash_paid > 0 && (
-                <button type="button" onClick={onRefund} className={`${BTN_SECONDARY} col-span-full [&:not(:only-child)]:col-span-1`}><ArrowUUpLeft size={18} /> Qaytarish</button>
+                <button type="button" onClick={onRefund} className={TILE}><TileIcon><ArrowUUpLeft size={20} /></TileIcon>Qaytarish</button>
               )}
               {p.kind === "payment" && !p.participant_no_show && (
-                <button type="button" onClick={onNoShow} className={`${BTN_SECONDARY} col-span-full [&:not(:only-child)]:col-span-1`}><UserMinus size={18} /> Qatnashmadi</button>
+                <button type="button" onClick={onNoShow} className={TILE}><TileIcon><UserMinus size={20} /></TileIcon>Qatnashmadi</button>
               )}
             </div>
             <button type="button" onClick={onVoid} className={BTN_DANGER}><Prohibit size={18} /> Bekor qilish</button>
           </div>
+        ) : (
+          p.receipt_path && <div className="flex justify-center"><ReceiptCell kind="payment" id={p.id} path={p.receipt_path} canAttach={false} labeled /></div>
         )}
       </div>
     </Sheet>
