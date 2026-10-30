@@ -24,7 +24,7 @@ interface InnerProps {
 }
 
 const inputCls =
-  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus"
 
 function Field({ label, full, htmlFor, children }: { label: string; full?: boolean; htmlFor?: string; children: React.ReactNode }) {
   return (
@@ -110,7 +110,7 @@ function EditForm({ onClose, user, onSuccess }: InnerProps) {
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 gap-3 sm:border-b border-line shrink-0">
             <div className="flex flex-col gap-0.5 min-w-0">
               <h2 id={titleId} className="text-lg font-semibold sm:font-bold text-ink">Profilni tahrirlash</h2>
-              <span className="text-xs text-ink-muted break-words">{user.full_name} · {user.email}</span>
+              <span className="text-xs max-sm:text-sm text-ink-muted break-words">{user.full_name} · {user.email}</span>
             </div>
             <button
               onClick={onClose}

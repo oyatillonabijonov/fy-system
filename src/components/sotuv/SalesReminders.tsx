@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Bell, CheckCircle } from "@phosphor-icons/react"
+import { Bell, CaretRight, CheckCircle } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { SOTUV_KEY } from "@/hooks/useSotuv"
 import { getMyOpenTasks, fromDue, kindLabel } from "@/lib/supabase/queries/sotuv"
@@ -10,7 +10,7 @@ import { tashkentToday } from "@/lib/period"
 import { Popover } from "@/components/vazifalar/pickers"
 import { Sheet } from "@/components/ui/Sheet"
 import { useMedia } from "@/hooks/useMedia"
-import { TaskChip, EmptyNote, KIND_ICON } from "./ui"
+import { TaskChip, DueText, EmptyNote, KIND_ICON } from "./ui"
 
 const KEY = "fy_reminded"   // task id → the deadline already announced (a moved deadline re-arms it)
 
@@ -60,7 +60,7 @@ export function SalesReminders() {
   const bell = (open: boolean, toggle: (e: MouseEvent<HTMLElement>) => void) => (
     <button type="button" onClick={toggle} aria-expanded={open}
       aria-label={due.length ? `Eslatmalar: ${due.length} ta vazifa vaqti keldi` : "Eslatmalar"}
-      className="relative size-9 shrink-0 rounded-full bg-surface-sunken flex items-center justify-center text-ink hover:bg-surface-sunken-hover transition-colors">
+      className="relative size-9 shrink-0 rounded-full bg-surface-sunken max-lg:bg-card flex items-center justify-center text-ink hover:bg-surface-sunken-hover transition-colors">
       <Bell size={16} />
       {due.length > 0 && (
         <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-danger text-white text-xs font-semibold tabular-nums flex items-center justify-center">
@@ -85,13 +85,15 @@ export function SalesReminders() {
                 const Icon = KIND_ICON[t.kind]
                 return (
                   <li key={t.id} className="border-b border-line last:border-b-0">
-                    <button type="button" onClick={() => go(`/sotuv/bitim/${t.lead_id}`)} className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left active:bg-mute-ghost-hover">
-                      <Icon size={20} className="text-ink-muted shrink-0" />
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-base font-medium text-ink line-clamp-2">{t.text || kindLabel(t.kind)}</span>
-                        {t.lead && <span className="block text-sm text-ink-muted line-clamp-1">{t.lead.name}</span>}
+                    <button type="button" onClick={() => go(`/sotuv/bitim/${t.lead_id}`)} className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left transition-colors active:bg-surface-sunken-hover">
+                      <span className="flex-1 min-w-0 flex flex-col">
+                        <span className="text-base font-medium text-ink line-clamp-2">{t.text || kindLabel(t.kind)}</span>
+                        <span className="flex items-center gap-1.5 text-sm text-ink-muted min-w-0">
+                          <Icon size={16} className="shrink-0" /><DueText due={t.due_date} today={today} />
+                          {t.lead && <span className="truncate">· {t.lead.name}</span>}
+                        </span>
                       </span>
-                      <TaskChip kind={t.kind} due={t.due_date} today={today} />
+                      <CaretRight size={16} className="text-ink-faint shrink-0" />
                     </button>
                   </li>
                 )

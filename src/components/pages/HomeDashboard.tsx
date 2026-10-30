@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { CalendarBlank, MapPin, Users, UserPlus, ArrowRight } from "@phosphor-icons/react"
+import { CalendarBlank, MapPin, Users, UserPlus, ArrowRight, CaretRight } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useEvents, useParticipantCounts } from "@/hooks/useEvents"
 import { useClients } from "@/hooks/useClients"
@@ -75,13 +75,31 @@ function UpcomingEvents() {
       ) : upcoming.length === 0 ? (
         <Empty text="Rejalashtirilgan tadbir yo'q" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-4">
+        <>
+        {/* phone / tablet: one grouped list, a row per event */}
+        <div className="lg:hidden bg-surface-sunken rounded-surface overflow-hidden">
+          {upcoming.map((e) => (
+            <button key={e.id} type="button" onClick={() => open(e.id)}
+              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-surface-sunken-hover">
+              <span className="flex-1 min-w-0">
+                <span className="block text-base font-medium text-ink truncate">{e.name}</span>
+                <span className="block text-sm text-ink-muted truncate">{formatDate(e.date, "long").slice(0, -5)}{e.location ? ` · ${e.location}` : ""}</span>
+              </span>
+              <span className="shrink-0 flex flex-col items-end gap-0.5">
+                <span className="h-6 px-2 inline-flex items-center rounded-full bg-surface text-xs font-medium text-ink whitespace-nowrap">{daysLeft(e.date!)}</span>
+                <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{counts ? `${formatNumber(counts[e.id] ?? 0)} kishi` : "…"}</span>
+              </span>
+              <CaretRight size={16} className="shrink-0 text-ink-faint -ml-1" />
+            </button>
+          ))}
+        </div>
+        <div className="max-lg:hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-4">
           {upcoming.map((e) => (
             <button
               key={e.id}
               type="button"
               onClick={() => open(e.id)}
-              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover max-lg:active:bg-mute-ghost-hover rounded-surface p-4 sm:p-5 flex flex-col gap-3 transition-colors"
+              className="group text-left bg-surface-sunken hover:bg-surface-sunken-hover rounded-surface p-4 sm:p-5 flex flex-col gap-3 transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <span className="text-base font-semibold text-ink line-clamp-2">{e.name}</span>
@@ -97,6 +115,7 @@ function UpcomingEvents() {
             </button>
           ))}
         </div>
+        </>
       )}
     </Section>
   )
@@ -154,7 +173,7 @@ function ClientStats() {
                     <span className="block text-base text-ink truncate">{c.full_name}</span>
                     {c.activity && <span className="block text-sm text-ink-muted truncate">{c.activity}</span>}
                   </span>
-                  <span className="text-sm text-ink-faint tabular-nums flex-shrink-0">{formatDate(c.created_at)}</span>
+                  <span className="text-sm text-ink-faint max-lg:text-ink-muted tabular-nums flex-shrink-0">{formatDate(c.created_at)}</span>
                 </div>
               ))}
             </div>
@@ -184,7 +203,7 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
     <div className="bg-surface-sunken rounded-surface px-4 sm:px-5 py-4 flex flex-col gap-1.5 min-w-0">
       <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted whitespace-nowrap"><span className="max-sm:hidden">{icon}</span>{label}</span>
       <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
-      {hint && <span className="text-sm text-ink-faint">{hint}</span>}
+      {hint && <span className="text-sm text-ink-faint max-lg:text-ink-muted">{hint}</span>}
     </div>
   )
 }

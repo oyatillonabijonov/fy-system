@@ -22,7 +22,7 @@ import { PipelineSettings } from "@/components/sotuv/PipelineSettings"
 import { SalesTasks } from "@/components/sotuv/SalesTasks"
 import { Duplicates } from "@/components/sotuv/Duplicates"
 import { LeadCards } from "@/components/sotuv/LeadCards"
-import { TaskChip, NoTaskChip, StageDot, SotuvSegments } from "@/components/sotuv/ui"
+import { TaskChip, NoTaskChip, StageDot, SotuvSegments, chip } from "@/components/sotuv/ui"
 
 const LAST_PIPELINE = "fy_last_crm_pipeline_id"
 type View = "kanban" | "list" | "tasks"
@@ -119,7 +119,7 @@ export function Sotuv() {
             <div role="tablist" aria-label="Voronkalar" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
               {pipelines.map((p) => (
                 <button key={p.id} role="tab" aria-selected={p.id === pid} onClick={() => pick(p.id)}
-                  className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${p.id === pid ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+                  className={chip(p.id === pid)}>
                   {p.name}
                 </button>
               ))}
@@ -130,22 +130,19 @@ export function Sotuv() {
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism, bitim yoki telefon" aria-label="Qidirish"
                   className="flex-1 min-w-0 bg-transparent text-base text-ink placeholder:text-ink-muted focus:outline-none" />
               </label>
-              <button type="button" aria-pressed={mview === "board"} onClick={() => set("v", mview === "board" ? null : "kanban")}
+              <button type="button" onClick={() => set("v", mview === "board" ? null : "kanban")}
                 aria-label={mview === "board" ? "Ro'yxat ko'rinishi" : "Kanban ko'rinishi"}
-                className={`size-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${mview === "board" ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+                className="size-11 shrink-0 rounded-full flex items-center justify-center bg-surface-sunken text-ink active:opacity-80">
                 {mview === "board" ? <Rows size={20} /> : <Kanban size={20} />}
               </button>
               {(isAdmin || duplicates.length > 0 || eventName) && (
                 <button type="button" onClick={() => setMenu(true)} aria-label="Yana"
-                  className="relative size-11 shrink-0 rounded-full bg-surface-sunken text-ink flex items-center justify-center">
+                  className="relative size-11 shrink-0 rounded-full bg-surface-sunken text-ink flex items-center justify-center active:opacity-80">
                   <DotsThree size={22} weight="bold" />
                   {duplicates.length > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-warning" />}
                 </button>
               )}
             </div>
-            <p className="text-sm text-ink-muted tabular-nums px-1">
-              <span className="font-semibold text-ink">{openLeads.length} ochiq</span> · {formatNumber(openLeads.reduce((a, l) => a + l.price, 0))} so'm
-            </p>
           </>
         )}
 

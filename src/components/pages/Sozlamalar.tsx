@@ -2,7 +2,7 @@ import { useState, useRef, useId } from "react"
 import { toast as notify } from "@/lib/toast"
 import { soundOn, setSoundOn } from "@/lib/sound"
 import { PhoneInput } from "@/components/ui/PhoneInput"
-import { User as UserIcon, Camera } from "@phosphor-icons/react"
+import { User as UserIcon, Camera, CaretRight } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useTheme, MODES, PHOTOS, photoThumb, type ThemeId } from "@/context/ThemeContext"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
@@ -185,25 +185,25 @@ function ProfileTab({
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />
 
       {/* Personal info */}
-      <SettingsRow title="Shaxsiy ma'lumotlar" desc="Ism, telefon va Telegram'ni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+      <SettingsRow flush title="Shaxsiy ma'lumotlar" desc="Ism, telefon va Telegram'ni o'zingiz o'zgartira olasiz. Email va rolni administrator belgilaydi.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 max-lg:grid-cols-1! gap-4 max-lg:gap-0">
+          <div className={fieldCls}>
             <label htmlFor={`${uid}-full-name`} className={labelCls}>Ism familiya</label>
             <input id={`${uid}-full-name`} type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className={fieldCls}>
             <label htmlFor={`${uid}-phone`} className={labelCls}>Telefon</label>
-            <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} />
+            <PhoneInput id={`${uid}-phone`} value={phone} onChange={setPhone} className="max-lg:flex-1 max-lg:min-w-0 max-lg:h-12 max-lg:border-0 max-lg:bg-transparent max-lg:[&>span]:pl-0" />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className={fieldCls}>
             <label htmlFor={`${uid}-telegram`} className={labelCls}>Telegram username</label>
             <input id={`${uid}-telegram`} type="text" value={telegram} onChange={(e) => setTelegram(e.target.value)} placeholder="@username" className={inputCls} />
-            <span className="text-xs text-ink-muted">Vazifa eslatmalarida guruhda shu username bilan belgilanasiz</span>
+            <span className="text-xs text-ink-muted max-lg:hidden">Vazifa eslatmalarida guruhda shu username bilan belgilanasiz</span>
           </div>
           <ReadOnly label="Email" value={user.email} />
           <ReadOnly label="Rol" value={ROLE_LABELS[user.role]} />
         </div>
-        <div className="flex justify-end mt-5 max-lg:[&>button]:w-full">
+        <div className="flex justify-end mt-5 max-lg:mt-0 max-lg:p-4 max-lg:[&>button]:w-full">
           <button type="button" onClick={handleSave} disabled={saving || !dirty} className={primaryBtn}>
             {saving ? "Saqlanmoqda…" : "O'zgarishlarni saqlash"}
           </button>
@@ -211,25 +211,25 @@ function ProfileTab({
       </SettingsRow>
 
       {/* Password */}
-      <SettingsRow id="parol" title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning.">
+      <SettingsRow flush id="parol" title="Parol" desc="Kamida 6 belgi. O'zgartirgach, keyingi kirishda yangi paroldan foydalaning.">
         {user.must_change_password && (
-          <p role="alert" className="mb-4 px-3.5 py-2.5 rounded-control bg-danger-soft text-base text-danger-text">
+          <p role="alert" className="mb-4 px-3.5 py-2.5 rounded-control bg-danger-soft text-base text-danger-text max-lg:m-4 max-lg:mb-0">
             Siz administrator bergan vaqtincha parol bilan kirdingiz. Iltimos, o'zingizning parolingizni o'rnating.
           </p>
         )}
         {showPasswordForm ? (
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-4 max-lg:gap-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 max-lg:grid-cols-1! gap-4 max-lg:gap-0">
+              <div className={fieldCls}>
                 <label htmlFor={`${uid}-pwd`} className={labelCls}>Yangi parol</label>
                 <input id={`${uid}-pwd`} type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputCls} />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor={`${uid}-pwd2`} className={labelCls}>Parolni tasdiqlang</label>
+              <div className={fieldCls}>
+                <label htmlFor={`${uid}-pwd2`} className={labelCls}>Tasdiqlang</label>
                 <input id={`${uid}-pwd2`} type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputCls} />
               </div>
             </div>
-            <div className="flex justify-end gap-2 max-lg:[&>button]:flex-1">
+            <div className="flex justify-end gap-2 max-lg:p-4 max-lg:[&>button]:flex-1">
               <button
                 type="button"
                 onClick={() => { setShowPasswordForm(false); setNewPassword(""); setConfirmPassword("") }}
@@ -244,12 +244,19 @@ function ProfileTab({
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-base text-ink-muted tracking-widest">••••••••</span>
-            <button type="button" onClick={() => setShowPasswordForm(true)} className={softBtn}>
-              Parolni o'zgartirish
+          <>
+            <div className="max-lg:hidden flex items-center justify-between gap-4">
+              <span className="text-base text-ink-muted tracking-widest">••••••••</span>
+              <button type="button" onClick={() => setShowPasswordForm(true)} className={softBtn}>
+                Parolni o'zgartirish
+              </button>
+            </div>
+            <button type="button" onClick={() => setShowPasswordForm(true)}
+              className="lg:hidden w-full min-h-14 px-4 flex items-center gap-3 text-left text-base text-ink active:bg-surface-sunken-hover">
+              <span className="flex-1">Parolni o'zgartirish</span>
+              <CaretRight size={16} className="text-ink-faint shrink-0" />
             </button>
-          </div>
+          </>
         )}
       </SettingsRow>
 
@@ -286,21 +293,21 @@ function PreferencesRows() {
               role="radio"
               aria-checked={themeId === t.id}
               onClick={() => setThemeId(t.id)}
-              className={`flex flex-col gap-2 p-2 rounded-surface border transition-colors ${themeId === t.id ? "border-line-focus" : "border-line hover:bg-mute-ghost-hover"}`}
+              className={`flex flex-col gap-2 p-2 rounded-surface border transition-colors max-lg:p-0 max-lg:border-0 ${themeId === t.id ? "border-line-focus" : "border-line hover:bg-mute-ghost-hover"}`}
             >
               {/* mini preview: ground + sidebar strip + main card (fixed colours on purpose) */}
-              <span className="h-14 rounded-control flex gap-1 p-1" style={{ background: t.ground }}>
+              <span className={`h-14 rounded-control flex gap-1 p-1 ${themeId === t.id ? "max-lg:ring-2 max-lg:ring-[var(--switch-on)]" : "max-lg:ring-1 max-lg:ring-line"}`} style={{ background: t.ground }}>
                 <span className="w-1/4 rounded-sm" style={{ background: t.id === "light" ? "#e4e4e4" : "#1c1c1f" }} />
                 <span className="flex-1 rounded-sm" style={{ background: t.card }} />
               </span>
-              <span className="text-base font-medium text-ink">{t.label}</span>
+              <span className={`text-base font-medium text-ink max-lg:text-center ${themeId === t.id ? "max-lg:font-semibold" : ""}`}>{t.label}</span>
             </button>
           ))}
         </div>
         <span className="block text-sm font-medium text-ink-muted mt-5 mb-2">Fon rasmi</span>
         <div role="radiogroup" aria-label="Fon rasmi" className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-w-[640px]">
           <button type="button" role="radio" aria-checked={!photo} onClick={() => setPhoto(null)}
-            className={`h-16 rounded-control bg-surface-sunken border text-base text-ink-muted transition-colors ${!photo ? "border-line-focus text-ink" : "border-line hover:text-ink"}`}>
+            className={`h-16 rounded-control bg-surface-sunken max-lg:bg-surface border text-base text-ink-muted transition-colors ${!photo ? "border-line-focus text-ink" : "border-line hover:text-ink"}`}>
             Yo'q
           </button>
           {PHOTOS.map((p) => (
@@ -314,11 +321,11 @@ function PreferencesRows() {
       </SettingsRow>
 
       <SettingsRow title="Ovozlar" desc="Vazifa, mijoz, hodim qo'shilganda yoki xatolik bo'lganda yumshoq ovoz. Tanlov shu qurilmada saqlanadi." last>
-        <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken max-lg:grid max-lg:w-full max-lg:rounded-full max-lg:bg-surface">
+        <div role="radiogroup" aria-label="Ovozlar" className="inline-grid grid-cols-2 gap-1 p-1 rounded-control bg-surface-sunken max-lg:grid max-lg:w-full max-lg:rounded-full max-lg:bg-fill">
           {[true, false].map((v) => (
             <button key={String(v)} type="button" role="radio" aria-checked={sound === v}
               onClick={() => { setSound(v); setSoundOn(v) }}
-              className={`h-8 max-lg:h-10 px-4 rounded-item max-lg:rounded-full text-base font-medium whitespace-nowrap transition-colors ${sound === v ? "bg-surface max-lg:bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>
+              className={`h-8 max-lg:h-10 px-4 rounded-item max-lg:rounded-full text-base font-medium whitespace-nowrap transition-colors ${sound === v ? "bg-surface max-lg:bg-card text-ink" : "text-ink-muted hover:text-ink"}`}>
               {v ? "Yoqilgan" : "O'chirilgan"}
             </button>
           ))}
@@ -331,32 +338,34 @@ function PreferencesRows() {
 
 // ─── Layout pieces ──────────────────────────────────────
 
-const labelCls = "text-sm font-medium text-ink-muted"
+const labelCls = "text-sm font-medium text-ink-muted max-lg:w-36 max-lg:shrink-0 max-lg:text-base max-lg:font-normal max-lg:text-ink"
 const inputCls =
-  "w-full h-control-md max-lg:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full h-control-md max-lg:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors max-lg:flex-1 max-lg:min-w-0 max-lg:w-auto max-lg:border-0 max-lg:bg-transparent max-lg:px-0"
+/** a labelled field: stacked on desktop, an iOS-Settings row (label left, value right of it) on phones */
+const fieldCls = "flex flex-col gap-1.5 max-lg:flex-row max-lg:items-center max-lg:gap-3 max-lg:px-4 max-lg:border-b max-lg:border-line"
 const softBtn =
-  "flex items-center max-lg:justify-center gap-2 px-3.5 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-mute-soft text-base font-medium text-ink hover:bg-mute-soft-hover transition-colors disabled:opacity-50"
+  "flex items-center max-lg:justify-center gap-2 px-3.5 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-mute-soft max-lg:bg-surface text-base font-medium text-ink hover:bg-mute-soft-hover max-lg:hover:bg-surface active:opacity-80 transition-colors disabled:opacity-50"
 const primaryBtn =
-  "px-4 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium max-lg:font-semibold hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+  "px-4 h-control-md max-lg:h-12 rounded-full whitespace-nowrap bg-accent text-ink-on-accent text-base font-medium max-lg:font-semibold hover:bg-accent-hover active:opacity-80 transition-colors disabled:opacity-40 disabled:pointer-events-none max-lg:disabled:opacity-100 max-lg:disabled:bg-surface max-lg:disabled:text-ink-muted"
 
 /** One settings group: title + hint on the left, controls on the right, hairline between groups */
-function SettingsRow({ id, title, desc, last, className = "", children }: { id?: string; title: string; desc: string; last?: boolean; className?: string; children: React.ReactNode }) {
+function SettingsRow({ id, title, desc, last, flush, className = "", children }: { id?: string; title: string; desc: string; last?: boolean; flush?: boolean; className?: string; children: React.ReactNode }) {
   return (
-    <section id={id} className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"} max-lg:block max-lg:py-0 max-lg:mb-5 max-lg:border-b-0 ${className}`}>
+    <section id={id} className={`grid grid-cols-1 md:grid-cols-[260px_1fr] gap-x-10 gap-y-4 py-7 first:pt-2 ${last ? "" : "border-b border-line"} max-lg:block max-lg:py-0 max-lg:mb-6 max-lg:border-b-0 ${className}`}>
       <div className="flex flex-col gap-1 max-lg:mb-2 max-lg:px-1">
-        <h2 className="text-base font-semibold text-ink max-lg:text-sm max-lg:text-ink-muted">{title}</h2>
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
         <p className="text-sm text-ink-muted leading-relaxed max-lg:hidden">{desc}</p>
       </div>
-      <div className="min-w-0 max-lg:rounded-surface max-lg:bg-surface-sunken max-lg:p-4">{children}</div>
+      <div className={`min-w-0 max-lg:rounded-surface max-lg:bg-surface-sunken ${flush ? "max-lg:overflow-hidden" : "max-lg:p-4"}`}>{children}</div>
     </section>
   )
 }
 
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={fieldCls}>
       <span className={labelCls}>{label}</span>
-      <span className="h-control-md max-lg:h-12 px-3 flex items-center rounded-control bg-surface-sunken max-lg:bg-surface text-base text-ink-muted truncate">{value}</span>
+      <span className="h-control-md max-lg:h-12 px-3 flex items-center rounded-control bg-surface-sunken max-lg:bg-transparent max-lg:px-0 max-lg:flex-1 max-lg:min-w-0 text-base text-ink-muted truncate">{value}</span>
     </div>
   )
 }

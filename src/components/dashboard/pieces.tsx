@@ -106,7 +106,7 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
         <div role="tablist" aria-label="Voronka" className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">
           {pipelines.map(([id, name]) => (
             <button key={id} role="tab" aria-selected={id === pid} onClick={() => { setPicked(id); setHover(null) }}
-              className={`h-8 px-3 shrink-0 whitespace-nowrap rounded-full text-sm font-medium transition-colors ${id === pid ? "bg-accent text-ink-on-accent" : "bg-surface text-ink-muted"}`}>{name}</button>
+              className={`h-9 px-3.5 shrink-0 whitespace-nowrap rounded-full text-sm font-medium transition-colors active:opacity-80 ${id === pid ? "bg-accent text-ink-on-accent" : "bg-surface text-ink"}`}>{name}</button>
           ))}
         </div>
       ) : (
@@ -122,14 +122,14 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
         <span className="text-2xl font-semibold tabular-nums text-ink">{formatNumber(head ? head.open : total)}</span>
         <span className="text-base text-ink-muted">{head ? `${head.name} · ${share(head.open)}%` : "ochiq bitim"}</span>
         {(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0)) > 0 && (
-          <span className="text-sm text-ink-faint tabular-nums">· {formatNumber(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0))} so'm</span>
+          <span className={`text-sm tabular-nums ${compact ? "text-ink-muted" : "text-ink-faint"}`}>· {formatNumber(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0))} so'm</span>
         )}
       </div>
 
       {/* the row stretches the card to the right-hand column's height: keep the funnel's own
           proportions and sit it (with its footer) in the middle of whatever space is left */}
       <div className="my-auto flex flex-col gap-4">
-      <div className={`relative ${compact ? "h-36" : "h-60"}`} onMouseLeave={() => setHover(null)}>
+      <div className={`relative ${compact ? "h-40" : "h-60"}`} onMouseLeave={() => setHover(null)}>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full block" aria-hidden>
           {stages.map((r, i) => (
             <g key={r.stage_id} onMouseEnter={() => setHover(i)} className="transition-opacity duration-200"
@@ -148,7 +148,22 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
         ))}
       </div>
 
-      {/* all stages in one row only when the card is wide enough for their names, else two per row */}
+      {/* phone: a plain 2-column value/label grid split by hairlines, no tiles inside the card */}
+      {compact ? (
+        <div className="grid grid-cols-2 gap-x-4">
+          {stages.map((r, i) => (
+            <div key={r.stage_id} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+              className="min-w-0 py-3 border-t border-line transition-opacity duration-200" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
+              <span className="block text-xl font-semibold tabular-nums text-ink">{formatNumber(r.open)}</span>
+              <span className="flex items-center gap-1.5 text-sm text-ink-muted min-w-0">
+                <span className="size-2.5 rounded-[3px] shrink-0" style={{ background: r.color }} />
+                <span className="truncate">{r.name}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+      /* all stages in one row only when the card is wide enough for their names, else two per row */
       <div className="@container"><div className="grid grid-cols-2 gap-1.5 @lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": stages.length } as CSSProperties}>
         {stages.map((r, i) => (
           <div key={r.stage_id} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
@@ -161,6 +176,7 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
           </div>
         ))}
       </div></div>
+      )}
       </div>
     </div>
   )

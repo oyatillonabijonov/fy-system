@@ -177,8 +177,8 @@ export function Faollik() {
 
   return (
     <div className="flex flex-col gap-4 pb-10">
-      {/* Phone toolbar: search + filter button, period chips, active filters as removable chips */}
-      <div className="lg:hidden flex flex-col gap-2">
+      {/* Phone toolbar: search + filter button, a segmented period control, active filters as removable chips */}
+      <div className="lg:hidden flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
@@ -186,25 +186,29 @@ export function Faollik() {
               className="w-full h-11 pl-11 pr-4 rounded-full bg-surface-sunken text-base text-ink placeholder:text-ink-faint border border-transparent outline-none focus:border-line-focus" />
           </div>
           <button type="button" onClick={() => setFilterOpen(true)} aria-label="Filtrlar" aria-haspopup="dialog"
-            className="relative size-11 shrink-0 rounded-full bg-surface-sunken text-ink flex items-center justify-center">
+            className="relative size-11 shrink-0 rounded-full bg-surface-sunken text-ink flex items-center justify-center active:opacity-80">
             <SlidersHorizontal size={20} />
             {activeCount > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-accent text-ink-on-accent text-xs font-semibold tabular-nums flex items-center justify-center">{activeCount}</span>}
           </button>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+        <div role="group" aria-label="Davr" className="grid grid-cols-4 p-1 rounded-full bg-fill">
           {PERIODS.map((p) => (
             <button key={p.id} type="button" onClick={() => reset(setPeriod)(p.id)} aria-pressed={period === p.id}
-              className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${period === p.id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+              className={`h-9 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${period === p.id ? "bg-card text-ink" : "text-ink-muted"}`}>
               {p.label}
             </button>
           ))}
-          {chips.map((c) => (
-            <button key={c.key} type="button" onClick={c.clear} aria-label={`${c.label} — olib tashlash`}
-              className="shrink-0 h-9 pl-3.5 pr-2.5 rounded-full bg-mute-soft text-sm font-medium text-ink whitespace-nowrap inline-flex items-center gap-1.5">
-              {c.label}<X size={12} weight="bold" className="text-ink-muted" />
-            </button>
-          ))}
         </div>
+        {chips.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+            {chips.map((c) => (
+              <button key={c.key} type="button" onClick={c.clear} aria-label={`${c.label} — olib tashlash`}
+                className="shrink-0 h-9 pl-3.5 pr-3 rounded-full bg-accent text-ink-on-accent text-sm font-medium whitespace-nowrap inline-flex items-center gap-1.5 active:opacity-80">
+                {c.label}<X size={12} weight="bold" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filtrlar"
         footer={<>
@@ -300,7 +304,7 @@ export function Faollik() {
           const [day, time] = whenParts(log.created_at)
           return (
             <button key={log.id} type="button" onClick={() => setOpenLog(log)}
-              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+              className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-surface-sunken-hover">
               <span className="relative shrink-0">
                 <Avatar name={log.actor_name} url={log.actor_id ? avatars.get(log.actor_id) : null} size={40} />
                 <span className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-surface-sunken ${ACTIONS[log.action].dot}`} />
@@ -310,8 +314,8 @@ export function Faollik() {
                 <span className="block text-sm text-ink-muted truncate">{ENTITY_LABELS[log.entity_type] ?? log.entity_type} · {log.entity_name ?? "—"}</span>
               </span>
               <span className="shrink-0 flex flex-col items-end text-sm tabular-nums leading-snug">
-                <span className="text-ink whitespace-nowrap">{day}</span>
-                <span className="text-ink-faint whitespace-nowrap">{time}</span>
+                <span className="font-medium text-ink whitespace-nowrap">{day}</span>
+                <span className="text-ink-muted whitespace-nowrap">{time}</span>
               </span>
               <CaretRight size={16} className="shrink-0 text-ink-faint -ml-1" />
             </button>

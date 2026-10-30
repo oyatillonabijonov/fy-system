@@ -9,7 +9,7 @@ import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, subscribeLeadCalls, t
 import { tashkentToday } from "@/lib/period"
 import { formatPhone, formatNumber } from "@/lib/format"
 import { DuePicker, PersonDot, addDays, dueLabel } from "@/components/vazifalar/pickers"
-import { KIND_ICON, TaskChip, NoTaskChip, Recording, CallButton, StageDot, callLabel, secs } from "@/components/sotuv/ui"
+import { KIND_ICON, TaskChip, NoTaskChip, DueText, Recording, CallButton, Segmented, StageDot, SECTION, callLabel, chip, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { confirmAction } from "@/lib/confirm"
 import { useEvents, useParticipants } from "@/hooks/useEvents"
@@ -258,7 +258,7 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
     const [title, ...lines] = note.text.split("\n")
     return (
       <div className="flex gap-3 py-2">
-        <span className="w-7 h-7 rounded-full bg-info-soft text-info-text flex items-center justify-center shrink-0"><Tray size={16} /></span>
+        <span className="w-7 h-7 rounded-full bg-info-soft max-lg:bg-card text-info-text flex items-center justify-center shrink-0"><Tray size={16} /></span>
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
             <span className="font-medium text-ink">{title}</span>
@@ -273,9 +273,12 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
     const Icon = note.kind === "stage" ? ArrowsLeftRight : Sparkle
     return (
       <div className="flex items-center gap-2 max-lg:gap-3 py-1.5 text-sm text-ink-muted">
-        <span className="flex w-4 max-lg:w-7 max-lg:bg-surface justify-center shrink-0"><Icon size={16} /></span>
-        <span className="flex-1 min-w-0">{note.kind === "stage" ? <>Bosqich: <span className="text-ink">{note.text}</span></> : note.text}{note.author ? ` · ${note.author.full_name}` : ""}</span>
-        <span className="tabular-nums shrink-0">{when(note.created_at)}</span>
+        <span className="flex w-4 max-lg:w-7 max-lg:h-7 max-lg:items-center max-lg:rounded-full max-lg:bg-card justify-center shrink-0"><Icon size={16} /></span>
+        <span className="flex-1 min-w-0">
+          {note.kind === "stage" ? <>Bosqich: <span className="text-ink">{note.text}</span></> : note.text}<span className="max-lg:hidden">{note.author ? ` · ${note.author.full_name}` : ""}</span>
+          <span className="lg:hidden block tabular-nums">{[note.author?.full_name, when(note.created_at)].filter(Boolean).join(" · ")}</span>
+        </span>
+        <span className="tabular-nums shrink-0 max-lg:hidden">{when(note.created_at)}</span>
       </div>
     )
   }
@@ -300,13 +303,14 @@ function CallItem({ call }: { call: Call }) {
   const Icon = call.direction === "in" ? PhoneIncoming : PhoneOutgoing
   return (
     <div className="flex gap-3 py-2">
-      <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${missed ? "bg-danger-soft text-danger-text" : "bg-surface-sunken text-ink-muted"}`}><Icon size={16} /></span>
+      <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 max-lg:bg-card ${missed ? "bg-danger-soft text-danger-text" : "bg-surface-sunken text-ink-muted"}`}><Icon size={16} /></span>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <span className={missed ? "text-danger-text" : "text-ink"}>{callLabel(call)}</span>
           {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
-          {call.staff && <span className="truncate">· {call.staff.full_name}</span>}
-          <span className="tabular-nums ml-auto max-lg:ml-0 max-lg:basis-full shrink-0">{when(call.started_at)}</span>
+          {call.staff && <span className="truncate max-lg:hidden">· {call.staff.full_name}</span>}
+          <span className="tabular-nums ml-auto shrink-0 max-lg:hidden">{when(call.started_at)}</span>
+          <span className="lg:hidden basis-full tabular-nums">{[call.staff?.full_name, when(call.started_at)].filter(Boolean).join(" · ")}</span>
         </div>
         {!missed && <Recording uuid={call.uuid} />}
       </div>
@@ -318,13 +322,13 @@ function DoneItem({ task }: { task: SalesTask }) {
   const Icon = KIND_ICON[task.kind]
   return (
     <div className="flex gap-3 py-2">
-      <span className="w-7 h-7 rounded-full bg-success-soft text-success-text flex items-center justify-center shrink-0"><CheckCircle size={16} /></span>
+      <span className="w-7 h-7 rounded-full bg-success-soft max-lg:bg-card text-success-text flex items-center justify-center shrink-0"><CheckCircle size={16} /></span>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <Icon size={16} /><span className="text-ink">{kindLabel(task.kind)}{task.text ? `: ${task.text}` : ""}</span>
           <span className="tabular-nums ml-auto max-lg:ml-0 max-lg:basis-full">{when(task.done_at!)}</span>
         </div>
-        {task.result && <p className="mt-1 text-base text-ink whitespace-pre-wrap break-words">{task.result}</p>}
+        {task.result && <p className="mt-1 text-base text-ink whitespace-pre-wrap break-words max-lg:rounded-control max-lg:bg-surface-sunken max-lg:px-3 max-lg:py-2">{task.result}</p>}
       </div>
     </div>
   )
@@ -398,7 +402,7 @@ function Composer({ leadId, responsible, today }: { leadId: string; responsible:
 }
 
 /** "Tadbirga yozish" for the voronka's event; once enrolled it just says so */
-function EnrollFromLead({ eventId, client }: { eventId: string; client: { id: string; full_name: string; phone: string | null; image: string | null } }) {
+function EnrollFromLead({ eventId, client, card }: { eventId: string; client: { id: string; full_name: string; phone: string | null; image: string | null }; card?: boolean }) {
   const { hasAccess } = useAuth()
   const { data: events = [] } = useEvents()
   const { data: participants = [] } = useParticipants(eventId)
@@ -407,7 +411,7 @@ function EnrollFromLead({ eventId, client }: { eventId: string; client: { id: st
   if (!event || !hasAccess("tadbirlar")) return null
   const ids = new Set(participants.map((p) => p.contact_id).filter((x): x is string => !!x))
   return (
-    <div className="rounded-control bg-surface p-3.5 flex items-center gap-3">
+    <div className={`${card ? "rounded-surface bg-surface-sunken p-4" : "rounded-control bg-surface p-3.5"} flex items-center gap-3`}>
       <div className="flex-1 min-w-0">
         <span className="block text-sm text-ink-muted">Tadbir</span>
         <span className="block text-base font-medium text-ink truncate">{event.name}</span>
@@ -435,7 +439,6 @@ interface MobileProps {
 
 const ROW = "min-h-14 px-4 flex items-center gap-3 border-b border-line last:border-b-0"
 const ROW_INPUT = "flex-1 min-w-0 h-14 bg-transparent text-right text-base text-ink focus:outline-none"
-const SECTION = "px-1 text-sm font-semibold text-ink-muted"
 
 /** The bitim on a phone: header card, round quick actions, the bosqich chips, then Lenta | Ma'lumotlar with the composer pinned above the tab bar */
 function LeadMobile(p: MobileProps) {
@@ -455,8 +458,9 @@ function LeadMobile(p: MobileProps) {
   const chips = useRef<HTMLDivElement>(null)
   useEffect(() => { chips.current?.querySelector("[aria-checked=true]")?.scrollIntoView({ inline: "center", block: "nearest" }) }, [lead.stage_id])
 
-  const act = "flex flex-col items-center gap-1.5 text-sm font-medium text-ink active:opacity-70"
+  const act = "flex flex-col items-center gap-1.5 text-sm font-medium text-ink active:opacity-80"
   const circle = "size-12 rounded-full flex items-center justify-center"
+  const neutral = `${circle} bg-card`   // on the grey ground a white disc is what reads as a button
   const writeNote = () => { setTab("feed"); setTimeout(() => note.current?.focus(), 0) }
 
   return (
@@ -480,7 +484,7 @@ function LeadMobile(p: MobileProps) {
         </div>
         <div className="flex flex-col gap-2.5">
           {lead.price > 0
-            ? <span className="text-2xl font-semibold text-ink tabular-nums">{formatNumber(lead.price)} <span className="text-base font-medium text-ink-muted">so'm</span></span>
+            ? <span className="text-3xl font-semibold text-ink tabular-nums">{formatNumber(lead.price)} <span className="text-base font-medium text-ink-muted">so'm</span></span>
             : <span className="text-base text-ink-muted">Summa kiritilmagan</span>}
           <div className="flex items-center gap-2 text-sm">
             {stage && <StageDot color={stage.color} />}
@@ -489,7 +493,7 @@ function LeadMobile(p: MobileProps) {
           </div>
           <div className="flex gap-1" role="img" aria-label={`Bosqich ${at} / ${openStages.length}`}>
             {openStages.map((s, i) => (
-              <span key={s.id} className={`flex-1 h-1.5 rounded-full ${i >= at ? "bg-mute-soft" : stage?.is_lost ? "bg-danger" : ""}`}
+              <span key={s.id} className={`flex-1 h-2 rounded-full ${i >= at ? "bg-surface" : stage?.is_lost ? "bg-danger" : ""}`}
                 style={i < at && !stage?.is_lost ? { backgroundColor: stage?.color } : undefined} />
             ))}
           </div>
@@ -503,18 +507,18 @@ function LeadMobile(p: MobileProps) {
             <span className={`${circle} bg-success text-white`}><Phone size={22} weight="fill" /></span>Qo'ng'iroq
           </CallButton>
         )}
-        {phone && <a href={`sms:${phone}`} className={act}><span className={`${circle} bg-surface-sunken`}><ChatCircleText size={22} weight="light" /></span>SMS</a>}
-        <button type="button" onClick={() => setTaskOpen(true)} className={act}><span className={`${circle} bg-surface-sunken`}><CheckCircle size={22} weight="light" /></span>Vazifa</button>
-        <button type="button" onClick={writeNote} className={act}><span className={`${circle} bg-surface-sunken`}><NotePencil size={22} weight="light" /></span>Izoh</button>
+        {phone && <a href={`sms:${phone}`} className={act}><span className={neutral}><ChatCircleText size={22} weight="light" /></span>SMS</a>}
+        <button type="button" onClick={() => setTaskOpen(true)} className={act}><span className={neutral}><CheckCircle size={22} weight="light" /></span>Vazifa</button>
+        <button type="button" onClick={writeNote} className={act}><span className={neutral}><NotePencil size={22} weight="light" /></span>Izoh</button>
       </div>
 
       {/* Bosqich selector: one tap moves the deal */}
-      <section className="flex flex-col gap-2">
+      <section>
         <h2 className={SECTION}>Bosqich</h2>
         <div ref={chips} role="radiogroup" aria-label="Bosqich" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
           {stages.map((s) => (
             <button key={s.id} type="button" role="radio" aria-checked={s.id === lead.stage_id} onClick={() => { if (s.id !== lead.stage_id) save({ stage_id: s.id }) }}
-              className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors ${s.id === lead.stage_id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
+              className={chip(s.id === lead.stage_id)}>
               <StageDot color={s.color} />{s.name}
             </button>
           ))}
@@ -522,35 +526,33 @@ function LeadMobile(p: MobileProps) {
         {stage?.is_lost && (
           <input value={p.reason} onChange={(e) => p.setReason(e.target.value)} placeholder="Yutqazish sababi" aria-label="Yutqazish sababi"
             onBlur={() => { if (p.reason.trim() !== (lead.loss_reason ?? "")) save({ loss_reason: p.reason.trim() || null }) }}
-            className="h-12 px-4 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+            className="mt-2 w-full h-12 px-4 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none" />
         )}
       </section>
 
-      <div role="radiogroup" aria-label="Bitim" className="grid grid-cols-2 p-1 rounded-full bg-surface-sunken">
-        {([["feed", "Lenta"], ["info", "Ma'lumotlar"]] as const).map(([id, label]) => (
-          <button key={id} type="button" role="radio" aria-checked={tab === id} onClick={() => setTab(id)}
-            className={`h-9 rounded-full text-sm font-medium transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted"}`}>{label}</button>
-        ))}
-      </div>
+      <Segmented<"feed" | "info"> label="Bitim" value={tab} onChange={setTab} options={[["feed", "Lenta"], ["info", "Ma'lumotlar"]]} />
 
       {tab === "feed" ? (
         <>
           {openTasks.length > 0 ? (
-            <section className="flex flex-col gap-2">
-              <h2 className={SECTION}>Vazifalar · {openTasks.length}</h2>
+            <section>
+              <h2 className={`${SECTION} flex items-baseline gap-2`}>Vazifalar<span className="text-sm font-normal text-ink-muted tabular-nums">{openTasks.length}</span></h2>
               <ul className="rounded-surface bg-surface-sunken overflow-hidden">
-                {openTasks.map((t) => (
-                  <li key={t.id} className="min-h-16 px-4 py-3 flex items-center gap-3 border-b border-line last:border-b-0">
-                    <DoneButton size="lg" onClick={() => setClosing(t)} />
-                    <span className="flex-1 min-w-0 flex flex-col gap-1.5">
-                      <span className="text-base font-medium text-ink line-clamp-2">{kindLabel(t.kind)}{t.text ? `: ${t.text}` : ""}</span>
-                      <span className="flex items-center gap-2 min-w-0">
-                        <TaskChip kind={t.kind} due={t.due_date} today={today} />
-                        {t.assignee && <span className="flex items-center gap-1.5 min-w-0 text-sm text-ink-muted"><PersonDot name={t.assignee.full_name} url={t.assignee.avatar_url} /><span className="line-clamp-1">{t.assignee.full_name.split(" ")[0]}</span></span>}
+                {openTasks.map((t) => {
+                  const Icon = KIND_ICON[t.kind]
+                  return (
+                    <li key={t.id} className="min-h-16 px-4 py-3 flex items-center gap-3 border-b border-line last:border-b-0">
+                      <DoneButton size="lg" onClick={() => setClosing(t)} />
+                      <span className="flex-1 min-w-0 flex flex-col">
+                        <span className="text-base font-medium text-ink line-clamp-2">{t.text || kindLabel(t.kind)}</span>
+                        <span className="flex items-center gap-1.5 text-sm text-ink-muted min-w-0">
+                          <Icon size={16} className="shrink-0" /><DueText due={t.due_date} today={today} />
+                          {t.assignee && <span className="truncate">· {t.assignee.full_name.split(" ")[0]}</span>}
+                        </span>
                       </span>
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ul>
             </section>
           ) : !isClosed && (
@@ -560,7 +562,7 @@ function LeadMobile(p: MobileProps) {
             </div>
           )}
 
-          <section className="flex flex-col gap-2">
+          <section>
             <h2 className={SECTION}>Lenta</h2>
             {/* Newest first: what just happened is on top, the composer is right below the fold */}
             <div className="relative flex flex-col gap-1 before:absolute before:left-[13.5px] before:top-4 before:bottom-4 before:w-px before:bg-line before:content-['']">
@@ -612,11 +614,11 @@ function LeadMobile(p: MobileProps) {
           </ul>
 
           {pipeline?.event_id && lead.client && (
-            <div className="rounded-surface bg-surface-sunken p-2"><EnrollFromLead eventId={pipeline.event_id} client={lead.client} /></div>
+            <EnrollFromLead card eventId={pipeline.event_id} client={lead.client} />
           )}
 
           {lead.fields.length > 0 && (
-            <section className="flex flex-col gap-2">
+            <section>
               <h2 className={SECTION}>Forma javoblari</h2>
               <dl aria-label="Forma javoblari" className="rounded-surface bg-surface-sunken overflow-hidden">
                 {[{ k: "Ism", v: lead.client?.full_name ?? lead.name }, ...(phone ? [{ k: "Telefon", v: formatPhone(phone) }] : []), ...lead.fields].map((f) => (

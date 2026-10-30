@@ -7,14 +7,14 @@ import { tashkentToday } from "@/lib/period"
 // Phone presentation (below lg) of the Moliya page: small building blocks shared by its tabs.
 
 /** A sum with grouped digits and a small unit — never truncated */
-export function Money({ value, sign, unit = true, className = "" }: { value: number; sign?: boolean; unit?: boolean; className?: string }) {
+export function Money({ value, sign, unit = true, className = "", unitClassName = "text-[0.62em] font-medium opacity-60" }: { value: number; sign?: boolean; unit?: boolean; className?: string; unitClassName?: string }) {
   const n = Math.round(value)
   const s = n < 0 ? "−" : sign && n > 0 ? "+" : ""
   return (
     <span className={`tabular-nums whitespace-nowrap ${className}`}>
       {s}
       {formatNumber(Math.abs(n))}
-      {unit && <span className="ml-1 text-[0.62em] font-medium opacity-60">so'm</span>}
+      {unit && <span className={`ml-1 ${unitClassName}`}>so'm</span>}
     </span>
   )
 }
@@ -23,9 +23,10 @@ export function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
 }
 
-export function Avatar({ name, icon }: { name?: string; icon?: ReactNode }) {
+/** Initials or an icon in a quiet 40px circle: the grey ground inside the page, a sunken grey inside a sheet */
+export function Avatar({ name, icon, inSheet }: { name?: string; icon?: ReactNode; inSheet?: boolean }) {
   return (
-    <span className="size-10 shrink-0 rounded-full bg-mute-soft text-ink-muted text-sm font-semibold flex items-center justify-center">
+    <span className={`size-10 shrink-0 rounded-full ${inSheet ? "bg-surface-sunken" : "bg-surface"} text-ink-muted text-sm font-semibold flex items-center justify-center`}>
       {icon ?? initials(name ?? "")}
     </span>
   )
@@ -36,10 +37,10 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
   options: { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string
 }) {
   return (
-    <div role="tablist" aria-label={label} className="grid p-1 rounded-full bg-surface-sunken" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div role="tablist" aria-label={label} className="grid p-1 rounded-full bg-fill" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o) => (
         <button key={o.id} type="button" role="tab" aria-selected={value === o.id} onClick={() => onChange(o.id)}
-          className={`h-9 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${value === o.id ? "bg-surface text-ink" : "text-ink-muted"}`}>
+          className={`h-9 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${value === o.id ? "bg-card text-ink" : "text-ink-muted"}`}>
           {o.label}
         </button>
       ))}
@@ -47,30 +48,40 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
   )
 }
 
-/** Many options: one scrolling strip, never wrapped */
+/** Many options: one scrolling strip, never wrapped. `count` is a small muted number inside the chip. */
 export function ChipStrip<T extends string>({ options, value, onChange, label }: {
-  options: { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string
+  options: { id: T; label: string; count?: number }[]; value: T; onChange: (id: T) => void; label: string
 }) {
   return (
     <div role="tablist" aria-label={label} className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
       {options.map((o) => (
         <button key={o.id} type="button" role="tab" aria-selected={value === o.id} onClick={() => onChange(o.id)}
-          className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-            value === o.id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"
+          className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors active:opacity-80 ${
+            value === o.id ? "bg-accent text-ink-on-accent" : "bg-card text-ink"
           }`}>
           {o.label}
+          {o.count !== undefined && <span className="ml-1.5 text-xs tabular-nums opacity-60">{o.count}</span>}
         </button>
       ))}
     </div>
   )
 }
 
+/** Thin progress bar; the track is the control grey (one step darker than the ground) so it reads on a white card */
+export function Progress({ pct }: { pct: number }) {
+  return (
+    <span className="block h-1.5 rounded-full bg-fill overflow-hidden">
+      <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+    </span>
+  )
+}
+
 /** Inset grouped list */
 export const GROUP = "rounded-surface bg-surface-sunken overflow-hidden"
-export const ROW = "w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-b-0 active:bg-mute-ghost-hover transition-colors"
+export const ROW = "w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-b-0 active:bg-surface-sunken-hover transition-colors"
 
 export function GroupHeader({ children }: { children: ReactNode }) {
-  return <h3 className="text-sm font-semibold text-ink-muted px-1 mb-2">{children}</h3>
+  return <h3 className="text-base font-semibold text-ink px-1 mb-2">{children}</h3>
 }
 
 export function Loading() {
@@ -120,6 +131,12 @@ export function KV({ label, children }: { label: string; children: ReactNode }) 
       <span className="text-base text-ink text-right min-w-0 break-words">{children}</span>
     </div>
   )
+}
+
+/** A sheet's secondary action: a round icon with its label underneath (a row of these sits above the red "Bekor qilish") */
+export const TILE = "w-28 flex flex-col items-center gap-1.5 text-sm font-medium text-ink active:opacity-80 disabled:opacity-50"
+export function TileIcon({ children }: { children: ReactNode }) {
+  return <span className="size-12 rounded-full bg-surface-sunken flex items-center justify-center">{children}</span>
 }
 
 export const BTN_PRIMARY = "h-12 flex-1 rounded-full bg-accent text-ink-on-accent text-base font-semibold disabled:opacity-40"

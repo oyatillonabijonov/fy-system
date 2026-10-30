@@ -450,6 +450,11 @@
 }
 
 @theme inline {
+  /* Phone/tablet ground (defined below lg only, see "Phone/tablet ground"): bg-ground = the grey page,
+     bg-card = a white card/row, bg-fill = a control track on the ground (segmented controls), one step darker */
+  --color-ground: var(--m-ground);
+  --color-card: var(--m-card);
+  --color-fill: var(--m-fill);
   --font-sans: var(--ds-font-body);
   --font-mono: var(--ds-font-mono);
 
@@ -718,6 +723,29 @@ select:not(.appearance-none):not([multiple]) {
    (floating buttons, sticky action bars) — 0 on desktop */
 :root { --tabbar-h: 0px; }
 @media (width < 64rem) { :root { --tabbar-h: calc(57px + env(safe-area-inset-bottom)); } }
+/* Phone/tablet ground (below lg, chosen 2026-10-30): a grouped look like iOS — the page, header and tab bar
+   sit on a grey ground and cards/rows are white, so depth comes from fill (no shadows). Done by re-pointing
+   the surface tokens inside <main>: every `bg-surface-sunken` card turns white and `bg-surface` (inner chips,
+   sticky bars) takes the ground. Sheets are portaled outside <main> and keep the normal tokens. */
+@media (width < 64rem) {
+  :root { --m-ground: #f2f2f7; --m-card: #ffffff; --m-card-hover: #f7f7f9; --m-fill: #e3e3e8; --m-inner: #f2f2f7; }
+  :root[data-theme="dark"] { --m-ground: #0b0b0c; --m-card: #1c1c1f; --m-card-hover: #242428; --m-fill: #141416; --m-inner: #2a2a2e; }   /* dark: inner chips/buttons on a card sit lighter than the card; the track sits below the card so the active segment reads lighter, as on iOS */
+  .app-main, .app-main > header, .tabbar { background-color: var(--m-ground); }
+  /* the theme's own values, kept so dialogs rendered inside <main> can take them back */
+  :root { --o-surface: var(--ds-color-surface-default); --o-sunken: var(--ds-color-surface-sunken); --o-sunken-hover: var(--ds-color-surface-sunken-hover); }
+  .app-main > main {   /* the --ds-* values themselves: the utilities are inlined to them */
+    --ds-color-surface-default: var(--m-inner);   /* = the ground in light; one step above the card in dark */
+    --ds-color-surface-sunken: var(--m-card);
+    --ds-color-surface-sunken-hover: var(--m-card-hover);
+  }
+  /* a dialog/sheet is its own white surface with grey fields, wherever it is mounted */
+  .app-main > main :is([role="dialog"], [aria-modal="true"]) {
+    --ds-color-surface-default: var(--o-surface);
+    --ds-color-surface-sunken: var(--o-sunken);
+    --ds-color-surface-sunken-hover: var(--o-sunken-hover);
+  }
+}
+
 /* Touch screens feel like an app: no grey tap flash or double-tap zoom delay, no rubber-band on the
    shell, and fields at 16px so iOS doesn't zoom into them on focus (unlayered, so it beats text-* utilities) */
 html, body { overscroll-behavior: none; }

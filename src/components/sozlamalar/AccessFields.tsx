@@ -26,7 +26,7 @@ export function RoleField({ value, onChange, locked }: { value: UserRole; onChan
           </button>
         ))}
       </div>
-      <span className="text-sm text-ink-faint">
+      <span className={`text-sm text-ink-muted ${locked ? "" : "max-sm:hidden"}`}>
         {locked ? "O'z rolingizni o'zgartira olmaysiz" : ROLE_HINTS[value]}
       </span>
     </div>
@@ -67,8 +67,8 @@ export function ModuleAccessField({ role, value, onChange }: { role: UserRole; v
                   <span className="block text-sm text-ink-muted">{m.desc}</span>
                 </span>
                 <input type="checkbox" checked={on} onChange={() => toggle(m.id)} className="sr-only peer" />
-                <span aria-hidden className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus ${on ? "bg-accent" : "bg-mute-soft-hover"}`}>
-                  <span className={`absolute top-0.5 size-4 rounded-full bg-surface transition-[left] ${on ? "left-[18px]" : "left-0.5"}`} />
+                <span aria-hidden className={`relative h-5 w-9 max-sm:h-7 max-sm:w-12 flex-shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-line-focus ${on ? "bg-accent" : "bg-mute-soft-hover"}`}>
+                  <span className={`absolute top-0.5 size-4 max-sm:size-6 rounded-full bg-surface transition-[left] ${on ? "left-[18px] max-sm:left-[22px]" : "left-0.5"}`} />
                 </span>
               </label>
               {on && m.id === EDITABLE_MODULE && (

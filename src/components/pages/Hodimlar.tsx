@@ -49,7 +49,7 @@ export function Hodimlar() {
             <button key={f.id} type="button" onClick={() => setRole(f.id)} aria-pressed={role === f.id}
               className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 ${role === f.id ? "bg-accent text-ink-on-accent" : "bg-surface-sunken text-ink"}`}>
               {f.label}
-              <span className={`tabular-nums ${role === f.id ? "text-ink-on-accent/70" : "text-ink-faint"}`}>{count(f.id)}</span>
+              <span className={`text-xs tabular-nums ${role === f.id ? "opacity-70" : "text-ink-muted"}`}>{count(f.id)}</span>
             </button>
           ))}
         </div>
@@ -63,7 +63,7 @@ export function Hodimlar() {
             : filteredUsers.length === 0 ? <p className="py-10 text-center text-base text-ink-muted">{search || role !== "all" ? "Mos keluvchi xodim topilmadi" : "Hali xodim qo'shilmagan"}</p>
             : paged.pageItems.map((u) => (
               <button key={u.id} type="button" onClick={() => navigate(`/hodimlar/${u.id}`)}
-                className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-mute-ghost-hover">
+                className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left border-b border-line last:border-0 active:bg-surface-sunken-hover">
                 <span className="size-10 rounded-full shrink-0 overflow-hidden bg-surface flex items-center justify-center text-sm font-semibold text-ink-muted">
                   {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : getInitials(u.full_name)}
                 </span>
@@ -71,9 +71,7 @@ export function Hodimlar() {
                   <span className={`text-base font-medium truncate ${u.is_active ? "text-ink" : "text-ink-muted"}`}>{u.full_name}</span>
                   <span className="text-sm text-ink-muted truncate">{ROLE_LABELS[u.role]}{u.department ? ` · ${departmentLabel(u.department)}` : ""}</span>
                 </span>
-                {u.is_active
-                  ? <span className="size-2.5 rounded-full bg-success shrink-0" role="img" aria-label="Faol" />
-                  : <span className="h-6 px-2 rounded-full bg-surface text-xs font-medium text-ink-muted flex items-center shrink-0">Faol emas</span>}
+                {!u.is_active && <span className="h-6 px-2 rounded-full bg-surface text-xs font-medium text-ink-muted flex items-center shrink-0">Faol emas</span>}
                 <CaretRight size={16} className="text-ink-faint shrink-0" />
               </button>
             ))}

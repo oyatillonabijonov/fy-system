@@ -5,10 +5,11 @@ import type { SalesSeller } from "@/lib/supabase/queries/salesDashboard"
 import { useSellerTasks } from "@/hooks/useSalesDashboard"
 import { kindLabel } from "@/lib/supabase/queries/sotuv"
 import { tbl } from "@/components/ui/table"
-import { Pager, PAGE_SIZE, usePaged } from "@/components/ui/Pager"
+import { Pager, usePaged } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { useAuth } from "@/context/AuthContext"
 import { formatNumber } from "@/lib/format"
+import { shortMoney } from "@/components/sotuv/ui"
 import { Empty } from "./pieces"
 
 const pct = (v: number | null) => (v === null ? "—" : `${v}%`)
@@ -95,63 +96,54 @@ function SellerTasks({ id, from, to, pipelineId, inline = false }: { id: string;
   )
 }
 
-const STATS = (s: SalesSeller) => [
-  { label: "Yutildi", value: formatNumber(s.won) },
-  { label: "Yangi", value: formatNumber(s.new) },
-  { label: "Konversiya", value: pct(s.conversion) },
-]
-
-/** Phone version of the table: one card per seller (best first), three big stats; a tap opens the
- *  rest of the row's figures and, with the Sotuv module, the seller's tasks */
+/** Phone version of the table: one grouped list, best seller first. A row shows who, the sum, conversion,
+ *  won count and the overdue badge; a tap opens the rest of the row's figures and, with the Sotuv
+ *  module, the seller's tasks */
 export function SellerCards({ rows, from, to, pipelineId }: { rows: SalesSeller[]; from: string; to: string; pipelineId: string | null }) {
   const { hasAccess } = useAuth()
   const canOpen = hasAccess("sotuv-crmn")
   const [openId, setOpenId] = useState<string | null>(null)
   const ranked = [...rows].sort((a, b) => b.won - a.won || b.won_sum - a.won_sum)
   const { page, setPage, pageCount, pageItems } = usePaged(ranked)
-  if (rows.length === 0) return <Empty text="Davrda sotuvchi faoliyati yo'q" />
+  if (rows.length === 0) return <div className="bg-surface-sunken rounded-surface"><Empty text="Davrda sotuvchi faoliyati yo'q" /></div>
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {pageItems.map((s, n) => {
+      <div className="bg-surface-sunken rounded-surface overflow-hidden">
+        {pageItems.map((s) => {
           const open = openId === s.id
           const onTime = s.tasks_done ? Math.round((s.tasks_on_time / s.tasks_done) * 100) : null
           const more = [
+            { label: "Summa", value: `${formatNumber(s.won_sum)} so'm` },
+            { label: "Yangi", value: formatNumber(s.new) },
             { label: "Ochiq", value: formatNumber(s.open) },
             { label: "Yutqazildi", value: formatNumber(s.lost) },
             { label: "Yakunlangan vazifa", value: formatNumber(s.tasks_done) },
             { label: "O'z vaqtida", value: pct(onTime) },
-            { label: "Kechikkan", value: formatNumber(s.tasks_overdue_open), danger: s.tasks_overdue_open > 0 },
           ]
           return (
-            <div key={s.id} className="bg-surface-sunken rounded-surface self-start">
+            <div key={s.id} className="border-b border-line last:border-0">
               <button type="button" onClick={() => setOpenId(open ? null : s.id)} aria-expanded={open}
-                className="w-full text-left p-4 flex flex-col gap-3 rounded-surface active:bg-mute-ghost-hover">
-                <span className="flex items-center gap-3 min-w-0">
-                  <PersonDot name={s.full_name} url={s.avatar_url} size={40} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-base font-medium text-ink truncate">{s.full_name}</span>
-                    <span className="block text-sm text-ink-muted tabular-nums truncate">{formatNumber(s.won_sum)} so'm</span>
-                  </span>
-                  {s.tasks_overdue_open > 0 && <span className="shrink-0 h-6 px-2 inline-flex items-center rounded-full bg-danger-soft text-danger-dark text-xs font-medium tabular-nums">{s.tasks_overdue_open} kechikkan</span>}
-                  <span className="shrink-0 w-5 text-sm font-semibold text-ink-faint tabular-nums text-right">{(page * PAGE_SIZE) + n + 1}</span>
+                className="w-full min-h-16 px-4 py-3 flex items-center gap-3 text-left active:bg-surface-sunken-hover">
+                <PersonDot name={s.full_name} url={s.avatar_url} size={40} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-base font-medium text-ink truncate">{s.full_name}</span>
+                  <span className="block text-sm text-ink-muted tabular-nums truncate">{shortMoney(s.won_sum)} so'm · {pct(s.conversion)}</span>
                 </span>
-                <span className="grid grid-cols-3 gap-2">
-                  {STATS(s).map((t) => (
-                    <span key={t.label} className="rounded-control bg-surface px-3 py-2 flex flex-col min-w-0">
-                      <span className="text-xl font-semibold tabular-nums text-ink">{t.value}</span>
-                      <span className="text-xs text-ink-muted truncate">{t.label}</span>
-                    </span>
-                  ))}
+                <span className="shrink-0 flex flex-col items-end gap-0.5">
+                  <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{formatNumber(s.won)} <span className="text-sm font-normal text-ink-muted">yutildi</span></span>
+                  {s.tasks_overdue_open > 0
+                    ? <span className="h-5 px-2 inline-flex items-center rounded-full bg-danger-soft text-danger-dark text-xs font-medium tabular-nums whitespace-nowrap">{s.tasks_overdue_open} kechikkan</span>
+                    : <span className="h-5" />}
                 </span>
+                <CaretDown size={16} className={`shrink-0 text-ink-faint transition-transform ${open ? "rotate-180" : ""}`} />
               </button>
               {open && (
                 <div className="px-4 pb-4 flex flex-col gap-3">
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     {more.map((m) => (
-                      <div key={m.label} className="flex items-baseline justify-between gap-2 min-w-0">
+                      <div key={m.label} className={`flex items-baseline justify-between gap-2 min-w-0 ${m.label === "Summa" ? "col-span-2" : ""}`}>
                         <dt className="text-ink-muted truncate">{m.label}</dt>
-                        <dd className={`font-medium tabular-nums whitespace-nowrap ${m.danger ? "text-danger-text" : "text-ink"}`}>{m.value}</dd>
+                        <dd className="font-medium tabular-nums whitespace-nowrap text-ink">{m.value}</dd>
                       </div>
                     ))}
                   </dl>

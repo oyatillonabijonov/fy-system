@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { X, Trash, PaperPlaneRight, LinkSimple, FilePdf, FileImage, File as FileIcon, YoutubeLogo, Paperclip, Plus } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
@@ -73,7 +74,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
 
   const heading = `${t.event?.name ?? "Umumiy vazifalar"}${t.section ? ` › ${t.section}` : ""}`
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh] max-sm:items-end max-sm:p-0">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} {...(phone ? { exit: { opacity: 0 } } : {})} onClick={onClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div
@@ -99,8 +100,8 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
             </div>
 
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 pb-6 flex flex-col gap-5 [&>*]:shrink-0">
-              {/* Header card: the title, its state and when it is due */}
-              <section className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-3">
+              {/* The title, its state and when it is due */}
+              <section className="flex flex-col gap-3">
                 <textarea ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} onBlur={saveTitle}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur() } }}
                   rows={1} aria-label="Vazifa nomi"
@@ -173,6 +174,8 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
       </motion.div>
     </div>
   )
+  // below lg the dialog leaves <main>, whose tokens are re-pointed to the grouped ground (sheets keep the normal ones)
+  return mobile ? createPortal(dialog, document.body) : dialog
 }
 
 const fmtSize = (b: number | null) => (b == null ? "" : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
@@ -220,7 +223,7 @@ function Instructions({ taskId }: { taskId: string }) {
   return (
     <section className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <h4 className="text-sm font-medium max-lg:font-semibold text-ink-muted flex items-center gap-1.5 whitespace-nowrap"><Paperclip size={16} /> Yo'riqnoma{items.length ? ` · ${items.length}` : ""}</h4>
+        <h4 className="text-sm max-lg:text-base font-medium max-lg:font-semibold text-ink-muted max-lg:text-ink flex items-center gap-1.5 whitespace-nowrap"><Paperclip size={16} className="max-lg:hidden" /> Yo'riqnoma{items.length ? ` · ${items.length}` : ""}</h4>
         <div className="flex-1" />
         <button type="button" onClick={() => setLinking((v) => !v)} className="flex items-center gap-1 h-9 sm:h-7 px-3 sm:px-2.5 rounded-full text-sm font-medium whitespace-nowrap text-ink bg-mute-soft hover:bg-mute-soft-hover transition-colors">
           <Plus size={12} weight="bold" /> Havola
@@ -246,7 +249,7 @@ function Instructions({ taskId }: { taskId: string }) {
       {error && <p role="alert" className="text-sm font-medium text-danger-text">{error}</p>}
 
       {items.length === 0 && !linking ? (
-        <span className="text-sm text-ink-faint">Video, PDF yoki havola — yangi hodim shu vazifani qanday bajarishni bilishi uchun.</span>
+        <span className="text-sm text-ink-faint max-lg:text-ink-muted">Video, PDF yoki havola — yangi hodim shu vazifani qanday bajarishni bilishi uchun.</span>
       ) : (
         <div className="flex flex-col gap-1.5 max-h-48 max-lg:max-h-none overflow-y-auto">
           {items.map((a) => (
@@ -282,11 +285,11 @@ function Comments({ taskId, mobile }: { taskId: string; mobile?: boolean }) {
   }, [mobile, isLoading, comments.length])
   return (
     <section className={`flex flex-col gap-3 ${mobile ? "" : "pt-4 border-t border-line min-h-0 flex-1"}`}>
-      <h4 className={`text-sm font-medium text-ink-muted ${mobile ? "font-semibold" : ""}`}>Izohlar{comments.length ? ` · ${comments.length}` : ""}</h4>
+      <h4 className={mobile ? "text-base font-semibold text-ink" : "text-sm font-medium text-ink-muted"}>Izohlar{comments.length ? ` · ${comments.length}` : ""}</h4>
       {isLoading ? (
         <span className="text-sm text-ink-muted">Yuklanmoqda…</span>
       ) : comments.length === 0 ? (
-        <span className="text-sm text-ink-faint">Natija, kelishuv, raqamlarni shu yerga yozing.</span>
+        <span className={`text-sm ${mobile ? "text-ink-muted" : "text-ink-faint"}`}>Natija, kelishuv, raqamlarni shu yerga yozing.</span>
       ) : (
         <div className={`flex flex-col gap-3 ${mobile ? "" : "overflow-y-auto min-h-0 max-h-[28vh] pr-1"}`}>
           {comments.map((c) => (

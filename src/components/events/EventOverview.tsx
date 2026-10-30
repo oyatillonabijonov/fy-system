@@ -88,7 +88,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
   }
 
   const manage = (fn: () => void) => { setMenuOpen(false); fn() }
-  const menuRow = "w-full min-h-14 px-4 flex items-center gap-3 text-left text-base text-ink border-b border-line last:border-0 active:bg-mute-ghost-hover disabled:opacity-40"
+  const menuRow = "w-full min-h-14 px-4 flex items-center gap-3 text-left text-base text-ink border-b border-line last:border-0 active:bg-surface-sunken-hover disabled:opacity-40"
   const circle = "size-10 shrink-0 rounded-full bg-surface flex items-center justify-center"
 
   return (
@@ -114,7 +114,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-ink-muted px-1">Ishtirokchilar · {participants.length}</h3>
+          <h3 className="text-base font-semibold text-ink px-1">Ishtirokchilar · {participants.length}</h3>
           {isLoading ? (
             <div className="py-10 flex items-center justify-center"><ThinkingOrb state="searching" size={20} theme="light" /></div>
           ) : participants.length === 0 ? (
@@ -128,7 +128,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                 {paged.pageItems.map((p) => (
                   <div key={p.id} className="relative flex items-center border-b border-line last:border-0">
                     <button type="button" onClick={() => setRowFor(p)}
-                      className="flex-1 min-w-0 min-h-16 pl-4 py-3 flex items-center gap-3 text-left active:bg-mute-ghost-hover">
+                      className="flex-1 min-w-0 min-h-16 pl-4 py-3 flex items-center gap-3 text-left active:bg-surface-sunken-hover">
                       <span className="size-10 rounded-full overflow-hidden shrink-0 bg-surface flex items-center justify-center">
                         {p.photo_url
                           ? <img src={p.photo_url} alt="" className="w-full h-full object-cover object-top" />
@@ -140,7 +140,7 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
                       </span>
                     </button>
                     {p.phone
-                      ? <a href={`tel:${p.phone}`} aria-label={`${p.full_name}: ${formatPhone(p.phone)}`} className={`${circle} mx-3 text-ink`}><Phone size={18} /></a>
+                      ? <a href={`tel:${p.phone}`} aria-label={`${p.full_name}: ${formatPhone(p.phone)}`} className={`${circle} mx-3 text-ink active:opacity-80`}><Phone size={18} /></a>
                       : <span className="size-10 mx-3 shrink-0" />}
                   </div>
                 ))}

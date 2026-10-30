@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
 import { X } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
@@ -24,6 +25,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
   const titleId = useId()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const phone = useMedia("(width < 40rem)")
+  const mobile = useMedia("(width < 64rem)")
 
   const [title, setTitle] = useState("")
   const [eventId, setEventId] = useState<string | null>(defaults.event_id)
@@ -60,7 +62,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
     )
   }
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[12vh] max-sm:items-end max-sm:p-0">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} {...(phone ? { exit: { opacity: 0 } } : {})} onClick={guardedClose} className="absolute inset-0 bg-surface-overlay backdrop-blur-sm" />
       <motion.div
@@ -84,7 +86,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save() } }}
             placeholder="Nima qilish kerak? Masalan: Resort to'lovlarini qilish"
             aria-label="Vazifa nomi"
-            className="w-full resize-none bg-transparent text-xl font-medium text-ink placeholder:text-ink-faint focus:outline-none leading-snug"
+            className="w-full resize-none bg-transparent text-xl font-medium max-lg:font-semibold text-ink placeholder:text-ink-faint max-lg:placeholder:font-medium focus:outline-none leading-snug"
           />
           {phone ? (
             // One wrapping row of property chips; each opens its picker as a sheet
@@ -128,4 +130,6 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
       </motion.div>
     </div>
   )
+  // below lg the dialog leaves <main>, whose tokens are re-pointed to the grouped ground (sheets keep the normal ones)
+  return mobile ? createPortal(dialog, document.body) : dialog
 }

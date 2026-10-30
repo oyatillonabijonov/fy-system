@@ -30,6 +30,7 @@ import {
 } from "@phosphor-icons/react"
 import { useAuth } from "./context/AuthContext"
 import { useMedia } from "./hooks/useMedia"
+import { useMainScroll } from "./hooks/useMainScroll"
 
 
 interface PageMeta {
@@ -84,7 +85,7 @@ function PhoneStatus() {
   if (status === "off" || !ext) return null
   const [dot, text] = status === "ready" ? ["bg-success", "Tayyor"] : status === "connecting" ? ["bg-warning", "Ulanmoqda"] : ["bg-danger", "Aloqa yo'q"]
   return (
-    <span title={`Telefon: ichki raqam ${ext} · ${text}`} className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken text-sm text-ink-muted tabular-nums">
+    <span title={`Telefon: ichki raqam ${ext} · ${text}`} className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken max-lg:bg-card text-sm text-ink-muted tabular-nums">
       <Phone size={16} className="text-ink" /><span className="max-sm:hidden">{ext}</span><span className={`size-2 rounded-full ${dot}`} />
     </span>
   )
@@ -96,6 +97,7 @@ function AppShell() {
   const { user, hasAccess } = useAuth()
   const meta = pageMetaFor(location.pathname)
   const desktop = useMedia("(min-width: 1024px)")   // below lg the sidebar gives way to the bottom tab bar
+  const atTop = useMainScroll() === "top"            // phone header: the hairline shows only once the page scrolls
 
 
 
@@ -122,7 +124,7 @@ function AppShell() {
         )}
 
         {/* Header */}
-        <header className="box-content h-14 lg:h-16 pt-[env(safe-area-inset-top)] px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-6 flex-shrink-0 border-b border-line">
+        <header className={`box-content h-14 lg:h-16 pt-[env(safe-area-inset-top)] px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-6 flex-shrink-0 border-b border-line transition-colors ${atTop ? "max-lg:border-transparent" : ""}`}>
           {/* Left: page title */}
           <div className="flex flex-col min-w-0">
             <h1 className="text-lg lg:text-md font-semibold text-ink truncate">{desktop ? meta.title : meta.short ?? meta.title}</h1>

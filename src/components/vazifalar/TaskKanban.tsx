@@ -57,7 +57,7 @@ export function TaskKanban({
                             role="button"
                             onClick={() => onOpen(t)}
                             onKeyDown={(e) => { if (e.key === "Enter") onOpen(t) }}
-                            className={`bg-surface rounded-control border border-line p-3 flex flex-col gap-2.5 cursor-pointer ${dragSnap.isDragging ? "rotate-1" : ""}`}
+                            className={`bg-surface rounded-control border border-line max-lg:border-transparent p-3 flex flex-col gap-2.5 cursor-pointer max-lg:active:opacity-80 ${dragSnap.isDragging ? "rotate-1" : ""}`}
                           >
                             {t.section && (
                               <span className="flex items-center gap-2">

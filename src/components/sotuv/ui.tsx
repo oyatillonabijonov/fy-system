@@ -15,17 +15,25 @@ export function dueInfo(iso: string, today: string, now = Date.now()) {
   return { label: dueLabel(date, time, today), tone: late ? "danger" : date === today ? "warning" : "muted" } as const
 }
 
-const TONE = { danger: "bg-danger-soft text-danger-text", warning: "bg-warning-soft text-warning-text", muted: "bg-surface-sunken text-ink-muted" }
+const TONE = { danger: "bg-danger-soft text-danger-text", warning: "bg-warning-soft text-warning-text", muted: "bg-surface-sunken max-lg:bg-surface text-ink-muted" }
+const DUE_TEXT = { danger: "text-danger-text", warning: "text-warning-text", muted: "text-ink-muted" }
 
-/** `lg`: the touch size used on phones (h-8, 16px icon) */
-export function TaskChip({ kind, due, today, lg }: { kind: TaskKind; due: string; today: string; lg?: boolean }) {
+/** `lg`: the touch size used on phones (h-8, 16px icon). `onGrey`: the chip sits on a grey card (the Kanban's), so the
+ *  neutral tone stays white there instead of turning grey like on a white card */
+export function TaskChip({ kind, due, today, lg, onGrey }: { kind: TaskKind; due: string; today: string; lg?: boolean; onGrey?: boolean }) {
   const Icon = KIND_ICON[kind]
   const { label, tone } = dueInfo(due, today)
   return (
-    <span className={`inline-flex items-center rounded-full text-sm whitespace-nowrap ${lg ? "h-8 px-3 gap-1.5" : "h-6 px-2 gap-1"} ${TONE[tone]}`}>
+    <span className={`inline-flex items-center rounded-full text-sm whitespace-nowrap ${lg ? "h-8 px-3 gap-1.5" : "h-6 px-2 gap-1"} ${onGrey && tone === "muted" ? "bg-surface-sunken text-ink-muted" : TONE[tone]}`}>
       {lg ? <Icon size={16} /> : <Icon size={12} weight="bold" />}{label}
     </span>
   )
+}
+
+/** The due time as plain text, coloured by state (overdue red, today amber): the meta line of a phone task row */
+export function DueText({ due, today }: { due: string; today: string }) {
+  const { label, tone } = dueInfo(due, today)
+  return <span className={`whitespace-nowrap ${DUE_TEXT[tone]}`}>{label}</span>
 }
 
 export const NoTaskChip = ({ lg }: { lg?: boolean }) => (
@@ -78,6 +86,15 @@ export function Recording({ uuid, compact, auto }: { uuid: string; compact?: boo
   )
 }
 
+/** Phone list rows: a neutral 40px circle on the white card (the grey ground), the icon alone carries the colour */
+export const ROUND_BTN = "size-10 shrink-0 rounded-full flex items-center justify-center transition-opacity active:opacity-80 disabled:opacity-40"
+export const ROW_BTN = `${ROUND_BTN} bg-surface`
+
+/** The call button of a phone list row: neutral circle, green phone */
+export const RowCall = ({ phone }: { phone: string }) => (
+  <CallButton phone={phone} className={`${ROW_BTN} text-success`}><Phone size={20} /></CallButton>
+)
+
 /** Rings from the browser when this staff member's line is up; otherwise the device's own dialer.
  *  `className`/`wrap`/`children` restyle it (the phone's round action buttons); the defaults are the desktop's. */
 export function CallButton({ phone, className = "w-10 h-10 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40", wrap = "flex flex-col items-end gap-1", children }: {
@@ -100,23 +117,35 @@ export function CallButton({ phone, className = "w-10 h-10 shrink-0 rounded-full
   )
 }
 
-export type SotuvTab = "deals" | "tasks" | "calls"
-
-/** Phone: the three parts of Sotuv bo'limi as one segmented control (the sidebar's sub-items are behind "Yana") */
-export function SotuvSegments({ active, onPick }: { active: SotuvTab; onPick: (t: SotuvTab) => void }) {
+/** Phone segmented control (2–4 options): a `bg-fill` track on the ground, the active option a white `bg-card` pill */
+export function Segmented<T extends string | boolean>({ label, options, value, onChange }: {
+  label: string; options: readonly (readonly [T, string])[]; value: T; onChange: (v: T) => void
+}) {
   return (
-    <div role="radiogroup" aria-label="Sotuv bo'limi" className="grid grid-cols-3 p-1 rounded-full bg-surface-sunken">
-      {([["deals", "Bitimlar"], ["tasks", "Vazifalar"], ["calls", "Qo'ng'iroqlar"]] as const).map(([id, label]) => (
-        <button key={id} type="button" role="radio" aria-checked={active === id} onClick={() => onPick(id)}
-          className={`h-9 rounded-full text-sm font-medium transition-colors ${active === id ? "bg-surface text-ink" : "text-ink-muted"}`}>{label}</button>
+    <div role="radiogroup" aria-label={label} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} className="grid p-1 rounded-full bg-fill">
+      {options.map(([id, text]) => (
+        <button key={String(id)} type="button" role="radio" aria-checked={value === id} onClick={() => onChange(id)}
+          className={`h-9 rounded-full text-sm font-medium whitespace-nowrap transition-colors active:opacity-80 ${value === id ? "bg-card text-ink" : "text-ink-muted"}`}>{text}</button>
       ))}
     </div>
   )
 }
 
-const MONTHS = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"]
-/** "28-okt" from "2026-10-28" */
-export const shortDate = (day: string) => `${Number(day.slice(8))}-${MONTHS[Number(day.slice(5, 7)) - 1]}`
+/** Phone chip strip: a white chip on the ground, the active one black. Counts go in a `<ChipCount>` */
+export const chip = (on: boolean) =>
+  `shrink-0 h-9 px-3.5 rounded-full text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors active:opacity-80 ${on ? "bg-accent text-ink-on-accent" : "bg-card text-ink"}`
+export const ChipCount = ({ n }: { n: number }) => <span className="text-xs tabular-nums opacity-60">{n}</span>
+
+/** Phone section title: outside the card, above it */
+export const SECTION = "text-base font-semibold text-ink px-1 mb-2"
+
+export type SotuvTab = "deals" | "tasks" | "calls"
+
+/** Phone: the three parts of Sotuv bo'limi as one segmented control (the sidebar's sub-items are behind "Yana") */
+export const SotuvSegments = ({ active, onPick }: { active: SotuvTab; onPick: (t: SotuvTab) => void }) => (
+  <Segmented<SotuvTab> label="Sotuv bo'limi" value={active} onChange={onPick}
+    options={[["deals", "Bitimlar"], ["tasks", "Vazifalar"], ["calls", "Qo'ng'iroqlar"]]} />
+)
 
 /** Phone empty state: a thin 32px icon and one line */
 export const EmptyNote = ({ icon: Icon, text }: { icon: Icon; text: string }) => (

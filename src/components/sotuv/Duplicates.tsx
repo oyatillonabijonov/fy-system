@@ -76,7 +76,7 @@ function Group({ name, phone, leads }: { name: string; phone: string | null; lea
               <span className="block text-sm text-ink-muted truncate">{l.pipeline} › {l.stage}{l.responsible ? ` · ${l.responsible}` : ""} · {new Date(l.created_at).toLocaleDateString("ru-RU")}</span>
             </span>
             {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">{formatNumber(l.price)}</span>}
-            {keep === l.id && <span className="text-sm font-medium text-ink whitespace-nowrap">Qoladi</span>}
+            {keep === l.id && <span className="max-sm:hidden text-sm font-medium text-ink whitespace-nowrap">Qoladi</span>}
           </label>
         ))}
       </div>

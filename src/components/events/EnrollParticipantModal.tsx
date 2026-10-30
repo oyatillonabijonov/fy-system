@@ -27,7 +27,7 @@ function initials(name: string): string {
 }
 
 const INPUT =
-  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
+  "w-full border border-line rounded-control px-3 py-2 max-sm:h-12 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus"
 const LABEL = "text-sm font-medium text-ink-muted"
 
 function ClientAvatar({ c }: { c: PickedClient }) {
@@ -175,7 +175,7 @@ export function EnrollParticipantModal({ isOpen, eventId, existingContactIds, on
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <label htmlFor={clientSearchId} className={LABEL}>Mijoz *</label>
-                    <button onClick={startNew} className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors">
+                    <button onClick={startNew} className="flex items-center gap-1 text-xs max-sm:text-sm font-semibold text-ink-muted hover:text-ink transition-colors">
                       <Plus size={11} weight="bold" /> Yangi mijoz
                     </button>
                   </div>

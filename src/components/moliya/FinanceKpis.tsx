@@ -3,7 +3,9 @@ import { CaretDown, TrendUp, TrendDown, Scales, Wallet, Warning, ChartPie, Gift 
 import { useFinanceSummary } from "@/hooks/useFinance"
 import type { FinanceFilters } from "@/lib/supabase/queries/finance"
 import { formatMoney } from "@/lib/format"
-import { Money } from "@/components/moliya/mobile"
+import { useFinanceFilters } from "@/hooks/useFinanceFilters"
+import { PERIOD_LABELS } from "@/lib/period"
+import { Money, Progress } from "@/components/moliya/mobile"
 
 export function FinanceKpis({ filters }: { filters: FinanceFilters }) {
   const { data: s, isLoading } = useFinanceSummary(filters)
@@ -77,23 +79,27 @@ function Kpi({
 /** Phone: one hero number (the period's net cash flow), four small cards, the rest behind "Batafsil" */
 function MobileSummary({ filters }: { filters: FinanceFilters }) {
   const { data: s, isLoading } = useFinanceSummary(filters)
+  const { period } = useFinanceFilters()
   const [more, setMore] = useState(false)
   const rate = s && s.agreed > 0 ? Math.round((s.collected / s.agreed) * 100) : null
   // Expenses have no seller or method, so under those filters the hero is the income instead of a wrong net
   const noExpense = !!filters.seller || !!filters.method
-  const hero = noExpense ? { label: "Kirim", hint: "To'lovlar − qaytarishlar", value: s?.income ?? 0 } : { label: "Sof cashflow", hint: "Kirim − chiqim", value: s?.net ?? 0 }
-  const big = Math.abs(hero.value) >= 1_000_000_000
+  const hero = noExpense ? { label: "Kirim", value: s?.income ?? 0 } : { label: "Sof cashflow", value: s?.net ?? 0 }
+  const abs = Math.abs(hero.value)
+  const size = abs >= 1_000_000_000 ? "text-[28px]" : abs >= 100_000_000 ? "text-[34px]" : "text-[40px]"
 
   return (
     <div className="flex flex-col gap-2 lg:hidden">
-      <div className="rounded-surface bg-accent text-ink-on-accent p-5 flex flex-col gap-2">
-        <span className="text-sm font-medium opacity-70">{hero.label}</span>
+      <div className="rounded-surface bg-accent text-ink-on-accent p-5 flex flex-col gap-3">
+        <span className="flex items-baseline justify-between gap-3 text-sm font-medium">
+          <span className="opacity-70">{hero.label}</span>
+          <span className="opacity-50">{PERIOD_LABELS[period]}</span>
+        </span>
         {isLoading || !s ? (
-          <div className="h-9 w-48 rounded-item bg-ink-on-accent opacity-20 animate-pulse" />
+          <div className="h-10 w-48 rounded-item bg-ink-on-accent opacity-20 animate-pulse" />
         ) : (
-          <Money value={hero.value} className={`${big ? "text-[28px]" : "text-[34px]"} leading-none font-semibold`} />
+          <Money value={hero.value} className={`${size} leading-none font-semibold`} />
         )}
-        <span className="text-sm opacity-60">{hero.hint}</span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -103,47 +109,47 @@ function MobileSummary({ filters }: { filters: FinanceFilters }) {
         <div className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-1.5 min-w-0">
           <span className="text-sm text-ink-muted">Yig'ish</span>
           {isLoading ? (
-            <div className="animate-pulse bg-mute-soft rounded-item h-6 w-16" />
+            <div className="animate-pulse bg-surface rounded-item h-7 w-16" />
           ) : (
-            <span className="text-[18px] leading-6 font-semibold tabular-nums text-ink">{rate === null ? "—" : `${rate}%`}</span>
+            <span className="text-[18px] leading-7 font-semibold tabular-nums text-ink">{rate === null ? "—" : `${rate}%`}</span>
           )}
-          <span className="h-1.5 rounded-full bg-mute-soft overflow-hidden mt-0.5">
-            <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.min(rate ?? 0, 100)}%` }} />
-          </span>
+          <span className="mt-1.5"><Progress pct={Math.min(rate ?? 0, 100)} /></span>
         </div>
       </div>
-      {noExpense && <span className="text-xs text-ink-faint px-1">Chiqim sotuvchi/usul filtrida hisoblanmaydi</span>}
+      {noExpense && <span className="text-sm text-ink-muted px-1">Chiqim sotuvchi/usul filtrida hisoblanmaydi</span>}
 
       <button
         type="button"
         onClick={() => setMore((v) => !v)}
         aria-expanded={more}
-        className="self-start h-9 px-3 -ml-1 rounded-full text-sm font-medium text-ink-muted flex items-center gap-1.5 active:bg-mute-ghost-hover"
+        className="h-11 w-full rounded-full text-sm font-medium text-ink-muted flex items-center justify-center gap-1.5 active:opacity-80"
       >
         Batafsil <CaretDown size={12} weight="bold" className={`transition-transform ${more ? "rotate-180" : ""}`} />
       </button>
       {more && s && (
         <div className="rounded-surface bg-surface-sunken overflow-hidden">
-          <Line label="Muddati o'tgan qarz" danger={s.overdue_debt > 0}><Money value={s.overdue_debt} /></Line>
-          <Line label="Yig'ildi"><Money value={s.collected} /></Line>
-          <Line label="Kelishuv"><Money value={s.agreed} /></Line>
-          <Line label="Keshbek qoldig'i" hint="Barcha mijozlar, filtrsiz"><Money value={s.cashback_balance} /></Line>
+          <Line label="Muddati o'tgan qarz" danger={s.overdue_debt > 0}><Money value={s.overdue_debt} unitClassName={UNIT} /></Line>
+          <Line label="Yig'ildi"><Money value={s.collected} unitClassName={UNIT} /></Line>
+          <Line label="Kelishuv"><Money value={s.agreed} unitClassName={UNIT} /></Line>
+          <Line label="Keshbek qoldig'i" hint="Barcha mijozlar, filtrsiz"><Money value={s.cashback_balance} unitClassName={UNIT} /></Line>
         </div>
       )}
     </div>
   )
 }
 
+const UNIT = "text-xs font-medium text-ink-muted"
+
 function Card({ label, value, loading, danger, dash }: { label: string; value: number; loading: boolean; danger?: boolean; dash?: boolean }) {
   return (
     <div className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-1.5 min-w-0">
       <span className="text-sm text-ink-muted">{label}</span>
       {loading ? (
-        <div className="animate-pulse bg-mute-soft rounded-item h-6 w-24" />
+        <div className="animate-pulse bg-surface rounded-item h-7 w-24" />
       ) : dash ? (
-        <span className="text-[18px] leading-6 font-semibold text-ink-faint">—</span>
+        <span className="text-[18px] leading-7 font-semibold text-ink-muted">—</span>
       ) : (
-        <Money value={value} className={`text-[18px] leading-6 font-semibold ${danger ? "text-danger-text" : "text-ink"}`} />
+        <Money value={value} unitClassName={UNIT} className={`${Math.abs(value) >= 1_000_000_000 ? "text-[15px]" : "text-[18px]"} leading-7 font-semibold ${danger ? "text-danger-text" : "text-ink"}`} />
       )}
     </div>
   )
@@ -154,7 +160,7 @@ function Line({ label, hint, danger, children }: { label: string; hint?: string;
     <div className="min-h-12 px-4 py-2 flex items-center justify-between gap-3 border-b border-line last:border-b-0">
       <span className="flex flex-col">
         <span className="text-base text-ink-muted">{label}</span>
-        {hint && <span className="text-xs text-ink-faint">{hint}</span>}
+        {hint && <span className="text-sm text-ink-muted">{hint}</span>}
       </span>
       <span className={`text-base font-semibold ${danger ? "text-danger-text" : "text-ink"}`}>{children}</span>
     </div>

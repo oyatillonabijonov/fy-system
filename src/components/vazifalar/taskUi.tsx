@@ -144,16 +144,16 @@ export function StatusSelect({ value, onChange, label }: { value: TaskStatus; on
 
 const HOLD_MS = 450
 
-/** The status as a drawn circle: empty ring, half-filled, green check, red cross */
+/** The status as a drawn circle: empty ring, half-filled, soft green check, soft red cross */
 export function StatusGlyph({ status, size = 28 }: { status: TaskStatus; size?: number }) {
   return (
     <span aria-hidden className={`relative rounded-full flex items-center justify-center shrink-0 transition-colors ${
       status === "todo" ? "border-2 border-ink-faint"
       : status === "in_progress" ? "border-2 border-info"
-      : status === "done" ? "bg-success text-white"
-      : "bg-danger text-white"}`} style={{ width: size, height: size }}>
+      : status === "done" ? "bg-success-soft text-success-text"
+      : "bg-danger-soft text-danger-text"}`} style={{ width: size, height: size }}>
       {status === "in_progress" && <span className="absolute inset-[3px] rounded-full" style={{ background: "linear-gradient(90deg, var(--ds-color-info-default) 50%, transparent 50%)" }} />}
-      {status === "done" && <Check size={size * 0.57} weight="bold" />}
+      {status === "done" && <Check size={size * 0.5} weight="bold" />}
       {status === "failed" && <X size={size * 0.5} weight="bold" />}
     </span>
   )
