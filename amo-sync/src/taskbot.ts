@@ -30,7 +30,7 @@ const handle = (u: string | null | undefined) => (u ?? "").trim().replace(/^@/, 
 // ─── Telegram ────────────────────────────────────────────────────────────────
 
 interface TgUser { id: number; username?: string; first_name?: string }
-interface TgMessage { message_id: number; date: number; chat: { id: number }; from?: TgUser; text?: string; caption?: string; reply_to_message?: TgMessage }
+interface TgMessage { message_id: number; date: number; chat: { id: number }; from?: TgUser; text?: string; caption?: string; reply_to_message?: TgMessage; reply_markup?: { inline_keyboard: Button[][] } }
 interface TgCallback { id: string; from: TgUser; data?: string; message?: TgMessage }
 interface TgMemberUpdate { chat: { id: number; title?: string }; new_chat_member: { status: string } }
 interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate }
@@ -181,8 +181,43 @@ export function taskInput(text: string, replied: string | null): { text: string;
   return text ? { text, context: replied } : { text: replied?.trim() ?? "", context: null }
 }
 
+// "Bajardim" / "yakunlandi" / ✅ … — a question ("bajarildimi?") is not a report
+const DONE = /(^|[^\p{L}])(bajarildi|bajardim|bajarib bo'ldim|yakunlandi|yakunladim|tugadi|tugatdim|tayyor|qildim|done|готово|сделано|выполнено)([^\p{L}]|$)|✅/iu
+export const isDoneReply = (text: string): boolean => DONE.test(text) && !text.includes("?")
+
+/** The tasks a confirmation still carries — its "Bekor qilish" buttons hold their ids */
+export const taskIdsFrom = (markup: { inline_keyboard: Button[][] } | undefined): string[] =>
+  (markup?.inline_keyboard ?? []).flat().map((b) => b.callback_data).filter((d): d is string => !!d?.startsWith("u:")).map((d) => d.slice(2))
+
+/** Fallback when Telegram leaves the buttons off a replied message: a one-task confirmation's 2nd line is the title */
+export const titleFrom = (text: string | undefined): string | null => {
+  const lines = (text ?? "").split("\n")
+  return lines[0]?.includes("Vazifa qo'shildi") && lines[1]?.trim() ? lines[1].trim() : null
+}
+
+/** A "bajarildi" reply to our "Vazifa qo'shildi" message marks its task(s) done in the system */
+async function markDone(sql: Sql, msg: TgMessage, confirmationMsg: TgMessage): Promise<void> {
+  let ids = taskIdsFrom(confirmationMsg.reply_markup)
+  const title = ids.length ? null : titleFrom(confirmationMsg.text)
+  if (title) ids = (await sql<{ id: string }[]>`select id from tasks where title = ${title} and status <> 'done' order by created_at desc limit 1`).map((r) => r.id)
+  if (!ids.length) return   // not a task confirmation, or every task in it was cancelled
+  if (!(await chatsFor(sql, "task_bot")).includes(String(msg.chat.id))) return
+  const [who] = await sql<{ id: string }[]>`
+    select id from profiles where coalesce(is_active, true) and lower(ltrim(btrim(telegram), '@')) = ${handle(msg.from?.username)}`
+  if (!who) return void (await reply(msg, "Sizni tizimda topa olmadim. Sozlamalar → Profilim'da Telegram username'ingizni kiriting."))
+  const done = await sql<{ title: string }[]>`update tasks set status = 'done' where id in ${sql(ids)} and status <> 'done' returning title`
+  await reply(msg, done.length
+    ? `✅ <b>Bajarildi deb belgilandi</b>\n${done.map((t) => esc(t.title)).join("\n")}`
+    : "Bu vazifa tizimda allaqachon bajarilgan yoki o'chirilgan.")
+  console.log(`[taskbot] bajarildi: ${done.map((t) => t.title).join(", ")}`)
+}
+
 async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Promise<void> {
   const raw = (msg.text ?? msg.caption ?? "").trim()
+  const replied = msg.reply_to_message
+  if (replied?.from?.username?.toLowerCase() === botUsername.toLowerCase() && taskText(raw, botUsername) === null && isDoneReply(raw)) {
+    return markDone(sql, msg, replied)
+  }
   const asked = taskText(raw, botUsername)
   if (asked === null) return
   const { text, context } = taskInput(asked, msg.reply_to_message?.text ?? msg.reply_to_message?.caption ?? null)

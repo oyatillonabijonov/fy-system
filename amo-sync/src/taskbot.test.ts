@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { resolveTasks, confirmation, buildPrompt, taskText, taskInput } from "./taskbot"
+import { resolveTasks, confirmation, buildPrompt, taskText, taskInput, isDoneReply, taskIdsFrom, titleFrom } from "./taskbot"
 
 const staff = [
   { id: "s1", full_name: "Jahongir Qahramonov", telegram: "@Jahongir_Qahramonov", role: "xodim" },
@@ -88,4 +88,19 @@ test("a bare /task in reply to a message takes that message as the task; with te
   expect(taskInput("", "Montaj videoni ertagacha tayyorlash")).toEqual({ text: "Montaj videoni ertagacha tayyorlash", context: null })
   expect(taskInput("ertagacha", "Montaj video")).toEqual({ text: "ertagacha", context: "Montaj video" })
   expect(taskInput("", null)).toEqual({ text: "", context: null })
+})
+
+test("'bajarildi'-style replies are recognised; other replies aren't", () => {
+  for (const t of ["Vazifa yakunlandi", "bajardim", "Bajarildi ✅", "tayyor", "✅", "done", "Готово"]) expect(isDoneReply(t)).toBe(true)
+  for (const t of ["qachon bajariladi?", "ertaga qilaman", "rahmat", ""]) expect(isDoneReply(t)).toBe(false)
+})
+
+test("task ids come from the confirmation's undo buttons", () => {
+  expect(taskIdsFrom({ inline_keyboard: [[{ text: "↩️", callback_data: "u:t1" }], [{ text: "Vazifalarni ochish", url: "https://x" }]] })).toEqual(["t1"])
+  expect(taskIdsFrom(undefined)).toEqual([])
+})
+
+test("without buttons, a one-task confirmation still names its task", () => {
+  expect(titleFrom("✅ Vazifa qo'shildi\nTelegram botni guruhga sozlash\n👤 @x · 📅 6-noyabr")).toBe("Telegram botni guruhga sozlash")
+  expect(titleFrom("✅ 2 ta vazifa qo'shildi\n\n1. A")).toBeNull()
 })
