@@ -7,19 +7,20 @@ import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { useUsers } from "@/hooks/useUsers"
 import { useEvents } from "@/hooks/useEvents"
-import { useCreateTask, useEventSections } from "@/hooks/useTasks"
+import { useCreateTask, useEventSections, useTaskProjects } from "@/hooks/useTasks"
 import type { TaskStatus } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
-import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, type Owner } from "./pickers"
+import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, type Owner, type TaskHome } from "./pickers"
 
 /** Quick create: a big title line and property chips; Enter saves, "Yana qo'shish" keeps it open */
 export function TaskCreate({ defaults, nextSortOrder, onClose }: {
-  defaults: { event_id: string | null; section?: string | null; status?: TaskStatus; assignee_id?: string | null }
+  defaults: { event_id: string | null; project_id?: string | null; section?: string | null; status?: TaskStatus; assignee_id?: string | null }
   nextSortOrder: number
   onClose: () => void
 }) {
   const { data: users = [] } = useUsers()
   const { data: events = [] } = useEvents()
+  const { data: projects = [] } = useTaskProjects()
   const create = useCreateTask()
   const today = tashkentToday()
   const titleId = useId()
@@ -28,7 +29,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
   const mobile = useMedia("(width < 64rem)")
 
   const [title, setTitle] = useState("")
-  const [eventId, setEventId] = useState<string | null>(defaults.event_id)
+  const [home, setHome] = useState<TaskHome>({ event_id: defaults.event_id, project_id: defaults.project_id ?? null })
   const [section, setSection] = useState<string | null>(defaults.section ?? null)
   const [owner, setOwner] = useState<Owner>({ assignee_id: defaults.assignee_id ?? null, assignee_name: null })
   const [date, setDate] = useState<string | null>(null)
@@ -42,14 +43,14 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
   const guardedClose = () => !create.isPending && onClose()
   const panelRef = useDialog<HTMLDivElement>(guardedClose, true)
   const canSave = title.trim().length > 0 && !create.isPending
-  // bo'limlar of the chosen event (or Umumiy)
-  const sectionList = useEventSections(eventId)
+  // bo'limlar of the chosen event / project (or Umumiy)
+  const sectionList = useEventSections(home.event_id, home.project_id)
 
   function save() {
     if (!canSave) return
     setError(null)
     create.mutate(
-      { title: title.trim(), event_id: eventId, section, status, due_date: date, due_time: date ? time : null, ...owner, sort_order: sort.current++ },
+      { title: title.trim(), ...home, section, status, due_date: date, due_time: date ? time : null, ...owner, sort_order: sort.current++ },
       {
         onSuccess: () => {
           if (!more) return onClose()
@@ -94,7 +95,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
               <OwnerPicker value={owner} staff={users.filter((u) => u.is_active)} onChange={setOwner} />
               <DuePicker date={date} time={time} today={today} onChange={(d, t) => { setDate(d); setTime(t) }} />
               <StatusPicker value={status} onChange={setStatus} />
-              <EventPicker value={eventId} events={events} onChange={setEventId} />
+              <EventPicker value={home} events={events} projects={projects} onChange={setHome} />
               <SectionPicker value={section} sections={sectionList} onChange={setSection} />
             </div>
           ) : (
@@ -107,7 +108,7 @@ export function TaskCreate({ defaults, nextSortOrder, onClose }: {
               {/* Secondary: where it belongs and its state */}
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPicker value={status} onChange={setStatus} />
-                <EventPicker value={eventId} events={events} onChange={setEventId} />
+                <EventPicker value={home} events={events} projects={projects} onChange={setHome} />
                 <SectionPicker value={section} sections={sectionList} onChange={setSection} />
               </div>
             </>

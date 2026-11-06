@@ -16,7 +16,8 @@ export const TASK_STATUSES: { id: TaskStatus; label: string }[] = [
 
 export interface Task {
   id: string
-  event_id: string | null        // null = "Umumiy"
+  event_id: string | null        // event_id and project_id both null = "Umumiy"
+  project_id: string | null      // a standing project (085, Podcast …), never together with event_id
   section: string | null         // bo'lim
   title: string
   status: TaskStatus
@@ -30,6 +31,7 @@ export interface Task {
   completed_at: string | null
   assignee: { full_name: string; avatar_url: string | null } | null
   event: { name: string } | null
+  project: { name: string } | null
   comments_count: number
   attachments_count: number      // yo'riqnoma (071)
 }
@@ -42,33 +44,33 @@ export interface TaskComment {
   author: { full_name: string; avatar_url: string | null } | null
 }
 
-export type TaskDraft = Pick<Task, "event_id" | "section" | "title" | "status" | "assignee_id" | "assignee_name" | "due_date" | "due_time">
+export type TaskDraft = Pick<Task, "event_id" | "project_id" | "section" | "title" | "status" | "assignee_id" | "assignee_name" | "due_date" | "due_time">
 
 const SELECT =
-  "id, event_id, section, title, status, assignee_id, assignee_name, due_date, due_time, sort_order, created_by, created_at, completed_at, " +
-  "assignee:assignee_id(full_name, avatar_url), event:event_id(name), task_comments(count), task_attachments(count)"
+  "id, event_id, project_id, section, title, status, assignee_id, assignee_name, due_date, due_time, sort_order, created_by, created_at, completed_at, " +
+  "assignee:assignee_id(full_name, avatar_url), event:event_id(name), project:project_id(name), task_comments(count), task_attachments(count)"
 
 type TaskRow = Omit<Task, "comments_count" | "attachments_count"> & { task_comments: { count: number }[]; task_attachments: { count: number }[] }
 const toTask = ({ task_comments, task_attachments, ...r }: TaskRow): Task =>
   ({ ...r, comments_count: task_comments?.[0]?.count ?? 0, attachments_count: task_attachments?.[0]?.count ?? 0 })
 
-/** Tasks of one event, or the general ones (eventId null) */
-export async function getEventTasks(eventId: string | null): Promise<Task[]> {
+/** Tasks of one event, one project, or the general ones (both null) */
+export async function getEventTasks(eventId: string | null, projectId: string | null = null): Promise<Task[]> {
   let q = db.from("tasks").select(SELECT).order("sort_order").order("created_at")
-  q = eventId ? q.eq("event_id", eventId) : q.is("event_id", null)
+  q = eventId ? q.eq("event_id", eventId) : projectId ? q.eq("project_id", projectId) : q.is("event_id", null).is("project_id", null)
   const { data, error } = await q
   if (error) throw error
   return ((data ?? []) as unknown as TaskRow[]).map(toTask)
 }
 
-/** Task counts per event ("umumiy" = no event) for the filter tabs: total and still open */
+/** Task counts per event / project id ("umumiy" = neither) for the filter tabs: total and still open */
 export async function getTaskCounts(): Promise<Record<string, { total: number; open: number }>> {
   // ponytail: counts rows client-side; a SQL group-by once there are thousands of tasks
-  const { data, error } = await db.from("tasks").select("event_id, status")
+  const { data, error } = await db.from("tasks").select("event_id, project_id, status")
   if (error) throw error
   const out: Record<string, { total: number; open: number }> = {}
-  for (const r of (data ?? []) as { event_id: string | null; status: TaskStatus }[]) {
-    const c = (out[r.event_id ?? "umumiy"] ??= { total: 0, open: 0 })
+  for (const r of (data ?? []) as { event_id: string | null; project_id: string | null; status: TaskStatus }[]) {
+    const c = (out[r.event_id ?? r.project_id ?? "umumiy"] ??= { total: 0, open: 0 })
     c.total++
     if (r.status === "todo" || r.status === "in_progress") c.open++
   }
@@ -86,6 +88,28 @@ export async function getMyTasks(userId: string): Promise<Task[]> {
     .order("due_time", { ascending: true, nullsFirst: false })
   if (error) throw error
   return ((data ?? []) as unknown as TaskRow[]).map(toTask)
+}
+
+// ─── Loyihalar (085): standing projects beside events (Podcast …) ───────────
+
+export interface TaskProject { id: string; name: string }
+
+export async function getTaskProjects(): Promise<TaskProject[]> {
+  const { data, error } = await db.from("task_projects").select("id, name").order("name")
+  if (error) throw error
+  return (data ?? []) as TaskProject[]
+}
+
+export async function createTaskProject(name: string): Promise<TaskProject> {
+  const { data, error } = await db.from("task_projects").insert({ name: name.trim() }).select("id, name").single()
+  if (error) throw error.code === "23505" ? new Error("Bunday nomli loyiha bor") : error
+  return data as TaskProject
+}
+
+export async function deleteTaskProject(id: string): Promise<void> {
+  const { data, error } = await db.from("task_projects").delete().eq("id", id).select("id")
+  if (error) throw error
+  if (!data?.length) throw new Error("Loyihani faqat administrator o'chira oladi")
 }
 
 export async function createTask(draft: TaskDraft & { sort_order: number }): Promise<void> {

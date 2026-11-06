@@ -58,7 +58,8 @@ export interface Parsed {
   question?: string | null
 }
 interface Staff { id: string; full_name: string; telegram: string | null; role: string | null }
-interface EventCtx { id: string; name: string; start: string | null; end: string | null; sections: string[] | null }
+// A task's home the model can name: an event, or a project (085, Podcast …) — kind says which column it fills
+interface EventCtx { id: string; name: string; start: string | null; end: string | null; sections: string[] | null; kind?: "event" | "project" }
 
 const SCHEMA = {
   type: "OBJECT",
@@ -82,14 +83,14 @@ export function buildPrompt(text: string, context: string | null, author: string
   return `Sen "Fikr Yetakchilari" jamoasining Telegram guruhidagi vazifa yordamchisisan. Xabardan vazifa(lar)ni ajrat.
 Bugun: ${today} (${weekday}), hozir soat ${clock}, Toshkent vaqti. Xabar muallifi: ${author}.
 Hodimlar (ism — telegram): ${staff.map((s) => `${s.full_name} — ${s.telegram ?? "yo'q"}`).join("; ")}
-Tadbirlar: ${JSON.stringify(events.map((e) => ({ name: e.name, start: e.start, end: e.end, sections: e.sections ?? [] })))}
+Tadbirlar va loyihalar: ${JSON.stringify(events.map((e) => ({ name: e.name, start: e.start, end: e.end, sections: e.sections ?? [] })))}
 Barcha bo'limlar (vazifa turlari): ${JSON.stringify(sections)}
 Qoidalar:
 - title: qisqa, aniq, harakat shaklida (masalan "Resort to'lovlarini qilish"), o'zbek lotinida — kirillda yozilgan bo'lsa lotinga o'gir. Muddat va mas'ulni title'ga yozma.
 - assignee_username: mas'ul hodimlar ro'yxatida bo'lsa (xabardagi @username yoki ismi bo'yicha) — ro'yxatdagi username (@ bilan). Hodimning username'i "yo'q" bo'lsa yoki mas'ul tashqi odam bo'lsa — assignee_name ga to'liq ism. "Men"/"o'zim" — xabar muallifi. Mas'ul aytilmasa ikkalasi null.
 - due_date: YYYY-MM-DD. "bugun" = bugun, "ertaga/ertagacha" = +1 kun, "indinga/indingacha" = +2, hafta kuni = eng yaqin kelayotgan o'sha kun (bugun bo'lsa — bugun), "hafta oxirigacha" = yakshanba, "oy oxirigacha" = oyning oxirgi kuni, "3-oktabrgacha" = o'sha sana. Aytilmasa null.
 - due_time: aniq soat aytilsa "HH:MM" (24 soatlik: "soat 14:00 da" = "14:00", "ertalab 9 da" = "09:00", "kechki 7 da" = "19:00"), aytilmasa null. Soat aytilib kun aytilmasa — soat hali o'tmagan bo'lsa bugun, o'tgan bo'lsa ertaga (due_date ga yoz). Soatni title'ga yozma.
-- event: xabar tadbirlardan biriga taalluqli bo'lsa (tadbir yoki joy nomi, masalan resort nomi) — ro'yxatdagi aniq nom; aks holda null.
+- event: xabar tadbir yoki loyihalardan biriga taalluqli bo'lsa (tadbir yoki joy nomi, masalan resort nomi; loyiha nomi, masalan Podcast) — ro'yxatdagi aniq nom; aks holda null.
 - section (vazifa turi): har doim tanlashga harakat qil. Tadbir aniq va uning bo'limlari bo'lsa — o'sha bo'limlardan eng mosi; aks holda (tadbir null yoki bo'limi yo'q) — "Barcha bo'limlar"dan eng mosi. Faqat ro'yxatdagi aniq nom; hech biri mos kelmasa null (yangi nom o'ylab topma).
 - Bir nechta vazifa bo'lsa — har birini alohida (ko'pi bilan ${MAX_TASKS} ta).
 - Xabar vazifa bo'lmasa (salomlashish, savol, hazil) — tasks bo'sh, question'ga qisqa o'zbekcha izoh.
@@ -130,14 +131,15 @@ export interface Resolved { title: string; assignee_id: string | null; assignee_
 
 /** Maps the model's names onto real rows; anything unknown becomes plain text or null.
  *  A section must be a known one: the event's own when it has them, otherwise any known
- *  section (all tasks) — so an Umumiy task gets a type too; the name is kept canonical. */
-export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[], sections: string[] = []): Resolved[] {
+ *  section (all tasks) — so an Umumiy task gets a type too; the name is kept canonical.
+ *  `home`: the group's own project (085) — every task from that group goes there. */
+export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[], sections: string[] = [], home: EventCtx | null = null): Resolved[] {
   return parsed.tasks.slice(0, MAX_TASKS).filter((t) => t.title?.trim()).map((t) => {
     const byHandle = t.assignee_username ? staff.find((s) => handle(s.telegram) === handle(t.assignee_username)) : undefined
     const byName = !byHandle && t.assignee_name ? staff.find((s) => s.full_name.toLowerCase() === t.assignee_name!.trim().toLowerCase()) : undefined
     const person = byHandle ?? byName
     const outside = !person ? (t.assignee_name?.trim() || (t.assignee_username ? `@${handle(t.assignee_username)}` : null)) : null
-    const event = t.event ? events.find((e) => e.name === t.event) ?? null : null
+    const event = home ?? (t.event ? events.find((e) => e.name === t.event) ?? null : null)
     const allowed = event?.sections?.length ? event.sections : sections
     const section = t.section?.trim() ? allowed.find((s) => s.toLowerCase() === t.section!.trim().toLowerCase()) ?? null : null
     const due = t.due_date && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date) && !Number.isNaN(Date.parse(t.due_date)) ? t.due_date : null
@@ -173,10 +175,17 @@ export function taskText(raw: string, botUsername: string): string | null {
   return mention.test(raw) ? raw.replace(mention, "").trim() : null
 }
 
+/** A bare "/task" sent as a reply turns the replied message into the task; with its own text,
+ *  the replied message is only context for the model */
+export function taskInput(text: string, replied: string | null): { text: string; context: string | null } {
+  return text ? { text, context: replied } : { text: replied?.trim() ?? "", context: null }
+}
+
 async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Promise<void> {
   const raw = (msg.text ?? msg.caption ?? "").trim()
-  const text = taskText(raw, botUsername)
-  if (text === null) return
+  const asked = taskText(raw, botUsername)
+  if (asked === null) return
+  const { text, context } = taskInput(asked, msg.reply_to_message?.text ?? msg.reply_to_message?.caption ?? null)
   if (!GEMINI_KEY) return
   if (!(await chatsFor(sql, "task_bot")).includes(String(msg.chat.id))) {
     await reply(msg, "Bu guruhda vazifa qabul qilish o'chirilgan. Yoqish: tizimda Sozlamalar → Integratsiyalar.")
@@ -190,7 +199,7 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     return
   }
   if (!text) {
-    await reply(msg, `Vazifani yozing, masalan:\n<i>/vazifa@${botUsername} Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>`)
+    await reply(msg, `Vazifani yozing yoki vazifa yozilgan xabarga javob qilib /task deb yuboring, masalan:\n<i>/vazifa@${botUsername} Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>`)
     return
   }
 
@@ -203,20 +212,25 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     from events e
     where e.date is null or (coalesce(e.end_date, e.date) at time zone 'Asia/Tashkent')::date >= ${today}::date
     order by e.date nulls last`
+  const projects = await sql<EventCtx[]>`
+    select p.id, p.name, null as start, null as "end", 'project' as kind,
+           (select array_agg(distinct t.section) from tasks t where t.project_id = p.id and t.section is not null) as sections
+    from task_projects p order by p.name`
+  const [group] = await sql<{ project_id: string | null }[]>`select project_id from telegram_groups where chat_id = ${msg.chat.id}`
+  const home = projects.find((p) => p.id === group?.project_id) ?? null
   const [{ sections }] = await sql<{ sections: string[] }[]>`
     select coalesce(array_agg(distinct section order by section), '{}') as sections from tasks where section is not null`
-  const context = msg.reply_to_message?.text ?? msg.reply_to_message?.caption ?? null
 
   let parsed: Parsed
   try {
-    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, events, sections))
+    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, [...events, ...projects], sections))
   } catch (err) {
     console.error(`[taskbot] AI: ${err instanceof Error ? err.message : String(err)}`)
     await reply(msg, "⏳ AI hozir band, vazifani qo'sha olmadim. Bir daqiqadan so'ng qayta yuboring.")
     return
   }
 
-  const tasks = resolveTasks(parsed, staff, events, sections)
+  const tasks = resolveTasks(parsed, staff, [...events, ...projects], sections, home)
   if (!tasks.length) {
     await reply(msg, `🤔 ${esc(parsed.question || "Xabardan vazifani tushuna olmadim.")}\nVazifani aniqroq yozing: nima qilish kerak, kim va qachongacha.`)
     return
@@ -225,10 +239,12 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
   const ids: string[] = []
   await sql.begin(async (tx) => {
     for (const t of tasks) {
+      const ev = t.event && t.event.kind !== "project" ? t.event.id : null
+      const pr = t.event?.kind === "project" ? t.event.id : null
       const [row] = await tx<{ id: string }[]>`
-        insert into tasks (event_id, section, title, assignee_id, assignee_name, due_date, due_time, created_by, sort_order)
-        values (${t.event?.id ?? null}, ${t.section}, ${t.title}, ${t.assignee_id}, ${t.assignee_name}, ${t.due_date}, ${t.due_time}, ${author.id},
-                (select coalesce(max(sort_order), 0) + 1 from tasks where event_id is not distinct from ${t.event?.id ?? null}))
+        insert into tasks (event_id, project_id, section, title, assignee_id, assignee_name, due_date, due_time, created_by, sort_order)
+        values (${ev}, ${pr}, ${t.section}, ${t.title}, ${t.assignee_id}, ${t.assignee_name}, ${t.due_date}, ${t.due_time}, ${author.id},
+                (select coalesce(max(sort_order), 0) + 1 from tasks where event_id is not distinct from ${ev} and project_id is not distinct from ${pr}))
         returning id`
       ids.push(row.id)
     }

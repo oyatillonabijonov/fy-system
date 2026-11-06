@@ -12,10 +12,11 @@
 // AND time: 1 h before, at the time, then once a day at that time while overdue —
 // the owner @mentioned. task_reminders records each one so none repeats.
 // Each goes to the groups with its switch on (telegram_groups.task_digest /
-// .task_reminders, migration 070). Off until TELEGRAM_BOT_TOKEN is set.
+// .task_reminders, migration 070). A group tied to a project (085, e.g. Podcast)
+// hears only about that project's tasks; the others hear everything. Off until
+// TELEGRAM_BOT_TOKEN is set.
 
 import type { Sql } from "postgres"
-import { chatsFor } from "./groups"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
 const HOUR = Number(process.env.TASKS_DIGEST_HOUR ?? "9")
@@ -50,7 +51,7 @@ function tashkentNow(): { day: string; hour: number; minute: number } {
 const SOON_MIN = 60   // "muddatga oz qoldi" — this long before the due time
 
 export type ReminderKind = "soon" | "due" | "late"
-export interface ReminderRow { id: string; title: string; due: string; time: string; owner: string | null; telegram: string | null; event: string | null; section: string | null }
+export interface ReminderRow { id: string; title: string; due: string; time: string; owner: string | null; telegram: string | null; event: string | null; section: string | null; project_id?: string | null }
 
 /** Which reminder a task is due for right now (day + minute of day, Tashkent), with its once-only key */
 export function reminderFor(day: string, minute: number, due: string, time: string): { kind: ReminderKind; key: string } | null {
@@ -129,6 +130,20 @@ export function buildDigest(today: string, events: EventStat[], yesterday: DoneR
   return out
 }
 
+/** What a group should hear: its own project's rows, or everything (scope null) */
+export function forScope<T extends { project_id: string | null }>(rows: T[], scope: string | null): T[] {
+  return scope ? rows.filter((r) => r.project_id === scope) : rows
+}
+
+/** Groups with a switch on, bunched by the project they follow (null = everything) */
+async function groupsBy(sql: Sql, role: "task_digest" | "task_reminders"): Promise<Map<string | null, string[]>> {
+  const rows = await sql<{ chat_id: string; project_id: string | null }[]>`
+    select chat_id::text as chat_id, project_id from telegram_groups where ${sql(role)} = true`
+  const out = new Map<string | null, string[]>()
+  for (const r of rows) out.set(r.project_id, [...(out.get(r.project_id) ?? []), r.chat_id])
+  return out
+}
+
 async function send(chat: string, text: string): Promise<void> {
   const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
@@ -162,36 +177,41 @@ async function taskDigest(sql: Sql): Promise<void> {
     const [last] = await sql<{ value: string | null }[]>`select value from amo_sync_state where key = 'tasks_digest_date'`
     if (last?.value === day) return
 
-    // Events not over yet (or undated), plus the general tasks
-    const events = await sql<EventStat[]>`
-      select e.name, (e.date at time zone 'Asia/Tashkent')::date::text as start,
-             count(*) filter (where t.status = 'done')::int        as done,
-             count(*) filter (where t.status = 'in_progress')::int as in_progress,
-             count(*) filter (where t.status = 'todo')::int        as todo,
-             count(*) filter (where t.status = 'failed')::int      as failed
-      from tasks t left join events e on e.id = t.event_id
-      where e.id is null or e.date is null
-         or (coalesce(e.end_date, e.date) at time zone 'Asia/Tashkent')::date >= ${day}::date
-      group by e.id, e.name, e.date
-      order by e.date nulls last`
-    const yesterday = await sql<DoneRow[]>`
-      select t.title, coalesce(p.full_name, t.assignee_name) as owner, nullif(btrim(p.telegram), '') as telegram
-      from tasks t left join profiles p on p.id = t.assignee_id
-      where t.status = 'done' and (t.completed_at at time zone 'Asia/Tashkent')::date = ${day}::date - 1
-      order by t.completed_at`
-    const due = await sql<DueRow[]>`
-      select t.title, t.due_date::text as due, t.due_time::text as time, coalesce(p.full_name, t.assignee_name) as owner,
-             nullif(btrim(p.telegram), '') as telegram
-      from tasks t left join profiles p on p.id = t.assignee_id
-      where t.status in ('todo', 'in_progress') and t.due_date <= ${day}::date + 1
-      order by owner nulls last, t.due_date, t.due_time nulls last, t.sort_order`
-
-    // ponytail: a group that fails here misses that day's report (logged) — the others still get theirs
-    if (events.length) await sendAll(await chatsFor(sql, "task_digest"), buildDigest(day, events, yesterday, due))
+    let sent = 0
+    for (const [scope, chats] of await groupsBy(sql, "task_digest")) {
+      // Events not over yet (or undated), projects, and the general tasks — or just the group's project
+      const events = await sql<EventStat[]>`
+        select coalesce(e.name, pr.name) as name, (e.date at time zone 'Asia/Tashkent')::date::text as start,
+               count(*) filter (where t.status = 'done')::int        as done,
+               count(*) filter (where t.status = 'in_progress')::int as in_progress,
+               count(*) filter (where t.status = 'todo')::int        as todo,
+               count(*) filter (where t.status = 'failed')::int      as failed
+        from tasks t left join events e on e.id = t.event_id left join task_projects pr on pr.id = t.project_id
+        where (${scope}::uuid is null or t.project_id = ${scope}::uuid)
+          and (e.id is null or e.date is null
+               or (coalesce(e.end_date, e.date) at time zone 'Asia/Tashkent')::date >= ${day}::date)
+        group by e.id, e.name, e.date, pr.id, pr.name
+        order by e.date nulls last, pr.name nulls last`
+      const yesterday = await sql<DoneRow[]>`
+        select t.title, coalesce(p.full_name, t.assignee_name) as owner, nullif(btrim(p.telegram), '') as telegram
+        from tasks t left join profiles p on p.id = t.assignee_id
+        where t.status = 'done' and (t.completed_at at time zone 'Asia/Tashkent')::date = ${day}::date - 1
+          and (${scope}::uuid is null or t.project_id = ${scope}::uuid)
+        order by t.completed_at`
+      const due = await sql<DueRow[]>`
+        select t.title, t.due_date::text as due, t.due_time::text as time, coalesce(p.full_name, t.assignee_name) as owner,
+               nullif(btrim(p.telegram), '') as telegram
+        from tasks t left join profiles p on p.id = t.assignee_id
+        where t.status in ('todo', 'in_progress') and t.due_date <= ${day}::date + 1
+          and (${scope}::uuid is null or t.project_id = ${scope}::uuid)
+        order by owner nulls last, t.due_date, t.due_time nulls last, t.sort_order`
+      // ponytail: a group that fails here misses that day's report (logged) — the others still get theirs
+      if (events.length) sent += await sendAll(chats, buildDigest(day, events, yesterday, due))
+    }
 
     await sql`insert into amo_sync_state (key, value, updated_at) values ('tasks_digest_date', ${day}, now())
               on conflict (key) do update set value = excluded.value, updated_at = now()`
-    console.log(`[tasks] ${day}: hisobot — ${events.length} tadbir, kecha ${yesterday.length} bajarildi, e'tibor ${due.length}`)
+    console.log(`[tasks] ${day}: hisobot ${sent} ta guruhga yuborildi`)
   } catch (err) {
     console.error(`[tasks] hisobot: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
@@ -205,14 +225,15 @@ async function taskReminders(sql: Sql): Promise<void> {
   if (reminding) return
   reminding = true
   try {
-    const chats = await chatsFor(sql, "task_reminders")
-    if (!chats.length) return
+    const groups = await groupsBy(sql, "task_reminders")
+    if (!groups.size) return
     const { day, minute } = tashkentNow()
     const rows = await sql<ReminderRow[]>`
       select t.id, t.title, t.due_date::text as due, t.due_time::text as time,
              coalesce(p.full_name, t.assignee_name) as owner, nullif(btrim(p.telegram), '') as telegram,
-             e.name as event, t.section
+             coalesce(e.name, pr.name) as event, t.section, t.project_id
       from tasks t left join profiles p on p.id = t.assignee_id left join events e on e.id = t.event_id
+           left join task_projects pr on pr.id = t.project_id
       where t.status in ('todo', 'in_progress') and t.due_time is not null and t.due_date <= ${day}::date + 1
       order by t.due_date, t.due_time`
     const items: { row: ReminderRow; kind: ReminderKind; key: string }[] = []
@@ -225,7 +246,12 @@ async function taskReminders(sql: Sql): Promise<void> {
       if (won) items.push({ row, ...r })
     }
     if (!items.length) return
-    if (!(await sendAll(chats, [buildReminders(day, items)]))) {
+    let reached = 0
+    for (const [scope, chats] of groups) {
+      const mine = items.filter((i) => !scope || i.row.project_id === scope)
+      if (mine.length) reached += await sendAll(chats, [buildReminders(day, mine)])
+    }
+    if (!reached) {
       // reached no group — release the claims so the next minute retries
       for (const i of items) await sql`delete from task_reminders where task_id = ${i.row.id} and kind = ${i.kind} and key = ${i.key}`
       return

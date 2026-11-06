@@ -13,6 +13,7 @@ import { useTelegramGroups, useAddTelegramGroup, useUpdateTelegramGroup, useDele
 import { useUsers } from "@/hooks/useUsers"
 import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type LeadSource } from "@/lib/supabase/queries/integrations"
 import { confirmAction } from "@/lib/confirm"
+import { useTaskProjects } from "@/hooks/useTasks"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
@@ -378,6 +379,7 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
   const remove = useDeleteTelegramGroup()
   const [title, setTitle] = useState(g.title)
   const [note, setNote] = useState(g.note)
+  const { data: projects = [] } = useTaskProjects()
   const save = (patch: Partial<TelegramGroup>) => update.mutate({ chatId: g.chat_id, patch })
   const status = isGone(g) ? "Bot guruhdan chiqarilgan" : g.bot_status === "administrator" ? "Bot admin" : g.bot_status ? "Bot a'zo" : "Qo'lda qo'shilgan"
 
@@ -407,6 +409,15 @@ function GroupModal({ group: g, onClose }: { group: TelegramGroup; onClose: () =
           onBlur={() => note.trim() !== g.note && save({ note: note.trim() })}
           placeholder="Masalan: Moliya jamoasi — faqat to'lovlar va xarajatlar"
           className="w-full resize-none border border-line rounded-control px-3 py-2 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors" />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-ink-muted">Loyiha — bot bu guruhdagi vazifalarni shu loyihaga qo'shadi, hisobot va eslatmalar ham faqat shu loyiha bo'yicha</span>
+        <select value={g.project_id ?? ""} onChange={(e) => save({ project_id: e.target.value || null })}
+          className="w-full h-control-md border border-line rounded-control px-3 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent focus:outline-none focus:border-line-focus transition-colors">
+          <option value="">Loyihasiz — hamma tadbir va loyihalar</option>
+          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
       </label>
 
       <div className="flex flex-col rounded-surface bg-surface-sunken">

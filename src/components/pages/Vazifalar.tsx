@@ -1,12 +1,13 @@
 import { useId, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
-import { Plus, Copy, Rows, Kanban, CheckCircle, CaretDown, CalendarBlank, Tray } from "@phosphor-icons/react"
+import { Plus, Copy, Rows, Kanban, CheckCircle, CaretDown, CalendarBlank, Tray, FolderSimple, Trash } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useMedia } from "@/hooks/useMedia"
 import { Fab } from "@/components/ui/Fab"
 import { useEvents } from "@/hooks/useEvents"
-import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks, useTaskCounts } from "@/hooks/useTasks"
+import { useEventTasks, useMyTasks, useUpdateTask, useCopyEventTasks, useTaskCounts, useTaskProjects, useCreateTaskProject, useDeleteTaskProject } from "@/hooks/useTasks"
+import { confirmAction } from "@/lib/confirm"
 import type { Task, TaskStatus } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
 import { TaskCreate } from "@/components/vazifalar/TaskCreate"
@@ -33,7 +34,7 @@ export function Vazifalar() {
     <div className={mobile ? "flex flex-col gap-4 pb-[88px]" : "flex flex-col gap-5 pb-10"}>
       {mobile ? <MobileTabs tab={tab} setTab={setTab} /> : (
         <div role="tablist" aria-label="Vazifalar" className="inline-flex self-start gap-1 p-1 rounded-control bg-surface-sunken">
-          {([["event", "Tadbirlar bo'yicha"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (
+          {([["event", "Tadbir va loyihalar"], ["mine", "Mening vazifalarim"]] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`h-8 px-3 sm:px-4 rounded-item text-base font-medium whitespace-nowrap transition-colors ${tab === id ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
               {label}
@@ -59,8 +60,14 @@ function EventTasks() {
     const dated = events.filter((e) => e.date).sort((a, b) => a.date!.localeCompare(b.date!))
     return (dated.find((e) => (e.end_date ?? e.date)!.slice(0, 10) >= today) ?? dated[dated.length - 1])?.id ?? GENERAL
   }, [events, today])
+  const { user } = useAuth()
+  const { data: projects = [] } = useTaskProjects()
+  const deleteProject = useDeleteTaskProject()
+  const [naming, setNaming] = useState(false)
   const selected = params.get("event") ?? fallback
-  const eventId = selected === GENERAL ? null : selected
+  // The tab is an event, a project (085) or Umumiy — one id space, so old ?event= links keep working
+  const projectId = projects.some((p) => p.id === selected) ? selected : null
+  const eventId = selected === GENERAL || projectId ? null : selected
   const setEvent = (id: string) => setParams((p) => { p.set("event", id); return p }, { replace: true })
 
   const [view, setViewState] = useState<"list" | "kanban">(() => {
@@ -71,7 +78,7 @@ function EventTasks() {
   const [editing, setEditing] = useState<Editing>(null)
   const [copying, setCopying] = useState(false)
 
-  const { data: tasks = [], isLoading } = useEventTasks(eventId)
+  const { data: tasks = [], isLoading } = useEventTasks(eventId, projectId)
   const { data: counts = {} } = useTaskCounts()
   // Upcoming events first (soonest first), then past ones (latest first)
   const isPast = (e: { date: string | null; end_date: string | null }) => !!e.date && (e.end_date ?? e.date).slice(0, 10) < today
@@ -100,7 +107,7 @@ function EventTasks() {
         <TaskPanel key={editing.task.id} task={editing.task} onClose={() => setEditing(null)} />
       ) : (
         <TaskCreate key="new"
-          defaults={{ event_id: eventId, section: editing.section, status: editing.status }}
+          defaults={{ event_id: eventId, project_id: projectId, section: editing.section, status: editing.status }}
           nextSortOrder={nextSort}
           onClose={() => setEditing(null)}
         />
@@ -112,7 +119,7 @@ function EventTasks() {
     return (
       <>
         <MobileEvent
-          events={ordered} selected={selected} onSelect={setEvent} counts={counts} isPast={isPast} today={today} generalId={GENERAL}
+          events={ordered} projects={projects} selected={selected} onSelect={setEvent} counts={counts} isPast={isPast} today={today} generalId={GENERAL}
           eventId={eventId} tasks={tasks} shown={shown} sections={sections} owners={owners} ownerFilter={ownerFilter} onOwnerFilter={setOwnerFilter}
           isLoading={isLoading} view={view} onView={setView}
           onOpen={(t) => setEditing({ task: t })} onAdd={(d) => setEditing({ task: null, ...d })} onCopy={() => setCopying(true)}
@@ -132,6 +139,14 @@ function EventTasks() {
           <ScopeTab key={e.id} active={selected === e.id} onClick={() => setEvent(e.id)} label={e.name}
             hint={e.date ? shortDate(e.date) : null} count={counts[e.id]?.open} past={isPast(e)} />
         ))}
+        <span className="w-px h-6 bg-line mx-1.5 shrink-0" />
+        {projects.map((p) => (
+          <ScopeTab key={p.id} active={selected === p.id} onClick={() => setEvent(p.id)} label={p.name} folder count={counts[p.id]?.open} />
+        ))}
+        <button type="button" onClick={() => setNaming(true)} aria-label="Yangi loyiha" title="Yangi loyiha"
+          className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-base font-medium text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors">
+          <Plus size={16} />Loyiha
+        </button>
         <span className="w-px h-6 bg-line mx-1.5 shrink-0" />
         <ScopeTab active={selected === GENERAL} onClick={() => setEvent(GENERAL)} label="Umumiy" icon count={counts[GENERAL]?.open} />
       </div>
@@ -171,6 +186,17 @@ function EventTasks() {
             </button>
           ))}
         </div>
+        {projectId && user?.role === "admin" && (
+          <button type="button" disabled={deleteProject.isPending}
+            onClick={async () => {
+              const name = projects.find((p) => p.id === projectId)?.name ?? ""
+              if (await confirmAction({ title: "Loyihani o'chirish", message: `"${name}" loyihasi o'chirilsinmi? Uning vazifalari "Umumiy"ga o'tadi.` }))
+                deleteProject.mutate(projectId, { onSuccess: () => setEvent(GENERAL) })
+            }}
+            className="h-control-md px-3 flex items-center gap-1.5 rounded-full text-base font-medium whitespace-nowrap text-danger-text hover:bg-danger-soft transition-colors">
+            <Trash size={16} />Loyihani o'chirish
+          </button>
+        )}
         {eventId && (
           <button onClick={() => setCopying(true)} className="h-control-md px-3 flex items-center gap-1.5 rounded-full text-base font-medium whitespace-nowrap text-ink hover:bg-mute-ghost-hover transition-colors">
             <Copy size={16} />Nusxa olish
@@ -184,7 +210,7 @@ function EventTasks() {
       {isLoading ? (
         <Empty text="Yuklanmoqda…" />
       ) : tasks.length === 0 ? (
-        <Empty text={eventId ? "Bu tadbirda hali vazifa yo'q. Yangi qo'shing yoki oldingi tadbirdan nusxa oling." : "Umumiy vazifalar yo'q"} />
+        <Empty text={eventId ? "Bu tadbirda hali vazifa yo'q. Yangi qo'shing yoki oldingi tadbirdan nusxa oling." : projectId ? "Bu loyihada hali vazifa yo'q. Yangisini qo'shing yoki Telegram guruhidan bot orqali bering." : "Umumiy vazifalar yo'q"} />
       ) : view === "kanban" ? (
         <TaskKanban tasks={shown} sections={sections} today={today} onOpen={(t) => setEditing({ task: t })} onAdd={(status) => setEditing({ task: null, status })} />
       ) : (
@@ -193,6 +219,7 @@ function EventTasks() {
 
       {dialogs}
       {copying && eventId && <CopyModal toEventId={eventId} onClose={() => setCopying(false)} />}
+      {naming && <NewProject onClose={() => setNaming(false)} onCreated={(id) => { setNaming(false); setEvent(id) }} />}
     </div>
   )
 }
@@ -363,15 +390,15 @@ function addDays(day: string, n: number): string {
 const MONTHS_SHORT = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"]
 const shortDate = (iso: string) => `${Number(iso.slice(8, 10))}-${MONTHS_SHORT[Number(iso.slice(5, 7)) - 1]}`
 
-function ScopeTab({ active, onClick, label, hint, count, icon, past }: {
-  active: boolean; onClick: () => void; label: string; hint?: string | null; count?: number; icon?: boolean; past?: boolean
+function ScopeTab({ active, onClick, label, hint, count, icon, folder, past }: {
+  active: boolean; onClick: () => void; label: string; hint?: string | null; count?: number; icon?: boolean; folder?: boolean; past?: boolean
 }) {
   return (
     <button type="button" role="tab" aria-selected={active} onClick={onClick}
       className={`shrink-0 inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-full text-base font-medium transition-colors ${
         active ? "bg-accent text-ink-on-accent" : past ? "text-ink-faint hover:text-ink hover:bg-mute-ghost-hover" : "text-ink-muted hover:text-ink hover:bg-mute-ghost-hover"
       }`}>
-      {icon ? <Tray size={16} /> : <CalendarBlank size={16} />}
+      {icon ? <Tray size={16} /> : folder ? <FolderSimple size={16} /> : <CalendarBlank size={16} />}
       <span className="max-w-[220px] truncate">{label}</span>
       {hint && <span className={active ? "opacity-70" : "text-ink-faint"}>{hint}</span>}
       <span className={`min-w-6 h-6 px-1.5 rounded-full text-sm tabular-nums inline-flex items-center justify-center ${active ? "bg-ink-on-accent/20" : "bg-surface-sunken"}`}>{count ?? 0}</span>
@@ -381,4 +408,23 @@ function ScopeTab({ active, onClick, label, hint, count, icon, past }: {
 
 function Empty({ text }: { text: string }) {
   return <div className="bg-surface-sunken rounded-surface py-12 px-6 text-center text-base text-ink-muted">{text}</div>
+}
+
+/** A standing project beside the events (085): Podcast, … — opens as soon as it's created */
+function NewProject({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
+  const create = useCreateTaskProject()
+  const [name, setName] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const id = useId()
+  const submit = () => { if (name.trim()) create.mutate(name, { onSuccess: (p) => onCreated((p as { id: string }).id), onError: (e) => setError(e.message) }) }
+  return (
+    <ModalShell title="Yangi loyiha" error={error} submitLabel="Yaratish" canSubmit={!!name.trim()} pending={create.isPending} onSubmit={submit} onClose={onClose}>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={id} className={LABEL}>Loyiha nomi</label>
+        <input id={id} autoFocus value={name} maxLength={60} onChange={(e) => { setName(e.target.value); setError(null) }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit() } }}
+          placeholder="Masalan: Podcast" className={INPUT} />
+      </div>
+    </ModalShell>
+  )
 }
