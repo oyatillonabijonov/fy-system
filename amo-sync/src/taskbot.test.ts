@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { resolveTasks, confirmation, buildPrompt, taskText } from "./taskbot"
+import { resolveTasks, confirmation, buildPrompt, taskText, taskInput } from "./taskbot"
 
 const staff = [
   { id: "s1", full_name: "Jahongir Qahramonov", telegram: "@Jahongir_Qahramonov", role: "xodim" },
@@ -67,4 +67,25 @@ test("vazifa turi: an Umumiy task gets a known section; unknown names dropped; e
   expect(r[1].section).toBeNull()
   expect(r[2].section).toBeNull()   // the event has its own sections (Resort) — Spikerlar isn't one
   expect(confirmation([r[0]])).toContain("📌 Umumiy › Marketing")
+})
+
+const podcast = { id: "p1", name: "Podcast", start: null, end: null, sections: ["Montaj"], kind: "project" as const }
+
+test("a project named in the message is found like an event (085)", () => {
+  const r = resolveTasks({ tasks: [{ title: "Mehmonni chaqirish", event: "Podcast", section: "montaj" }] }, staff, [...events, podcast])
+  expect(r[0].event).toMatchObject({ id: "p1", kind: "project" })
+  expect(r[0].section).toBe("Montaj")
+})
+
+test("a group tied to a project files every task there, whatever the model guessed (085)", () => {
+  const r = resolveTasks({ tasks: [{ title: "Resort narxi", event: "Tog' safari 7.0 | Amirsoy", section: "Montaj" }] }, staff, [...events, podcast], ["Resort"], podcast)
+  expect(r[0].event?.id).toBe("p1")
+  expect(r[0].section).toBe("Montaj")
+  expect(confirmation(r)).toContain("📌 Podcast › Montaj")
+})
+
+test("a bare /task in reply to a message takes that message as the task; with text, the reply is context", () => {
+  expect(taskInput("", "Montaj videoni ertagacha tayyorlash")).toEqual({ text: "Montaj videoni ertagacha tayyorlash", context: null })
+  expect(taskInput("ertagacha", "Montaj video")).toEqual({ text: "ertagacha", context: "Montaj video" })
+  expect(taskInput("", null)).toEqual({ text: "", context: null })
 })

@@ -13,7 +13,7 @@ const TOUCHES: Record<string, string[] | "all"> = {
   clients: ["clients", "client-journey", "client-participations", "client-event-history", "client-cashback", "clients-last-event-dates", "participants", "sotuv", "finance", "sales-dashboard"],
   crm_leads: ["sotuv", "sales-dashboard"], crm_stages: ["sotuv", "sales-dashboard"], crm_calls: ["sotuv", "sales-dashboard"],
   crm_tasks: ["sotuv", "sales-dashboard"], crm_notes: ["sotuv", "sales-dashboard"],
-  tasks: ["tasks"], task_comments: ["tasks"], task_attachments: ["tasks"],
+  tasks: ["tasks"], task_comments: ["tasks"], task_attachments: ["tasks"], task_projects: ["tasks"],
   events: ["events", "event-participant-counts", "tasks", "finance"], event_tariffs: ["event-tariffs"],
   event_participants: ["participants", "event-participant-counts", "finance", "clients", "client-journey", "client-participations", "client-event-history"],
   payments: ["finance", "participants", "recent-payments", "event-payments", "client-participations", "client-journey"],

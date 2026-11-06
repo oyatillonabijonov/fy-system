@@ -20,6 +20,7 @@ export type TelegramGroup = {
   title: string
   note: string
   bot_status: string | null
+  project_id: string | null   // 085: the bot files this group's tasks in that project; its reports cover only it
   created_at: string
 } & Record<GroupRole, boolean>
 

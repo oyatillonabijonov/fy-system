@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { buildDigest, buildReminders, reminderFor } from "./tasks"
+import { buildDigest, buildReminders, reminderFor, forScope } from "./tasks"
 
 const ev = { name: "Tog' safari 7.0 | Amirsoy", start: "2026-10-23", done: 23, in_progress: 13, todo: 17, failed: 2 }
 
@@ -56,4 +56,10 @@ test("reminder message: heading per kind, owner mentioned, event › section", (
   expect(msg).toBe(
     "🔴 <b>Muddati o'tgan</b>\n<blockquote>@jahongir\nResort &lt;to'lov&gt; · 28-sentyabr 14:00 · 2 kun kechikdi\nTog' safari 7.0 › Resort</blockquote>" +
     "\n⏰ <b>Muddatga oz qoldi</b>\n<blockquote><b>Hikmat aka</b>\nVideo meet · bugun 15:00</blockquote>")
+})
+
+test("a group tied to a project only hears about that project; other groups hear everything (083)", () => {
+  const rows = [{ id: "a", project_id: null }, { id: "b", project_id: "p1" }, { id: "c", project_id: "p2" }]
+  expect(forScope(rows, "p1").map((r) => r.id)).toEqual(["b"])
+  expect(forScope(rows, null).map((r) => r.id)).toEqual(["a", "b", "c"])
 })

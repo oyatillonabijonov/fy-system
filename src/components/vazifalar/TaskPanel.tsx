@@ -8,11 +8,11 @@ import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
 import { useUsers } from "@/hooks/useUsers"
 import { useEvents } from "@/hooks/useEvents"
 import { useAuth } from "@/context/AuthContext"
-import { useEventSections, useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment, useTaskAttachments, useAddTaskLink, useAddTaskFile, useDeleteTaskAttachment } from "@/hooks/useTasks"
+import { useEventSections, useTaskProjects, useUpdateTask, useDeleteTask, useTaskComments, useAddTaskComment, useTaskAttachments, useAddTaskLink, useAddTaskFile, useDeleteTaskAttachment } from "@/hooks/useTasks"
 import { ATTACH_ACCEPT, taskFileUrl, type TaskAttachment } from "@/lib/supabase/queries/tasks"
 import type { Task, TaskDraft } from "@/lib/supabase/queries/tasks"
 import { tashkentToday } from "@/lib/period"
-import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, PersonDot, type Owner } from "./pickers"
+import { EventPicker, SectionPicker, OwnerPicker, DuePicker, StatusPicker, PersonDot, type Owner, type TaskHome } from "./pickers"
 import { confirmAction } from "@/lib/confirm"
 
 /** An existing task in a centred modal: every change saves at once; comments below */
@@ -20,6 +20,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
   const { user } = useAuth()
   const { data: users = [] } = useUsers()
   const { data: events = [] } = useEvents()
+  const { data: projects = [] } = useTaskProjects()
   const update = useUpdateTask()
   const remove = useDeleteTask()
   const today = tashkentToday()
@@ -31,7 +32,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
   // Local copy so the panel reflects edits at once (the list refetches behind it)
   const [t, setT] = useState(task)
   // bo'limlar of wherever the task sits now — follows a move to another event
-  const sections = useEventSections(t.event_id)
+  const sections = useEventSections(t.event_id, t.project_id)
   const [title, setTitle] = useState(task.title)
   const [error, setError] = useState<string | null>(null)
   const canDelete = task.created_by === user?.id || user?.role === "admin"
@@ -52,10 +53,13 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
   }
 
   const changeOwner = (o: Owner) => { save(o); setT((c) => ({ ...c, assignee: o.assignee_id ? { full_name: users.find((u) => u.id === o.assignee_id)?.full_name ?? "", avatar_url: null } : null })) }
-  const changeEvent = (id: string | null) => {   // the bo'lim (vazifa turi) moves with the task
-    save({ event_id: id })
-    setT((c) => ({ ...c, event: id ? { name: events.find((e) => e.id === id)?.name ?? "" } : null }))
+  const changeHome = (h: TaskHome) => {   // the bo'lim (vazifa turi) moves with the task
+    save(h)
+    setT((c) => ({ ...c,
+      event: h.event_id ? { name: events.find((e) => e.id === h.event_id)?.name ?? "" } : null,
+      project: h.project_id ? { name: projects.find((p) => p.id === h.project_id)?.name ?? "" } : null }))
   }
+  const home: TaskHome = { event_id: t.event_id, project_id: t.project_id }
   const owner: Owner = { assignee_id: t.assignee_id, assignee_name: t.assignee_name }
   const staff = users.filter((u) => u.is_active)
   const time = t.due_time?.slice(0, 5) ?? null
@@ -72,7 +76,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
   }, [title, mobile])
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const heading = `${t.event?.name ?? "Umumiy vazifalar"}${t.section ? ` › ${t.section}` : ""}`
+  const heading = `${t.event?.name ?? t.project?.name ?? "Umumiy vazifalar"}${t.section ? ` › ${t.section}` : ""}`
 
   const dialog = (
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:pt-[8vh] max-sm:items-end max-sm:p-0">
@@ -115,7 +119,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
               {error && <div role="alert" className="px-3 py-2 rounded-control text-sm font-medium bg-danger-soft text-danger-dark">{error}</div>}
 
               <div className="rounded-surface bg-surface-sunken overflow-hidden divide-y divide-line">
-                <EventPicker row value={t.event_id} events={events} onChange={changeEvent} />
+                <EventPicker row value={home} events={events} projects={projects} onChange={changeHome} />
                 <SectionPicker row value={t.section} sections={sections} onChange={(section) => save({ section })} />
                 <OwnerPicker row value={owner} staff={staff} onChange={changeOwner} />
                 <DuePicker row part="date" date={t.due_date} time={time} today={today} open={isOpen} onChange={setDue} />
@@ -133,7 +137,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
         ) : (
           <>
             <div className="flex items-center justify-between px-5 h-14 border-b border-line shrink-0">
-              <span id={headingId} className="text-xs font-medium uppercase tracking-wide text-ink-faint truncate">{t.event?.name ?? "Umumiy vazifalar"}{t.section ? ` › ${t.section}` : ""}</span>
+              <span id={headingId} className="text-xs font-medium uppercase tracking-wide text-ink-faint truncate">{t.event?.name ?? t.project?.name ?? "Umumiy vazifalar"}{t.section ? ` › ${t.section}` : ""}</span>
               <span className="flex items-center gap-1">
                 {canDelete && (
                   <button onClick={del} aria-label="O'chirish" title="O'chirish" className="p-2 sm:p-1.5 rounded-item text-ink-muted hover:text-danger-text hover:bg-danger-soft transition-colors">
@@ -162,7 +166,7 @@ export function TaskPanel({ task, onClose }: { task: Task; onClose: () => void }
               {/* Secondary: state and where it belongs */}
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPicker value={t.status} onChange={(status) => save({ status })} />
-                <EventPicker value={t.event_id} events={events} onChange={changeEvent} />
+                <EventPicker value={home} events={events} projects={projects} onChange={changeHome} />
                 <SectionPicker value={t.section} sections={sections} onChange={(section) => save({ section })} />
               </div>
 

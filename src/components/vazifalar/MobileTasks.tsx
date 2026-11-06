@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from "react"
 import type { Icon } from "@phosphor-icons/react"
-import { Plus, Copy, Rows, Kanban, CaretDown, CheckCircle, DotsThree, Tray, Paperclip, ChatCircle, Users, Check, CalendarBlank } from "@phosphor-icons/react"
+import { Plus, Copy, Rows, Kanban, CaretDown, CheckCircle, DotsThree, Tray, FolderSimple, Paperclip, ChatCircle, Users, Check, CalendarBlank } from "@phosphor-icons/react"
 import { Sheet } from "@/components/ui/Sheet"
 import { useMedia } from "@/hooks/useMedia"
 import { useCopyEventTasks, useUpdateTask } from "@/hooks/useTasks"
@@ -87,7 +87,7 @@ function TaskItem({ task: t, today, context, dueTime, owner, onOpen, toggle, hol
   const due = t.due_date ? (dueTime ? (t.due_time ? t.due_time.slice(0, 5) : null) : dueLabel(t.due_date, t.due_time, today)) : null
   const meta: ReactNode[] = []
   if (context) {
-    meta.push(<span key="e">{t.event?.name ?? "Umumiy"}</span>)
+    meta.push(<span key="e">{t.event?.name ?? t.project?.name ?? "Umumiy"}</span>)
     if (t.section) meta.push(<span key="s">{t.section}</span>)
   }
   if (due) meta.push(<span key="d" className={`whitespace-nowrap tabular-nums ${late ? "text-danger-text font-medium" : now ? "text-warning-text font-medium" : ""}`}>{due}</span>)
@@ -160,11 +160,11 @@ export function MobileMine({ tasks, isLoading, today, onOpen, onCreate }: { task
 // ─── Tadbirlar bo'yicha ─────────────────────────────────────────────────────
 
 export function MobileEvent({
-  events, selected, onSelect, counts, isPast, today, generalId,
+  events, projects, selected, onSelect, counts, isPast, today, generalId,
   eventId, tasks, shown, sections, owners, ownerFilter, onOwnerFilter, isLoading,
   view, onView, onOpen, onAdd, onCopy,
 }: {
-  events: EventOpt[]; selected: string; onSelect: (id: string) => void; counts: Record<string, { open: number }>
+  events: EventOpt[]; projects: { id: string; name: string }[]; selected: string; onSelect: (id: string) => void; counts: Record<string, { open: number }>
   isPast: (e: EventOpt) => boolean; today: string; generalId: string
   eventId: string | null; tasks: Task[]; shown: Task[]; sections: string[]; owners: OwnerOpt[]
   ownerFilter: string; onOwnerFilter: (key: string) => void; isLoading: boolean
@@ -191,7 +191,7 @@ export function MobileEvent({
 
   return (
     <div className="flex flex-col gap-4">
-      <EventStrip events={events} selected={selected} onSelect={onSelect} counts={counts} isPast={isPast} generalId={generalId} />
+      <EventStrip events={events} projects={projects} selected={selected} onSelect={onSelect} counts={counts} isPast={isPast} generalId={generalId} />
 
       {tasks.length > 0 && (
         <section className="rounded-surface bg-surface-sunken p-4">
@@ -237,7 +237,7 @@ export function MobileEvent({
       {isLoading ? (
         <Skeleton />
       ) : tasks.length === 0 ? (
-        <EmptyState icon={Tray} text={eventId ? "Bu tadbirda hali vazifa yo'q" : "Umumiy vazifalar yo'q"}>
+        <EmptyState icon={Tray} text={eventId ? "Bu tadbirda hali vazifa yo'q" : selected !== generalId ? "Bu loyihada hali vazifa yo'q" : "Umumiy vazifalar yo'q"}>
           <div className="flex flex-wrap justify-center gap-2">
             <button type="button" onClick={() => onAdd({})} className={pillBtn}>Vazifa qo'shish</button>
             {eventId && <button type="button" onClick={onCopy} className={ghostBtn}>Nusxa olish</button>}
@@ -337,9 +337,9 @@ function ActionRow({ icon: Ico, title, hint, onClick }: { icon: Icon; title: str
   )
 }
 
-/** Chip strip: one chip per event (upcoming first), "Umumiy" last; the selected one scrolls into view */
-function EventStrip({ events, selected, onSelect, counts, isPast, generalId }: {
-  events: EventOpt[]; selected: string; onSelect: (id: string) => void; counts: Record<string, { open: number }>; isPast: (e: EventOpt) => boolean; generalId: string
+/** Chip strip: one chip per event (upcoming first), then projects (085), "Umumiy" last; the selected one scrolls into view */
+function EventStrip({ events, projects, selected, onSelect, counts, isPast, generalId }: {
+  events: EventOpt[]; projects: { id: string; name: string }[]; selected: string; onSelect: (id: string) => void; counts: Record<string, { open: number }>; isPast: (e: EventOpt) => boolean; generalId: string
 }) {
   const activeRef = useRef<HTMLButtonElement>(null)
   useEffect(() => { activeRef.current?.scrollIntoView({ inline: "center", block: "nearest" }) }, [selected, events.length])
@@ -357,6 +357,7 @@ function EventStrip({ events, selected, onSelect, counts, isPast, generalId }: {
   return (
     <div role="tablist" aria-label="Tadbir" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
       {events.map((e) => chip(e.id, e.name, counts[e.id]?.open, isPast(e), undefined))}
+      {projects.map((p) => chip(p.id, p.name, counts[p.id]?.open, false, <FolderSimple size={16} />))}
       {chip(generalId, "Umumiy", counts[generalId]?.open, false, <Tray size={16} />)}
     </div>
   )

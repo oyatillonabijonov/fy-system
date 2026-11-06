@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- small pickers shared by the task create form and panel */
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react"
-import { Check, CalendarBlank, UserCircle, Tag, CircleDashed, MagnifyingGlass, X, Clock, CaretRight } from "@phosphor-icons/react"
+import { Check, CalendarBlank, UserCircle, Tag, CircleDashed, MagnifyingGlass, X, Clock, CaretRight, FolderSimple } from "@phosphor-icons/react"
 import { TASK_STATUSES, type TaskStatus } from "@/lib/supabase/queries/tasks"
 import { STATUS_VARIANTS } from "@/lib/constants/theme"
 import { useMedia } from "@/hooks/useMedia"
@@ -292,18 +292,29 @@ export function SectionPicker({ value, sections, onChange, row }: { value: strin
   )
 }
 
-export function EventPicker({ value, events, onChange, row }: { value: string | null; events: { id: string; name: string }[]; onChange: (id: string | null) => void; row?: boolean }) {
-  const current = events.find((e) => e.id === value)
+/** Where a task lives: an event, a project (085) or Umumiy (both null) */
+export interface TaskHome { event_id: string | null; project_id: string | null }
+
+export function EventPicker({ value, events, projects, onChange, row }: {
+  value: TaskHome; events: { id: string; name: string }[]; projects: { id: string; name: string }[]; onChange: (h: TaskHome) => void; row?: boolean
+}) {
+  const label = events.find((e) => e.id === value.event_id)?.name ?? projects.find((p) => p.id === value.project_id)?.name ?? "Umumiy"
   return (
-    <Popover title="Tadbir" trigger={(open, toggle) => row ? (
-      <PropRow label="Tadbir" icon={<CalendarBlank size={20} />} value={current?.name ?? "Umumiy"} active={open} onClick={toggle} />
+    <Popover title="Tadbir / loyiha" trigger={(open, toggle) => row ? (
+      <PropRow label="Tadbir / loyiha" icon={<CalendarBlank size={20} />} value={label} active={open} onClick={toggle} />
     ) : (
-      <Pill icon={<CalendarBlank size={16} />} label={current?.name ?? "Umumiy"} active={open} onClick={toggle} />
+      <Pill icon={<CalendarBlank size={16} />} label={label} active={open} onClick={toggle} />
     )}>
       {(close) => (
         <div className="max-h-72 max-sm:max-h-none overflow-y-auto">
-          {events.map((e) => <Option key={e.id} selected={e.id === value} onClick={() => { onChange(e.id); close() }}>{e.name}</Option>)}
-          <Option selected={!value} onClick={() => { onChange(null); close() }}>Umumiy vazifalar</Option>
+          {events.map((e) => <Option key={e.id} selected={e.id === value.event_id} onClick={() => { onChange({ event_id: e.id, project_id: null }); close() }}>{e.name}</Option>)}
+          {projects.length > 0 && <div className="px-2.5 pt-2 pb-1 text-xs font-medium text-ink-faint">Loyihalar</div>}
+          {projects.map((p) => (
+            <Option key={p.id} selected={p.id === value.project_id} onClick={() => { onChange({ event_id: null, project_id: p.id }); close() }}>
+              <FolderSimple size={16} className="text-ink-muted" />{p.name}
+            </Option>
+          ))}
+          <Option selected={!value.event_id && !value.project_id} onClick={() => { onChange({ event_id: null, project_id: null }); close() }}>Umumiy vazifalar</Option>
         </div>
       )}
     </Popover>

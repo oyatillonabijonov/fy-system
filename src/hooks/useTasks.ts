@@ -2,6 +2,9 @@ import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getEventTasks,
+  getTaskProjects,
+  createTaskProject,
+  deleteTaskProject,
   getTaskCounts,
   getMyTasks,
   createTask,
@@ -20,19 +23,23 @@ import {
 
 export const TASKS_KEY = ["tasks"] as const
 
-/** eventId null = "Umumiy" tasks */
-export function useEventTasks(eventId: string | null) {
+/** eventId and projectId null = "Umumiy" tasks */
+export function useEventTasks(eventId: string | null, projectId: string | null = null) {
   return useQuery<Task[]>({
-    queryKey: [...TASKS_KEY, "event", eventId],
-    queryFn: () => getEventTasks(eventId),
+    queryKey: [...TASKS_KEY, "event", eventId, projectId],
+    queryFn: () => getEventTasks(eventId, projectId),
     refetchOnMount: true,
   })
 }
 
-/** The bo'limlar (vazifa turlari) already used in one event, or in Umumiy (null) */
-export function useEventSections(eventId: string | null): string[] {
-  const { data = [] } = useEventTasks(eventId)
+/** The bo'limlar (vazifa turlari) already used in one event / project, or in Umumiy (both null) */
+export function useEventSections(eventId: string | null, projectId: string | null = null): string[] {
+  const { data = [] } = useEventTasks(eventId, projectId)
   return useMemo(() => [...new Set(data.map((t) => t.section).filter((s): s is string => !!s))], [data])
+}
+
+export function useTaskProjects() {
+  return useQuery({ queryKey: [...TASKS_KEY, "projects"], queryFn: getTaskProjects })
 }
 
 export function useTaskCounts() {
@@ -62,6 +69,8 @@ function useTaskMutation<V>(fn: (v: V) => Promise<unknown>, success?: (data: unk
   return useMutation({ mutationFn: fn, onSettled: () => qc.invalidateQueries({ queryKey: TASKS_KEY }), meta: { success, silent } })
 }
 
+export const useCreateTaskProject = () => useTaskMutation((name: string) => createTaskProject(name), () => "Loyiha ochildi", true)
+export const useDeleteTaskProject = () => useTaskMutation((id: string) => deleteTaskProject(id), () => "Loyiha o'chirildi")
 export const useCreateTask = () => useTaskMutation((d: TaskDraft & { sort_order: number }) => createTask(d), () => "Vazifa qo'shildi", true)
 export const useDeleteTask = () => useTaskMutation((id: string) => deleteTask(id), () => "Vazifa o'chirildi", true)
 export const useCopyEventTasks = () => useTaskMutation((v: { from: string; to: string }) => copyEventTasks(v.from, v.to), (n) => `${n} ta vazifa ko'chirildi`, true)
