@@ -30,7 +30,8 @@ const handle = (u: string | null | undefined) => (u ?? "").trim().replace(/^@/, 
 // ─── Telegram ────────────────────────────────────────────────────────────────
 
 interface TgUser { id: number; username?: string; first_name?: string }
-interface TgMessage { message_id: number; date: number; chat: { id: number }; from?: TgUser; text?: string; caption?: string; reply_to_message?: TgMessage; reply_markup?: { inline_keyboard: Button[][] } }
+interface TgFile { file_id: string; duration: number; mime_type?: string }
+interface TgMessage { message_id: number; date: number; chat: { id: number }; from?: TgUser; text?: string; caption?: string; voice?: TgFile; audio?: TgFile; reply_to_message?: TgMessage; reply_markup?: { inline_keyboard: Button[][] } }
 interface TgCallback { id: string; from: TgUser; data?: string; message?: TgMessage }
 interface TgMemberUpdate { chat: { id: number; title?: string }; new_chat_member: { status: string } }
 interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate }
@@ -56,6 +57,7 @@ const reply = (to: TgMessage, text: string, buttons?: Button[][]) =>
 export interface Parsed {
   tasks: { title: string; assignee_username?: string | null; assignee_name?: string | null; due_date?: string | null; due_time?: string | null; event?: string | null; section?: string | null }[]
   question?: string | null
+  transcript?: string | null   // a voice message: what the model heard
 }
 interface Staff { id: string; full_name: string; telegram: string | null; role: string | null }
 // A task's home the model can name: an event, or a project (085, Podcast …) — kind says which column it fills
@@ -74,6 +76,7 @@ const SCHEMA = {
       section: { type: "STRING", nullable: true },
     }, required: ["title"] } },
     question: { type: "STRING", nullable: true },
+    transcript: { type: "STRING", nullable: true },
   },
   required: ["tasks"],
 }
@@ -94,11 +97,12 @@ Qoidalar:
 - section (vazifa turi): har doim tanlashga harakat qil. Tadbir aniq va uning bo'limlari bo'lsa — o'sha bo'limlardan eng mosi; aks holda (tadbir null yoki bo'limi yo'q) — "Barcha bo'limlar"dan eng mosi. Faqat ro'yxatdagi aniq nom; hech biri mos kelmasa null (yangi nom o'ylab topma).
 - Bir nechta vazifa bo'lsa — har birini alohida (ko'pi bilan ${MAX_TASKS} ta).
 - Xabar vazifa bo'lmasa (salomlashish, savol, hazil) — tasks bo'sh, question'ga qisqa o'zbekcha izoh.
+- transcript: xabar ovozli bo'lsa (audio ilova qilingan) — eshitganingni o'zbek lotinida, qisqa va aniq yoz; aks holda null.
 ${context ? `Javob berilgan xabar (kontekst):\n"""${context}"""\n` : ""}Xabar:
 """${text}"""`
 }
 
-async function askGemini(prompt: string): Promise<Parsed> {
+async function askGemini(prompt: string, audio: { mime: string; data: string } | null = null): Promise<Parsed> {
   let last = ""
   for (let round = 0; round < 3; round++) {
     for (const model of MODELS) {
@@ -107,7 +111,7 @@ async function askGemini(prompt: string): Promise<Parsed> {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
           body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            contents: [{ role: "user", parts: [{ text: prompt }, ...(audio ? [{ inline_data: { mime_type: audio.mime, data: audio.data } }] : [])] }],
             generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: SCHEMA },
           }),
           signal: AbortSignal.timeout(45_000),
@@ -156,12 +160,13 @@ export function resolveTasks(parsed: Parsed, staff: Staff[], events: EventCtx[],
   })
 }
 
-export function confirmation(tasks: Resolved[]): string {
+export function confirmation(tasks: Resolved[], heard: string | null = null): string {
   const line = (t: Resolved) =>
     [t.owner_label ? `👤 ${esc(t.owner_label)}` : "👤 mas'ul belgilanmagan", t.due_date ? `📅 ${dayLabel(t.due_date)}${t.due_time ? `, ${t.due_time}` : ""}` : "📅 muddatsiz",
      `📌 ${esc((t.event ? t.event.name : "Umumiy") + (t.section ? ` › ${t.section}` : ""))}`].join(" · ")
-  if (tasks.length === 1) return `✅ <b>Vazifa qo'shildi</b>\n${esc(tasks[0].title)}\n${line(tasks[0])}`
-  return `✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
+  const head = heard ? `🎙 <i>${esc(heard)}</i>\n\n` : ""
+  if (tasks.length === 1) return `${head}✅ <b>Vazifa qo'shildi</b>\n${esc(tasks[0].title)}\n${line(tasks[0])}`
+  return `${head}✅ <b>${tasks.length} ta vazifa qo'shildi</b>\n` + tasks.map((t, i) => `\n${i + 1}. ${esc(t.title)}\n${line(t)}`).join("\n")
 }
 
 /** The task text when the message is for us — "/task …" (bare or "/task@bot"), "/vazifa@bot …"
@@ -173,6 +178,21 @@ export function taskText(raw: string, botUsername: string): string | null {
   if (cmd.test(raw)) return raw.replace(cmd, "").replace(mention, "").trim()
   if (/^\//.test(raw)) return null   // someone else's command
   return mention.test(raw) ? raw.replace(mention, "").trim() : null
+}
+
+const VOICE_MAX_S = 300   // a 5-minute voice note at most (Gemini takes inline audio up to 20 MB)
+
+/** The voice note or audio file on a message, if any */
+export function voiceOf(m: TgMessage | undefined): { file_id: string; duration: number; mime: string } | null {
+  const f = m?.voice ?? m?.audio
+  return f ? { file_id: f.file_id, duration: f.duration, mime: f.mime_type ?? (m?.voice ? "audio/ogg" : "audio/mpeg") } : null
+}
+
+async function downloadVoice(v: { file_id: string; mime: string }): Promise<{ mime: string; data: string }> {
+  const file = await tg<{ file_path: string }>("getFile", { file_id: v.file_id })
+  const res = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`)
+  if (!res.ok) throw new Error(`Telegram file ${res.status}`)
+  return { mime: v.mime, data: Buffer.from(await res.arrayBuffer()).toString("base64") }
 }
 
 /** A bare "/task" sent as a reply turns the replied message into the task; with its own text,
@@ -221,6 +241,8 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
   const asked = taskText(raw, botUsername)
   if (asked === null) return
   const { text, context } = taskInput(asked, msg.reply_to_message?.text ?? msg.reply_to_message?.caption ?? null)
+  // A bare "/task" in reply to a voice note: the model listens to it
+  const voice = text ? null : voiceOf(msg.reply_to_message)
   if (!GEMINI_KEY) return
   if (!(await chatsFor(sql, "task_bot")).includes(String(msg.chat.id))) {
     await reply(msg, "Bu guruhda vazifa qabul qilish o'chirilgan. Yoqish: tizimda Sozlamalar → Integratsiyalar.")
@@ -233,8 +255,12 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
     await reply(msg, "Sizni tizimda topa olmadim. Sozlamalar → Profilim'da Telegram username'ingizni kiriting, keyin qayta yozing.")
     return
   }
-  if (!text) {
-    await reply(msg, `Vazifani yozing yoki vazifa yozilgan xabarga javob qilib /task deb yuboring, masalan:\n<i>/vazifa@${botUsername} Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>`)
+  if (voice && voice.duration > VOICE_MAX_S) {
+    await reply(msg, "🎙 Ovozli xabar 5 daqiqadan uzun. Qisqaroq yuboring yoki vazifani yozib bering.")
+    return
+  }
+  if (!text && !voice) {
+    await reply(msg, `Vazifani yozing yoki vazifa yozilgan (yoki ovozli) xabarga javob qilib /task deb yuboring, masalan:\n<i>/vazifa@${botUsername} Resort to'lovlarini qilish, mas'ul @username, ertagacha</i>`)
     return
   }
 
@@ -258,7 +284,8 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
 
   let parsed: Parsed
   try {
-    parsed = await askGemini(buildPrompt(text, context, author.full_name, today, now.slice(11, 16), staff, [...events, ...projects], sections))
+    const audio = voice ? await downloadVoice(voice) : null
+    parsed = await askGemini(buildPrompt(text || "(ovozli xabar — audio ilova qilingan: eshitib, vazifalarni ajrat)", context, author.full_name, today, now.slice(11, 16), staff, [...events, ...projects], sections), audio)
   } catch (err) {
     console.error(`[taskbot] AI: ${err instanceof Error ? err.message : String(err)}`)
     await reply(msg, "⏳ AI hozir band, vazifani qo'sha olmadim. Bir daqiqadan so'ng qayta yuboring.")
@@ -287,7 +314,7 @@ async function handleMessage(sql: Sql, msg: TgMessage, botUsername: string): Pro
 
   const undo: Button[][] = ids.map((id, i) => [{ text: ids.length === 1 ? "↩️ Bekor qilish" : `↩️ ${i + 1}-ni bekor qilish`, callback_data: `u:${id}` }])
   const open = tasks[0].event ? `${APP_URL}?event=${tasks[0].event.id}` : `${APP_URL}?event=umumiy`
-  await reply(msg, confirmation(tasks), [...undo, [{ text: "Vazifalarni ochish", url: open }]])
+  await reply(msg, confirmation(tasks, voice ? parsed.transcript?.trim() || null : null), [...undo, [{ text: "Vazifalarni ochish", url: open }]])
   console.log(`[taskbot] ${author.full_name}: ${ids.length} ta vazifa qo'shildi`)
 }
 
