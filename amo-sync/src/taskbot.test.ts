@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { resolveTasks, confirmation, buildPrompt, taskText, taskInput, isDoneReply, taskIdsFrom, titleFrom } from "./taskbot"
+import { resolveTasks, confirmation, buildPrompt, taskText, taskInput, isDoneReply, taskIdsFrom, titleFrom, voiceOf } from "./taskbot"
 
 const staff = [
   { id: "s1", full_name: "Jahongir Qahramonov", telegram: "@Jahongir_Qahramonov", role: "xodim" },
@@ -103,4 +103,16 @@ test("task ids come from the confirmation's undo buttons", () => {
 test("without buttons, a one-task confirmation still names its task", () => {
   expect(titleFrom("✅ Vazifa qo'shildi\nTelegram botni guruhga sozlash\n👤 @x · 📅 6-noyabr")).toBe("Telegram botni guruhga sozlash")
   expect(titleFrom("✅ 2 ta vazifa qo'shildi\n\n1. A")).toBeNull()
+})
+
+test("a voice or audio file is found on a message; text messages have none", () => {
+  expect(voiceOf({ message_id: 1, date: 0, chat: { id: 1 }, voice: { file_id: "v1", duration: 12, mime_type: "audio/ogg" } })).toEqual({ file_id: "v1", duration: 12, mime: "audio/ogg" })
+  expect(voiceOf({ message_id: 1, date: 0, chat: { id: 1 }, audio: { file_id: "a1", duration: 30 } })).toEqual({ file_id: "a1", duration: 30, mime: "audio/mpeg" })
+  expect(voiceOf({ message_id: 1, date: 0, chat: { id: 1 }, text: "salom" })).toBeNull()
+  expect(voiceOf(undefined)).toBeNull()
+})
+
+test("confirmation shows what the bot heard in a voice message", () => {
+  const r = resolveTasks({ tasks: [{ title: "Mehmonni chaqirish" }] }, staff, events)
+  expect(confirmation(r, "Podkast uchun mehmonni chaqirish <ertaga>")).toBe("🎙 <i>Podkast uchun mehmonni chaqirish &lt;ertaga&gt;</i>\n\n✅ <b>Vazifa qo'shildi</b>\nMehmonni chaqirish\n👤 mas'ul belgilanmagan · 📅 muddatsiz · 📌 Umumiy")
 })
