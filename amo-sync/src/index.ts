@@ -13,6 +13,7 @@ import postgres from "postgres"
 import { startTelegram } from "./telegram"
 import { startTaskDigest } from "./tasks"
 import { startTaskBot } from "./taskbot"
+import { startMissedCalls } from "./missedCalls"
 import { startIntake } from "./intake"
 import { startPbxSync } from "./pbx"
 import { seedGroups } from "./groups"
@@ -54,6 +55,7 @@ if (process.argv.includes("--once")) {
   await seedGroups(sql).catch((e) => console.error(`[groups] ${e instanceof Error ? e.message : e}`))
   await startTelegram(sql)
   startTaskDigest(sql)
+  startMissedCalls(sql)
   await startTaskBot(sql).catch((e) => console.error(`[taskbot] ${e instanceof Error ? e.message : e}`))
   startIntake(sql)
   startPbxSync(sql)

@@ -26,7 +26,7 @@ const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) |
 const initials = (s: string) => s.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "TG"
 const isGone = (g: TelegramGroup) => g.bot_status === "left" || g.bot_status === "kicked"
 
-/** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's five jobs across */
+/** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's jobs across */
 export function Integratsiyalar() {
   const { isAdmin } = useAuth()
   const { data: groups = [], isLoading, error } = useTelegramGroups()
