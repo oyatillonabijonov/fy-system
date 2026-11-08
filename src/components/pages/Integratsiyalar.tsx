@@ -209,7 +209,7 @@ function LeadSources() {
     <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
       <div className="flex flex-col gap-1 max-lg:px-1">
         <h2 className="text-md font-semibold text-ink max-lg:text-base">Lid manbalari</h2>
-        <p className="text-sm text-ink-muted max-lg:hidden">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, ochiq bitimiga yoziladi.</p>
+        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, shu voronkadagi ochiq bitimiga yoziladi. <b className="text-ink">Saytni ma'lum voronkaga ulash:</b> Sotuv → voronka → ⚙ Voronka sozlamalari → "Lid qabul qilish" — har voronkaning o'z manzili va sayt uchun tayyor prompt bor.</p>
       </div>
       {/* Phones: one card per source, so the address and its copy button are never off-screen */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:hidden">
