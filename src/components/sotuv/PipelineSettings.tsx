@@ -1,6 +1,6 @@
 import { useId, useState } from "react"
 import { motion } from "framer-motion"
-import { X, Trash, ArrowUp, ArrowDown, Plus } from "@phosphor-icons/react"
+import { X, Trash, ArrowUp, ArrowDown, Plus, Copy, Check } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
@@ -11,6 +11,9 @@ import type { Pipeline, Stage } from "@/lib/supabase/queries/sotuv"
 import { INPUT } from "@/components/moliya/PaymentActionModals"
 import { Popover } from "@/components/vazifalar/pickers"
 import { confirmAction } from "@/lib/confirm"
+import { useLeadSources } from "@/hooks/useIntegrations"
+import { leadHookUrl } from "@/lib/supabase/queries/integrations"
+import { toast } from "@/lib/toast"
 
 const COLORS = ["#378ADD", "#BA7517", "#7F77DD", "#D4537E", "#1D9E75", "#E24B4A", "#888780", "#D85A30"]
 
@@ -82,6 +85,8 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
             </select>
           </label>
 
+          <LeadIntake pipeline={pipeline} />
+
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-ink-muted mb-1">Bosqichlar</span>
             {open.map((s, i) => (
@@ -137,6 +142,59 @@ function StageRow({ stage, onSave, onUp, onDown, onDelete }: {
         <button onClick={onDown} disabled={!onDown} aria-label="Pastga" className={iconBtn}><ArrowDown size={16} /></button>
       </>}
       {onDelete && <button onClick={onDelete} aria-label="O'chirish" className={`${iconBtn} hover:text-danger-text`}><Trash size={16} /></button>}
+    </div>
+  )
+}
+
+/** The prompt a site builder (Claude) gets: everything it needs, the address written in */
+const sitePrompt = (url: string) => `Saytdagi formani bizning CRM'ga ulab ber. Hamma narsa shu yerda, mendan boshqa narsa so'rama.
+
+Forma yuborilganda brauzerning o'zidan (fetch) shu manzilga POST qilinsin:
+${url}
+
+- Content-Type: application/json
+- Maydonlar:
+  - "name" — ism (majburiy)
+  - "phone" — telefon (majburiy)
+  - formadagi qolgan savollar o'zbekcha kalit bilan, masalan: "Lavozim", "Soha", "Kompaniya"
+- Bu manzil brauzerdan so'rov qabul qiladi (CORS ochiq), server, endpoint yoki env kerak emas. Manzilni to'g'ridan-to'g'ri kodga yoz.
+- Javob {"ok":true} bo'lsa, formani yashirib "Rahmat! Tez orada siz bilan bog'lanamiz" deb ko'rsat.
+- Xato bo'lsa "Xatolik yuz berdi, qayta urinib ko'ring" deb ko'rsat.
+- Yuborilayotganda tugmani o'chirib qo'y, ikki marta lid ketmasin.`
+
+/** 086: this voronka's own lead address (the "sayt" source + ?voronka=) — works for any form:
+ *  our own sites, Tilda, Framer. Meta has one webhook per page, so it keeps its source's voronka. */
+function LeadIntake({ pipeline }: { pipeline: Pipeline }) {
+  const { data: sources = [] } = useLeadSources(true)
+  const [copied, setCopied] = useState<"url" | "prompt" | null>(null)
+  const sayt = sources.find((s) => s.id === "sayt")
+  if (!sayt) return null
+  const url = `${leadHookUrl(sayt)}&voronka=${pipeline.id}`
+  const copy = (what: "url" | "prompt") =>
+    navigator.clipboard.writeText(what === "url" ? url : sitePrompt(url)).then(() => { setCopied(what); setTimeout(() => setCopied(null), 1500) },
+      () => toast.error("Nusxalanmadi", "Brauzer ruxsat bermadi — manzilni belgilab, Ctrl+C bilan nusxalang"))
+  const btn = "flex-1 h-control-md px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-base font-medium whitespace-nowrap transition-colors"
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-ink-muted">Lid qabul qilish</span>
+      <p className="text-sm text-ink-muted">Shu manzilga yuborilgan har bir ariza <b className="text-ink">{pipeline.name}</b> voronkasining birinchi bosqichiga tushadi.</p>
+      {!sayt.enabled && <div className="px-3 py-2 rounded-control text-sm bg-danger-soft text-danger-dark">"Boshqa sayt / forma" manbasi o'chiq — Integratsiyalar → Lid manbalari'da yoqing, aks holda arizalar tushmaydi.</div>}
+      <code className="block px-3 py-2 rounded-control bg-surface-sunken text-sm text-ink break-all select-all">{url}</code>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => copy("prompt")} className={`${btn} bg-accent text-ink-on-accent hover:bg-accent-hover`}>
+          {copied === "prompt" ? <Check size={16} /> : <Copy size={16} />}{copied === "prompt" ? "Nusxalandi" : "Sayt uchun prompt"}
+        </button>
+        <button type="button" onClick={() => copy("url")} className={`${btn} bg-mute-soft text-ink hover:bg-mute-ghost-hover`}>
+          {copied === "url" ? <Check size={16} /> : <Copy size={16} />}{copied === "url" ? "Nusxalandi" : "Manzil"}
+        </button>
+      </div>
+      <ul className="flex flex-col gap-1 text-sm text-ink-muted list-disc pl-5">
+        <li><span className="text-ink">O'z saytimiz</span> (Claude bilan qurilgan) — "Sayt uchun prompt"ni nusxalab sayt chatiga bering.</li>
+        <li><span className="text-ink">Tilda</span> — Sayt sozlamalari → Formalar → Webhook → manzilni qo'ying.</li>
+        <li><span className="text-ink">Framer</span> — Forma → Send To → Webhook → manzilni qo'ying.</li>
+        <li><span className="text-ink">Facebook / Instagram</span> — alohida: Integratsiyalar → Lid manbalari'da voronkasini tanlang.</li>
+        <li>Bitta raqam boshqa voronkaga yozilsa — u yerda yangi bitim ochiladi; shu voronkada ochiq bitimi bo'lsa — "Qayta murojaat" bo'lib qo'shiladi.</li>
+      </ul>
     </div>
   )
 }

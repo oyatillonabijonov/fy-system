@@ -56,9 +56,9 @@ async function readBody(req: Request): Promise<Record<string, string>> {
   try { return flatten(JSON.parse(text)) } catch { return Object.fromEntries(new URLSearchParams(text)) }
 }
 
-async function intake(sql: Sql, source: string, token: string, p: ParsedLead, raw: Record<string, string>) {
+async function intake(sql: Sql, source: string, token: string, p: ParsedLead, raw: Record<string, string>, voronka: string | null = null) {
   const [{ r }] = await sql<{ r: { ok: boolean; lead_id?: string; duplicate?: boolean; skipped?: boolean } }[]>`
-    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}, ${sql.json(p.fields)}) as r`
+    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}, ${sql.json(p.fields)}, ${voronka}) as r`
   console.log(`[intake] ${source}: ${r.skipped ? "manba o'chiq, faqat log" : r.duplicate ? "qayta murojaat" : "yangi sdelka"} ${r.lead_id ?? ""}`)
   return r
 }
@@ -131,7 +131,7 @@ export function startIntake(sql: Sql): void {
         }
         const raw = await readBody(req)
         if (Object.keys(raw).length === 1 && raw.test) return new Response("ok")   // Tilda's "check webhook" ping
-        const r = await intake(sql, source, token, parseLead(raw), raw)
+        const r = await intake(sql, source, token, parseLead(raw), raw, url.searchParams.get("voronka"))
         return Response.json({ ok: true, duplicate: !!r.duplicate }, { headers: CORS })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
