@@ -7,7 +7,7 @@ const db = supabase as unknown as SupabaseClient
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export interface Pipeline { id: string; name: string; sort_order: number; event_id: string | null }
+export interface Pipeline { id: string; name: string; sort_order: number; event_id: string | null; auto_assign: boolean }
 
 export interface Stage {
   id: string
@@ -100,7 +100,7 @@ export const sourceLabel = (s: string | null) => SOURCES.find((x) => x.id === s)
 // ─── Voronkalar / bosqichlar (admin edits; RLS enforces it) ────────────────
 
 export async function getPipelines(): Promise<Pipeline[]> {
-  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order, event_id").order("sort_order").order("created_at")
+  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order, event_id, auto_assign").order("sort_order").order("created_at")
   if (error) throw error
   return data as Pipeline[]
 }
@@ -139,6 +139,26 @@ export async function renamePipeline(id: string, name: string): Promise<void> {
 /** The voronka's event (081); null unlinks */
 export async function setPipelineEvent(id: string, eventId: string | null): Promise<void> {
   const { error } = await db.from("crm_pipelines").update({ event_id: eventId }).eq("id", id)
+  if (error) throw error
+}
+
+export async function setPipelineAutoAssign(id: string, on: boolean): Promise<void> {
+  const { error } = await db.from("crm_pipelines").update({ auto_assign: on }).eq("id", id)
+  if (error) throw error
+}
+
+/** Sellers ticked for a voronka's lead sharing (088) */
+export async function getPipelineSellers(pipelineId: string): Promise<string[]> {
+  const { data, error } = await db.from("crm_pipeline_sellers").select("user_id").eq("pipeline_id", pipelineId)
+  if (error) throw error
+  return (data as { user_id: string }[]).map((r) => r.user_id)
+}
+
+export async function setPipelineSeller(pipelineId: string, userId: string, on: boolean): Promise<void> {
+  const q = db.from("crm_pipeline_sellers")
+  const { error } = on
+    ? await q.upsert({ pipeline_id: pipelineId, user_id: userId }, { ignoreDuplicates: true })
+    : await q.delete().eq("pipeline_id", pipelineId).eq("user_id", userId)
   if (error) throw error
 }
 
