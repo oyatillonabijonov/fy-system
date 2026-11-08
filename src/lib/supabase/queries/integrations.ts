@@ -5,7 +5,7 @@ import { supabase } from "../client"
 const db = supabase as unknown as SupabaseClient
 
 /** What the bot does in a group — one switch per message kind (migration 070) */
-export type GroupRole = "payments" | "expenses" | "task_digest" | "task_reminders" | "task_bot"
+export type GroupRole = "payments" | "expenses" | "task_digest" | "task_reminders" | "task_bot" | "missed_calls"
 
 export const GROUP_ROLES: { id: GroupRole; label: string; short: string; desc: string }[] = [
   { id: "payments", label: "To'lov cheklari", short: "To'lovlar", desc: "Kirim, qaytarish, bekor qilish va keshbek cheklari" },
@@ -13,6 +13,7 @@ export const GROUP_ROLES: { id: GroupRole; label: string; short: string; desc: s
   { id: "task_digest", label: "Ertalabki hisobot", short: "Hisobot 9:00", desc: "Har kuni 9:00 da vazifalar holati" },
   { id: "task_reminders", label: "Muddat eslatmalari", short: "Eslatmalar", desc: "1 soat oldin, vaqtida va kechikkanda — mas'ul belgilanadi" },
   { id: "task_bot", label: "Chatdan vazifa", short: "Chatdan vazifa", desc: "/task, /vazifa@bot yoki @bot bilan yozilgan xabar vazifa bo'ladi" },
+  { id: "missed_calls", label: "Javobsiz qo'ng'iroqlar", short: "Qo'ng'iroqlar", desc: "2 soat ichida qayta qo'ng'iroq qilinmasa ogohlantiradi (9:00–21:00)" },
 ]
 
 export type TelegramGroup = {

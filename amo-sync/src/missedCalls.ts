@@ -1,0 +1,82 @@
+// A missed call nobody returned in 2 hours (migration 087) → one message to the groups with
+// telegram_groups.missed_calls on (Sozlamalar → Integratsiyalar). Checked every minute;
+// crm_calls.missed_alerted_at makes it once per call. Sent only 9:00–21:00 Tashkent: what
+// falls due at night goes out at 9:00.
+
+import type { Sql } from "postgres"
+import { chatsFor } from "./groups"
+
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
+const BITIM_URL = "https://app.fikryetakchilari.uz/sotuv/bitim/"
+
+export interface MissedRow {
+  phone: string; client_name: string | null; lead_id: string | null
+  owner: string | null; telegram: string | null; calls: number; last_missed: Date
+}
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+const clock = (d: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit" }).format(d)
+export const tashkentHour = (d: Date) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", hourCycle: "h23" }).format(d))
+export const isSendingHour = (d: Date) => { const h = tashkentHour(d); return h >= 9 && h < 21 }
+
+export function missedCallText(r: MissedRow): string {
+  // A bitim opened by a call is named by the phone: don't show the number twice
+  const name = r.client_name && r.client_name.replace(/\D/g, "") !== r.phone.replace(/\D/g, "") ? r.client_name : null
+  const owner = r.telegram ? (r.telegram.startsWith("@") ? r.telegram : `@${r.telegram}`) : r.owner
+  return [
+    "🔴 <b>Javobsiz qo'ng'iroq</b>",
+    "2 soat ichida qayta qo'ng'iroq qilinmadi. Shu odamga qo'ng'iroq qiling:",
+    "",
+    ...(name ? [`👤 ${esc(name)}`] : []),
+    `📞 ${esc(r.phone)}`,
+    `🕐 ${clock(r.last_missed)}${r.calls > 1 ? ` · ${r.calls} marta` : ""}`,
+    `Mas'ul: ${owner ? esc(owner) : "belgilanmagan"}`,
+    ...(r.lead_id ? ["", `<a href="${BITIM_URL}${r.lead_id}">Bitimni ochish</a>`] : []),
+  ].join("\n")
+}
+
+async function send(chat: string, text: string): Promise<void> {
+  const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true }),
+  })
+  if (!res.ok) throw new Error(`Telegram ${res.status}: ${(await res.text()).slice(0, 200)}`)
+}
+
+let busy = false
+
+async function tick(sql: Sql): Promise<void> {
+  if (busy || !isSendingHour(new Date())) return
+  busy = true
+  try {
+    const rows = await sql<MissedRow[]>`select * from public.missed_calls_due()`
+    if (!rows.length) return
+    const chats = await chatsFor(sql, "missed_calls")
+    for (const r of rows) {
+      let reached = 0
+      for (const chat of chats) {
+        try { await send(chat, missedCallText(r)); reached++ }
+        catch (err) { console.error(`[missed] ${chat}: ${err instanceof Error ? err.message : err}`) }
+      }
+      // ponytail: reached no group = retry next minute; a group that did get it may hear it twice then
+      if (chats.length && !reached) continue
+      // No group switched on = nobody to tell: stamped too, so switching on doesn't replay old calls
+      await sql`update crm_calls set missed_alerted_at = now()
+                where phone = ${r.phone} and direction = 'in' and talk_time = 0
+                  and missed_alerted_at is null and started_at <= ${r.last_missed}`
+      if (reached) console.log(`[missed] ${r.phone}: ${reached} guruhga xabar berildi`)
+    }
+  } catch (err) {
+    console.error(`[missed] ${err instanceof Error ? err.message : err}`)
+  } finally {
+    busy = false
+  }
+}
+
+export function startMissedCalls(sql: Sql): void {
+  if (!TOKEN) return
+  setInterval(() => void tick(sql), 60_000)
+  void tick(sql)
+  console.log("[missed] javobsiz qo'ng'iroq ogohlantirishi yoqildi (2 soat)")
+}

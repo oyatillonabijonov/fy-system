@@ -3,7 +3,7 @@
 
 import type { Sql } from "postgres"
 
-export type GroupRole = "payments" | "expenses" | "task_digest" | "task_reminders" | "task_bot"
+export type GroupRole = "payments" | "expenses" | "task_digest" | "task_reminders" | "task_bot" | "missed_calls"
 
 /** Chat ids with this role switched on (read every time, so a UI change applies at once) */
 export async function chatsFor(sql: Sql, role: GroupRole): Promise<string[]> {
