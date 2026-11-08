@@ -118,6 +118,8 @@ export function Dashboard() {
             </Section>
           </div>
           <aside className="flex flex-col gap-4 xl:sticky xl:top-0">
+            {/* same height as the Section heading on the left, so the first cards' tops line up */}
+            <div aria-hidden className="hidden xl:flex flex-col gap-0.5 px-1 invisible"><h2 className="text-md font-semibold">&nbsp;</h2><p className="text-sm">&nbsp;</p></div>
             <AttentionPanel a={d.attention} />
             {hasAccess("tadbirlar-moliya") && <FinancePanel from={from} to={to} />}
           </aside>
