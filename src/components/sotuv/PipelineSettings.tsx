@@ -4,7 +4,7 @@ import { X, Trash, ArrowUp, ArrowDown, Plus, Copy, Check, Globe } from "@phospho
 import { useDialog } from "@/hooks/useDialog"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
-import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent } from "@/hooks/useSotuv"
+import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent, useSetPipelineAutoAssign, usePipelineSellers, useSetPipelineSeller } from "@/hooks/useSotuv"
 import { useEvents } from "@/hooks/useEvents"
 import { formatDate } from "@/lib/format"
 import type { Pipeline, Stage } from "@/lib/supabase/queries/sotuv"
@@ -14,6 +14,8 @@ import { confirmAction } from "@/lib/confirm"
 import { useLeadSources } from "@/hooks/useIntegrations"
 import { leadHookUrl } from "@/lib/supabase/queries/integrations"
 import { toast } from "@/lib/toast"
+import { useUsers } from "@/hooks/useUsers"
+import { Switch } from "@/components/ui/Switch"
 
 const COLORS = ["#378ADD", "#BA7517", "#7F77DD", "#D4537E", "#1D9E75", "#E24B4A", "#888780", "#D85A30"]
 
@@ -86,6 +88,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
           </label>
 
           <LeadIntake pipeline={pipeline} />
+          <LeadSharing pipeline={pipeline} onError={onError} />
 
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-ink-muted mb-1">Bosqichlar</span>
@@ -191,6 +194,38 @@ function LeadIntake({ pipeline }: { pipeline: Pipeline }) {
       <button type="button" onClick={() => copy("url")} className="self-start px-1 text-sm text-ink-muted underline underline-offset-2 hover:text-ink transition-colors">
         {copied === "url" ? "Manzil nusxalandi" : "Tilda / Framer uchun manzilni nusxalash"}
       </button>
+    </div>
+  )
+}
+
+/** 088: new form and call leads go to the ticked sellers in turn */
+function LeadSharing({ pipeline, onError }: { pipeline: Pipeline; onError: (e: Error) => void }) {
+  const { data: users = [] } = useUsers()
+  const { data: ticked = [] } = usePipelineSellers(pipeline.id)
+  const setOn = useSetPipelineAutoAssign()
+  const setSeller = useSetPipelineSeller()
+  const sellers = users.filter((u) => ticked.includes(u.id) || (u.is_active && u.department === "sotuv"))
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-ink-muted">Lidlarni taqsimlash</span>
+      <div className="flex flex-col rounded-control bg-surface-sunken">
+        <label className="flex items-center gap-3 p-3 cursor-pointer">
+          <span className="flex-1 min-w-0">
+            <span className="block text-base font-medium text-ink">Sotuvchilarga navbat bilan</span>
+            <span className="block text-sm text-ink-muted">Saytdan va qo'ng'iroqdan kelgan yangi lidlar</span>
+          </span>
+          <Switch on={pipeline.auto_assign} label="Lidlarni taqsimlash" onChange={(on) => setOn.mutate({ id: pipeline.id, on }, { onError })} />
+        </label>
+        {pipeline.auto_assign && sellers.map((u) => (
+          <label key={u.id} className="flex items-center gap-3 px-3 h-11 border-t border-line cursor-pointer">
+            <input type="checkbox" checked={ticked.includes(u.id)} className="size-4 shrink-0 accent-[var(--ds-color-bg-inverted)]"
+              onChange={(e) => setSeller.mutate({ pipelineId: pipeline.id, userId: u.id, on: e.target.checked }, { onError })} />
+            <span className="flex-1 min-w-0 text-base text-ink truncate">{u.full_name}</span>
+            {!u.pbx_ext && <span className="shrink-0 text-sm text-ink-muted">ichki raqami yo'q</span>}
+          </label>
+        ))}
+      </div>
+      {pipeline.auto_assign && ticked.length === 0 && <p className="px-1 text-sm text-danger-text">Sotuvchi belgilanmagan — lidlar mas'ulsiz qoladi</p>}
     </div>
   )
 }
