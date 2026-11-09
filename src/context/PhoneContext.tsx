@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useAuth } from "@/context/AuthContext"
 import { pbxApi, findCallContact } from "@/lib/supabase/queries/sotuv"
 import { preloadRing, startRing } from "@/lib/phoneAudio"
+import { resumeCall } from "@/lib/phoneCall"
 
 export type PhoneStatus = "off" | "connecting" | "ready" | "offline"
 export interface ActiveCall {
@@ -83,6 +84,14 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
       if (disposed) return
       const state = d.state?.name
       const id = d.callID
+      if (state === "recovering") {
+        // The line dropped mid-call and came back: the PBX re-attaches the call. Without this
+        // the talk goes on with no card to end it, and the next caller rings over it.
+        dialog.current = d
+        setCall((c) => resumeCall(c, id, d.params))
+        void findCallContact(d.params.remote_caller_id_number ?? "").then((contact) => setCall((c) => (c?.id === id && !c.contact ? { ...c, contact } : c)))
+        return
+      }
       if (d.direction?.name === "inbound" && ["new", "requesting", "trying", "ringing"].includes(state)) {
         // One line: a second incoming call while busy is turned away
         if (dialog.current && dialog.current.callID !== id) { d.hangup({ cause: "USER_BUSY" }); return }
@@ -95,7 +104,7 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
         return
       }
       if (dialog.current?.callID !== id) return
-      if (state === "active") { stopRing(); patch(id, { state: "active", answeredAt: Date.now() }) }
+      if (state === "active") { stopRing(); setCall((c) => (c && c.id === id ? { ...c, state: "active", answeredAt: c.answeredAt ?? Date.now() } : c)) }
       else if (state === "early" || state === "ringing") patch(id, { state: "dialing" })
       else if (END.includes(state)) {
         stopRing(); stopMic(); dialog.current = null
@@ -115,8 +124,11 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
       if (disposed) return
       verto = new Verto({
         login: creds.login, passwd: creds.password, socketUrl: creds.socketUrl,
-        // No keepAlive: the library pings with XSwitch's "Uas.Ping", which OnlinePBX rejects
-        // (-32601), so it dropped the line every ~30 s. The PBX pings us (verto.ping) instead.
+        // A silent socket is cut at 126 s on the way through Cloudflare/Traefik (measured; the PBX
+        // itself doesn't ping), and a drop ends the call on our side. So we keep it talking.
+        // OnlinePBX answers the library's "Uas.Ping" with an error (-32601), but the traffic is
+        // all we need: maxFailed Infinity stops the library closing the line over those errors.
+        keepAlive: { interval: 30_000, maxFailed: Infinity },
         autoReconnect: true,
         tag: () => audio.current, ringer_tag: null, useVideo: false, useStereo: false,
         deviceParams: { useCamera: false, useMic: "any", useSpeak: "any" },
