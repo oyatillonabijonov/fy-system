@@ -162,6 +162,22 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
     }
   }, [enabled, patch])
 
+  // A phone locks itself after ~30 s and a locked browser may cut the call: the screen stays on
+  // while a call rings or runs. The browser drops the lock when the page hides, so it's taken again on return.
+  const live = !!call && call.state !== "ended"
+  useEffect(() => {
+    if (!live || !("wakeLock" in navigator)) return
+    let lock: WakeLockSentinel | null = null
+    let done = false
+    const grab = () => {
+      if (document.visibilityState !== "visible") return
+      navigator.wakeLock.request("screen").then((l) => { if (done) void l.release(); else lock = l }).catch(() => { /* low battery mode etc.: not kept on */ })
+    }
+    grab()
+    document.addEventListener("visibilitychange", grab)
+    return () => { done = true; document.removeEventListener("visibilitychange", grab); void lock?.release() }
+  }, [live])
+
   const dial = useCallback(async (phone: string) => {
     if (!client.current || !ext || dialog.current) return
     stream.current = await mic()   // asks for the microphone once
