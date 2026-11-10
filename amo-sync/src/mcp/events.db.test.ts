@@ -194,11 +194,68 @@ test.skipIf(!testSql)("create_event: end date before the start, an inactive or u
   expect((await rowOf(ok.id))!.e).toBe(DAY)
 })
 
-test.skipIf(!testSql)("create_event: a failure inside the database after the insert (unknown copy_tasks_from) leaves nothing", async () => {
+test.skipIf(!testSql)("create_event: an unknown copy_tasks_from is refused before writing", async () => {
   const before = await count()
   expect(await call(admin, "create_event", base("Tx1", { copy_tasks_from: id() }))).toEqual({ ok: false, error: "Nusxa olinadigan tadbir topilmadi" })
   expect(await count()).toBe(before)
   expect((await testSql!`select count(*)::int n from public.event_tariffs t join public.events e on e.id = t.event_id where e.name = ${nm("Tx1")}`)[0]!.n).toBe(0)
+})
+
+/** Runs fn with a temporary trigger on `table` that raises when column `col` equals `marker`; always removed */
+async function withBomb(table: "event_tariffs" | "tasks", col: "name" | "title", marker: string, fn: () => Promise<void>) {
+  const n = `zz_bomb_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`
+  await testSql!.unsafe(`create function public.${n}() returns trigger language plpgsql as $f$ begin if new.${col} = '${marker}' then raise exception 'bomb'; end if; return new; end $f$`)
+  await testSql!.unsafe(`create trigger ${n} before insert on public.${table} for each row execute function public.${n}()`)
+  try { await fn() } finally {
+    await testSql!.unsafe(`drop trigger if exists ${n} on public.${table}`)
+    await testSql!.unsafe(`drop function if exists public.${n}()`)
+  }
+}
+
+test.skipIf(!testSql)("create_event: a failure in the database after the event and a tariff were written rolls everything back", async () => {
+  const marker = `bomb-${crypto.randomUUID()}`
+  await withBomb("event_tariffs", "name", marker, async () => {
+    const r = await call(admin, "create_event", base("Tx3", { tariffs: [{ name: nm("T-first"), price: 1 }, { name: marker, price: 2 }] }))
+    expect(r.ok).toBe(false)
+    expect((await testSql!`select count(*)::int n from public.events where name = ${nm("Tx3")}`)[0]!.n).toBe(0)
+    expect((await testSql!`select count(*)::int n from public.event_tariffs where name = ${nm("T-first")}`)[0]!.n).toBe(0)
+  })
+})
+
+test.skipIf(!testSql)("create_event: a failure while copying tasks (after event and tariffs) rolls everything back", async () => {
+  const marker = `bomb-${crypto.randomUUID()}`
+  const src = await mk("Tx4src")
+  await testSql!`insert into public.tasks (event_id, title) values (${src.id}, ${marker})`
+  await withBomb("tasks", "title", marker, async () => {
+    const r = await call(admin, "create_event", base("Tx4", { copy_tasks_from: src.id }))
+    expect(r.ok).toBe(false)
+    expect((await testSql!`select count(*)::int n from public.events where name = ${nm("Tx4")}`)[0]!.n).toBe(0)
+    expect((await testSql!`select count(*)::int n from public.event_tariffs t join public.events e on e.id = t.event_id where e.name = ${nm("Tx4")}`)[0]!.n).toBe(0)
+  })
+})
+
+test.skipIf(!testSql)("create_event: two identical concurrent calls create exactly one event", async () => {
+  for (let i = 0; i < 5; i++) {
+    const args = base(`Race${i}`)
+    const rs = await Promise.all([call(admin, "create_event", args), call(admin, "create_event", args)])
+    expect(rs.filter((r) => r.ok)).toHaveLength(1)
+    const bad = rs.find((r) => !r.ok)
+    expect(bad && !bad.ok && bad.error).toContain("Shu nom va sana bilan tadbir allaqachon bor")
+    expect((await testSql!`select count(*)::int n from public.events where name = ${nm(`Race${i}`)}`)[0]!.n).toBe(1)
+  }
+})
+
+test.skipIf(!testSql)("update_event: duplicate tariff ids are refused; only tariffs is a valid change", async () => {
+  const d = await mk("Up6")
+  const t0 = d.tariffs[0]!
+  const dup = await call(admin, "update_event", { event_id: d.id, tariffs: [{ id: t0.id, name: "A", price: 1 }, { id: t0.id, name: "B", price: 2 }] })
+  expect(dup.ok).toBe(false)
+  if (!dup.ok) expect(dup.error).toContain("unique")
+  expect((await testSql!`select count(*)::int n from public.event_tariffs where event_id = ${d.id}`)[0]!.n).toBe(2)
+  const r = await call(admin, "update_event", { event_id: d.id, tariffs: [{ id: t0.id, name: "Only", price: 9 }] })
+  expect(r.ok).toBe(true)
+  if (r.ok) expect((r.data as Detail).tariffs.map((t) => t.name)).toEqual(["Only"])
+  expect((await rowOf(d.id))!.name).toBe(nm("Up6"))
 })
 
 test.skipIf(!testSql)("create_event: a duplicate (name trimmed, any case, same day) is refused with the id, allowed with allow_duplicate", async () => {

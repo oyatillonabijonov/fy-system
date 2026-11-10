@@ -77,6 +77,8 @@ export const EVENT_TOOLS: ToolDef[] = [
         const [src] = await tx`select 1 from public.events where id = ${a.copy_tasks_from}`
         if (!src) throw new ToolError("Nusxa olinadigan tadbir topilmadi")
       }
+      // two identical calls at once (a client retrying) queue here, so the second one sees the first one's event
+      await tx`select pg_advisory_xact_lock(hashtext(lower(btrim(${a.name})) || '|' || ${a.date}::text))`
       if (!a.allow_duplicate) {
         const [dup] = await tx`select id from public.events where lower(btrim(name)) = lower(btrim(${a.name})) and (date)::date = ${a.date}::date limit 1`
         if (dup) throw new ToolError(`Shu nom va sana bilan tadbir allaqachon bor (${dup.id}). Baribir yaratish uchun allow_duplicate: true bilan chaqiring`)
