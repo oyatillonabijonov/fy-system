@@ -51,6 +51,27 @@ test.skipIf(!testSql)("read-only: a write is refused", async () => {
   await expect(asUser(admin, (tx) => tx`update public.profiles set full_name = 'x' where id = ${admin}`)).rejects.toThrow(/read-only/)
 })
 
+test.skipIf(!testSql)("write mode: a writer's insert is committed and visible afterwards", async () => {
+  const name = `Write ${crypto.randomUUID()}`
+  const [r] = await asUser(admin, (tx) => tx`insert into public.events (name) values (${name}) returning id`, { write: true })
+  expect(r!.id).toBeTruthy()
+  const rows = await testSql!`select id from public.events where name = ${name}`
+  expect(rows).toHaveLength(1)
+  await testSql!`delete from public.events where name = ${name}`
+})
+
+test.skipIf(!testSql)("write mode is opt-in: the same insert without it is refused as read-only", async () => {
+  const name = `Write ${crypto.randomUUID()}`
+  await expect(asUser(admin, (tx) => tx`insert into public.events (name) values (${name}) returning id`)).rejects.toThrow(/read-only/)
+  expect(await testSql!`select id from public.events where name = ${name}`).toHaveLength(0)
+})
+
+test.skipIf(!testSql)("write mode: a writer that inserts and then throws leaves no row", async () => {
+  const name = `Write ${crypto.randomUUID()}`
+  await expect(asUser(admin, async (tx) => { await tx`insert into public.events (name) values (${name})`; throw new Error("boom") }, { write: true })).rejects.toThrow("boom")
+  expect(await testSql!`select id from public.events where name = ${name}`).toHaveLength(0)
+})
+
 test.skipIf(!testSql)("nothing leaks: the owner stays the owner, and every user sees only themselves, even interleaved", async () => {
   await asUser(admin, (tx) => tx`select 1`)
   const [owner] = await testSql!`select current_user as u`

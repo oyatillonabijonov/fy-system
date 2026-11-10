@@ -27,7 +27,7 @@ async function runLogged(me: Me, tool: string, args: unknown, sql: Sql, asUser: 
 function buildServer(me: Me, sql: Sql, asUser: AsUser): McpServer {
   const server = new McpServer({ name: "fy-system", version: "1" }, { instructions: INSTRUCTIONS })
   for (const t of toolsFor(me)) {
-    server.registerTool(t.name, { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: true } }, (args) => runLogged(me, t.name, args, sql, asUser))
+    server.registerTool(t.name, { title: t.title, description: t.description, inputSchema: t.input, annotations: { readOnlyHint: !t.write, destructiveHint: !!t.destructive } }, (args) => runLogged(me, t.name, args, sql, asUser))
   }
   return server
 }
