@@ -3,6 +3,7 @@ import { makeAsUser } from "./db"
 import { staff, testSql } from "./testdb"
 import { handleMcp } from "./server"
 import { openConnection } from "./store"
+import { confirmToken } from "./confirm"
 import { callTool, TOOLS } from "./tools"
 
 const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
@@ -131,7 +132,7 @@ const mk = async (s: string, extra: Record<string, unknown> = {}) => {
 }
 const rowOf = async (eid: string) => (await testSql!`select name, date::date::text d, end_date::date::text e, location, manager_id, cashback_percent::float cp, total_value::float tv from public.events where id = ${eid}`)[0]
 
-test.skipIf(!testSql)("create_event and update_event are writers behind the Tadbirlar gate; admin sees fourteen tools", async () => {
+test.skipIf(!testSql)("create_event and update_event are writers behind the Tadbirlar gate; admin sees fifteen tools", async () => {
   const ce = TOOLS.find((t) => t.name === "create_event"), ue = TOOLS.find((t) => t.name === "update_event")
   for (const t of [ce, ue]) {
     expect(t?.write).toBe(true)
@@ -370,4 +371,153 @@ test.skipIf(!testSql)("find_clients: a phone stored with separators matches by d
   } finally {
     await testSql!`delete from public.clients where id in (${fmt}, ${short})`
   }
+})
+
+// ─── delete_event ───
+const savedSecret = process.env.JWT_SECRET
+beforeAll(() => { process.env.JWT_SECRET = "delete-event-test-secret" })
+const delExpenses: string[] = []
+const delEvents: string[] = []
+afterAll(async () => {
+  if (savedSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = savedSecret
+  if (!testSql) return
+  if (delExpenses.length) await testSql`delete from public.expenses where id in ${testSql(delExpenses)}`
+  if (delEvents.length) await testSql`delete from public.activity_log where entity_type = 'event' and entity_id in ${testSql(delEvents)}`
+})
+const BADTOKEN = "Tasdiqlash kodi yaroqsiz yoki muddati o'tgan — avval tasdiq so'rang"
+const exists = async (eid: string) => ((await testSql!`select count(*)::int n from public.events where id = ${eid}`)[0]!.n as number) === 1
+type Preview = { event: { id: string; name: string }; will_delete: { participants: number; tariffs: number; tasks: number }; will_detach: { expenses: number; pipelines: number }; blocked_by_payments: number; confirm_token?: string; expires_in?: number; next: string }
+/** An owner-made event with 1 tariff, 1 participant, 1 task and 1 expense, and optionally a live payment */
+async function delFixture(s: string, withPayment = false) {
+  const [eid, tid, pid, kid, xid] = [id(), id(), id(), id(), id()]
+  delEvents.push(eid); delExpenses.push(xid)
+  await testSql!`insert into public.events (id, name, date, manager_id) values (${eid}, ${nm(s)}, now(), ${mgr})`
+  await testSql!`insert into public.event_tariffs (id, event_id, name, price) values (${tid}, ${eid}, 'T', 10)`
+  await testSql!`insert into public.event_participants (id, event_id, full_name, tariff_id, price, paid) values (${pid}, ${eid}, ${`P ${tag}`}, ${tid}, 10, 0)`
+  await testSql!`insert into public.tasks (id, event_id, title) values (${kid}, ${eid}, 'k')`
+  await testSql!`insert into public.expenses (id, event_id, category, amount, spent_at) values (${xid}, ${eid}, 'boshqa', 5, current_date)`
+  if (withPayment) await testSql!`insert into public.payments (participant_id, amount, method) values (${pid}, 10, 'naqd')`
+  return { eid, pid, xid }
+}
+async function dropFixture(f: { eid: string; pid: string }) {
+  await testSql!`delete from public.payments where participant_id = ${f.pid}`
+  await testSql!`delete from public.event_participants where event_id = ${f.eid}`
+  await testSql!`delete from public.events where id = ${f.eid}`
+}
+const preview = async (uid: string, eid: string) => {
+  const r = await call(uid, "delete_event", { event_id: eid })
+  if (!r.ok) throw new Error(r.error)
+  return r.data as Preview
+}
+
+test.skipIf(!testSql)("delete_event is a destructive writer behind the Tadbirlar gate, and the gate refuses before anything", async () => {
+  const t = TOOLS.find((x) => x.name === "delete_event")
+  expect(t?.write).toBe(true)
+  expect(t?.destructive).toBe(true)
+  expect(t?.module).toBe("tadbirlar")
+  expect(t?.description).toContain("Deleting is permanent and removes the event's participants, tariffs and tasks. First call without confirm_token, show the returned summary to the user, and call again with the token only after they explicitly agree to delete this event.")
+  expect(await call(seller, "delete_event", { event_id: eventId })).toEqual({ ok: false, error: GATE })
+  const forged = await confirmToken("delete_event", seller, eventId)
+  expect(await call(seller, "delete_event", { event_id: eventId, confirm_token: forged })).toEqual({ ok: false, error: GATE })
+  expect(await exists(eventId)).toBe(true)
+})
+
+test.skipIf(!testSql)("tools/list marks delete_event destructive and not read-only", async () => {
+  const tok = (await openConnection(testSql!, admin, "test-client")).access_token
+  const res = await handleMcp(new Request("https://x.test/mcp", {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json, text/event-stream", authorization: `Bearer ${tok}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+  }), testSql!, asUser)
+  const j = (await res.json()) as { result: { tools: { name: string; annotations?: { destructiveHint?: boolean; readOnlyHint?: boolean } }[] } }
+  const t = j.result.tools.find((x) => x.name === "delete_event")
+  expect(t?.annotations?.destructiveHint).toBe(true)
+  expect(t?.annotations?.readOnlyHint).toBe(false)
+})
+
+test.skipIf(!testSql)("delete_event preview: counts, a token, nothing deleted, and a second preview deletes nothing either", async () => {
+  const f = await delFixture("DelPrev")
+  try {
+    const p = await preview(admin, f.eid)
+    expect(p.event).toMatchObject({ id: f.eid, name: nm("DelPrev") })
+    expect(p.will_delete).toEqual({ participants: 1, tariffs: 1, tasks: 1 })
+    expect(p.will_detach).toEqual({ expenses: 1, pipelines: 0 })
+    expect(p.blocked_by_payments).toBe(0)
+    expect(p.expires_in).toBe(600)
+    expect(p.confirm_token).toMatch(/^\d+\.[A-Za-z0-9_-]+$/)
+    expect(p.next).toBe("Show this summary to the user and ask for an explicit yes. Only then call delete_event again with confirm_token.")
+    expect(await exists(f.eid)).toBe(true)
+    expect((await preview(admin, f.eid)).blocked_by_payments).toBe(0)
+    expect(await exists(f.eid)).toBe(true)
+  } finally { await dropFixture(f) }
+})
+
+test.skipIf(!testSql)("delete_event: a token of user A used by admin B is refused; a token for event 1 on event 2 is refused", async () => {
+  const [f1, f2] = [await delFixture("DelX1"), await delFixture("DelX2")]
+  try {
+    const t1 = (await preview(evUser, f1.eid)).confirm_token!
+    expect(await call(admin, "delete_event", { event_id: f1.eid, confirm_token: t1 })).toEqual({ ok: false, error: BADTOKEN })
+    expect(await call(evUser, "delete_event", { event_id: f2.eid, confirm_token: t1 })).toEqual({ ok: false, error: BADTOKEN })
+    expect(await call(evUser, "delete_event", { event_id: f1.eid, confirm_token: "x.y" })).toEqual({ ok: false, error: BADTOKEN })
+    expect(await call(evUser, "delete_event", { event_id: f1.eid, confirm_token: await confirmToken("delete_event", evUser, f1.eid, Date.now() - 700_000) })).toEqual({ ok: false, error: BADTOKEN })
+    expect(await exists(f1.eid)).toBe(true)
+    expect(await exists(f2.eid)).toBe(true)
+  } finally { await dropFixture(f1); await dropFixture(f2) }
+})
+
+test.skipIf(!testSql)("delete_event with a valid token removes the event, its tariffs, participants and tasks, detaches the expense; a replay is Tadbir topilmadi", async () => {
+  const f = await delFixture("DelOk")
+  const t = (await preview(evUser, f.eid)).confirm_token!
+  const r = await call(evUser, "delete_event", { event_id: f.eid, confirm_token: t })
+  expect(r).toEqual({ ok: true, data: { deleted: true, name: nm("DelOk") } })
+  expect(await exists(f.eid)).toBe(false)
+  for (const tbl of ["event_tariffs", "event_participants", "tasks"] as const)
+    expect((await testSql!`select count(*)::int n from ${testSql!(`public.${tbl}`)} where event_id = ${f.eid}`)[0]!.n).toBe(0)
+  const [x] = await testSql!`select event_id from public.expenses where id = ${f.xid}`
+  expect(x!.event_id).toBeNull()
+  expect(await call(evUser, "delete_event", { event_id: f.eid, confirm_token: t })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(evUser, "delete_event", { event_id: f.eid })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+})
+
+test.skipIf(!testSql)("delete_event: a live payment blocks the preview token for an admin; a hand-made token meets the DB guard and the event stays", async () => {
+  const f = await delFixture("DelPay", true)
+  try {
+    const p = await preview(admin, f.eid)
+    expect(p.blocked_by_payments).toBe(1)
+    expect(p.confirm_token).toBeUndefined()
+    expect(p.expires_in).toBeUndefined()
+    expect(p.next).toContain("Moliya")
+    const forged = await confirmToken("delete_event", admin, f.eid)
+    expect(await call(admin, "delete_event", { event_id: f.eid, confirm_token: forged })).toEqual({ ok: false, error: "Tadbirda to'lovi bor ishtirokchilar bor — avval Moliyada to'lovlarni qaytaring yoki bekor qiling" })
+    expect(await exists(f.eid)).toBe(true)
+    expect((await testSql!`select count(*)::int n from public.event_participants where event_id = ${f.eid}`)[0]!.n).toBe(1)
+  } finally { await dropFixture(f) }
+})
+
+test.skipIf(!testSql)("delete_event: a Tadbirlar user without Moliya cannot see the payment, gets a token, and the DB guard still refuses the delete", async () => {
+  const f = await delFixture("DelBlind", true)
+  try {
+    const p = await preview(evUser, f.eid)
+    expect(p.blocked_by_payments).toBe(0)
+    expect(p.confirm_token).toBeTruthy()
+    expect(await call(evUser, "delete_event", { event_id: f.eid, confirm_token: p.confirm_token })).toEqual({ ok: false, error: "Tadbirda to'lovi bor ishtirokchilar bor — avval Moliyada to'lovlarni qaytaring yoki bekor qiling" })
+    expect(await exists(f.eid)).toBe(true)
+  } finally { await dropFixture(f) }
+})
+
+test.skipIf(!testSql)("delete_event: unknown event is Tadbir topilmadi on both paths", async () => {
+  const e = id()
+  expect(await call(admin, "delete_event", { event_id: e })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(admin, "delete_event", { event_id: e, confirm_token: await confirmToken("delete_event", admin, e) })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+})
+
+test.skipIf(!testSql)("delete_event with JWT_SECRET unset refuses both paths and deletes nothing", async () => {
+  const f = await delFixture("DelNoSecret")
+  const t = (await preview(admin, f.eid)).confirm_token!
+  delete process.env.JWT_SECRET
+  try {
+    expect(await call(admin, "delete_event", { event_id: f.eid })).toEqual({ ok: false, error: "O'chirish hozircha sozlanmagan" })
+    expect(await call(admin, "delete_event", { event_id: f.eid, confirm_token: t })).toEqual({ ok: false, error: "O'chirish hozircha sozlanmagan" })
+    expect(await exists(f.eid)).toBe(true)
+  } finally { process.env.JWT_SECRET = "delete-event-test-secret"; await dropFixture(f) }
 })

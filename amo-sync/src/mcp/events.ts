@@ -1,6 +1,7 @@
 // The connector's event tools. Fixed statements with bound parameters only, through the user's transaction (`tx`).
 import * as z from "zod"
 import type { UserSql } from "./db"
+import { confirmOk, confirmToken } from "./confirm"
 import { date, limit, offset, tool, ToolError, uuid } from "./def"
 import type { ToolDef } from "./def"
 
@@ -41,6 +42,8 @@ async function needManager(tx: UserSql, id: string): Promise<void> {
   const [m] = await tx`select 1 from public.profiles where id = ${id} and is_active is distinct from false`
   if (!m) throw new ToolError("Mas'ul topilmadi yoki nofaol")
 }
+
+const isGuard = (e: unknown) => e instanceof Error && e.message.includes("participant_has_payments")
 
 const isFk = (e: unknown) => e instanceof Error && (e as { code?: string }).code === "23503"
 
@@ -132,5 +135,35 @@ export const EVENT_TOOLS: ToolDef[] = [
         }
       }
       return eventDetail(tx, a.event_id)
+    } }),
+  tool({ name: "delete_event", title: "Delete an event", module: "tadbirlar", write: true, destructive: true,
+    input: { event_id: uuid, confirm_token: z.string().min(1).max(500).optional() },
+    description: "Deleting is permanent and removes the event's participants, tariffs and tasks. First call without confirm_token, show the returned summary to the user, and call again with the token only after they explicitly agree to delete this event. Expenses and the linked voronka are kept (detached). An event whose participants have payments cannot be deleted: those are handled in Moliya.",
+    run: async (tx, a, me) => {
+      if (!process.env.JWT_SECRET) throw new ToolError("O'chirish hozircha sozlanmagan")
+      const [ev] = await tx<{ id: string; name: string; date: string | null }[]>`select id, name, date from public.events where id = ${a.event_id}`
+      if (!ev) throw new ToolError("Tadbir topilmadi")
+      if (a.confirm_token === undefined) {
+        const [n] = await tx<{ participants: number; tariffs: number; tasks: number; expenses: number; pipelines: number; blocked: number }[]>`select
+          (select count(*)::int from public.event_participants where event_id = ${ev.id}) as participants,
+          (select count(*)::int from public.event_tariffs where event_id = ${ev.id}) as tariffs,
+          (select count(*)::int from public.tasks where event_id = ${ev.id}) as tasks,
+          (select count(*)::int from public.expenses where event_id = ${ev.id}) as expenses,
+          (select count(*)::int from public.crm_pipelines where event_id = ${ev.id}) as pipelines,
+          (select count(*)::int from public.event_participants p where p.event_id = ${ev.id}
+            and exists (select 1 from public.payments y where y.participant_id = p.id and y.voided_at is null)) as blocked`
+        const summary = { event: { id: ev.id, name: ev.name, date: ev.date }, will_delete: { participants: n!.participants, tariffs: n!.tariffs, tasks: n!.tasks }, will_detach: { expenses: n!.expenses, pipelines: n!.pipelines }, blocked_by_payments: n!.blocked }
+        if (n!.blocked > 0) return { ...summary, next: "This event cannot be deleted while its participants have payments. Payments are handled in Moliya (void or refund them first)." }
+        return { ...summary, confirm_token: await confirmToken("delete_event", me.id, ev.id), expires_in: 600, next: "Show this summary to the user and ask for an explicit yes. Only then call delete_event again with confirm_token." }
+      }
+      if (!(await confirmOk(a.confirm_token, "delete_event", me.id, ev.id))) throw new ToolError("Tasdiqlash kodi yaroqsiz yoki muddati o'tgan — avval tasdiq so'rang")
+      try {
+        const gone = await tx`delete from public.events where id = ${ev.id} returning id`
+        if (!gone.length) throw new ToolError("Tadbir topilmadi")
+      } catch (e) {
+        if (isGuard(e)) throw new ToolError("Tadbirda to'lovi bor ishtirokchilar bor — avval Moliyada to'lovlarni qaytaring yoki bekor qiling")
+        throw e
+      }
+      return { deleted: true, name: ev.name }
     } }),
 ]
