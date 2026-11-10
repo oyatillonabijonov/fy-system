@@ -46,9 +46,9 @@ afterAll(async () => {
 
 const names = (uid: string) => asUser(uid, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))
 
-test.skipIf(!testSql)("a seller gets six tools, an admin all twelve", async () => {
+test.skipIf(!testSql)("a seller gets six tools, an admin all fourteen", async () => {
   expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis"])
-  expect(await names(admin)).toHaveLength(12)
+  expect(await names(admin)).toHaveLength(14)
 })
 
 test.skipIf(!testSql)("reference: no Sotuv module gives an explicit marker for pipelines, a seller gets the list", async () => {
@@ -251,7 +251,7 @@ const modern = (token: string, method: string, params: Record<string, unknown> =
 const toolNames = async (r: Response) => ((await r.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort()
 const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"]
 
-test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin twelve, back to back), JSON and no-store", async () => {
+test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin fourteen, back to back), JSON and no-store", async () => {
   const a = (await openConnection(testSql!, sellerA, "test-client")).access_token
   const adm = (await openConnection(testSql!, admin, "test-client")).access_token
   const r1 = await modern(a, "tools/list")
@@ -259,7 +259,7 @@ test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin twe
   expect(r1.headers.get("content-type")).toContain("application/json")
   expect(r1.headers.get("cache-control")).toBe("no-store")
   expect(await toolNames(r1)).toEqual(SELLER_TOOLS)
-  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(12)
+  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(14)
   expect(await toolNames(await modern(a, "tools/list"))).toEqual(SELLER_TOOLS)
 })
 
