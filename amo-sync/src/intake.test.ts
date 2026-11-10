@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import type { Sql } from "postgres"
-import { health, parseLead } from "./intake"
+import { fetchMetaLead, health, parseLead } from "./intake"
 
 test("Tilda form: name/phone by field name, the rest as details, service fields dropped", () => {
   const p = parseLead({ Name: "Aziz Karimov", Phone: "+998 (90) 123-45-67", Soha: "IT", tranid: "123:456", formid: "form1", COOKIES: "x" })
@@ -33,4 +33,44 @@ test("health: a fresh backup is enough — the AmoCRM sync is gone, so no amocrm
   expect(body.checks.amocrm).toBeUndefined()
   expect(body.checks.backup).toBe(true)
   expect(res.status).toBe(200)
+})
+
+test("Meta: when Graph refuses the ad fields, the lead is fetched again without them", async () => {
+  const urls: string[] = []
+  const fake = (async (u: string | URL | Request) => {
+    urls.push(String(u))
+    return urls.length === 1
+      ? new Response('{"error":{"code":200}}', { status: 400 })
+      : Response.json({ form_id: "9", field_data: [{ name: "phone_number", values: ["+998901112233"] }] })
+  }) as typeof fetch
+  const logged: unknown[][] = []
+  const orig = console.error
+  console.error = (...a: unknown[]) => { logged.push(a) }
+  try {
+    const lead = await fetchMetaLead("777", "tok", fake)
+    expect(urls).toHaveLength(2)
+    expect(urls[0]).toContain("campaign_id")
+    expect(urls[1]).not.toContain("campaign_id")
+    expect(lead.field_data?.[0].name).toBe("phone_number")
+  } finally { console.error = orig }
+  expect(logged).toHaveLength(1)
+  expect(String(logged[0][0])).toContain("Graph 400")
+})
+
+test("Meta: a Graph answer with ad fields is returned as is, in one request", async () => {
+  let n = 0
+  const fake = (async () => { n++; return Response.json({ form_id: "9", campaign_id: "3", field_data: [] }) }) as typeof fetch
+  expect((await fetchMetaLead("777", "tok", fake)).campaign_id).toBe("3")
+  expect(n).toBe(1)
+})
+
+test("Meta: both requests failing is an error (the caller logs it, as today)", async () => {
+  const fake = (async () => new Response("nope", { status: 500 })) as typeof fetch
+  const logged: unknown[][] = []
+  const orig = console.error
+  console.error = (...a: unknown[]) => { logged.push(a) }
+  try {
+    await expect(fetchMetaLead("777", "tok", fake)).rejects.toThrow("Graph 500")
+  } finally { console.error = orig }
+  expect(logged.some((a) => String(a[0]).includes("lid ularsiz olindi"))).toBe(false)
 })
