@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneX, ArrowRight, Plus, Play, X } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
+import { isSeller } from "@/lib/supabase/queries/auth"
 import { usePhone } from "@/context/PhoneContext"
 import { useCalls, usePipelines, useStages, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeCalls, canonPhone, type CallFilter, type CallRow } from "@/lib/supabase/queries/sotuv"
@@ -42,7 +43,7 @@ export function SotuvCalls() {
   if (mobile) {
     return (
       <div className="flex flex-col gap-3 pb-6">
-        <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />
+        {!isSeller(user) && <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />}
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
           {FILTERS.map(([id, label]) => (
             <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)} className={chip(filter === id)}>{label}</button>

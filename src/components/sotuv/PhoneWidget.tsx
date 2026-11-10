@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion"
-import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X, DotsSixVertical, DotsNine } from "@phosphor-icons/react"
+import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X, DotsSixVertical, DotsNine, CaretDown, CornersOut } from "@phosphor-icons/react"
 import { usePhone } from "@/context/PhoneContext"
 import { formatPhone } from "@/lib/format"
 import { canonPhone } from "@/lib/supabase/queries/sotuv"
 import { analyse } from "@/lib/phoneAudio"
 import { DialKeys } from "@/components/sotuv/DialPad"
+import { useMedia } from "@/hooks/useMedia"
 
 const POS_KEY = "fy_call_pos"   // where the card was dragged to (offset from bottom-right)
 function savedPos(): { x: number; y: number } {
@@ -32,6 +33,11 @@ export function PhoneWidget() {
   const [now, setNow] = useState(() => Date.now())
   const [error, setError] = useState<string | null>(null)
   const [keys, setKeys] = useState(false)
+  const phone = useMedia("(width < 64rem)")
+  // phone: shrunk to the card, to work on the bitim mid-call; a new call opens full screen again
+  const [miniFor, setMiniFor] = useState<string | null>(null)
+  const mini = !!call && miniFor === call.id
+  const setMini = (on: boolean) => setMiniFor(on && call ? call.id : null)
 
   useEffect(() => {
     if (call?.state !== "active") return
@@ -46,6 +52,85 @@ export function PhoneWidget() {
   async function onAnswer() {
     setError(null)
     try { await answer() } catch { setError("Mikrofonga ruxsat bering") }
+  }
+
+  const busyList = busyCalls.length > 0 && (
+    <div className={`flex flex-col gap-2 ${call ? "pt-3 border-t border-line" : ""}`}>
+      <span className="text-sm text-ink-muted">{call ? "Yana qo'ng'iroq qilishdi, tugatgach qayta qo'ng'iroq qiling" : "Band paytingizda qo'ng'iroq qilishdi"}</span>
+      <div className="flex flex-col gap-2 max-h-40 overflow-y-auto no-scrollbar">
+        {busyCalls.map((b) => (
+          <div key={b.phone} className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <span className="block text-base font-medium text-ink truncate">{b.name ?? formatPhone(canonPhone(b.phone) || b.phone)}</span>
+              {b.name && <span className="block text-sm text-ink-muted tabular-nums truncate">{formatPhone(canonPhone(b.phone))}</span>}
+            </div>
+            {!call && status === "ready" && (
+              <button type="button" aria-label="Qayta qo'ng'iroq qilish" title="Qayta qo'ng'iroq qilish"
+                onClick={() => { setError(null); dial(b.phone).then(() => clearBusyCall(b.phone)).catch(() => setError("Mikrofonga ruxsat bering")) }}
+                className="size-9 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity"><Phone size={16} weight="fill" /></button>
+            )}
+            <button type="button" onClick={() => clearBusyCall(b.phone)} aria-label="Ro'yxatdan olib tashlash"
+              className="size-9 shrink-0 rounded-full text-ink-muted flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"><X size={16} /></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  // Phone: a live call takes the whole screen, like the phone's own call screen
+  if (phone && call && call.state !== "ended" && !mini) {
+    const name = call.contact?.name ?? formatPhone(canonPhone(call.phone) || call.phone)
+    const big = "size-[72px] rounded-full inline-flex items-center justify-center active:opacity-80 transition-opacity"
+    const small = "size-16 rounded-full inline-flex items-center justify-center active:opacity-80 transition-colors"
+    return (
+      <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="fixed inset-0 z-[120] bg-surface-raised text-ink flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+3rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+        <button onClick={() => setMini(true)} aria-label="Kichraytirish"
+          className="absolute left-4 top-[calc(env(safe-area-inset-top)+0.75rem)] size-11 rounded-full flex items-center justify-center text-ink-muted active:bg-surface-sunken"><CaretDown size={24} weight="light" /></button>
+        <div className="flex flex-col items-center gap-2 text-center">
+          <span className={`size-24 rounded-full flex items-center justify-center bg-surface-sunken text-ink-muted ${call.state === "ringing" ? "animate-pulse" : ""}`}>
+            <Icon size={40} weight="thin" />
+          </span>
+          <span className="mt-2 text-2xl font-semibold line-clamp-2">{name}</span>
+          {call.contact && <span className="text-base text-ink-muted tabular-nums">{formatPhone(canonPhone(call.phone))}</span>}
+          <span className="text-base text-ink-muted tabular-nums">{label}</span>
+          {call.contact?.leadId && (
+            <Link to={`/sotuv/bitim/${call.contact.leadId}`} onClick={() => setMini(true)}
+              className="mt-2 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface-sunken text-sm text-ink max-w-full">
+              <span className="truncate">{call.contact.leadName}</span><ArrowRight size={16} className="text-ink-muted shrink-0" />
+            </Link>
+          )}
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center gap-4 min-h-0">
+          {call.state === "active" && !keys && <CallBars getStream={remoteStream} />}
+          {call.state === "active" && keys && <DialKeys onKey={sendDigit} />}
+          {busyList}
+        </div>
+
+        {error && <span role="alert" className="mb-3 text-center text-sm text-danger-text">{error}</span>}
+        {call.state === "ringing" && call.dir === "in" ? (
+          <div className="flex justify-around">
+            <span className="flex flex-col items-center gap-2 text-sm text-ink-muted">
+              <button onClick={hangup} aria-label="Rad etish" className={`${big} bg-danger text-white`}><PhoneDisconnect size={32} weight="fill" /></button>Rad etish
+            </span>
+            <span className="flex flex-col items-center gap-2 text-sm text-ink-muted">
+              <button onClick={onAnswer} aria-label="Javob berish" className={`${big} bg-success text-white`}><Phone size={32} weight="fill" /></button>Javob berish
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-around">
+            <button onClick={() => setKeys((k) => !k)} disabled={call.state !== "active"} aria-pressed={keys} aria-label="Raqam tugmalari"
+              className={`${small} disabled:opacity-40 ${keys ? "bg-mute-soft" : "bg-surface-sunken"}`}><DotsNine size={28} weight="light" /></button>
+            <button onClick={hangup} aria-label="Tugatish" className={`${big} bg-danger text-white`}><PhoneDisconnect size={32} weight="fill" /></button>
+            <button onClick={toggleMute} disabled={call.state !== "active"} aria-pressed={call.muted} aria-label={call.muted ? "Mikrofonni yoqish" : "Mikrofonni o'chirish"}
+              className={`${small} disabled:opacity-40 ${call.muted ? "bg-warning-soft text-warning-text" : "bg-surface-sunken"}`}>
+              {call.muted ? <MicrophoneSlash size={28} weight="light" /> : <Microphone size={28} weight="light" />}
+            </button>
+          </div>
+        )}
+      </motion.div>
+    )
   }
 
   return (
@@ -67,7 +152,9 @@ export function PhoneWidget() {
               {call.contact && <span className="block text-sm text-ink-muted tabular-nums truncate">{formatPhone(canonPhone(call.phone))}</span>}
               <span className={`block text-sm tabular-nums ${call.state === "ended" ? "text-ink-faint" : "text-ink-muted"}`}>{label}</span>
             </div>
-            {call.state !== "ended" && <DotsSixVertical size={16} className="text-ink-faint shrink-0 mt-1" aria-hidden />}
+            {call.state !== "ended" && (phone
+              ? <button onClick={() => setMini(false)} onPointerDown={(e) => e.stopPropagation()} aria-label="Kattalashtirish" className="size-9 -m-1 rounded-full flex items-center justify-center text-ink-muted active:bg-surface-sunken"><CornersOut size={20} /></button>
+              : <DotsSixVertical size={16} className="text-ink-faint shrink-0 mt-1" aria-hidden />)}
             {call.state === "ended" && (
               <button onClick={dismiss} onPointerDown={(e) => e.stopPropagation()} aria-label="Yopish" className="p-1 rounded-full text-ink-muted hover:bg-mute-ghost-hover transition-colors"><X size={16} /></button>
             )}
@@ -119,28 +206,7 @@ export function PhoneWidget() {
 
           {error && <span role="alert" className="text-sm text-danger-text">{error}</span>}
 
-          {busyCalls.length > 0 && (
-            <div className={`flex flex-col gap-2 ${call ? "pt-3 border-t border-line" : ""}`}>
-              <span className="text-sm text-ink-muted">{call ? "Yana qo'ng'iroq qilishdi, tugatgach qayta qo'ng'iroq qiling" : "Band paytingizda qo'ng'iroq qilishdi"}</span>
-              <div className="flex flex-col gap-2 max-h-40 overflow-y-auto no-scrollbar">
-                {busyCalls.map((b) => (
-                  <div key={b.phone} className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="block text-base font-medium text-ink truncate">{b.name ?? formatPhone(canonPhone(b.phone) || b.phone)}</span>
-                      {b.name && <span className="block text-sm text-ink-muted tabular-nums truncate">{formatPhone(canonPhone(b.phone))}</span>}
-                    </div>
-                    {!call && status === "ready" && (
-                      <button type="button" aria-label="Qayta qo'ng'iroq qilish" title="Qayta qo'ng'iroq qilish"
-                        onClick={() => { setError(null); dial(b.phone).then(() => clearBusyCall(b.phone)).catch(() => setError("Mikrofonga ruxsat bering")) }}
-                        className="size-9 shrink-0 rounded-full bg-success text-white flex items-center justify-center hover:opacity-90 transition-opacity"><Phone size={16} weight="fill" /></button>
-                    )}
-                    <button type="button" onClick={() => clearBusyCall(b.phone)} aria-label="Ro'yxatdan olib tashlash"
-                      className="size-9 shrink-0 rounded-full text-ink-muted flex items-center justify-center hover:bg-mute-ghost-hover transition-colors"><X size={16} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {busyList}
         </motion.div>
         </div>
       )}

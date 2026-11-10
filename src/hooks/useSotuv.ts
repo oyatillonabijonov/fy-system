@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getPipelines, getStages, getLeads, getLead, createLead, updateLead, deleteLead,
-  getNotes, getLeadCalls, getCalls, getDuplicateLeads, mergeLeads, renameClient, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
+  getNotes, getLeadCalls, getCalls, getCallbacks, getMyNewLeads, getDuplicateLeads, mergeLeads, renameClient, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
   createPipeline, renamePipeline, setPipelineEvent, setPipelineAutoAssign, getPipelineSellers, setPipelineSeller, deletePipeline, saveStage, deleteStage,
   type CallFilter, type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
 } from "@/lib/supabase/queries/sotuv"
@@ -27,6 +27,9 @@ export const useLeadTasks = (id: string) => useQuery({ queryKey: K.tasks(id), qu
 export const useLeadCalls = (id: string) => useQuery({ queryKey: [...SOTUV_KEY, "calls", id], queryFn: () => getLeadCalls(id), refetchOnMount: true })
 export const useCalls = (o: { page: number; filter: CallFilter; staffId: string | null }) =>
   useQuery({ queryKey: [...SOTUV_KEY, "calls-page", o], queryFn: () => getCalls(o), refetchOnMount: true, placeholderData: (prev) => prev })
+export const useCallbacks = () => useQuery({ queryKey: [...SOTUV_KEY, "callbacks"], queryFn: getCallbacks, refetchOnMount: true })
+export const useMyNewLeads = (userId: string | undefined) =>
+  useQuery({ queryKey: [...SOTUV_KEY, "my-new-leads", userId], queryFn: () => getMyNewLeads(userId!), enabled: !!userId, refetchOnMount: true })
 export const useDuplicateLeads = () => useQuery({ queryKey: [...SOTUV_KEY, "duplicates"], queryFn: getDuplicateLeads, refetchOnMount: true })
 export const useMergeLeads = () => useSotuvMutation(({ keep, drop }: { keep: string; drop: string }) => mergeLeads(keep, drop), "Bitimlar birlashtirildi")
 export const useRenameClient = () => useSotuvMutation(({ id, name }: { id: string; name: string }) => renameClient(id, name), "Mijoz ismi saqlandi")

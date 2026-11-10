@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { Plus, Kanban, Rows, CheckSquare, GearSix, MagnifyingGlass, Funnel, Copy, DotsThree, CaretRight, CalendarBlank } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
+import { isSeller } from "@/lib/supabase/queries/auth"
 import { usePipelines, useStages, useLeads, useCreatePipeline, useDuplicateLeads, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeLeads, sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { tashkentToday } from "@/lib/period"
@@ -28,7 +29,9 @@ const LAST_PIPELINE = "fy_last_crm_pipeline_id"
 type View = "kanban" | "list" | "tasks"
 
 export function Sotuv() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
+  const seller = isSeller(user)
+  const [mineOnly, setMineOnly] = useState(seller)   // phone: a seller sees their own bitimlar first
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [params, setParams] = useSearchParams()
@@ -109,14 +112,18 @@ export function Sotuv() {
   if (mobile) {
     // The phone shows cards unless Kanban was asked for; "list" (the desktop table) is the same cards
     const mview = view === "tasks" ? "tasks" : params.get("v") === "kanban" ? "board" : "cards"
+    const cards = mineOnly ? shown.filter((l) => l.responsible_user_id === user?.id) : shown
     return (
       <div className="flex flex-col gap-3 pb-20">
-        <SotuvSegments active={mview === "tasks" ? "tasks" : "deals"}
-          onPick={(t) => t === "calls" ? navigate("/sotuv/qongiroqlar") : set("v", t === "tasks" ? "tasks" : null)} />
+        {/* a seller has these as tabs at the bottom */}
+        {!seller && <SotuvSegments active={mview === "tasks" ? "tasks" : "deals"}
+          onPick={(t) => t === "calls" ? navigate("/sotuv/qongiroqlar") : set("v", t === "tasks" ? "tasks" : null)} />}
 
         {mview !== "tasks" && (
           <>
-            <div role="tablist" aria-label="Voronkalar" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <div role="tablist" aria-label="Voronkalar" className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+              <button type="button" aria-pressed={mineOnly} onClick={() => setMineOnly(!mineOnly)} className={chip(mineOnly)}>Mening</button>
+              <span className="w-px h-5 bg-line shrink-0" aria-hidden />
               {pipelines.map((p) => (
                 <button key={p.id} role="tab" aria-selected={p.id === pid} onClick={() => pick(p.id)}
                   className={chip(p.id === pid)}>
@@ -148,8 +155,8 @@ export function Sotuv() {
 
         {mview === "tasks" ? <SalesTasks today={today} />
           : leadsLoading || !pipeline ? <div className="bg-surface-sunken rounded-surface py-12 text-center text-base text-ink-muted">Yuklanmoqda…</div>
-          : mview === "board" ? <Board stages={stages} leads={shown} today={today} onOpen={open} onAdd={(stageId) => setCreating({ stageId })} />
-          : <LeadCards stages={stages} leads={shown} today={today} onOpen={open} />}
+          : mview === "board" ? <Board stages={stages} leads={cards} today={today} onOpen={open} onAdd={(stageId) => setCreating({ stageId })} />
+          : <LeadCards stages={stages} leads={cards} today={today} onOpen={open} />}
 
         {mview !== "tasks" && pipeline && <Fab icon={<Plus size={20} weight="bold" />} label="Bitim" onClick={() => setCreating({ stageId: null })} />}
 

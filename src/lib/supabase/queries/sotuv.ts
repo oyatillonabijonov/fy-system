@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { pickCallbacks, type Callback, type CallbackRow } from "@/lib/phoneCall"
 import { supabase } from "../client"
 
 // ponytail: untyped client until `bun run gen:types` picks up migration 072
@@ -367,6 +368,27 @@ export async function getLeadCalls(leadId: string): Promise<Call[]> {
     .eq("lead_id", leadId).order("started_at")
   if (error) throw error
   return data as unknown as Call[]
+}
+
+/** ponytail: last 3 days of calls, sorted out in the browser (`pickCallbacks`); a SQL function if call volume grows past a few hundred a day */
+export async function getCallbacks(): Promise<Callback[]> {
+  const since = new Date(Date.now() - 3 * 86_400_000).toISOString()
+  const { data, error } = await db.from("crm_calls")
+    .select("phone, direction, talk_time, started_at, lead_id, client:client_id(full_name), lead:lead_id(responsible_user_id)")
+    .gte("started_at", since).not("phone", "is", null).order("started_at", { ascending: false })
+  if (error) throw error
+  return pickCallbacks(data as unknown as CallbackRow[])
+}
+
+/** Bugun: open bitimlar given to this seller in the last 2 days */
+export async function getMyNewLeads(userId: string): Promise<Pick<Lead, "id" | "name" | "source" | "created_at" | "client">[]> {
+  const { data, error } = await db.from("crm_leads")
+    .select("id, name, source, created_at, client:client_id(id, full_name, phone, image)")
+    .eq("responsible_user_id", userId).eq("is_won", false).eq("is_lost", false)
+    .gte("created_at", new Date(Date.now() - 2 * 86_400_000).toISOString())
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return data as unknown as Pick<Lead, "id" | "name" | "source" | "created_at" | "client">[]
 }
 
 /** "+998 90 123 45 67", "901234567", "998901234567" → "+998901234567" (other countries: digits) */
