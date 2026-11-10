@@ -110,7 +110,7 @@ test.skipIf(!testSql)("authorize GET escapes hostile state in the page", async (
   expect(body).not.toContain("<script>alert(1)")
   expect(body).not.toContain("<script")
   expect(body).toContain("&#60;script&#62;alert(1)")
-  expect(body).toContain("Kirish va ruxsat berish")
+  expect(body).toContain("Claude&#39;ga ruxsat berish")
   expect(body).toContain("claude.ai")
   expect(res!.headers.get("cache-control")).toBe("no-store")
 })
