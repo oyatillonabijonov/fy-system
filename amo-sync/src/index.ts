@@ -6,6 +6,7 @@
 // deadline reminders (src/tasks.ts); tasks from the team chat (src/taskbot.ts, Gemini); form
 // webhooks that open bitimlar (src/intake.ts, :8787 behind /hooks/); OnlinePBX call history and
 // the browser phone's endpoints (src/pbx.ts, /hooks/pbx/); SMS to clients through Eskiz (src/sms.ts).
+// The Claude connector (src/mcp/, /mcp + sign-in, off until MCP_PUBLIC_URL is set) rides the same HTTP handler.
 //
 // Env: DATABASE_URL, SYNC_INTERVAL_MIN (10). `bun run src/index.ts --once` runs one pass and exits.
 
