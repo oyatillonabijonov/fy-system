@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneX, ArrowRight, Plus, Play, X } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
@@ -13,6 +13,8 @@ import { Pager } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { useMedia } from "@/hooks/useMedia"
+import { CallScore } from "@/components/sotuv/CallAnalysis"
+import { CallStats } from "@/components/sotuv/CallStats"
 import { EmptyNote, Recording, ROUND_BTN, ROW_BTN, RowCall, SotuvSegments, callLabel, chip, secs } from "@/components/sotuv/ui"
 
 const FILTERS: [CallFilter, string][] = [["all", "Hammasi"], ["in", "Kiruvchi"], ["out", "Chiquvchi"], ["missed", "Javobsiz"]]
@@ -40,10 +42,25 @@ export function SotuvCalls() {
 
   const choose = (f: CallFilter) => { setFilter(f); setPage(0) }
 
+  // ?tab=tahlil — the AI analysis summary (090) instead of the list
+  const [params, setParams] = useSearchParams()
+  const stats = params.get("tab") === "tahlil"
+  const tabs = (
+    <div role="radiogroup" aria-label="Bo'lim" className="self-start inline-flex gap-1 p-1 rounded-control bg-surface-sunken max-lg:bg-fill">
+      {([[false, "Qo'ng'iroqlar"], [true, "Tahlil"]] as const).map(([v, label]) => (
+        <button key={label} type="button" role="radio" aria-checked={stats === v} onClick={() => setParams(v ? { tab: "tahlil" } : {}, { replace: true })}
+          className={`h-7 max-lg:h-9 px-3 rounded-item text-sm font-medium whitespace-nowrap transition-colors ${stats === v ? "bg-surface max-lg:bg-card text-ink" : "text-ink-muted hover:text-ink"}`}>{label}</button>
+      ))}
+    </div>
+  )
+  const segments = mobile && !isSeller(user) && <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />
+  if (stats) return <div className="flex flex-col gap-3 lg:gap-5 pb-6 lg:pb-10">{segments}{tabs}<CallStats /></div>
+
   if (mobile) {
     return (
       <div className="flex flex-col gap-3 pb-6">
-        {!isSeller(user) && <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />}
+        {segments}
+        {tabs}
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
           {FILTERS.map(([id, label]) => (
             <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)} className={chip(filter === id)}>{label}</button>
@@ -67,6 +84,7 @@ export function SotuvCalls() {
   return (
     <div className="flex flex-col gap-5 pb-10">
       <div className="flex flex-wrap items-center gap-3">
+        {tabs}
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {FILTERS.map(([id, label]) => (
             <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)}
@@ -133,6 +151,7 @@ function CallRowCard({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
           {!c.lead_id && phone && <span className="mt-1 self-start inline-flex items-center gap-1 h-6 px-2 rounded-full bg-warning-soft text-warning-text text-xs font-medium"><Plus size={12} weight="bold" />Bitim yaratish</span>}
         </span>
         <span onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+          <CallScore call={c} />
           {!missed && (
             <button type="button" onClick={() => setListening((v) => !v)} aria-pressed={listening} aria-label={listening ? "Yozuvni yopish" : "Yozuvni tinglash"}
               className={listening ? `${ROUND_BTN} bg-accent text-ink-on-accent` : `${ROW_BTN} text-ink`}>{listening ? <X size={16} /> : <Play size={16} weight="fill" />}</button>
@@ -171,7 +190,7 @@ function CallRowView({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
           : <span className="text-ink-muted">{c.ext ?? "—"}</span>}
       </td>
       <td className={`${tbl.td} tabular-nums whitespace-nowrap text-ink-muted`}>{when(c.started_at)}</td>
-      <td className={tbl.td}>{missed ? <span className="text-ink-faint">—</span> : <Recording uuid={c.uuid} compact />}</td>
+      <td className={tbl.td}>{missed ? <span className="text-ink-faint">—</span> : <span className="flex items-center gap-2"><Recording uuid={c.uuid} compact /><CallScore call={c} /></span>}</td>
       <td className={`${tbl.td} text-right`}>
         {/* Fixed widths, so the call and bitim buttons line up row under row */}
         <span className="inline-flex items-center justify-end gap-1.5">

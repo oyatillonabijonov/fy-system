@@ -11,7 +11,7 @@ import { preloadNotify } from "@/lib/phoneAudio"
 const TOUCHES: Record<string, string[] | "all"> = {
   profiles: "all",
   clients: ["clients", "client-journey", "client-participations", "client-event-history", "client-cashback", "clients-last-event-dates", "participants", "sotuv", "finance", "sales-dashboard"],
-  crm_leads: ["sotuv", "sales-dashboard"], crm_stages: ["sotuv", "sales-dashboard"], crm_calls: ["sotuv", "sales-dashboard"],
+  crm_leads: ["sotuv", "sales-dashboard"], crm_stages: ["sotuv", "sales-dashboard"], crm_calls: ["sotuv", "sales-dashboard"], crm_call_analyses: ["sotuv"],
   crm_tasks: ["sotuv", "sales-dashboard"], crm_notes: ["sotuv", "sales-dashboard"],
   tasks: ["tasks"], task_comments: ["tasks"], task_attachments: ["tasks"], task_projects: ["tasks"],
   events: ["events", "event-participant-counts", "tasks", "finance"], event_tariffs: ["event-tariffs"],

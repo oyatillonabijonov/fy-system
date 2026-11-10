@@ -40,6 +40,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 /** Sotuv staff (not admins) get the seller layout on a phone: Bugun, Bitimlar, Qo'ng'iroqlar, Vazifalar */
 export const isSeller = (u: Pick<UserProfile, "department" | "role"> | null | undefined) => u?.department === "sotuv" && u.role !== "admin"
+/** Sees every seller's call analyses (090: public.is_manager) */
+export const isManager = (u: Pick<UserProfile, "role"> | null | undefined) => u?.role === "admin" || u?.role === "manager"
 
 export interface UserProfile {
   id: string

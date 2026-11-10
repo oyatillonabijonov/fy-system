@@ -16,6 +16,7 @@ import { startTaskBot } from "./taskbot"
 import { startMissedCalls } from "./missedCalls"
 import { startIntake } from "./intake"
 import { startPbxSync } from "./pbx"
+import { startCallAnalysis } from "./callAnalysis"
 import { seedGroups } from "./groups"
 import { startSms } from "./sms"
 
@@ -59,6 +60,7 @@ if (process.argv.includes("--once")) {
   await startTaskBot(sql).catch((e) => console.error(`[taskbot] ${e instanceof Error ? e.message : e}`))
   startIntake(sql)
   startPbxSync(sql)
+  startCallAnalysis(sql)
   await startSms(sql).catch((e) => console.error(`[sms] ${e instanceof Error ? e.message : e}`))
   for (;;) {
     await runOnce()
