@@ -20,7 +20,7 @@ export async function pkceOk(verifier: string, challenge: string): Promise<boole
 export function redirectAllowed(uri: string): boolean {
   let u: URL
   try { u = new URL(uri) } catch { return false }
-  if (u.username || u.password || u.search || u.hash) return false
+  if (u.href !== uri || /[?#]/.test(uri) ||u.username ||u.password || u.search || u.hash) return false
   if (u.protocol === "https:") return u.hostname === "claude.ai" && u.port === "" && u.pathname === "/api/mcp/auth_callback"
   if (u.protocol === "http:") return (u.hostname === "localhost" || u.hostname === "127.0.0.1") && u.pathname === "/callback"
   return false
