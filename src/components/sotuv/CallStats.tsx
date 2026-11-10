@@ -7,7 +7,10 @@ import { tashkentToday } from "@/lib/period"
 import { tbl } from "@/components/ui/table"
 import { Sheet } from "@/components/ui/Sheet"
 import { useMedia } from "@/hooks/useMedia"
-import { useCallStats, useSalesScript, useSaveSalesScript } from "@/hooks/useCallAnalysis"
+import { Pager, usePaged } from "@/components/ui/Pager"
+import { CallAnalysisSheet } from "@/components/sotuv/CallAnalysis"
+import { formatPhone } from "@/lib/format"
+import { useAnalysedCalls, useCallStats, useSalesScript, useSaveSalesScript } from "@/hooks/useCallAnalysis"
 import { TAG_LABEL, scoreTone, type SellerStats } from "@/lib/supabase/queries/callAnalysis"
 
 const PERIODS = [[7, "7 kun"], [30, "30 kun"], [90, "90 kun"]] as const
@@ -54,7 +57,11 @@ export function CallStats() {
   const [scriptOpen, setScriptOpen] = useState(false)
   const cards = useMedia("(width < 64rem)") || !isManager(user)   // a seller has one row: a card reads better
   const today = tashkentToday()
-  const { data: sellers = [], isLoading } = useCallStats(daysAgo(today, days - 1), today)
+  const from = daysAgo(today, days - 1)
+  const { data: sellers = [], isLoading } = useCallStats(from, today)
+  // The calls behind a seller's row; the first seller's are open from the start
+  const [picked, setPicked] = useState<string | null>(null)
+  const seller = sellers.find((s) => s.staff_id === picked) ?? sellers[0] ?? null
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,7 +83,9 @@ export function CallStats() {
         : cards ? (
           <ul className="flex flex-col gap-3">
             {sellers.map((s) => (
-              <li key={s.staff_id} className="rounded-surface bg-surface-sunken p-4 flex flex-col gap-3">
+              <li key={s.staff_id} role="button" tabIndex={0} aria-pressed={seller?.staff_id === s.staff_id}
+                onClick={() => setPicked(s.staff_id)} onKeyDown={(e) => { if (e.key === "Enter") setPicked(s.staff_id) }}
+                className={`rounded-surface bg-surface-sunken p-4 flex flex-col gap-3 cursor-pointer ${seller?.staff_id === s.staff_id && sellers.length > 1 ? "ring-2 ring-accent" : ""}`}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-base font-semibold text-ink truncate">{s.name}</span>
                   <Score n={s.avg_score} />
@@ -98,7 +107,9 @@ export function CallStats() {
               </thead>
               <tbody>
                 {sellers.map((s) => (
-                  <tr key={s.staff_id} className={tbl.tr}>
+                  <tr key={s.staff_id} tabIndex={0} aria-selected={seller?.staff_id === s.staff_id} title="Suhbatlarini ko'rish"
+                    onClick={() => setPicked(s.staff_id)} onKeyDown={(e) => { if (e.key === "Enter") setPicked(s.staff_id) }}
+                    className={`${tbl.tr} cursor-pointer ${seller?.staff_id === s.staff_id && sellers.length > 1 ? "bg-surface-sunken" : ""}`}>
                     <td className={`${tbl.td} font-medium whitespace-nowrap`}>{s.name}</td>
                     <td className={`${tbl.td} tabular-nums`}>{s.calls}</td>
                     <td className={tbl.td}><Score n={s.avg_score} /></td>
@@ -110,10 +121,47 @@ export function CallStats() {
             </table>
           </div>
         )}
+      {seller && <SellerCalls key={`${seller.staff_id}-${days}`} seller={seller} from={from} to={today} />}
       <p className="text-xs text-ink-faint">Baholarni AI qo'yadi — xato bo'lishi mumkin. Bitta suhbatdan ko'ra haftalik o'zgarishga qarang.</p>
 
       {scriptOpen && <ScriptSheet onClose={() => setScriptOpen(false)} />}
     </div>
+  )
+}
+
+const when = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent" })
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
+
+/** A seller's analysed calls: a tap opens the full analysis */
+function SellerCalls({ seller, from, to }: { seller: SellerStats; from: string; to: string }) {
+  const { data: calls = [], isLoading } = useAnalysedCalls(seller.staff_id, from, to)
+  const { page, setPage, pageCount, pageItems } = usePaged(calls)
+  const [open, setOpen] = useState<string | null>(null)
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="text-base font-semibold text-ink px-1">{seller.name} — tahlil qilingan suhbatlar</h3>
+      {isLoading ? <p className={tbl.empty}>Yuklanmoqda…</p> : (
+        <ul className="rounded-surface bg-surface-sunken overflow-hidden">
+          {pageItems.map((c) => (
+            <li key={c.uuid} className="border-b border-line last:border-b-0">
+              <button type="button" onClick={() => setOpen(c.uuid)}
+                className="w-full min-h-14 px-4 py-2.5 flex items-center gap-3 text-left transition-colors hover:bg-surface-sunken-hover">
+                <Score n={c.analysis.score} />
+                <span className="flex-1 min-w-0 flex flex-col">
+                  <span className="text-sm font-medium text-ink truncate">{c.client?.full_name ?? formatPhone(c.phone)}</span>
+                  <span className="text-sm text-ink-muted truncate tabular-nums">
+                    {when(c.started_at)} · {c.direction === "in" ? "Kiruvchi" : "Chiquvchi"} · {clock(c.talk_time)}{c.analysis.outcome ? ` · ${c.analysis.outcome}` : ""}
+                  </span>
+                </span>
+                <span className="text-sm font-medium text-ink whitespace-nowrap shrink-0">Tahlilni ochish</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Pager page={page} pageCount={pageCount} total={calls.length} onPage={setPage} />
+      <CallAnalysisSheet uuid={open} onClose={() => setOpen(null)} />
+    </section>
   )
 }
 

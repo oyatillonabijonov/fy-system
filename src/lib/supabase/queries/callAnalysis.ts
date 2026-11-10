@@ -1,6 +1,7 @@
 // AI analysis of sales calls (migration 090). amo-sync writes crm_call_analyses; the web only reads:
 // a seller their own calls' rows, admins and managers all (RLS).
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { dayEnd, dayStart } from "@/lib/period"
 import { supabase } from "../client"
 
 // ponytail: untyped client until `bun run gen:types` picks up migration 090 (as in sotuv.ts)
@@ -64,6 +65,27 @@ export async function getCallStats(from: string, to: string): Promise<SellerStat
   const { data, error } = await db.rpc("call_analysis_stats", { p_from: from, p_to: to })
   if (error) throw error
   return (data as { sellers: SellerStats[] }).sellers
+}
+
+export interface AnalysedCall {
+  uuid: string
+  direction: "in" | "out"
+  phone: string | null
+  started_at: string
+  talk_time: number
+  client: { full_name: string } | null
+  analysis: { status: AnalysisStatus; score: number | null; outcome: string | null }
+}
+
+/** One seller's analysed calls in a period (Tashkent days), newest first — what stands behind their row in Tahlil */
+export async function getAnalysedCalls(staffId: string, from: string, to: string): Promise<AnalysedCall[]> {
+  const { data, error } = await db.from("crm_calls")
+    .select("uuid, direction, phone, started_at, talk_time, client:client_id(full_name), analysis:crm_call_analyses!inner(status, score, outcome)")
+    .eq("staff_id", staffId).eq("analysis.status", "done")
+    .gte("started_at", dayStart(from)).lte("started_at", dayEnd(to))
+    .order("started_at", { ascending: false }).limit(200)
+  if (error) throw error
+  return data as unknown as AnalysedCall[]
 }
 
 export async function getSalesScript(): Promise<string> {
