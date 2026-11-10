@@ -3,6 +3,7 @@ import * as z from "zod"
 import type { AsUser, UserSql } from "./db"
 import { date, LABEL, limit, offset, tool, ToolError, uuid } from "./def"
 import type { Me, ToolDef, ToolResult } from "./def"
+import { EVENT_TOOLS } from "./events"
 
 export type { Me, ToolDef, ToolResult }
 
@@ -68,6 +69,7 @@ export const TOOLS: ToolDef[] = [
   tool({ name: "event_results", title: "Profit per event", module: "tadbirlar-moliya", input: FIN,
     description: `Per event in so'm: agreed, collected, debt, expense and cash profit (payments minus refunds minus expenses). ${Q}`,
     run: async (tx, a) => tx`select * from public.event_profit(${a.from ?? null}::date, ${a.to ?? null}::date, ${a.event_id ?? null}::uuid)` }),
+  ...EVENT_TOOLS,
 ]
 
 const allowed = (me: Me, t: ToolDef) => t.module === null || me.isAdmin || me.modules.includes(t.module)
