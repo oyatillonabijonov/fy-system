@@ -6,6 +6,8 @@
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
+import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
+import type { Attribution, MetaLead } from "./attribution"
 import { handlePbx, pbxSyncedAt } from "./pbx"
 import { handleSms } from "./sms"
 
@@ -56,11 +58,23 @@ async function readBody(req: Request): Promise<Record<string, string>> {
   try { return flatten(JSON.parse(text)) } catch { return Object.fromEntries(new URLSearchParams(text)) }
 }
 
-async function intake(sql: Sql, source: string, token: string, p: ParsedLead, raw: Record<string, string>, voronka: string | null = null) {
+async function intake(sql: Sql, source: string, token: string, p: ParsedLead, raw: Record<string, string>, voronka: string | null = null, attribution: Attribution = {}) {
   const [{ r }] = await sql<{ r: { ok: boolean; lead_id?: string; duplicate?: boolean; skipped?: boolean } }[]>`
-    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}, ${sql.json(p.fields)}, ${voronka}) as r`
+    select public.intake_lead(${source}, ${token}, ${p.name}, ${p.phone}, ${p.details}, ${sql.json(raw)}, ${sql.json(p.fields)}, ${voronka}, ${sql.json(attribution)}) as r`
   console.log(`[intake] ${source}: ${r.skipped ? "manba o'chiq, faqat log" : r.duplicate ? "qayta murojaat" : "yangi sdelka"} ${r.lead_id ?? ""}`)
   return r
+}
+
+/** One leadgen node from Graph; if it refuses the ad fields (token rights) ask again for the answers only */
+export async function fetchMetaLead(leadgenId: string, pageToken: string, fetchFn: typeof fetch = fetch): Promise<MetaLead> {
+  const get = (fields: string) => fetchFn(`${GRAPH}/${leadgenId}?fields=${fields}&access_token=${encodeURIComponent(pageToken)}`)
+  let res = await get(META_LEAD_FIELDS)
+  if (!res.ok) {
+    console.error("[intake] meta: reklama maydonlari berilmadi (token huquqi?) — lid ularsiz olindi")
+    res = await get("field_data,form_id")
+  }
+  if (!res.ok) throw new Error(`Graph ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  return (await res.json()) as MetaLead
 }
 
 /** Meta sends only leadgen ids; the answers come from the Graph API with the page token */
@@ -71,11 +85,10 @@ async function metaLeads(sql: Sql, token: string, body: unknown) {
     if (ch.field !== "leadgen" || !ch.value.leadgen_id) continue
     if (!pageToken) { console.error("[intake] meta: META_PAGE_ACCESS_TOKEN yo'q — lid olinmadi", ch.value.leadgen_id); continue }
     try {
-      const res = await fetch(`${GRAPH}/${ch.value.leadgen_id}?fields=field_data,form_id&access_token=${encodeURIComponent(pageToken)}`)
-      if (!res.ok) throw new Error(`Graph ${res.status}: ${(await res.text()).slice(0, 200)}`)
-      const lead = (await res.json()) as { field_data?: { name: string; values: string[] }[]; form_id?: string }
+      const lead = await fetchMetaLead(ch.value.leadgen_id, pageToken)
       const fields: Record<string, string> = Object.fromEntries((lead.field_data ?? []).map((f) => [f.name, f.values.join(", ")]))
-      await intake(sql, "meta", token, parseLead(fields), { ...fields, leadgen_id: ch.value.leadgen_id, form_id: lead.form_id ?? ch.value.form_id ?? "" })
+      const attribution = metaAttribution({ ...lead, form_id: lead.form_id ?? ch.value.form_id }, ch.value.leadgen_id)
+      await intake(sql, "meta", token, parseLead(fields), { ...fields, ...attribution }, null, attribution)
     } catch (e) {
       console.error(`[intake] meta ${ch.value.leadgen_id}: ${e instanceof Error ? e.message : e}`)
     }
@@ -131,7 +144,8 @@ export function startIntake(sql: Sql): void {
         }
         const raw = await readBody(req)
         if (Object.keys(raw).length === 1 && raw.test) return new Response("ok")   // Tilda's "check webhook" ping
-        const r = await intake(sql, source, token, parseLead(raw), raw, url.searchParams.get("voronka"))
+        const { fields, attribution } = splitAttribution(raw, url.searchParams)
+        const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), attribution)
         return Response.json({ ok: true, duplicate: !!r.duplicate }, { headers: CORS })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
