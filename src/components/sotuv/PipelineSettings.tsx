@@ -160,6 +160,7 @@ ${url}
   - "name" — ism (majburiy)
   - "phone" — telefon (majburiy)
   - formadagi qolgan savollar o'zbekcha kalit bilan, masalan: "Lavozim", "Soha", "Kompaniya"
+- Sahifa manzilida utm_source, utm_medium, utm_campaign, utm_content, utm_term yoki fbclid bo'lsa, ularni ham xuddi shu nom bilan JSON'ga qo'shib yubor — reklama qaysi lidni olib kelganini bilish uchun.
 - Bu manzil brauzerdan so'rov qabul qiladi (CORS ochiq), server, endpoint yoki env kerak emas. Manzilni to'g'ridan-to'g'ri kodga yoz.
 - Javob {"ok":true} bo'lsa, formani yashirib "Rahmat! Tez orada siz bilan bog'lanamiz" deb ko'rsat.
 - Xato bo'lsa "Xatolik yuz berdi, qayta urinib ko'ring" deb ko'rsat.
