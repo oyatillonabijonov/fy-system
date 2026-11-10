@@ -296,3 +296,21 @@ test.skipIf(!testSql)("create_event through handleMcp is audited with its argume
   expect(rows[0]!.ok).toBe(true)
   expect(JSON.stringify(rows[0]!.args)).toContain(nm("Mcp"))
 })
+
+test.skipIf(!testSql)("find_clients: a phone stored with separators matches by digits; under 3 digits the phone branch is off", async () => {
+  const [fmt, short] = [id(), id()]
+  await testSql!.begin(async (tx) => {
+    await tx`set local session_replication_role = replica`   // skips the phone normaliser: legacy-style rows
+    await tx`insert into public.clients (id, full_name, phone) values (${fmt}, ${`Legacy ${tag}`}, '+7 (912) 345-67-89'), (${short}, ${`Qwerty ${tag}`}, '+7 (912) 111-22-33')`
+  })
+  try {
+    const r = await call(evUser, "find_clients", { query: "9123456" })
+    expect(r.ok).toBe(true)
+    if (r.ok) expect((r.data as { id: string }[]).map((c) => c.id)).toContain(fmt)
+    const s = await call(evUser, "find_clients", { query: "A1" })
+    expect(s.ok).toBe(true)
+    if (s.ok) expect((s.data as { id: string }[]).map((c) => c.id)).not.toContain(short)
+  } finally {
+    await testSql!`delete from public.clients where id in (${fmt}, ${short})`
+  }
+})

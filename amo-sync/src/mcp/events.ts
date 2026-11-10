@@ -64,7 +64,7 @@ export const EVENT_TOOLS: ToolDef[] = [
       const digits = a.query.replace(/\D/g, "")
       return tx`select id, full_name, phone, company from public.clients
         where position(lower(${a.query}) in lower(full_name)) > 0
-          or (${digits.length >= 3} and position(${digits} in regexp_replace(coalesce(phone, ''), '\D', '', 'g')) > 0)
+          or (${digits.length >= 3} and position(${digits} in regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g')) > 0)
         order by full_name limit ${a.limit}`
     } }),
   tool({ name: "create_event", title: "Create an event", module: "tadbirlar", write: true,
