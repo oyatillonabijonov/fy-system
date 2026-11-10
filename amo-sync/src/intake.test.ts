@@ -43,11 +43,18 @@ test("Meta: when Graph refuses the ad fields, the lead is fetched again without 
       ? new Response('{"error":{"code":200}}', { status: 400 })
       : Response.json({ form_id: "9", field_data: [{ name: "phone_number", values: ["+998901112233"] }] })
   }) as typeof fetch
-  const lead = await fetchMetaLead("777", "tok", fake)
-  expect(urls).toHaveLength(2)
-  expect(urls[0]).toContain("campaign_id")
-  expect(urls[1]).not.toContain("campaign_id")
-  expect(lead.field_data?.[0].name).toBe("phone_number")
+  const logged: unknown[][] = []
+  const orig = console.error
+  console.error = (...a: unknown[]) => { logged.push(a) }
+  try {
+    const lead = await fetchMetaLead("777", "tok", fake)
+    expect(urls).toHaveLength(2)
+    expect(urls[0]).toContain("campaign_id")
+    expect(urls[1]).not.toContain("campaign_id")
+    expect(lead.field_data?.[0].name).toBe("phone_number")
+  } finally { console.error = orig }
+  expect(logged).toHaveLength(1)
+  expect(String(logged[0][0])).toContain("Graph 400")
 })
 
 test("Meta: a Graph answer with ad fields is returned as is, in one request", async () => {
@@ -59,5 +66,11 @@ test("Meta: a Graph answer with ad fields is returned as is, in one request", as
 
 test("Meta: both requests failing is an error (the caller logs it, as today)", async () => {
   const fake = (async () => new Response("nope", { status: 500 })) as typeof fetch
-  await expect(fetchMetaLead("777", "tok", fake)).rejects.toThrow("Graph 500")
+  const logged: unknown[][] = []
+  const orig = console.error
+  console.error = (...a: unknown[]) => { logged.push(a) }
+  try {
+    await expect(fetchMetaLead("777", "tok", fake)).rejects.toThrow("Graph 500")
+  } finally { console.error = orig }
+  expect(logged.some((a) => String(a[0]).includes("lid ularsiz olindi"))).toBe(false)
 })

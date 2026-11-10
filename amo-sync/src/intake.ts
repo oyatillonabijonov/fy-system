@@ -69,11 +69,10 @@ async function intake(sql: Sql, source: string, token: string, p: ParsedLead, ra
 export async function fetchMetaLead(leadgenId: string, pageToken: string, fetchFn: typeof fetch = fetch): Promise<MetaLead> {
   const get = (fields: string) => fetchFn(`${GRAPH}/${leadgenId}?fields=${fields}&access_token=${encodeURIComponent(pageToken)}`)
   let res = await get(META_LEAD_FIELDS)
-  if (!res.ok) {
-    console.error("[intake] meta: reklama maydonlari berilmadi (token huquqi?) — lid ularsiz olindi")
-    res = await get("field_data,form_id")
-  }
+  const first = res.ok ? 0 : res.status
+  if (first) res = await get("field_data,form_id")
   if (!res.ok) throw new Error(`Graph ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  if (first) console.error(`[intake] meta: reklama maydonlari berilmadi (Graph ${first}, token huquqi?) — lid ularsiz olindi`)
   return (await res.json()) as MetaLead
 }
 

@@ -12,16 +12,17 @@ export interface MetaLead {
 
 const WEB_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"]
 
-/** First line, trimmed, at most 300 characters */
-const clean = (v: unknown): string => String(v).split("\n")[0].trim().slice(0, 300)
+/** First non-empty line, trimmed, at most 300 characters */
+const clean = (v: unknown): string => String(v).trim().split("\n")[0].trim().slice(0, 300)
 
-/** UTM / fbclid out of a form body and the URL query (body wins); `fields` is the body without them */
+/** UTM / fbclid out of a form body and the URL query (body wins); `fields` is the body without them.
+ *  A nested JSON key counts by its last dot-segment (`data.utm_source`). */
 export function splitAttribution(body: Record<string, string>, query: URLSearchParams):
   { fields: Record<string, string>; attribution: Attribution } {
   const fields: Record<string, string> = {}
   const attribution: Attribution = {}
   for (const [k, v] of Object.entries(body)) {
-    const key = k.toLowerCase()
+    const key = (k.split(".").pop() ?? k).toLowerCase()
     if (!WEB_KEYS.includes(key)) { fields[k] = v; continue }
     const value = clean(v)
     if (value) attribution[key] = value

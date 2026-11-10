@@ -28,3 +28,16 @@ test("Meta: ad, ad set, campaign, platform and the organic flag become strings",
 test("Meta: an organic lead with no ad fields keeps only what exists", () => {
   expect(metaAttribution({ form_id: "9", is_organic: true }, "778")).toEqual({ leadgen_id: "778", form_id: "9", is_organic: "true" })
 })
+
+test("nested JSON (Framer): UTM under a dotted key is still attribution, not an answer", () => {
+  const { fields, attribution } = splitAttribution(
+    { "data.name": "Ali", "data.utm_source": "instagram", "meta.UTM_Campaign": "kaizen", "data.fbclid": "abc" },
+    new URLSearchParams("utm_source=google"))
+  expect(fields).toEqual({ "data.name": "Ali" })
+  expect(attribution).toEqual({ utm_source: "instagram", utm_campaign: "kaizen", fbclid: "abc" })
+})
+
+test("the first non-empty line is kept; later lines are cut", () => {
+  expect(splitAttribution({ utm_campaign: "\n kaizen \nboom" }, new URLSearchParams()).attribution).toEqual({ utm_campaign: "kaizen" })
+  expect(splitAttribution({ utm_campaign: "a\nboom" }, new URLSearchParams()).attribution).toEqual({ utm_campaign: "a" })
+})

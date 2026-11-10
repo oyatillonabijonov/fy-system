@@ -38,6 +38,15 @@ BEGIN
   IF (SELECT attribution FROM public.crm_leads WHERE id = (r->>'lead_id')::uuid) <> '{}'::jsonb THEN
     RAISE EXCEPTION 'TEST 4 FAILED: NULL attribution'; END IF;
 
+  -- 4b: a non-object attribution (array / scalar) is treated as empty
+  FOR r IN SELECT public.intake_lead('sayt', t, 'Arr', '901230004', NULL, '{}', '[]', NULL, '["x"]'::jsonb)
+           UNION ALL SELECT public.intake_lead('sayt', t, 'Str', '901230005', NULL, '{}', '[]', NULL, '"x"'::jsonb) LOOP
+    IF (SELECT attribution FROM public.crm_leads WHERE id = (r->>'lead_id')::uuid) <> '{}'::jsonb THEN
+      RAISE EXCEPTION 'TEST 4b FAILED: non-object attribution stored: %', (SELECT attribution FROM public.crm_leads WHERE id = (r->>'lead_id')::uuid); END IF;
+    IF (SELECT meta ? 'attribution' FROM public.crm_notes WHERE lead_id = (r->>'lead_id')::uuid AND kind = 'lead' LIMIT 1) THEN
+      RAISE EXCEPTION 'TEST 4b FAILED: note carries an attribution key'; END IF;
+  END LOOP;
+
   -- 5: still service-only
   IF has_function_privilege('authenticated', 'public.intake_lead(text,text,text,text,text,jsonb,jsonb,text,jsonb)', 'execute')
      OR has_function_privilege('anon', 'public.intake_lead(text,text,text,text,text,jsonb,jsonb,text,jsonb)', 'execute') THEN

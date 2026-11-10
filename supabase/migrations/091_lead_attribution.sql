@@ -23,7 +23,7 @@ DECLARE
   v_stage uuid;
   v_fields jsonb := COALESCE(p_fields, '[]'::jsonb);
   v_pipe  uuid;
-  v_attr  jsonb := COALESCE(jsonb_strip_nulls(p_attribution), '{}'::jsonb);
+  v_attr  jsonb := CASE WHEN jsonb_typeof(p_attribution) = 'object' THEN jsonb_strip_nulls(p_attribution) ELSE '{}'::jsonb END;
 BEGIN
   SELECT * INTO src FROM public.crm_lead_sources WHERE id = p_source;
   IF src.id IS NULL OR src.token IS DISTINCT FROM p_token THEN
