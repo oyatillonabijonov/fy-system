@@ -74,9 +74,68 @@ async function tick(sql: Sql): Promise<void> {
   }
 }
 
+// ─── At once, to the seller's own chat (migration 089) ───────────────────────
+// Day or night, no 2-hour wait: the seller switched it on in the bot (taskbot.ts → private chat).
+
+export interface DmRow { phone: string; client_name: string | null; lead_id: string | null; owner_id: string | null; calls: number; last_missed: Date }
+export interface Subscriber { id: string; chat: string }
+
+/** The bitim's owner if they switched it on, else everyone who did */
+export function dmTargets(subs: Subscriber[], ownerId: string | null): Subscriber[] {
+  const owner = subs.filter((s) => s.id === ownerId)
+  return owner.length ? owner : subs
+}
+
+export function missedDmText(r: DmRow): string {
+  const name = r.client_name && r.client_name.replace(/\D/g, "") !== r.phone.replace(/\D/g, "") ? r.client_name : null
+  return [
+    "🔴 <b>Javobsiz qo'ng'iroq</b>",
+    "",
+    ...(name ? [`👤 ${esc(name)}`] : []),
+    `📞 ${esc(r.phone)}`,
+    `🕐 ${clock(r.last_missed)}${r.calls > 1 ? ` · ${r.calls} marta` : ""}`,
+    ...(r.lead_id ? ["", `<a href="${BITIM_URL}${r.lead_id}">Bitimni ochish</a>`] : []),
+  ].join("\n")
+}
+
+let dmBusy = false
+
+async function dmTick(sql: Sql): Promise<void> {
+  if (dmBusy) return
+  dmBusy = true
+  try {
+    const rows = await sql<DmRow[]>`select * from public.missed_calls_dm()`
+    if (!rows.length) return
+    const subs = await sql<Subscriber[]>`
+      select id, telegram_chat_id::text as chat from profiles
+      where missed_dm and telegram_chat_id is not null and coalesce(is_active, true)`
+    for (const r of rows) {
+      const to = dmTargets(subs, r.owner_id)
+      let reached = 0
+      for (const s of to) {
+        try { await send(s.chat, missedDmText(r)); reached++ }
+        catch (err) { console.error(`[missed-dm] ${s.chat}: ${err instanceof Error ? err.message : err}`) }
+      }
+      // ponytail: same retry rule as the group alert above
+      if (to.length && !reached) continue
+      await sql`update crm_calls set missed_dm_at = now()
+                where phone = ${r.phone} and direction = 'in' and talk_time = 0
+                  and missed_dm_at is null and started_at <= ${r.last_missed}`
+      if (reached) console.log(`[missed-dm] ${r.phone}: ${reached} kishiga yuborildi`)
+    }
+  } catch (err) {
+    console.error(`[missed-dm] ${err instanceof Error ? err.message : err}`)
+  } finally {
+    dmBusy = false
+  }
+}
+
 export function startMissedCalls(sql: Sql): void {
   if (!TOKEN) return
   setInterval(() => void tick(sql), 60_000)
+  // PBX history arrives once a minute (pbx.ts); checking twice as often keeps the wait under ~1.5 min
+  setInterval(() => void dmTick(sql), 30_000)
   void tick(sql)
-  console.log("[missed] javobsiz qo'ng'iroq ogohlantirishi yoqildi (2 soat)")
+  void dmTick(sql)
+  console.log("[missed] javobsiz qo'ng'iroq: guruhga 2 soatdan keyin, sotuvchiga darhol")
 }

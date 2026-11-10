@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { isSendingHour, missedCallText, type MissedRow } from "./missedCalls"
+import { dmTargets, isSendingHour, missedCallText, missedDmText, type MissedRow } from "./missedCalls"
 
 const row: MissedRow = { phone: "+998901234567", client_name: "Ali <Valiyev>", lead_id: "abc", owner: "Nuriddin", telegram: "nuriddin", calls: 1, last_missed: new Date("2026-11-08T09:05:00Z") }
 
@@ -32,4 +32,22 @@ test("messages go out 9:00–21:00 Tashkent (UTC+5)", () => {
   expect(isSendingHour(new Date("2026-11-08T15:59:00Z"))).toBe(true)   // 20:59
   expect(isSendingHour(new Date("2026-11-08T16:00:00Z"))).toBe(false)  // 21:00
   expect(isSendingHour(new Date("2026-11-08T19:00:00Z"))).toBe(false)  // 00:00
+})
+
+describe("private message at once (089)", () => {
+  const subs = [{ id: "zuhra", chat: "1" }, { id: "ali", chat: "2" }]
+  test("the bitim owner alone when they switched it on, else everyone who did", () => {
+    expect(dmTargets(subs, "zuhra")).toEqual([{ id: "zuhra", chat: "1" }])
+    expect(dmTargets(subs, "xayriniso")).toEqual(subs)
+    expect(dmTargets(subs, null)).toEqual(subs)
+    expect(dmTargets([], "zuhra")).toEqual([])
+  })
+  test("text: name, phone, Tashkent time, link; no 2-hour line, no owner line", () => {
+    const t = missedDmText({ phone: "+998901234567", client_name: "Ali", lead_id: "abc", owner_id: null, calls: 2, last_missed: new Date("2026-11-08T21:30:00Z") })
+    expect(t).toContain("👤 Ali")
+    expect(t).toContain("🕐 02:30 · 2 marta")
+    expect(t).toContain("bitim/abc")
+    expect(t).not.toContain("2 soat")
+    expect(t).not.toContain("Mas'ul")
+  })
 })

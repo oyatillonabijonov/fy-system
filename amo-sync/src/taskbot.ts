@@ -339,6 +339,48 @@ async function handleCallback(sql: Sql, cb: TgCallback): Promise<void> {
   await tg("answerCallbackQuery", { callback_query_id: cb.id, text: "Bekor qilindi" })
 }
 
+// ─── Private chat: missed calls at once (migration 089) ──────────────────────
+// No staff list to pick from (anyone could pick a seller and get clients' numbers): the
+// bot knows the person by the Telegram username in Profilim. Sellers and admins only.
+
+interface DmPerson { id: string; full_name: string; missed_dm: boolean; allowed: boolean }
+
+const findDmPerson = async (sql: Sql, username: string | undefined) => (await sql<DmPerson[]>`
+  select id, full_name, missed_dm, (role = 'admin' or department = 'sotuv') as allowed from profiles
+  where coalesce(is_active, true) and ${handle(username)} <> '' and lower(ltrim(btrim(telegram), '@')) = ${handle(username)}`)[0]
+
+export function dmStatus(name: string, on: boolean): { text: string; buttons: Button[][] } {
+  return {
+    text: on
+      ? `Salom, ${esc(name.split(" ")[0])}.\n\n🔔 Javobsiz qo'ng'iroqlar shu yerga <b>darhol</b> keladi, kechasi ham.`
+      : `Salom, ${esc(name.split(" ")[0])}.\n\n🔕 Javobsiz qo'ng'iroqlar haqida xabar o'chiq. Yoqsangiz, har bir javobsiz qo'ng'iroq shu yerga darhol keladi.`,
+    buttons: [[on ? { text: "O'chirish", callback_data: "dm:off" } : { text: "🔔 Yoqish", callback_data: "dm:on" }]],
+  }
+}
+
+const DM_UNKNOWN = "Sizni tizimda topa olmadim. Platformada Profilim'ga Telegram username'ingizni yozing, keyin shu yerga /start yuboring."
+const DM_DENIED = "Bu bot hozircha faqat sotuvchilar va adminlar uchun."
+
+async function handlePrivate(sql: Sql, msg: TgMessage): Promise<void> {
+  const p = await findDmPerson(sql, msg.from?.username)
+  if (!p) return void (await reply(msg, DM_UNKNOWN))
+  if (!p.allowed) return void (await reply(msg, DM_DENIED))
+  await sql`update profiles set telegram_chat_id = ${msg.chat.id} where id = ${p.id}`
+  const s = dmStatus(p.full_name, p.missed_dm)
+  await reply(msg, s.text, s.buttons)
+}
+
+async function handleDmToggle(sql: Sql, cb: TgCallback & { message: TgMessage }): Promise<void> {
+  const p = await findDmPerson(sql, cb.from.username)
+  if (!p || !p.allowed) return void (await tg("answerCallbackQuery", { callback_query_id: cb.id, text: p ? DM_DENIED : DM_UNKNOWN, show_alert: true }))
+  const on = cb.data === "dm:on"
+  await sql`update profiles set missed_dm = ${on}, telegram_chat_id = ${cb.message.chat.id} where id = ${p.id}`
+  const s = dmStatus(p.full_name, on)
+  await tg("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, parse_mode: "HTML", text: s.text, reply_markup: { inline_keyboard: s.buttons } })
+  await tg("answerCallbackQuery", { callback_query_id: cb.id, text: on ? "Yoqildi" : "O'chirildi" })
+  console.log(`[taskbot] ${p.full_name}: javobsiz qo'ng'iroq xabari ${on ? "yoqildi" : "o'chirildi"}`)
+}
+
 // ─── Loop ────────────────────────────────────────────────────────────────────
 
 export async function startTaskBot(sql: Sql): Promise<void> {
@@ -369,8 +411,13 @@ export async function startTaskBot(sql: Sql): Promise<void> {
               const m = u.my_chat_member
               await registerChat(sql, m.chat.id, m.chat.title ?? "", m.new_chat_member.status)
               console.log(`[taskbot] guruh ${m.chat.id} (${m.chat.title ?? ""}): ${m.new_chat_member.status}`)
-            } else if (u.message) await handleMessage(sql, u.message, me.username)
-            else if (u.callback_query) await handleCallback(sql, u.callback_query)
+            } else if (u.message) {
+              // private chats have positive ids, groups negative
+              if (u.message.chat.id > 0) await handlePrivate(sql, u.message)
+              else await handleMessage(sql, u.message, me.username)
+            } else if (u.callback_query?.data?.startsWith("dm:") && u.callback_query.message) {
+              await handleDmToggle(sql, { ...u.callback_query, message: u.callback_query.message })
+            } else if (u.callback_query) await handleCallback(sql, u.callback_query)
           } catch (err) {
             console.error(`[taskbot] #${u.update_id}: ${err instanceof Error ? err.message : String(err)}`)
           }
