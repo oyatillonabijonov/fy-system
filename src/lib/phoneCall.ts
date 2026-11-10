@@ -33,3 +33,21 @@ export function addBusyCall(list: BusyCall[], phone: string): BusyCall[] {
 export function nameBusyCall(list: BusyCall[], phone: string, name: string): BusyCall[] {
   return list.map((b) => (sameNumber(b.phone, phone) ? { ...b, name } : b))
 }
+
+/** Bugun (seller home): a number that rang unanswered and nobody called back since */
+export interface Callback { phone: string; name: string | null; leadId: string | null; ownerId: string | null; calls: number; last: string }
+export interface CallbackRow { phone: string; direction: "in" | "out"; talk_time: number; started_at: string; lead_id: string | null; client: { full_name: string } | null; lead: { responsible_user_id: string | null } | null }
+
+/** Rows newest first: an answered or outgoing call settles that number's older missed calls */
+export function pickCallbacks(rows: CallbackRow[]): Callback[] {
+  const out = new Map<string, Callback>()
+  const handled = new Set<string>()
+  for (const r of rows) {
+    if (handled.has(r.phone)) continue
+    if (r.direction === "out" || r.talk_time > 0) { handled.add(r.phone); continue }
+    const c = out.get(r.phone)
+    if (c) { c.calls++; c.leadId ??= r.lead_id; c.ownerId ??= r.lead?.responsible_user_id ?? null; c.name ??= r.client?.full_name ?? null }
+    else out.set(r.phone, { phone: r.phone, name: r.client?.full_name ?? null, leadId: r.lead_id, ownerId: r.lead?.responsible_user_id ?? null, calls: 1, last: r.started_at })
+  }
+  return [...out.values()]
+}

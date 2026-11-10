@@ -38,6 +38,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   xodim: "Xodim",
 }
 
+/** Sotuv staff (not admins) get the seller layout on a phone: Bugun, Bitimlar, Qo'ng'iroqlar, Vazifalar */
+export const isSeller = (u: Pick<UserProfile, "department" | "role"> | null | undefined) => u?.department === "sotuv" && u.role !== "admin"
+
 export interface UserProfile {
   id: string
   full_name: string

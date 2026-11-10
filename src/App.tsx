@@ -20,6 +20,8 @@ import { SalesReminders } from "./components/sotuv/SalesReminders"
 import { LiveSync } from "./components/layout/LiveSync"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { SotuvCalls } from "./components/pages/SotuvCalls"
+import { Bugun } from "./components/pages/Bugun"
+import { isSeller } from "./lib/supabase/queries/auth"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Sms } from "./components/pages/Sms"
 import { Login } from "./components/pages/Login"
@@ -46,6 +48,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/dashboard':     { title: 'Dashboard',       desc: "Tizimdagi barcha asosiy ko'rsatkichlar va statistika.", short: 'Bosh sahifa' },
   '/mijozlar':      { title: 'Mijozlar',        desc: "Barcha mijozlar bazasi va ular bilan ishlash bo'limi." },
   '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari.", short: 'Sotuv' },
+  '/bugun':         { title: 'Bugun',           desc: "Qayta qo'ng'iroq, bugungi vazifalar va yangi bitimlar." },
   '/sotuv/qongiroqlar': { title: "Qo'ng'iroqlar", desc: "Kiruvchi va chiquvchi qo'ng'iroqlar — qayta qo'ng'iroq, yozuv, bitim." },
   '/sms':           { title: 'SMS',             desc: "Mijozlarga reklama va eslatma SMS'lari — matn, tanlash, yuborish." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
@@ -71,7 +74,10 @@ function pageMetaFor(pathname: string): PageMeta {
 
 /** AmoCRM analytics for the `dashboard` module; everyone else gets the general home page */
 function DashboardRoute() {
-  const { hasAccess } = useAuth()
+  const { user, hasAccess } = useAuth()
+  const phone = useMedia("(width < 64rem)")
+  // A seller's phone opens on their day (the app's start page is /dashboard)
+  if (phone && isSeller(user) && hasAccess("sotuv-crmn")) return <Navigate to="/bugun" replace />
   return hasAccess("dashboard") ? <Dashboard /> : <HomeDashboard />
 }
 
@@ -201,6 +207,9 @@ function App() {
           } />
           <Route path="/sotuv/bitim/:id" element={
             <ProtectedRoute module="sotuv-crmn"><SotuvLead /></ProtectedRoute>
+          } />
+          <Route path="/bugun" element={
+            <ProtectedRoute module="sotuv-crmn"><Bugun /></ProtectedRoute>
           } />
           <Route path="/sotuv/qongiroqlar" element={
             <ProtectedRoute module="sotuv-crmn"><SotuvCalls /></ProtectedRoute>

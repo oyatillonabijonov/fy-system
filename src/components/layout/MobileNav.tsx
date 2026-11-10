@@ -2,20 +2,31 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLocation, useNavigate } from "react-router-dom"
-import { House, CheckCircle, Funnel, Users, Bank, DotsThreeOutline, CaretRight, SignOut } from "@phosphor-icons/react"
+import { House, CheckCircle, Funnel, Users, Bank, Briefcase, Phone, DotsThreeOutline, CaretRight, SignOut } from "@phosphor-icons/react"
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useTheme, MODES } from "@/context/ThemeContext"
-import { signOut, type ModuleName } from "@/lib/supabase/queries/auth"
+import { isSeller, signOut, type ModuleName } from "@/lib/supabase/queries/auth"
 import { navigationSections, type NavItem } from "./nav"
 
+type Tab = { label: string; icon: PhosphorIcon; path: string; module?: ModuleName; on?: (path: string, search: string) => boolean }
+
 /** The five sections staff open most on a phone; everything else sits behind "Yana" */
-const TABS: { label: string; icon: PhosphorIcon; path: string; module?: ModuleName }[] = [
+const TABS: Tab[] = [
   { label: "Bosh sahifa", icon: House, path: "/dashboard" },
   { label: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },
   { label: "Sotuv", icon: Funnel, path: "/sotuv", module: "sotuv-crmn" },
   { label: "Mijozlar", icon: Users, path: "/mijozlar", module: "mijozlar" },
   { label: "Moliya", icon: Bank, path: "/tadbirlar/moliya", module: "tadbirlar-moliya" },
+]
+
+/** A seller lives in four places (the user's call, variant A): the rest is behind "Yana" */
+const tasksTab = (path: string, search: string) => path === "/sotuv" && new URLSearchParams(search).get("v") === "tasks"
+const SELLER_TABS: Tab[] = [
+  { label: "Bugun", icon: House, path: "/bugun" },
+  { label: "Bitimlar", icon: Briefcase, path: "/sotuv", on: (p, s) => (p === "/sotuv" && !tasksTab(p, s)) || p.startsWith("/sotuv/bitim/") },
+  { label: "Qo'ng'iroq", icon: Phone, path: "/sotuv/qongiroqlar" },
+  { label: "Vazifalar", icon: CheckCircle, path: "/sotuv?v=tasks", on: tasksTab },
 ]
 
 const initials = (name?: string | null) =>
@@ -30,22 +41,22 @@ export function MobileNav() {
   const [moreFor, setMoreFor] = useState<string | null>(null)   // the sheet belongs to the page it was opened on
   const moreOpen = moreFor === location.pathname
 
-  const tabs = TABS.filter((t) => !t.module || hasAccess(t.module))
+  const tabs = isSeller(user) && hasAccess("sotuv-crmn") ? SELLER_TABS : TABS.filter((t) => !t.module || hasAccess(t.module))
   const visible = (i: NavItem) => (i.adminOnly ? isAdmin : !i.module || hasAccess(i.module))
   // every other page the user may open, flattened from the sidebar's sections
   const rest = navigationSections.flatMap((s) => s.items).flatMap((i) => (i.subItems?.length ? [i, ...i.subItems] : [i]))
     .filter((i) => i.path && visible(i) && !tabs.some((t) => t.path === i.path))
     .filter((i, n, all) => all.findIndex((o) => o.path === i.path) === n)
 
-  const active = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/")
-  const moreActive = !tabs.some((t) => active(t.path))
+  const active = (t: Tab) => t.on ? t.on(location.pathname, location.search) : location.pathname === t.path || location.pathname.startsWith(t.path + "/")
+  const moreActive = !tabs.some(active)
 
   return (
     <>
       <nav aria-label="Asosiy menyu" className="tabbar fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-line pb-[env(safe-area-inset-bottom)]">
         <div className="grid h-14" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}>
           {tabs.map((t) => {
-            const on = active(t.path)
+            const on = active(t)
             return (
               <button key={t.path} type="button" onClick={() => navigate(t.path)} aria-current={on ? "page" : undefined}
                 className={`flex flex-col items-center justify-center gap-1 min-w-0 ${on ? "text-ink" : "text-ink-faint"}`}>
