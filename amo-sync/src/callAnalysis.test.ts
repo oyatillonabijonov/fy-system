@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import {
-  analysisPrompt, factsText, namesHint, normalize, recordingVerdict, retryDelayMin, sellerVoice, toRoles, transcriptPrompt,
-  type Claim, type Line,
+  analyseCall, analysisPrompt, factsText, namesHint, normalize, recordingVerdict, retryDelayMin, sellerVoice, toRoles, transcriptPrompt,
+  type Ask, type Claim, type Line,
 } from "./callAnalysis"
 
 const base: Claim = {
@@ -96,5 +96,33 @@ describe("retries and the recording", () => {
   })
   test("too big to send inline is skipped", () => {
     expect(recordingVerdict(200, 19_000_000, base, new Date("2026-11-10T10:02:00Z"))).toBe("skip")
+  })
+})
+
+describe("analyseCall", () => {
+  const audio = Buffer.from("mp3")
+  const answers = (first: unknown, second: unknown) => {
+    const calls: object[][] = []
+    const ask: Ask = async (parts) => { calls.push(parts); return { data: calls.length === 1 ? first : second, model: "m" } }
+    return { ask, calls }
+  }
+  test("two requests: audio first, text second; the introduction decides who the seller is", async () => {
+    const { ask, calls } = answers({ lines }, { seller_voice: "A", summary: "s", criteria: [], score: 60 })
+    const r = await analyseCall(base, audio, ask)
+    expect(r.transcript[1].who).toBe("seller")
+    expect(r.analysis.score).toBe(60)
+    expect(r.model).toBe("m")
+    expect(calls).toHaveLength(2)
+    expect(JSON.stringify(calls[0])).toContain("inline_data")
+    expect(JSON.stringify(calls[1])).not.toContain("inline_data")
+  })
+  test("an empty transcript is an error", async () => {
+    expect(analyseCall(base, audio, answers({ lines: [] }, {}).ask)).rejects.toThrow("transcript bo'sh")
+  })
+  test("an unreadable analysis is an error", async () => {
+    expect(analyseCall(base, audio, answers({ lines }, "garbage").ask)).rejects.toThrow("tahlil o'qilmadi")
+  })
+  test("a busy model's error comes through", async () => {
+    expect(analyseCall(base, audio, async () => { throw new Error("503") })).rejects.toThrow("503")
   })
 })

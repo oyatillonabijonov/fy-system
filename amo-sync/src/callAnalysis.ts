@@ -6,13 +6,21 @@
 //   2. text → which voice is the seller, then the coaching of the seller only.
 // One request for both mixed up seller and client and blamed the seller for the client's words.
 
+import type { Sql } from "postgres"
+import { audioLink } from "./pbx"
+
+const KEY = process.env.GEMINI_API_KEY ?? ""
+const MODELS = (process.env.CALL_ANALYSIS_MODELS ?? "gemini-3.5-flash-lite").split(",").map((m) => m.trim()).filter(Boolean)
+const DAILY_MAX = Number(process.env.CALL_ANALYSIS_DAILY_MAX) || 150
+const BASE = "https://api.fikryetakchilari.uz"
+
 export interface Claim {
   call_uuid: string; direction: "in" | "out"; started_at: Date; duration: number; talk_time: number; attempts: number
   seller_name: string | null; client_name: string | null; event_name: string | null; event_date: Date | null
   tariffs: string | null; script: string | null
 }
 export interface Line { t: string; voice: "A" | "B"; text: string }
-export interface RoleLine { t: string; who: "seller" | "client"; text: string }
+export type RoleLine = { t: string; who: "seller" | "client"; text: string }   // a type, not an interface: sql.json wants an index signature
 
 export const TAGS = ["tanishtirmadi", "ehtiyoj_soramadi", "foyda_aytmadi", "etirozga_javob_yoq", "keyingi_qadam", "sovutadigan_gap", "ortiqcha_soz", "tinglamadi", "boshqa"] as const
 export type Tag = (typeof TAGS)[number]
@@ -145,4 +153,94 @@ export function recordingVerdict(status: number, bytes: number, c: Claim, now: D
   if (bytes > 18_000_000) return "skip"   // inline audio limit (20 MB with base64 overhead in mind)
   if (status === 200 && bytes >= 2000) return "ok"
   return now.getTime() < c.started_at.getTime() + (c.duration + 1800) * 1000 ? "wait" : "skip"
+}
+
+// ─── Gemini ──────────────────────────────────────────────────────────────────
+
+/** One JSON answer from the first model that gives one; throws when every model fails */
+export type Ask = (parts: object[], schema: object) => Promise<{ data: unknown; model: string }>
+
+const askGemini: Ask = async (parts, schema) => {
+  let last = "model yo'q"
+  for (const model of MODELS) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": KEY },
+        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.2, maxOutputTokens: 32000, responseMimeType: "application/json", responseSchema: schema } }),
+        signal: AbortSignal.timeout(120_000),
+      })
+      const j = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } }
+      const out = j.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("")
+      if (out) return { data: JSON.parse(out) as unknown, model }
+      last = `${model}: ${res.status} ${j.error?.message?.slice(0, 120) ?? "bo'sh javob"}`
+    } catch (err) {
+      last = `${model}: ${err instanceof Error ? err.message : String(err)}`
+    }
+  }
+  throw new Error(last)
+}
+
+export async function analyseCall(c: Claim, audio: Buffer, ask: Ask): Promise<{ transcript: RoleLine[]; analysis: Analysis; model: string }> {
+  const first = await ask([{ text: transcriptPrompt(c) }, { inline_data: { mime_type: "audio/mpeg", data: audio.toString("base64") } }], TRANSCRIPT_SCHEMA)
+  const lines = arr(obj(first.data)?.lines).map(obj)
+    .filter((l) => l !== null && (l.voice === "A" || l.voice === "B") && !!str(l.text))
+    .map((l) => ({ t: str(l!.t), voice: l!.voice as "A" | "B", text: str(l!.text) }))
+  if (!lines.length) throw new Error("transcript bo'sh")
+  const second = await ask([{ text: analysisPrompt(c, lines) }], ANALYSIS_SCHEMA)
+  const analysis = normalize(second.data)
+  if (!analysis) throw new Error("tahlil o'qilmadi")
+  return { transcript: toRoles(lines, sellerVoice(lines, analysis.seller_voice, c.seller_name)), analysis, model: second.model }
+}
+
+// ─── The timer ───────────────────────────────────────────────────────────────
+
+let busy = false
+
+async function tick(sql: Sql): Promise<void> {
+  if (busy) return
+  busy = true
+  try {
+    // A runaway loop must not burn the key the task bot shares
+    const [{ tries }] = await sql<{ tries: number }[]>`select coalesce(sum(attempts), 0)::int as tries from crm_call_analyses where last_try_at > now() - interval '1 day'`
+    if (tries >= DAILY_MAX) return
+    const [c] = await sql<Claim[]>`select * from public.call_analysis_claim()`
+    if (!c) return
+    const started = Date.now()
+    const src = await fetch(await audioLink(c.call_uuid, BASE))
+    const audio = Buffer.from(await src.arrayBuffer())
+    const verdict = recordingVerdict(src.status, audio.length, c, new Date())
+    if (verdict === "wait") {
+      await sql`update crm_call_analyses set next_try_at = now() + interval '3 minutes' where call_uuid = ${c.call_uuid}`
+      return
+    }
+    if (verdict === "skip") {
+      await sql`update crm_call_analyses set status = 'skipped', error = ${audio.length > 18_000_000 ? "yozuv juda katta" : "yozuv yo'q"} where call_uuid = ${c.call_uuid}`
+      return
+    }
+    try {
+      const { transcript, analysis: a, model } = await analyseCall(c, audio, askGemini)
+      await sql`
+        update crm_call_analyses set status = 'done', attempts = attempts + 1, analysed_at = now(), error = null, model = ${model},
+          language = ${a.language}, transcript = ${sql.json(transcript)}, summary = ${a.summary}, outcome = ${a.outcome}, score = ${a.score},
+          criteria = ${sql.json(a.criteria)}, good = ${sql.json(a.good)}, mistakes = ${sql.json(a.mistakes)}, words = ${sql.json(a.words)},
+          advice = ${sql.json(a.advice)}, script_missed = ${sql.json(a.script_missed)}
+        where call_uuid = ${c.call_uuid}`
+      console.log(`[calls-ai] ${c.call_uuid.slice(0, 8)} done ${a.score ?? "—"} (${model}, ${Math.round((Date.now() - started) / 1000)}s)`)
+    } catch (err) {
+      const why = (err instanceof Error ? err.message : String(err)).slice(0, 300)
+      const wait = retryDelayMin(c.attempts)
+      if (wait === null) await sql`update crm_call_analyses set status = 'failed', attempts = attempts + 1, error = ${why} where call_uuid = ${c.call_uuid}`
+      else await sql`update crm_call_analyses set attempts = attempts + 1, error = ${why}, next_try_at = now() + make_interval(mins => ${wait}) where call_uuid = ${c.call_uuid}`
+      console.error(`[calls-ai] ${c.call_uuid.slice(0, 8)} ${wait === null ? "failed" : `retry in ${wait}m`}: ${why}`)
+    }
+  } finally {
+    busy = false
+  }
+}
+
+export function startCallAnalysis(sql: Sql): void {
+  if (!KEY) { console.log("[calls-ai] GEMINI_API_KEY yo'q — tahlil o'chiq"); return }
+  setInterval(() => void tick(sql).catch((e) => console.error(`[calls-ai] ${e instanceof Error ? e.message : e}`)), 60_000)
+  console.log(`[calls-ai] javob berilgan qo'ng'iroqlar tahlil qilinadi (${MODELS.join(", ")})`)
 }
