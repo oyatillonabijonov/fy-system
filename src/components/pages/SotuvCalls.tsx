@@ -13,6 +13,7 @@ import { Pager } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { useMedia } from "@/hooks/useMedia"
+import { CallScore } from "@/components/sotuv/CallAnalysis"
 import { EmptyNote, Recording, ROUND_BTN, ROW_BTN, RowCall, SotuvSegments, callLabel, chip, secs } from "@/components/sotuv/ui"
 
 const FILTERS: [CallFilter, string][] = [["all", "Hammasi"], ["in", "Kiruvchi"], ["out", "Chiquvchi"], ["missed", "Javobsiz"]]
@@ -133,6 +134,7 @@ function CallRowCard({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
           {!c.lead_id && phone && <span className="mt-1 self-start inline-flex items-center gap-1 h-6 px-2 rounded-full bg-warning-soft text-warning-text text-xs font-medium"><Plus size={12} weight="bold" />Bitim yaratish</span>}
         </span>
         <span onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+          <CallScore call={c} />
           {!missed && (
             <button type="button" onClick={() => setListening((v) => !v)} aria-pressed={listening} aria-label={listening ? "Yozuvni yopish" : "Yozuvni tinglash"}
               className={listening ? `${ROUND_BTN} bg-accent text-ink-on-accent` : `${ROW_BTN} text-ink`}>{listening ? <X size={16} /> : <Play size={16} weight="fill" />}</button>
@@ -171,7 +173,7 @@ function CallRowView({ call: c, onCreate }: { call: CallRow; onCreate: (phone: s
           : <span className="text-ink-muted">{c.ext ?? "—"}</span>}
       </td>
       <td className={`${tbl.td} tabular-nums whitespace-nowrap text-ink-muted`}>{when(c.started_at)}</td>
-      <td className={tbl.td}>{missed ? <span className="text-ink-faint">—</span> : <Recording uuid={c.uuid} compact />}</td>
+      <td className={tbl.td}>{missed ? <span className="text-ink-faint">—</span> : <span className="flex items-center gap-2"><Recording uuid={c.uuid} compact /><CallScore call={c} /></span>}</td>
       <td className={`${tbl.td} text-right`}>
         {/* Fixed widths, so the call and bitim buttons line up row under row */}
         <span className="inline-flex items-center justify-end gap-1.5">

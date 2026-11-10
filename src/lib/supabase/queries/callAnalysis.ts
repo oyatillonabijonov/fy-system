@@ -48,6 +48,9 @@ export const TAG_LABEL: Record<string, string> = {
   boshqa: "Boshqa",
 }
 
+/** Score colour: ≥75 good, 50–74 so-so, below — weak */
+export const scoreTone = (n: number) => (n >= 75 ? "bg-success-soft text-success-text" : n >= 50 ? "bg-warning-soft text-warning-text" : "bg-danger-soft text-danger-text")
+
 export async function getCallAnalysis(uuid: string): Promise<CallAnalysis | null> {
   const { data, error } = await db.from("crm_call_analyses")
     .select("call_uuid, status, error, language, transcript, summary, outcome, score, criteria, good, mistakes, words, advice, script_missed, analysed_at")

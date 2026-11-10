@@ -9,6 +9,7 @@ import { SOURCES, TASK_KINDS, kindLabel, toDue, getStages, subscribeLeadCalls, t
 import { tashkentToday } from "@/lib/period"
 import { formatPhone, formatNumber } from "@/lib/format"
 import { DuePicker, PersonDot, addDays, dueLabel } from "@/components/vazifalar/pickers"
+import { CallScore } from "@/components/sotuv/CallAnalysis"
 import { KIND_ICON, TaskChip, NoTaskChip, DueText, Recording, CallButton, Segmented, StageDot, SECTION, callLabel, chip, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { confirmAction } from "@/lib/confirm"
@@ -308,6 +309,7 @@ function CallItem({ call }: { call: Call }) {
         <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
           <span className={missed ? "text-danger-text" : "text-ink"}>{callLabel(call)}</span>
           {!missed && <span className="tabular-nums">{secs(call.talk_time)}</span>}
+          <CallScore call={call} />
           {call.staff && <span className="truncate max-lg:hidden">· {call.staff.full_name}</span>}
           <span className="tabular-nums ml-auto shrink-0 max-lg:hidden">{when(call.started_at)}</span>
           <span className="lg:hidden basis-full tabular-nums">{[call.staff?.full_name, when(call.started_at)].filter(Boolean).join(" · ")}</span>
