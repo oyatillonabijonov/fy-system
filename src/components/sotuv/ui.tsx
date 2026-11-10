@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Sotuv section */
-import { useEffect, useState, type ReactNode, type SyntheticEvent } from "react"
-import { Phone, UsersThree, EnvelopeSimple, DotsThreeCircle, Play, type Icon } from "@phosphor-icons/react"
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react"
+import { Phone, UsersThree, EnvelopeSimple, DotsThreeCircle, Play, Pause, ArrowCounterClockwise, ArrowClockwise, type Icon } from "@phosphor-icons/react"
 import { usePhone } from "@/context/PhoneContext"
 import { dueLabel } from "@/components/vazifalar/pickers"
 import { fromDue, pbxApi, type Call, type TaskKind } from "@/lib/supabase/queries/sotuv"
@@ -73,16 +73,60 @@ export function Recording({ uuid, compact, auto }: { uuid: string; compact?: boo
     pbxApi<{ url: string }>(`record/${uuid}`).then((r) => { if (live) setSrc(r.url) }, () => { if (live) setState("error") })
     return () => { live = false }
   }, [auto, uuid])
-  // One recording at a time: starting one pauses the others (data-recording keeps the live call's audio out of it)
-  const solo = (e: SyntheticEvent<HTMLAudioElement>) =>
-    document.querySelectorAll<HTMLAudioElement>("audio[data-recording]").forEach((a) => { if (a !== e.currentTarget) a.pause() })
-  if (src) return <audio src={src} controls autoPlay data-recording onPlay={solo} className={compact ? "w-56 h-8" : "w-full h-9"} />
+  if (src) return <Player src={src} compact={compact} />
   if (auto && state !== "error") return <span className="self-start text-sm text-ink-muted">Yuklanmoqda…</span>
   return (
     <button type="button" onClick={play} disabled={state === "loading"}
       className="self-start inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors disabled:opacity-60 whitespace-nowrap">
       <Play size={12} weight="fill" />{state === "loading" ? "Yuklanmoqda…" : state === "error" ? "Topilmadi — qayta" : compact ? "Tinglash" : "Yozuvni tinglash"}
     </button>
+  )
+}
+
+const SPEEDS = [1, 1.25, 1.5, 2]
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`
+const PLAYER_BTN = "size-8 shrink-0 rounded-full flex items-center justify-center text-ink hover:bg-mute-ghost-hover active:opacity-80 transition-colors"
+
+/** Our own player: the browser's one hides its timeline when narrow (the calls table) and has no speed on iPhone.
+ *  Seeking works because /hooks/pbx/audio answers Range requests. */
+function Player({ src, compact }: { src: string; compact?: boolean }) {
+  const ref = useRef<HTMLAudioElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [at, setAt] = useState(0)
+  const [len, setLen] = useState(0)
+  const [speed, setSpeed] = useState(1)
+  const a = () => ref.current
+  const seek = (t: number) => { const el = a(); if (el) setAt(el.currentTime = Math.max(0, Math.min(len || t, t))) }
+  const toggle = () => { const el = a(); if (el) void (el.paused ? el.play() : el.pause()) }
+  const nextSpeed = () => {
+    const s = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]
+    setSpeed(s); const el = a(); if (el) el.playbackRate = s
+  }
+  // One recording at a time: starting one pauses the others (data-recording keeps the live call's audio out of it)
+  const solo = (e: SyntheticEvent<HTMLAudioElement>) => {
+    setPlaying(true)
+    document.querySelectorAll<HTMLAudioElement>("audio[data-recording]").forEach((el) => { if (el !== e.currentTarget) el.pause() })
+  }
+  const onLen = (e: SyntheticEvent<HTMLAudioElement>) => { const d = e.currentTarget.duration; if (Number.isFinite(d)) setLen(d) }
+  return (
+    <div className={`flex items-center gap-1 rounded-full bg-surface-sunken max-lg:bg-surface px-1 h-10 ${compact ? "w-80" : "w-full max-lg:h-auto max-lg:flex-wrap max-lg:rounded-surface max-lg:p-2"}`}>
+      <audio ref={ref} src={src} autoPlay data-recording preload="metadata" onPlay={solo} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
+        onTimeUpdate={(e) => setAt(e.currentTarget.currentTime)} onLoadedMetadata={onLen} onDurationChange={onLen} className="hidden" />
+      <button type="button" onClick={toggle} aria-label={playing ? "To'xtatish" : "Tinglash"} className={PLAYER_BTN}>
+        {playing ? <Pause size={16} weight="fill" /> : <Play size={16} weight="fill" />}
+      </button>
+      {!compact && <button type="button" onClick={() => seek(at - 10)} aria-label="10 soniya orqaga" className={PLAYER_BTN}><ArrowCounterClockwise size={16} /></button>}
+      {/* phone: the timeline gets its own row above the buttons */}
+      <div className={`flex-1 min-w-0 flex items-center gap-1 ${compact ? "" : "max-lg:order-first max-lg:basis-full max-lg:px-1 max-lg:pb-1"}`}>
+        <span className="text-xs tabular-nums text-ink-muted shrink-0">{mmss(at)}</span>
+        <input type="range" min={0} max={len || 1} step={0.1} value={Math.min(at, len || 0)} disabled={!len} aria-label="Yozuv joyi"
+          onChange={(e) => seek(Number(e.target.value))} className="flex-1 min-w-0 h-1 accent-ink cursor-pointer disabled:cursor-default mx-1" />
+        <span className="text-xs tabular-nums text-ink-muted shrink-0">{len ? mmss(len) : "–:––"}</span>
+      </div>
+      {!compact && <button type="button" onClick={() => seek(at + 10)} aria-label="10 soniya oldinga" className={PLAYER_BTN}><ArrowClockwise size={16} /></button>}
+      <button type="button" onClick={nextSpeed} aria-label={`Tezlik ${speed}x`} title="Tezlik"
+        className={`h-8 min-w-11 px-2 shrink-0 ${compact ? "" : "max-lg:ml-auto"} rounded-full text-xs font-semibold tabular-nums text-ink hover:bg-mute-ghost-hover active:opacity-80 transition-colors`}>{speed}x</button>
+    </div>
   )
 }
 

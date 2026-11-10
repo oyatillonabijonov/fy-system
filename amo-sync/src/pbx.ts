@@ -129,6 +129,9 @@ async function streamAudio(req: Request, sql: Sql, uuid: string): Promise<Respon
   })
   const headers = new Headers({ "content-type": src.headers.get("content-type") ?? "audio/mpeg", "cache-control": "private, max-age=1800" })
   for (const h of ["content-length", "content-range", "accept-ranges"]) { const v = src.headers.get(h); if (v) headers.set(h, v) }
+  // A streamed body goes out chunked with no length: the browser then sees an endless recording it can't seek.
+  // So the whole file (a few MB at most) is buffered and sent with its length; ranges keep streaming.
+  if (src.status === 200) return new Response(await src.arrayBuffer(), { status: 200, headers })
   return new Response(src.body, { status: src.status, headers })
 }
 
