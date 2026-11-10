@@ -3,6 +3,7 @@
 import type { Sql } from "postgres"
 import { makeAsUser } from "./db"
 import type { AsUser } from "./db"
+import { getFile } from "./files"
 import { handleOAuth, publicBase } from "./oauth"
 import { handleMcp } from "./server"
 
@@ -18,6 +19,13 @@ let asUser: AsUser | undefined
 /** The tools' own pool, opened on first use so a worker with the connector off never opens it */
 const getAsUser = (): AsUser => (asUser ??= makeAsUser(process.env.DATABASE_URL ?? ""))
 
+/** Content-Disposition for a download: an ASCII fallback plus the real (percent-encoded) name; quotes, slashes and control characters never reach the header */
+function attachment(name: string): string {
+  const ascii = name.replace(/[^\x20-\x7e]|["\\/;]/g, "_")
+  const utf8 = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${utf8}`
+}
+
 const notFound = () => new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { ...NO_STORE, "content-type": "application/json" } })
 
 export async function handleConnector(req: Request, sql: Sql, url: URL): Promise<Response> {
@@ -27,6 +35,20 @@ export async function handleConnector(req: Request, sql: Sql, url: URL): Promise
   }
   try {
     if (url.pathname === "/mcp") return await handleMcp(req, sql, getAsUser())
+    if (url.pathname.startsWith("/mcp/files/")) {
+      const id = url.pathname.slice("/mcp/files/".length)
+      const file = req.method === "GET" && /^[A-Za-z0-9_-]{43}$/.test(id) ? getFile(id) : null
+      if (!file) return notFound()
+      return new Response(new Uint8Array(file.bytes), {
+        headers: {
+          ...NO_STORE,
+          "content-type": "application/pdf",
+          "content-length": String(file.bytes.length),
+          "content-disposition": attachment(file.name),
+          "x-content-type-options": "nosniff",
+        },
+      })
+    }
     return (await handleOAuth(req, sql, url)) ?? notFound()
   } catch (e) {
     console.error("[mcp]", e instanceof Error ? e.message : String(e))
