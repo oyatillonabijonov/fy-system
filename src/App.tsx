@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import { Sidebar } from "./components/layout/Sidebar"
 import { MobileNav } from "./components/layout/MobileNav"
@@ -14,6 +15,7 @@ import { Vazifalar } from "./components/pages/Vazifalar"
 import { Sotuv } from "./components/pages/Sotuv"
 import { PhoneProvider, usePhone } from "./context/PhoneContext"
 import { PhoneWidget } from "./components/sotuv/PhoneWidget"
+import { DialSheet } from "./components/sotuv/DialPad"
 import { SalesReminders } from "./components/sotuv/SalesReminders"
 import { LiveSync } from "./components/layout/LiveSync"
 import { SotuvLead } from "./components/pages/SotuvLead"
@@ -81,13 +83,18 @@ function OldDealLink() {
 
 /** Header chip: the browser phone's line (only for staff with an internal number) */
 function PhoneStatus() {
-  const { status, ext } = usePhone()
+  const { status, ext, call } = usePhone()
+  const [dialing, setDialing] = useState(false)
   if (status === "off" || !ext) return null
   const [dot, text] = status === "ready" ? ["bg-success", "Tayyor"] : status === "connecting" ? ["bg-warning", "Ulanmoqda"] : ["bg-danger", "Aloqa yo'q"]
   return (
-    <span title={`Telefon: ichki raqam ${ext} · ${text}`} className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken max-lg:bg-card text-sm text-ink-muted tabular-nums">
-      <Phone size={16} className="text-ink" /><span className="max-sm:hidden">{ext}</span><span className={`size-2 rounded-full ${dot}`} />
-    </span>
+    <>
+      <button type="button" disabled={status !== "ready" || !!call} onClick={() => setDialing(true)} aria-label="Raqam terish" title={`Telefon: ichki raqam ${ext} · ${text}${status === "ready" ? " · Raqam terish" : ""}`}
+        className="inline-flex items-center gap-2 h-control-md px-3 rounded-full bg-surface-sunken max-lg:bg-card text-sm text-ink-muted tabular-nums enabled:hover:bg-surface-sunken-hover transition-colors">
+        <Phone size={16} className="text-ink" /><span className="max-sm:hidden">{ext}</span><span className={`size-2 rounded-full ${dot}`} />
+      </button>
+      <DialSheet open={dialing} onClose={() => setDialing(false)} />
+    </>
   )
 }
 

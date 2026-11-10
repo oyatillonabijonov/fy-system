@@ -17,3 +17,19 @@ export function resumeCall(card: ActiveCall | null, id: string, params: Record<s
     contact: null,
   }
 }
+
+/** Someone who rang while this seller was on a call (turned away silently, the PBX tries the next seller) */
+export interface BusyCall { phone: string; name: string | null }
+
+const sameNumber = (a: string, b: string) => a.replace(/\D/g, "").slice(-9) === b.replace(/\D/g, "").slice(-9)
+
+/** Newest first, one row per number: the PBX can offer the same caller again and again while they wait. */
+export function addBusyCall(list: BusyCall[], phone: string): BusyCall[] {
+  if (!phone) return list
+  const old = list.find((b) => sameNumber(b.phone, phone))
+  return [{ phone, name: old?.name ?? null }, ...list.filter((b) => b !== old)]
+}
+
+export function nameBusyCall(list: BusyCall[], phone: string, name: string): BusyCall[] {
+  return list.map((b) => (sameNumber(b.phone, phone) ? { ...b, name } : b))
+}

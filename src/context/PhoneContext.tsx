@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useAuth } from "@/context/AuthContext"
 import { pbxApi, findCallContact } from "@/lib/supabase/queries/sotuv"
 import { preloadRing, startRing } from "@/lib/phoneAudio"
-import { resumeCall } from "@/lib/phoneCall"
+import { addBusyCall, nameBusyCall, resumeCall, type BusyCall } from "@/lib/phoneCall"
 
 export type PhoneStatus = "off" | "connecting" | "ready" | "offline"
 export interface ActiveCall {
@@ -23,6 +23,10 @@ interface PhoneCtx {
   status: PhoneStatus
   ext: string | null
   call: ActiveCall | null
+  /** who rang while this seller was talking; shown on the card, with no sound */
+  busyCalls: BusyCall[]
+  clearBusyCall: (phone: string) => void
+  sendDigit: (digit: string) => void
   dial: (phone: string) => Promise<void>
   answer: () => Promise<void>
   hangup: () => void
@@ -41,6 +45,7 @@ interface Dialog {
   answer: (o: object) => void
   hangup: (o?: object) => void
   setMute: (what: "toggle") => void
+  dtmf: (digits: string) => void
 }
 interface VertoClient {
   newCall: (args: object, cb?: object) => Dialog | undefined
@@ -65,6 +70,7 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<PhoneStatus>("off")
   const [ext, setExt] = useState<string | null>(null)
   const [call, setCall] = useState<ActiveCall | null>(null)
+  const [busyCalls, setBusyCalls] = useState<BusyCall[]>([])
   const client = useRef<VertoClient | null>(null)
   const dialog = useRef<Dialog | null>(null)
   const stream = useRef<MediaStream | null>(null)
@@ -93,8 +99,15 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
         return
       }
       if (d.direction?.name === "inbound" && ["new", "requesting", "trying", "ringing"].includes(state)) {
-        // One line: a second incoming call while busy is turned away
-        if (dialog.current && dialog.current.callID !== id) { d.hangup({ cause: "USER_BUSY" }); return }
+        // One line: a second incoming call while busy is turned away (the PBX tries the next seller).
+        // No ring and no toast, they would talk over the call: the seller only sees it on the card.
+        if (dialog.current && dialog.current.callID !== id) {
+          d.hangup({ cause: "USER_BUSY" })
+          const phone = d.params.caller_id_number ?? ""
+          setBusyCalls((l) => addBusyCall(l, phone))
+          void findCallContact(phone).then((contact) => { if (contact) setBusyCalls((l) => nameBusyCall(l, phone, contact.name)) })
+          return
+        }
         if (dialog.current?.callID === id) return
         dialog.current = d
         const phone = d.params.caller_id_number ?? ""
@@ -145,7 +158,7 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
       stopRing(); stopMic()
       try { verto?.logout() } catch { /* socket already gone */ }
       client.current = null; dialog.current = null
-      setStatus("off"); setExt(null); setCall(null)
+      setStatus("off"); setExt(null); setCall(null); setBusyCalls([])
     }
   }, [enabled, patch])
 
@@ -181,11 +194,13 @@ export function PhoneProvider({ children }: { children: ReactNode }) {
     patch(call.id, { muted: !call.muted })
   }, [call, patch])
 
+  const sendDigit = useCallback((digit: string) => dialog.current?.dtmf(digit), [])
+  const clearBusyCall = useCallback((phone: string) => setBusyCalls((l) => l.filter((b) => b.phone !== phone)), [])
   const dismiss = useCallback(() => setCall((c) => (c?.state === "ended" ? null : c)), [])
   const remoteStream = useCallback(() => (audio.current?.srcObject instanceof MediaStream ? audio.current.srcObject : null), [])
 
   return (
-    <Ctx.Provider value={{ status, ext, call, dial, answer, hangup, toggleMute, dismiss, remoteStream }}>
+    <Ctx.Provider value={{ status, ext, call, busyCalls, clearBusyCall, sendDigit, dial, answer, hangup, toggleMute, dismiss, remoteStream }}>
       {children}
       <audio ref={audio} autoPlay playsInline className="hidden" />
     </Ctx.Provider>
