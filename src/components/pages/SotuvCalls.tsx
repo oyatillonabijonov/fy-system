@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneX, ArrowRight, Plus, Play, X } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
@@ -14,6 +14,7 @@ import { PersonDot } from "@/components/vazifalar/pickers"
 import { LeadCreate } from "@/components/sotuv/LeadCreate"
 import { useMedia } from "@/hooks/useMedia"
 import { CallScore } from "@/components/sotuv/CallAnalysis"
+import { CallStats } from "@/components/sotuv/CallStats"
 import { EmptyNote, Recording, ROUND_BTN, ROW_BTN, RowCall, SotuvSegments, callLabel, chip, secs } from "@/components/sotuv/ui"
 
 const FILTERS: [CallFilter, string][] = [["all", "Hammasi"], ["in", "Kiruvchi"], ["out", "Chiquvchi"], ["missed", "Javobsiz"]]
@@ -41,10 +42,25 @@ export function SotuvCalls() {
 
   const choose = (f: CallFilter) => { setFilter(f); setPage(0) }
 
+  // ?tab=tahlil — the AI analysis summary (090) instead of the list
+  const [params, setParams] = useSearchParams()
+  const stats = params.get("tab") === "tahlil"
+  const tabs = (
+    <div role="radiogroup" aria-label="Bo'lim" className="self-start inline-flex gap-1 p-1 rounded-control bg-surface-sunken max-lg:bg-fill">
+      {([[false, "Qo'ng'iroqlar"], [true, "Tahlil"]] as const).map(([v, label]) => (
+        <button key={label} type="button" role="radio" aria-checked={stats === v} onClick={() => setParams(v ? { tab: "tahlil" } : {}, { replace: true })}
+          className={`h-7 max-lg:h-9 px-3 rounded-item text-sm font-medium whitespace-nowrap transition-colors ${stats === v ? "bg-surface max-lg:bg-card text-ink" : "text-ink-muted hover:text-ink"}`}>{label}</button>
+      ))}
+    </div>
+  )
+  const segments = mobile && !isSeller(user) && <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />
+  if (stats) return <div className="flex flex-col gap-3 lg:gap-5 pb-6 lg:pb-10">{segments}{tabs}<CallStats /></div>
+
   if (mobile) {
     return (
       <div className="flex flex-col gap-3 pb-6">
-        {!isSeller(user) && <SotuvSegments active="calls" onPick={(t) => navigate(t === "deals" ? "/sotuv" : t === "tasks" ? "/sotuv?v=tasks" : "/sotuv/qongiroqlar")} />}
+        {segments}
+        {tabs}
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
           {FILTERS.map(([id, label]) => (
             <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)} className={chip(filter === id)}>{label}</button>
@@ -68,6 +84,7 @@ export function SotuvCalls() {
   return (
     <div className="flex flex-col gap-5 pb-10">
       <div className="flex flex-wrap items-center gap-3">
+        {tabs}
         <div role="radiogroup" aria-label="Qo'ng'iroq turi" className="inline-flex gap-1 p-1 rounded-control bg-surface-sunken">
           {FILTERS.map(([id, label]) => (
             <button key={id} role="radio" aria-checked={filter === id} onClick={() => choose(id)}
