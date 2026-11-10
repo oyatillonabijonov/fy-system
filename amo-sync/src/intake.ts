@@ -8,6 +8,7 @@
 import type { Sql } from "postgres"
 import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
 import type { Attribution, MetaLead } from "./attribution"
+import { handleConnector, isConnectorPath } from "./mcp"
 import { handlePbx, pbxSyncedAt } from "./pbx"
 import { handleSms } from "./sms"
 
@@ -120,6 +121,7 @@ export function startIntake(sql: Sql): void {
       if (url.pathname.startsWith("/hooks/pbx/")) return handlePbx(req, sql, url.pathname.slice("/hooks/pbx/".length))
       if (url.pathname === "/hooks/health") return health(sql)
       if (url.pathname.startsWith("/hooks/sms/")) return handleSms(req, sql, url)
+      if (isConnectorPath(url.pathname)) return handleConnector(req, sql, url)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
       const source = m[1]
