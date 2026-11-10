@@ -360,11 +360,13 @@ export interface Call {
   duration: number
   talk_time: number
   staff: Person | null
+  /** AI analysis (090): null = none yet, or not this reader's call (a seller reads only their own) */
+  analysis: { status: "pending" | "done" | "failed" | "skipped"; score: number | null } | null
 }
 
 export async function getLeadCalls(leadId: string): Promise<Call[]> {
   const { data, error } = await db.from("crm_calls")
-    .select("uuid, direction, phone, ext, started_at, duration, talk_time, staff:staff_id(full_name, avatar_url)")
+    .select("uuid, direction, phone, ext, started_at, duration, talk_time, staff:staff_id(full_name, avatar_url), analysis:crm_call_analyses(status, score)")
     .eq("lead_id", leadId).order("started_at")
   if (error) throw error
   return data as unknown as Call[]
@@ -431,7 +433,7 @@ export interface CallRow extends Call {
 
 export async function getCalls(o: { page: number; filter: CallFilter; staffId: string | null }): Promise<{ rows: CallRow[]; total: number }> {
   let q = db.from("crm_calls")
-    .select("uuid, direction, phone, ext, started_at, duration, talk_time, lead_id, staff:staff_id(full_name, avatar_url), client:client_id(full_name), lead:lead_id(name)", { count: "exact" })
+    .select("uuid, direction, phone, ext, started_at, duration, talk_time, lead_id, staff:staff_id(full_name, avatar_url), client:client_id(full_name), lead:lead_id(name), analysis:crm_call_analyses(status, score)", { count: "exact" })
     .order("started_at", { ascending: false })
     .range(o.page * 20, o.page * 20 + 19)
   if (o.filter === "in" || o.filter === "out") q = q.eq("direction", o.filter)
