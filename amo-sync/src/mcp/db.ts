@@ -18,7 +18,7 @@ export function makeAsUser(databaseUrl: string): AsUser {
         set_config('request.jwt.claim.sub', ${uid}, true),
         set_config('request.jwt.claim.role', 'authenticated', true),
         set_config('request.jwt.claims', ${JSON.stringify({ sub: uid, role: "authenticated" })}, true),
-        set_config('statement_timeout', '20s', true)`
+        set_config('statement_timeout', '8s', true)`
       return fn(tx)
     })) as T
   }

@@ -133,6 +133,16 @@ test.skipIf(!testSql)("authorize POST: 5 wrong passwords throttle the 6th withou
   expect(calls).toBe(5)
 })
 
+test.skipIf(!testSql)("authorize POST: 20 parallel guesses for one e-mail reach the password check at most 5 times", async () => {
+  const u = await mk()
+  let calls = 0
+  const deps = { checkPassword: async () => { calls++; await new Promise((r) => setTimeout(r, 20)); return null } }
+  const challenge = await challengeOf("v")
+  const texts = await Promise.all(Array.from({ length: 20 }, () => call(authPost(u.email, "bad", challenge), deps).then((r) => r!.text())))
+  expect(calls).toBeLessThanOrEqual(5)
+  expect(texts.filter((t) => t.includes("Juda ko&#39;p urinish")).length).toBeGreaterThanOrEqual(15)
+})
+
 test.skipIf(!testSql)("authorize POST refuses inactive staff and an id with no profile", async () => {
   const off = await mk({ active: false })
   const r1 = await call(authPost(`${off.id}@x.fy.uz`, "pw", await challengeOf("v")), { checkPassword: async () => off.id })

@@ -48,9 +48,9 @@ export const TOOLS: ToolDef[] = [
     description: "The signed-in staff member: id, name, role and the platform modules they can open.",
     run: async (_tx, _a, me) => me }),
   tool({ name: "reference", title: "Pipelines, events and sellers", module: null, input: {},
-    description: "Lookup lists for the other tools: voronkalar with their bosqichlar, tadbirlar, and the active sellers (Sotuv department). Only what the signed-in user may see.",
-    run: async (tx) => ({
-      pipelines: await tx`select p.id, p.name, coalesce(json_agg(json_build_object('id', s.id, 'name', s.name, 'is_won', s.is_won, 'is_lost', s.is_lost) order by s.sort_order) filter (where s.id is not null), '[]'::json) as stages
+    description: "Lookup lists for the other tools: voronkalar with their bosqichlar, tadbirlar, and the active sellers (Sotuv department). Events are the 200 most recent. Pipelines need the Sotuv bo'limi module: without it that list is an error marker, not an empty list.",
+    run: async (tx, _a, me) => ({
+      pipelines: !me.isAdmin && !me.modules.includes("sotuv-crmn") ? { error: `«${LABEL["sotuv-crmn"]}» bo'limiga ruxsatingiz yo'q` } : await tx`select p.id, p.name, coalesce(json_agg(json_build_object('id', s.id, 'name', s.name, 'is_won', s.is_won, 'is_lost', s.is_lost) order by s.sort_order) filter (where s.id is not null), '[]'::json) as stages
         from public.crm_pipelines p left join public.crm_stages s on s.pipeline_id = p.id group by p.id order by p.sort_order, p.name`,
       events: await tx`select id, name, date from public.events order by date desc nulls last limit 200`,
       sellers: await tx`select id, full_name as name from public.profiles where department = 'sotuv' and is_active is distinct from false order by full_name`,

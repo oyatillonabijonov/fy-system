@@ -11,13 +11,14 @@ const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
 const created: string[] = []
 const [eventId, clientId, partId] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
 const callUuid = `t5-${crypto.randomUUID()}`
-let admin = "", sellerA = "", sellerB = ""
+let admin = "", sellerA = "", sellerB = "", dashOnly = ""
 
 beforeAll(async () => {
   if (!testSql) return
   admin = await staff(testSql, { role: "admin" }); created.push(admin)
   sellerA = await staff(testSql, { modules: ["dashboard", "sotuv-crmn"], department: "sotuv" }); created.push(sellerA)
   sellerB = await staff(testSql, { modules: ["dashboard", "sotuv-crmn"], department: "sotuv" }); created.push(sellerB)
+  dashOnly = await staff(testSql, { modules: ["dashboard"] }); created.push(dashOnly)
   await testSql`insert into public.events (id, name, date) values (${eventId}, 'Fixture event', now())`
   await testSql`insert into public.clients (id, full_name) values (${clientId}, 'Fixture client')`
   await testSql`insert into public.event_participants (id, event_id, contact_id, full_name, price, paid) values (${partId}, ${eventId}, ${clientId}, 'Fixture client', 1000, 0)`
@@ -47,6 +48,19 @@ const names = (uid: string) => asUser(uid, async (tx) => toolsFor(await loadMe(t
 test.skipIf(!testSql)("a seller gets six tools, an admin all nine", async () => {
   expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis"])
   expect(await names(admin)).toHaveLength(9)
+})
+
+test.skipIf(!testSql)("reference: no Sotuv module gives an explicit marker for pipelines, a seller gets the list", async () => {
+  const no = await callTool(asUser, dashOnly, "reference", {})
+  expect(no.ok).toBe(true)
+  if (no.ok) {
+    const d = no.data as { pipelines: unknown; events: unknown; sellers: unknown }
+    expect(d.pipelines).toEqual({ error: "«Sotuv bo'limi» bo'limiga ruxsatingiz yo'q" })
+    expect(Array.isArray(d.events)).toBe(true); expect(Array.isArray(d.sellers)).toBe(true)
+  }
+  const yes = await callTool(asUser, sellerA, "reference", {})
+  expect(yes.ok).toBe(true)
+  if (yes.ok) expect(Array.isArray((yes.data as { pipelines: unknown }).pipelines)).toBe(true)
 })
 
 test.skipIf(!testSql)("finance without the module is an explicit error naming it, not zeros; an admin gets numbers", async () => {
@@ -140,6 +154,16 @@ test.skipIf(!testSql)("handleMcp: no token, a bad token and an expired token are
   const tok = await openConnection(testSql!, sellerB, "test-client")
   await testSql!`update public.mcp_connections set access_expires_at = now() - interval '1 second' where user_id = ${sellerB}`
   expect((await mcp(tok.access_token, { jsonrpc: "2.0", id: 1, method: "tools/list" })).status).toBe(401)
+})
+
+test.skipIf(!testSql)("handleMcp: a deactivated staff member's live token is 401 on the very next request", async () => {
+  const uid = await staff(testSql!, { modules: ["dashboard", "sotuv-crmn"], department: "sotuv" }); created.push(uid)
+  const tok = (await openConnection(testSql!, uid, "test-client")).access_token
+  expect((await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })).status).toBe(200)
+  await testSql!`update public.profiles set is_active = false where id = ${uid}`
+  const r = await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })
+  expect(r.status).toBe(401)
+  expect(r.headers.get("www-authenticate")).toContain("resource_metadata")
 })
 
 test.skipIf(!testSql)("handleMcp: tools/list shows the caller's six tools; whoami returns the caller and is audited", async () => {

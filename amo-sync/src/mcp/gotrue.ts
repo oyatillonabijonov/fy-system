@@ -2,9 +2,10 @@
 
 const WINDOW = 15 * 60_000
 const MAX_FAILURES = 5
-const failures = new Map<string, number[]>()
+const SWEEP_AT = 10_000
+const attempts = new Map<string, number[]>()
 const key = (email: string) => email.trim().toLowerCase()
-const recent = (email: string, now: number) => (failures.get(key(email)) ?? []).filter((t) => now - t < WINDOW)
+const fresh = (list: number[], now: number) => list.filter((t) => now - t < WINDOW)
 
 /** The user's id, null for wrong credentials (GoTrue 400), a throw for anything else (outage ≠ wrong password). */
 export async function checkPassword(email: string, password: string, fetchFn: typeof fetch = fetch): Promise<string | null> {
@@ -17,11 +18,27 @@ export async function checkPassword(email: string, password: string, fetchFn: ty
   return j.user.id
 }
 
-/** True after 5 failures in 15 minutes for this e-mail. */
-export function throttled(email: string, now = Date.now()): boolean {
-  return recent(email, now).length >= MAX_FAILURES
+/** Counts an attempt BEFORE the password goes to GoTrue: false once 5 are already counted in 15 minutes, so parallel guesses can't burst past it. */
+export function reserveAttempt(email: string, now = Date.now()): boolean {
+  if (attempts.size > SWEEP_AT) for (const [k, list] of attempts) if (!fresh(list, now).length) attempts.delete(k)
+  const k = key(email), list = fresh(attempts.get(k) ?? [], now)
+  if (list.length >= MAX_FAILURES) { attempts.set(k, list); return false }
+  attempts.set(k, [...list, now])
+  return true
 }
 
-export function noteFailure(email: string, now = Date.now()): void {
-  failures.set(key(email), [...recent(email, now), now])
+/** Un-counts one attempt (a GoTrue outage is not the user's failure). */
+export function releaseAttempt(email: string, at: number): void {
+  const k = key(email), list = attempts.get(k) ?? []
+  const i = list.indexOf(at)
+  if (i < 0) return
+  const rest = list.filter((_, j) => j !== i)
+  if (rest.length) attempts.set(k, rest); else attempts.delete(k)
 }
+
+/** A successful sign-in wipes the e-mail's count. */
+export function clearAttempts(email: string): void {
+  attempts.delete(key(email))
+}
+
+export const throttleSize = () => attempts.size

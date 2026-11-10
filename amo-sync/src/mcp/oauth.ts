@@ -2,7 +2,7 @@
 // A code only ever goes to a redirect_uri that passes redirectAllowed — checked on every request, hidden fields included.
 import type { Sql } from "postgres"
 import { pkceOk, randomToken, redirectAllowed } from "./crypto"
-import { checkPassword as realCheck, noteFailure, throttled } from "./gotrue"
+import { checkPassword as realCheck, clearAttempts, releaseAttempt, reserveAttempt } from "./gotrue"
 import { activeStaff, openConnection, refreshConnection, saveCode, takeCode } from "./store"
 
 const SCOPES = ["crm", "offline_access"]
@@ -76,10 +76,12 @@ async function authorizePost(req: Request, sql: Sql, base: string, check: typeof
   if (!a) return page(null, 400, ERR.bad)
   const email = (f.get("email") ?? "").trim().toLowerCase(), password = f.get("password") ?? ""
   if (!email || email.length > 254 || !password || password.length > 1000) return page(a, 200, ERR.creds, email)
-  if (throttled(email)) return page(a, 200, ERR.throttle, email)
+  const at = Date.now()
+  if (!reserveAttempt(email, at)) return page(a, 200, ERR.throttle, email)
   let userId: string | null
-  try { userId = await check(email, password) } catch (e) { console.error(`[mcp] sign-in: ${e instanceof Error ? e.message : "error"}`); return page(a, 503, ERR.down, email) }
-  if (!userId) { noteFailure(email); return page(a, 200, ERR.creds, email) }
+  try { userId = await check(email, password) } catch (e) { releaseAttempt(email, at); console.error(`[mcp] sign-in: ${e instanceof Error ? e.message : "error"}`); return page(a, 503, ERR.down, email) }
+  if (!userId) return page(a, 200, ERR.creds, email)
+  clearAttempts(email)
   if (!(await activeStaff(sql, userId))) return page(a, 200, ERR.staff, email)
   const code = randomToken("")
   await saveCode(sql, { code, userId, clientId: a.client_id, redirectUri: a.redirect_uri, challenge: a.code_challenge })

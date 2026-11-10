@@ -7,7 +7,7 @@ export interface Tokens { access_token: string; refresh_token: string; expires_i
 const ACCESS_SEC = 3600
 const REFRESH_DAYS = 60
 const CODE_SEC = 60
-const ACTIVE = (sql: Sql, col: string) => sql`exists (select 1 from public.profiles p where p.id = ${sql(col)} and p.is_active is distinct from false)`
+const ACTIVE = (sql: Sql, col: string) => sql`exists (select 1 from public.profiles p where p.id = mcp_connections.${sql(col)} and p.is_active is distinct from false)`
 
 export async function saveCode(sql: Sql, c: { code: string; userId: string; clientId: string; redirectUri: string; challenge: string }): Promise<void> {
   await sql`insert into public.mcp_auth_codes (code_hash, user_id, client_id, redirect_uri, code_challenge, expires_at)

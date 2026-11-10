@@ -37,6 +37,11 @@ test.skipIf(!testSql)("the transaction runs as the user, with the API role", asy
   expect(r).toEqual({ uid: seller, role: "authenticated" })
 })
 
+test.skipIf(!testSql)("statement_timeout is 8s, under the HTTP server's 10 s idle timeout", async () => {
+  const [r] = await asUser(seller, (tx) => tx`select current_setting('statement_timeout') as t`)
+  expect(r!.t).toBe("8s")
+})
+
 test.skipIf(!testSql)("RLS applies: a seller sees no payments, an admin sees them", async () => {
   expect((await asUser(seller, (tx) => tx`select count(*)::int as n from public.payments`))[0]!.n).toBe(0)
   expect((await asUser(admin, (tx) => tx`select count(*)::int as n from public.payments`))[0]!.n).toBeGreaterThan(0)
