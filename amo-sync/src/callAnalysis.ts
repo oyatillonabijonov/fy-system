@@ -3,14 +3,19 @@
 // crm_call_analyses:
 //   1. audio → transcript with neutral voices A/B (names as a hint, never numbers: a hinted
 //      price was written over the spoken one when we tried);
-//   2. text → which voice is the seller, then the coaching of the seller only.
+//   2. text → which voice is the seller, then the coaching of the seller only. With ANTHROPIC_API_KEY
+//      set this request goes to Claude (it can't take audio, but judges the text far better than the
+//      free Gemini model: checked on a real call); if Claude fails, Gemini does it as before.
 // One request for both mixed up seller and client and blamed the seller for the client's words.
 
+import Anthropic from "@anthropic-ai/sdk"
 import type { Sql } from "postgres"
 import { audioLink } from "./pbx"
 
 const KEY = process.env.GEMINI_API_KEY ?? ""
 const MODELS = (process.env.CALL_ANALYSIS_MODELS ?? "gemini-3.5-flash-lite").split(",").map((m) => m.trim()).filter(Boolean)
+const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY ?? ""
+const CLAUDE_MODEL = process.env.CALL_ANALYSIS_CLAUDE_MODEL || "claude-opus-5-5"
 const DAILY_MAX = Number(process.env.CALL_ANALYSIS_DAILY_MAX) || 150
 const BASE = "https://api.fikryetakchilari.uz"
 
@@ -60,6 +65,23 @@ export const ANALYSIS_SCHEMA = {
     script_missed: LIST,
   },
   required: ["seller_voice", "language", "summary", "outcome", "criteria", "good", "mistakes", "words", "advice", "script_missed"],
+}
+
+type GeminiSchema = { type: string; nullable?: boolean; description?: string; enum?: string[]; items?: GeminiSchema; properties?: Record<string, GeminiSchema>; required?: string[] }
+
+/** Our Gemini response schemas as the strict JSON Schema Claude's structured output takes */
+export function toJsonSchema(s: GeminiSchema): Record<string, unknown> {
+  const type = s.type.toLowerCase()
+  return {
+    type: s.nullable ? [type, "null"] : type,
+    ...(s.description ? { description: s.description } : {}),
+    ...(s.enum ? { enum: s.enum } : {}),
+    ...(s.items ? { items: toJsonSchema(s.items) } : {}),
+    ...(s.properties ? {
+      properties: Object.fromEntries(Object.entries(s.properties).map(([k, v]) => [k, toJsonSchema(v)])),
+      required: Object.keys(s.properties), additionalProperties: false,
+    } : {}),
+  }
 }
 
 /** Names only (for the transcription request) */
@@ -182,18 +204,40 @@ const askGemini: Ask = async (parts, schema) => {
   throw new Error(last)
 }
 
-export async function analyseCall(c: Claim, audio: Buffer, ask: Ask): Promise<{ transcript: RoleLine[]; analysis: Analysis; model: string }> {
+/** `ask` hears the recording; `judge` (the same model unless given) analyses the text */
+// ─── Claude (the analysis request) ───────────────────────────────────────────
+
+let claude: Anthropic | null = null
+
+/** The text request on Claude; anything wrong (no credit, a refusal, a bad answer) falls back to Gemini */
+const askClaude: Ask = async (parts, schema) => {
+  try {
+    claude ??= new Anthropic({ apiKey: CLAUDE_KEY, timeout: 180_000, maxRetries: 1 })
+    const res = await claude.messages.create({
+      model: CLAUDE_MODEL, max_tokens: 16000,
+      output_config: { format: { type: "json_schema", schema: toJsonSchema(schema as GeminiSchema) } },
+      messages: [{ role: "user", content: parts.map((p) => ("text" in p && typeof p.text === "string" ? p.text : "")).join("\n") }],
+    })
+    if (res.stop_reason !== "end_turn") throw new Error(`stop_reason ${res.stop_reason}`)
+    return { data: JSON.parse(res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("")) as unknown, model: res.model }
+  } catch (err) {
+    console.error(`[calls-ai] Claude: ${err instanceof Error ? err.message.slice(0, 200) : err} — tahlil Gemini'da`)
+    return askGemini(parts, schema)
+  }
+}
+
+export async function analyseCall(c: Claim, audio: Buffer, ask: Ask, judge: Ask = ask): Promise<{ transcript: RoleLine[]; analysis: Analysis; model: string }> {
   const first = await ask([{ text: transcriptPrompt(c) }, { inline_data: { mime_type: "audio/mpeg", data: audio.toString("base64") } }], TRANSCRIPT_SCHEMA)
   const lines = arr(obj(first.data)?.lines).map(obj)
     .filter((l) => l !== null && (l.voice === "A" || l.voice === "B") && !!str(l.text))
     .map((l) => ({ t: str(l!.t), voice: l!.voice as "A" | "B", text: str(l!.text) }))
   if (!lines.length) throw new Error("transcript bo'sh")
-  const second = await ask([{ text: analysisPrompt(c, lines) }], ANALYSIS_SCHEMA)
+  const second = await judge([{ text: analysisPrompt(c, lines) }], ANALYSIS_SCHEMA)
   const analysis = normalize(second.data)
   if (!analysis) throw new Error("tahlil o'qilmadi")
   const seller = sellerVoice(lines, analysis.seller_voice, c.seller_name)
   if (!seller) throw new Error("sotuvchi aniqlanmadi")   // a guess would judge the client's words half the time
-  return { transcript: toRoles(lines, seller), analysis, model: second.model }
+  return { transcript: toRoles(lines, seller), analysis, model: first.model === second.model ? first.model : `${first.model} + ${second.model}` }
 }
 
 // ─── The timer ───────────────────────────────────────────────────────────────
@@ -228,7 +272,7 @@ async function tick(sql: Sql): Promise<void> {
         await sql`update crm_call_analyses set status = 'skipped', error = ${audio.length > 18_000_000 ? "yozuv juda katta" : "yozuv yo'q"} where call_uuid = ${c.call_uuid}`
         return
       }
-      const { transcript, analysis: a, model } = await analyseCall(c, audio, askGemini)
+      const { transcript, analysis: a, model } = await analyseCall(c, audio, askGemini, CLAUDE_KEY ? askClaude : askGemini)
       await sql`
         update crm_call_analyses set status = 'done', analysed_at = now(), error = null, model = ${model},
           language = ${a.language}, transcript = ${sql.json(transcript)}, summary = ${a.summary}, outcome = ${a.outcome}, score = ${a.score},
@@ -251,5 +295,5 @@ async function tick(sql: Sql): Promise<void> {
 export function startCallAnalysis(sql: Sql): void {
   if (!KEY) { console.log("[calls-ai] GEMINI_API_KEY yo'q — tahlil o'chiq"); return }
   setInterval(() => void tick(sql).catch((e) => console.error(`[calls-ai] ${e instanceof Error ? e.message : e}`)), 60_000)
-  console.log(`[calls-ai] javob berilgan qo'ng'iroqlar tahlil qilinadi (${MODELS.join(", ")})`)
+  console.log(`[calls-ai] javob berilgan qo'ng'iroqlar tahlil qilinadi (matn: ${MODELS.join(", ")}; tahlil: ${CLAUDE_KEY ? CLAUDE_MODEL : "o'sha model"})`)
 }

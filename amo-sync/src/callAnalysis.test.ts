@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import {
-  analyseCall, analysisPrompt, factsText, namesHint, normalize, recordingVerdict, retryDelayMin, sellerVoice, toRoles, transcriptPrompt,
+  ANALYSIS_SCHEMA, analyseCall, analysisPrompt, factsText, toJsonSchema, namesHint, normalize, recordingVerdict, retryDelayMin, sellerVoice, toRoles, transcriptPrompt,
   type Ask, type Claim, type Line,
 } from "./callAnalysis"
 
@@ -120,6 +120,14 @@ describe("analyseCall", () => {
     expect(JSON.stringify(calls[0])).toContain("inline_data")
     expect(JSON.stringify(calls[1])).not.toContain("inline_data")
   })
+  test("the analysis can go to another model than the transcript", async () => {
+    const who: string[] = []
+    const hear: Ask = async () => { who.push("hear"); return { data: { lines }, model: "gemini" } }
+    const judge: Ask = async (parts) => { who.push("judge"); expect(JSON.stringify(parts)).not.toContain("inline_data"); return { data: { seller_voice: "B", summary: "s", criteria: [] }, model: "claude" } }
+    const r = await analyseCall(base, audio, hear, judge)
+    expect(who).toEqual(["hear", "judge"])
+    expect(r.model).toBe("gemini + claude")
+  })
   test("an empty transcript is an error", async () => {
     expect(analyseCall(base, audio, answers({ lines: [] }, {}).ask)).rejects.toThrow("transcript bo'sh")
   })
@@ -131,5 +139,20 @@ describe("analyseCall", () => {
   })
   test("a busy model's error comes through", async () => {
     expect(analyseCall(base, audio, async () => { throw new Error("503") })).rejects.toThrow("503")
+  })
+})
+
+describe("toJsonSchema (Gemini schema → the JSON Schema Claude takes)", () => {
+  const j = toJsonSchema(ANALYSIS_SCHEMA) as { type: string; additionalProperties: boolean; required: string[]; properties: Record<string, { type: unknown; items?: { properties: Record<string, { enum?: string[] }>; additionalProperties: boolean } }> }
+  test("objects are closed and every property is required", () => {
+    expect(j.type).toBe("object")
+    expect(j.additionalProperties).toBe(false)
+    expect(j.required).toContain("script_missed")
+    expect(j.properties.mistakes.items?.additionalProperties).toBe(false)
+  })
+  test("nullable becomes a null union; enums survive", () => {
+    expect(j.properties.score.type).toEqual(["integer", "null"])
+    expect(j.properties.summary.type).toBe("string")
+    expect(j.properties.mistakes.items?.properties.tag.enum).toContain("boshqa")
   })
 })
