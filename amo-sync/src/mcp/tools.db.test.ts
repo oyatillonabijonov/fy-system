@@ -160,7 +160,10 @@ test.skipIf(!testSql)("handleMcp: tools/list shows the caller's six tools; whoam
   expect(rows[0]!.ok).toBe(true)
 
   const denied = await mcp(tok, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "finance_summary", arguments: {} } })
-  expect(JSON.stringify(await denied.json())).not.toContain("income")
+  const dj = (await denied.json()) as { result: { isError: boolean; content: { text: string }[] } }
+  expect(dj.result.isError).toBe(true)
+  expect(dj.result.content[0]!.text).toContain("Moliya")
+  expect(JSON.stringify(dj)).not.toContain("income")
 })
 
 test.skipIf(!testSql)("handleMcp: GET is refused", async () => {
@@ -203,4 +206,73 @@ test.skipIf(!testSql)("handleMcp: a failing audit insert does not change the too
     expect(JSON.parse(j.result.content[0]!.text).id).toBe(sellerA)
   } finally { console.error = orig }
   expect(logged.some((l) => String(l[0]).includes("audit insert failed"))).toBe(true)
+})
+
+// --- 2026-07-28 era: no initialize, a _meta envelope on every request, MCP-Protocol-Version / Mcp-Method / Mcp-Name headers
+const META = {
+  "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+  "io.modelcontextprotocol/clientInfo": { name: "t", version: "1" },
+  "io.modelcontextprotocol/clientCapabilities": {},
+}
+const modern = (token: string, method: string, params: Record<string, unknown> = {}, name?: string) => handleMcp(new Request("https://x.test/mcp", {
+  method: "POST",
+  headers: {
+    "content-type": "application/json", accept: "application/json, text/event-stream", authorization: `Bearer ${token}`,
+    "mcp-protocol-version": "2026-07-28", "mcp-method": method, ...(name ? { "mcp-name": name } : {}),
+  },
+  body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: { ...params, _meta: META } }),
+}), testSql!, asUser)
+const toolNames = async (r: Response) => ((await r.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort()
+const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"]
+
+test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin nine, back to back), JSON and no-store", async () => {
+  const a = (await openConnection(testSql!, sellerA, "test-client")).access_token
+  const adm = (await openConnection(testSql!, admin, "test-client")).access_token
+  const r1 = await modern(a, "tools/list")
+  expect(r1.status).toBe(200)
+  expect(r1.headers.get("content-type")).toContain("application/json")
+  expect(r1.headers.get("cache-control")).toBe("no-store")
+  expect(await toolNames(r1)).toEqual(SELLER_TOOLS)
+  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(9)
+  expect(await toolNames(await modern(a, "tools/list"))).toEqual(SELLER_TOOLS)
+})
+
+test.skipIf(!testSql)("2026 era: tools/call whoami returns the caller and is audited", async () => {
+  const u = await staff(testSql!, { modules: ["sotuv-crmn"] }); created.push(u)
+  const tok = (await openConnection(testSql!, u, "test-client")).access_token
+  const r = await modern(tok, "tools/call", { name: "whoami", arguments: {} }, "whoami")
+  const j = (await r.json()) as { result: { isError?: boolean; content: { text: string }[] } }
+  expect(j.result.isError).toBeFalsy()
+  expect(JSON.parse(j.result.content[0]!.text).id).toBe(u)
+  expect((await testSql!`select count(*)::int n from public.mcp_calls where user_id = ${u} and tool = 'whoami' and ok`)[0]!.n).toBe(1)
+})
+
+test.skipIf(!testSql)("2026 era: server/discover is answered, not an error", async () => {
+  const tok = (await openConnection(testSql!, sellerA, "test-client")).access_token
+  const r = await modern(tok, "server/discover")
+  expect(r.status).toBe(200)
+  const j = (await r.json()) as { result?: { supportedVersions?: string[]; instructions?: string; _meta?: Record<string, { name: string }> }; error?: unknown }
+  expect(j.error).toBeUndefined()
+  expect(j.result?.supportedVersions).toContain("2026-07-28")
+  expect(j.result?._meta?.["io.modelcontextprotocol/serverInfo"]?.name).toBe("fy-system")
+  expect(j.result?.instructions).toContain("Fikr Yetakchilari")
+})
+
+test.skipIf(!testSql)("a tool the caller does not have is an explicit module error, audited, with no data (both eras)", async () => {
+  const u = await staff(testSql!, { modules: ["dashboard", "sotuv-crmn"] }); created.push(u)
+  const tok = (await openConnection(testSql!, u, "test-client")).access_token
+  const legacy = await mcp(tok, { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "finance_summary", arguments: {} } })
+  const modernRes = await modern(tok, "tools/call", { name: "finance_summary", arguments: {} }, "finance_summary")
+  for (const r of [legacy, modernRes]) {
+    const j = (await r.json()) as { result: { isError: boolean; content: { text: string }[] } }
+    expect(j.result.isError).toBe(true)
+    expect(j.result.content[0]!.text).toBe("«Moliya» bo'limiga ruxsatingiz yo'q")
+  }
+  const rows = await testSql!`select ok, error from public.mcp_calls where user_id = ${u} and tool = 'finance_summary'`
+  expect(rows).toHaveLength(2)
+  expect(rows.every((x) => x.ok === false && String(x.error).includes("Moliya"))).toBe(true)
+  const unknown = await mcp(tok, { jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "nowhere", arguments: {} } })
+  expect(JSON.stringify(await unknown.json())).not.toContain("Moliya")
+  const list = await mcp(tok, { jsonrpc: "2.0", id: 7, method: "tools/list" })
+  expect(await toolNames(list)).toEqual(SELLER_TOOLS)
 })
