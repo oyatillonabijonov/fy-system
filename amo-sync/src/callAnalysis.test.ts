@@ -49,13 +49,17 @@ describe("who is the seller", () => {
   test("a self-introduction overrides the AI's pick", () => {
     expect(sellerVoice(lines, "A", "Zuhra Aliyeva")).toBe("B")
   })
-  test("no introduction: the AI's pick stands; no pick at all: A", () => {
+  test("no introduction: the AI's pick stands; no pick at all: unknown", () => {
     expect(sellerVoice(plain, "B", "Zuhra")).toBe("B")
-    expect(sellerVoice(plain, undefined, null)).toBe("A")
+    expect(sellerVoice(plain, undefined, null)).toBeNull()
   })
-  test("both voices name the club: back to the AI's pick", () => {
-    const both: Line[] = [{ t: "0", voice: "A", text: "Fikr Yetakchilarimi?" }, { t: "1", voice: "B", text: "Ha, Fikr Yetakchilari" }]
-    expect(sellerVoice(both, "B", null)).toBe("B")
+  test("a client asking for the club by name is not taken for the seller", () => {
+    const inbound: Line[] = [{ t: "0", voice: "A", text: "Alo, Fikr Yetakchilarimi?" }, { t: "1", voice: "B", text: "Ha, eshitaman" }]
+    expect(sellerVoice(inbound, "B", "Zuhra")).toBe("B")
+  })
+  test("both voices say the seller's introduction: back to the AI's pick", () => {
+    const both: Line[] = [{ t: "0", voice: "A", text: "ismim Zuhra" }, { t: "1", voice: "B", text: "ismim Zuhra dedingizmi?" }]
+    expect(sellerVoice(both, "B", "Zuhra")).toBe("B")
   })
   test("voices become seller / client", () => {
     expect(toRoles(lines, "B").map((l) => l.who)).toEqual(["client", "seller"])
@@ -85,8 +89,8 @@ describe("normalize", () => {
 
 describe("retries and the recording", () => {
   test("waits grow, then it gives up", () => {
-    expect(retryDelayMin(0)).toBe(2)
-    expect(retryDelayMin(4)).toBe(30)
+    expect(retryDelayMin(1)).toBe(2)
+    expect(retryDelayMin(4)).toBe(20)
     expect(retryDelayMin(5)).toBeNull()
   })
   test("a recording that isn't there yet is waited for 30 minutes after the call", () => {
@@ -121,6 +125,9 @@ describe("analyseCall", () => {
   })
   test("an unreadable analysis is an error", async () => {
     expect(analyseCall(base, audio, answers({ lines }, "garbage").ask)).rejects.toThrow("tahlil o'qilmadi")
+  })
+  test("nobody can be told to be the seller: an error, not a coin toss", async () => {
+    expect(analyseCall({ ...base, seller_name: null }, audio, answers({ lines: plain }, { summary: "s", criteria: [] }).ask)).rejects.toThrow("sotuvchi aniqlanmadi")
   })
   test("a busy model's error comes through", async () => {
     expect(analyseCall(base, audio, async () => { throw new Error("503") })).rejects.toThrow("503")

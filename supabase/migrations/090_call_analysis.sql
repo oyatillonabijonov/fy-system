@@ -62,27 +62,35 @@ GRANT SELECT, UPDATE ON public.sales_script TO authenticated;
 REVOKE INSERT, DELETE ON public.sales_script FROM anon, authenticated;
 
 -- The next call to analyse, with the facts the AI is given. Taking it leases it for 10 minutes
--- (next_try_at), so a crash or an overlapping tick can't run the same call twice at once.
+-- (next_try_at), so a crash or an overlapping tick can't run the same call twice at once, and
+-- counts as a try: a call that keeps crashing the worker still ends as failed after 5.
+-- New calls are taken only from the last day; a row already pending is never stranded by age.
 CREATE OR REPLACE FUNCTION public.call_analysis_claim()
 RETURNS TABLE (call_uuid text, direction text, started_at timestamptz, duration integer, talk_time integer, attempts integer,
                seller_name text, client_name text, event_name text, event_date timestamptz, tariffs text, script text)
 LANGUAGE plpgsql SET search_path = public, pg_temp AS $$
-DECLARE v_uuid text;
+DECLARE v_uuid text; v_tries integer;
 BEGIN
-  SELECT c.uuid INTO v_uuid
-  FROM public.crm_calls c LEFT JOIN public.crm_call_analyses a ON a.call_uuid = c.uuid
-  WHERE c.talk_time > 0
-    AND c.started_at >= to_timestamp((SELECT value FROM public.amo_sync_state WHERE key = 'call_analysis_from')::bigint)
-    AND c.started_at > now() - interval '1 day'
-    AND (a.call_uuid IS NULL OR (a.status = 'pending' AND a.next_try_at <= now()))
-  ORDER BY c.started_at
-  LIMIT 1
-  FOR UPDATE OF c SKIP LOCKED;
-  IF v_uuid IS NULL THEN RETURN; END IF;
+  LOOP
+    SELECT c.uuid, a.attempts INTO v_uuid, v_tries
+    FROM public.crm_calls c LEFT JOIN public.crm_call_analyses a ON a.call_uuid = c.uuid
+    WHERE c.talk_time > 0
+      AND ((a.call_uuid IS NULL
+            AND c.started_at >= to_timestamp((SELECT value FROM public.amo_sync_state WHERE key = 'call_analysis_from')::bigint)
+            AND c.started_at > now() - interval '1 day')
+        OR (a.status = 'pending' AND a.next_try_at <= now()))
+    ORDER BY c.started_at
+    LIMIT 1
+    FOR UPDATE OF c SKIP LOCKED;
+    IF v_uuid IS NULL THEN RETURN; END IF;
+    EXIT WHEN COALESCE(v_tries, 0) < 5;
+    UPDATE public.crm_call_analyses a SET status = 'failed', error = COALESCE(a.error, 'urinishlar tugadi') WHERE a.call_uuid = v_uuid;
+  END LOOP;
 
-  INSERT INTO public.crm_call_analyses AS a (call_uuid, next_try_at, last_try_at)
-  VALUES (v_uuid, now() + interval '10 minutes', now())
-  ON CONFLICT ON CONSTRAINT crm_call_analyses_pkey DO UPDATE SET next_try_at = excluded.next_try_at, last_try_at = excluded.last_try_at;
+  INSERT INTO public.crm_call_analyses AS a (call_uuid, attempts, next_try_at, last_try_at)
+  VALUES (v_uuid, 1, now() + interval '10 minutes', now())
+  ON CONFLICT ON CONSTRAINT crm_call_analyses_pkey
+  DO UPDATE SET attempts = a.attempts + 1, next_try_at = excluded.next_try_at, last_try_at = excluded.last_try_at;
 
   RETURN QUERY
   SELECT c.uuid, c.direction, c.started_at, c.duration, c.talk_time, a.attempts,

@@ -107,12 +107,13 @@ ${lines.map((l) => `${l.t} ${l.voice}: ${l.text}`).join("\n")}`
 
 const plain = (s: string) => s.toLowerCase().replace(/['’`ʻʼ]/g, "")
 
-/** The AI's pick, unless exactly one voice introduces itself (the club's name, "ismim <seller>") */
-export function sellerVoice(lines: Line[], ai: "A" | "B" | undefined, sellerName: string | null): "A" | "B" {
+/** The AI's pick, unless exactly one voice introduces itself as the seller ("ismim Zuhra"); null = can't tell.
+ *  The club's name is no mark: a client calling in asks for it too. */
+export function sellerVoice(lines: Line[], ai: "A" | "B" | undefined, sellerName: string | null): "A" | "B" | null {
   const first = sellerName?.trim().split(/\s+/)[0]
-  const marks = [plain(CLUB), ...(first ? [`ismim ${plain(first)}`] : [])]
-  const said = (["A", "B"] as const).filter((v) => lines.some((l) => l.voice === v && marks.some((m) => plain(l.text).includes(m))))
-  return said.length === 1 ? said[0] : ai ?? "A"
+  const mark = first ? `ismim ${plain(first)}` : null
+  const said = mark ? (["A", "B"] as const).filter((v) => lines.some((l) => l.voice === v && plain(l.text).includes(mark))) : []
+  return said.length === 1 ? said[0] : ai ?? null
 }
 
 export function toRoles(lines: Line[], seller: "A" | "B"): RoleLine[] {
@@ -143,9 +144,9 @@ export function normalize(raw: unknown): Analysis | null {
   }
 }
 
-/** Minutes to wait after `attempts` failed tries; null = give up */
+/** Minutes to wait after the `attempts`-th try failed (a claim is a try, so it starts at 1); null = that was the last */
 export function retryDelayMin(attempts: number): number | null {
-  return [2, 5, 10, 20, 30][attempts] ?? null
+  return [2, 5, 10, 20][attempts - 1] ?? null
 }
 
 /** OnlinePBX may publish a recording a while after the call: "not there" is waited for 30 minutes */
@@ -190,12 +191,15 @@ export async function analyseCall(c: Claim, audio: Buffer, ask: Ask): Promise<{ 
   const second = await ask([{ text: analysisPrompt(c, lines) }], ANALYSIS_SCHEMA)
   const analysis = normalize(second.data)
   if (!analysis) throw new Error("tahlil o'qilmadi")
-  return { transcript: toRoles(lines, sellerVoice(lines, analysis.seller_voice, c.seller_name)), analysis, model: second.model }
+  const seller = sellerVoice(lines, analysis.seller_voice, c.seller_name)
+  if (!seller) throw new Error("sotuvchi aniqlanmadi")   // a guess would judge the client's words half the time
+  return { transcript: toRoles(lines, seller), analysis, model: second.model }
 }
 
 // ─── The timer ───────────────────────────────────────────────────────────────
 
 let busy = false
+let capDay = ""   // the day the daily cap was last reported, so it's logged once
 
 async function tick(sql: Sql): Promise<void> {
   if (busy) return
@@ -203,25 +207,30 @@ async function tick(sql: Sql): Promise<void> {
   try {
     // A runaway loop must not burn the key the task bot shares
     const [{ tries }] = await sql<{ tries: number }[]>`select coalesce(sum(attempts), 0)::int as tries from crm_call_analyses where last_try_at > now() - interval '1 day'`
-    if (tries >= DAILY_MAX) return
-    const [c] = await sql<Claim[]>`select * from public.call_analysis_claim()`
+    if (tries >= DAILY_MAX) {
+      const today = new Date().toISOString().slice(0, 10)
+      if (capDay !== today) { capDay = today; console.error(`[calls-ai] kunlik chegara (${DAILY_MAX}) to'ldi — tahlil ertagacha to'xtadi`) }
+      return
+    }
+    const [c] = await sql<Claim[]>`select * from public.call_analysis_claim()`   // the claim counts as a try
     if (!c) return
     const started = Date.now()
-    const src = await fetch(await audioLink(c.call_uuid, BASE))
-    const audio = Buffer.from(await src.arrayBuffer())
-    const verdict = recordingVerdict(src.status, audio.length, c, new Date())
-    if (verdict === "wait") {
-      await sql`update crm_call_analyses set next_try_at = now() + interval '3 minutes' where call_uuid = ${c.call_uuid}`
-      return
-    }
-    if (verdict === "skip") {
-      await sql`update crm_call_analyses set status = 'skipped', error = ${audio.length > 18_000_000 ? "yozuv juda katta" : "yozuv yo'q"} where call_uuid = ${c.call_uuid}`
-      return
-    }
     try {
+      // A stalled download must not hold `busy` for ever
+      const src = await fetch(await audioLink(c.call_uuid, BASE), { signal: AbortSignal.timeout(60_000) })
+      const audio = Buffer.from(await src.arrayBuffer())
+      const verdict = recordingVerdict(src.status, audio.length, c, new Date())
+      if (verdict === "wait") {   // not published yet: not a failed try
+        await sql`update crm_call_analyses set attempts = attempts - 1, next_try_at = now() + interval '3 minutes' where call_uuid = ${c.call_uuid}`
+        return
+      }
+      if (verdict === "skip") {
+        await sql`update crm_call_analyses set status = 'skipped', error = ${audio.length > 18_000_000 ? "yozuv juda katta" : "yozuv yo'q"} where call_uuid = ${c.call_uuid}`
+        return
+      }
       const { transcript, analysis: a, model } = await analyseCall(c, audio, askGemini)
       await sql`
-        update crm_call_analyses set status = 'done', attempts = attempts + 1, analysed_at = now(), error = null, model = ${model},
+        update crm_call_analyses set status = 'done', analysed_at = now(), error = null, model = ${model},
           language = ${a.language}, transcript = ${sql.json(transcript)}, summary = ${a.summary}, outcome = ${a.outcome}, score = ${a.score},
           criteria = ${sql.json(a.criteria)}, good = ${sql.json(a.good)}, mistakes = ${sql.json(a.mistakes)}, words = ${sql.json(a.words)},
           advice = ${sql.json(a.advice)}, script_missed = ${sql.json(a.script_missed)}
@@ -230,8 +239,8 @@ async function tick(sql: Sql): Promise<void> {
     } catch (err) {
       const why = (err instanceof Error ? err.message : String(err)).slice(0, 300)
       const wait = retryDelayMin(c.attempts)
-      if (wait === null) await sql`update crm_call_analyses set status = 'failed', attempts = attempts + 1, error = ${why} where call_uuid = ${c.call_uuid}`
-      else await sql`update crm_call_analyses set attempts = attempts + 1, error = ${why}, next_try_at = now() + make_interval(mins => ${wait}) where call_uuid = ${c.call_uuid}`
+      if (wait === null) await sql`update crm_call_analyses set status = 'failed', error = ${why} where call_uuid = ${c.call_uuid}`
+      else await sql`update crm_call_analyses set error = ${why}, next_try_at = now() + make_interval(mins => ${wait}) where call_uuid = ${c.call_uuid}`
       console.error(`[calls-ai] ${c.call_uuid.slice(0, 8)} ${wait === null ? "failed" : `retry in ${wait}m`}: ${why}`)
     }
   } finally {

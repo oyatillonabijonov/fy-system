@@ -58,8 +58,19 @@ BEGIN
   UPDATE public.crm_call_analyses SET next_try_at = now() - interval '1 minute' WHERE call_uuid = 'c1';
   IF (SELECT script FROM public.call_analysis_claim()) IS NOT NULL THEN RAISE EXCEPTION 'TEST 3 FAILED: blank script not NULL'; END IF;
 
+  -- every claim is a try: a call that keeps crashing the worker still runs out of tries
+  IF (SELECT attempts FROM public.crm_call_analyses WHERE call_uuid = 'c1') <> 2 OR (SELECT attempts FROM public.crm_call_analyses WHERE call_uuid = 'c3') <> 1 THEN
+    RAISE EXCEPTION 'TEST 9 FAILED: a claim does not count as a try'; END IF;
+  UPDATE public.crm_call_analyses SET attempts = 5, next_try_at = now() - interval '1 minute' WHERE call_uuid = 'c3';
+  IF EXISTS (SELECT 1 FROM public.call_analysis_claim()) THEN RAISE EXCEPTION 'TEST 9 FAILED: a call out of tries handed out again'; END IF;
+  IF (SELECT status FROM public.crm_call_analyses WHERE call_uuid = 'c3') <> 'failed' THEN RAISE EXCEPTION 'TEST 9 FAILED: a call out of tries not marked failed'; END IF;
+  -- a pending row is never stranded by its age (a re-queued old call, a day-long outage)
+  INSERT INTO public.crm_call_analyses (call_uuid, next_try_at) VALUES ('c5', now() - interval '1 minute');
+  IF (SELECT call_uuid FROM public.call_analysis_claim()) IS DISTINCT FROM 'c5' THEN RAISE EXCEPTION 'TEST 9 FAILED: an old pending call left hanging'; END IF;
+  DELETE FROM public.crm_call_analyses WHERE call_uuid = 'c5';
+
   IF has_function_privilege('authenticated', 'public.call_analysis_claim()', 'EXECUTE') THEN RAISE EXCEPTION 'TEST 1 FAILED: API role can claim'; END IF;
-  RAISE NOTICE 'TESTS 1-3 ok: claim picks answered recent calls once, lease, facts';
+  RAISE NOTICE 'TESTS 1-3, 9 ok: claim picks answered recent calls once, lease, facts, tries';
 END $$;
 
 UPDATE public.crm_call_analyses SET status = 'done', score = 60,
