@@ -5,6 +5,7 @@ import { handleMcp } from "./server"
 import { openConnection } from "./store"
 import { confirmToken } from "./confirm"
 import { callTool, TOOLS } from "./tools"
+import { handleConnector } from "./index"
 
 const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
 const created: string[] = []
@@ -386,9 +387,9 @@ afterAll(async () => {
 })
 const BADTOKEN = "Tasdiqlash kodi yaroqsiz yoki muddati o'tgan — avval tasdiq so'rang"
 const exists = async (eid: string) => ((await testSql!`select count(*)::int n from public.events where id = ${eid}`)[0]!.n as number) === 1
-type Preview = { event: { id: string; name: string }; will_delete: { participants: number; tariffs: number; tasks: number }; will_detach: { expenses: number; pipelines: number }; blocked_by_payments: number; confirm_token?: string; expires_in?: number; next: string }
+type Preview = { event: { id: string; name: string }; will_delete: { participants: number; tariffs: number; tasks: number; voided_payments: number; participants_with_cashback: number }; also: string[]; will_detach: { expenses: number; pipelines: number }; blocked_by_payments: number; confirm_token?: string; expires_in?: number; next: string }
 /** An owner-made event with 1 tariff, 1 participant, 1 task and 1 expense, and optionally a live payment */
-async function delFixture(s: string, withPayment = false) {
+async function delFixture(s: string, withPayment = false, withVoided = false) {
   const [eid, tid, pid, kid, xid] = [id(), id(), id(), id(), id()]
   delEvents.push(eid); delExpenses.push(xid)
   await testSql!`insert into public.events (id, name, date, manager_id) values (${eid}, ${nm(s)}, now(), ${mgr})`
@@ -397,6 +398,7 @@ async function delFixture(s: string, withPayment = false) {
   await testSql!`insert into public.tasks (id, event_id, title) values (${kid}, ${eid}, 'k')`
   await testSql!`insert into public.expenses (id, event_id, category, amount, spent_at) values (${xid}, ${eid}, 'boshqa', 5, current_date)`
   if (withPayment) await testSql!`insert into public.payments (participant_id, amount, method) values (${pid}, 10, 'naqd')`
+  if (withVoided) await testSql!`insert into public.payments (participant_id, amount, method, voided_at, void_reason) values (${pid}, 10, 'naqd', now(), 'test')`
   return { eid, pid, xid }
 }
 async function dropFixture(f: { eid: string; pid: string }) {
@@ -440,7 +442,7 @@ test.skipIf(!testSql)("delete_event preview: counts, a token, nothing deleted, a
   try {
     const p = await preview(admin, f.eid)
     expect(p.event).toMatchObject({ id: f.eid, name: nm("DelPrev") })
-    expect(p.will_delete).toEqual({ participants: 1, tariffs: 1, tasks: 1 })
+    expect(p.will_delete).toEqual({ participants: 1, tariffs: 1, tasks: 1, voided_payments: 0, participants_with_cashback: 0 })
     expect(p.will_detach).toEqual({ expenses: 1, pipelines: 0 })
     expect(p.blocked_by_payments).toBe(0)
     expect(p.expires_in).toBe(600)
@@ -449,6 +451,31 @@ test.skipIf(!testSql)("delete_event preview: counts, a token, nothing deleted, a
     expect(await exists(f.eid)).toBe(true)
     expect((await preview(admin, f.eid)).blocked_by_payments).toBe(0)
     expect(await exists(f.eid)).toBe(true)
+  } finally { await dropFixture(f) }
+})
+
+const ALSO = [
+  "Cancelled (voided) payments of its participants are removed together with them; cashback its participants earned from this event is taken back from their balances.",
+  "The counts show only what you are allowed to see; expenses, payments and voronkas hidden from you are affected as well.",
+]
+
+test.skipIf(!testSql)("delete_event preview tells the whole truth: voided payments and cashback are counted, the delete removes them, and a Tadbirlar-only caller sees 0 but the same warning", async () => {
+  const f = await delFixture("DelVoid", false, true)
+  try {
+    await testSql!`update public.event_participants set cashback_earned = 7 where id = ${f.pid}`
+    const p = await preview(admin, f.eid)
+    expect(p.will_delete.voided_payments).toBe(1)
+    expect(p.will_delete.participants_with_cashback).toBe(1)
+    expect(p.blocked_by_payments).toBe(0)
+    expect(p.confirm_token).toBeTruthy()
+    expect(p.also).toEqual(ALSO)
+    const blind = await preview(evUser, f.eid)
+    expect(blind.will_delete.voided_payments).toBe(0)
+    expect(blind.also).toEqual(ALSO)
+    expect(await exists(f.eid)).toBe(true)
+    expect((await call(admin, "delete_event", { event_id: f.eid, confirm_token: p.confirm_token })).ok).toBe(true)
+    expect(await exists(f.eid)).toBe(false)
+    expect((await testSql!`select count(*)::int n from public.payments where participant_id = ${f.pid}`)[0]!.n).toBe(0)
   } finally { await dropFixture(f) }
 })
 
@@ -545,7 +572,7 @@ afterAll(async () => {
 })
 const ADMIN_ONLY = "Bu amalni faqat admin bajara oladi"
 
-test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate; link_pipeline is admin only; admin sees eighteen", async () => {
+test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate; link_pipeline is admin only; admin sees twenty", async () => {
   for (const n of ["copy_event_tasks", "enroll_participant", "link_pipeline"]) {
     const t = TOOLS.find((x) => x.name === n)
     expect(t?.write).toBe(true)
@@ -559,7 +586,7 @@ test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate
   expect(d).toContain("debt")
   expect(d).toContain("no payment")
   expect(d).toContain("reference")
-  expect(TOOLS.length).toBe(18)
+  expect(TOOLS.length).toBe(20)
   const [e1, e2] = [await mkEvent("Gt1"), await mkEvent("Gt2")]
   expect(await call(seller, "copy_event_tasks", { from_event_id: e1, to_event_id: e2 })).toEqual({ ok: false, error: GATE })
   expect(await call(seller, "enroll_participant", { event_id: e1, client_id: clientA })).toEqual({ ok: false, error: GATE })
@@ -695,4 +722,80 @@ test.skipIf(!testSql)("link_pipeline: an admin sets and clears the event; a non-
   expect(await call(admin, "link_pipeline", { pipeline_id: id(), event_id: ev })).toEqual({ ok: false, error: "Voronka topilmadi" })
   expect(await call(admin, "link_pipeline", { pipeline_id: pid, event_id: id() })).toEqual({ ok: false, error: "Tadbir topilmadi" })
   expect(await cur()).toBeNull()
+})
+
+// ─── export_stickers / export_signs ───
+const savedBase = process.env.MCP_PUBLIC_URL
+beforeAll(() => { process.env.MCP_PUBLIC_URL = "https://x.test" })
+afterAll(() => { if (savedBase === undefined) delete process.env.MCP_PUBLIC_URL; else process.env.MCP_PUBLIC_URL = savedBase })
+type Export = { url: string; file: string; pages: number; count: number; expires_in: number }
+const exp = async (uid: string, name: string, args: unknown) => {
+  const r = await call(uid, name, args)
+  if (!r.ok) throw new Error(r.error)
+  return r.data as Export
+}
+
+test.skipIf(!testSql)("export_stickers: event participants plus extra names make one downloadable PDF", async () => {
+  const r = await exp(evUser, "export_stickers", { style: "onyx", event_id: eventId, names: ["Mehmon Bir"] })
+  expect(r).toMatchObject({ count: 3, pages: 1, expires_in: 900 })
+  expect(r.file.endsWith("_stikerlar.pdf")).toBe(true)
+  expect(r.url.startsWith("https://x.test/mcp/files/")).toBe(true)
+  const res = await handleConnector(new Request(r.url), testSql!, new URL(r.url))
+  expect(res.status).toBe(200)
+  expect(res.headers.get("content-type")).toBe("application/pdf")
+  expect(res.headers.get("content-disposition")).toContain("attachment")
+  expect(res.headers.get("content-disposition")).toContain("_stikerlar.pdf")
+  expect(res.headers.get("cache-control")).toBe("no-store")
+  expect(new TextDecoder().decode((await res.arrayBuffer()).slice(0, 5))).toBe("%PDF-")
+})
+
+test.skipIf(!testSql)("export_stickers: names only need a caption, which names the file; empty, too many, bad style, unknown event, no module", async () => {
+  expect(await call(evUser, "export_stickers", { style: "linen", names: ["A B"] })).toEqual({ ok: false, error: "Stiker uchun yozuv (caption) kerak" })
+  const r = await exp(evUser, "export_stickers", { style: "linen", names: ["A B"], caption: "Biznes kecha 2.0" })
+  expect(r.file).toBe("Biznes_kecha_2_0_stikerlar.pdf")
+  expect(await call(evUser, "export_stickers", { style: "linen", caption: "X" })).toEqual({ ok: false, error: "Stiker uchun ism yo'q" })
+  const many = await call(evUser, "export_stickers", { style: "linen", caption: "X", names: Array.from({ length: 601 }, (_, i) => `N${i}`) })
+  expect(many.ok).toBe(false)
+  const ev600 = await call(evUser, "export_stickers", { style: "linen", event_id: eventId, caption: "X", names: Array.from({ length: 599 }, (_, i) => `N${i}`) })
+  expect(ev600).toEqual({ ok: false, error: "Stikerlar soni 600 tadan oshmasin" })
+  const bad = await call(evUser, "export_stickers", { style: "neon", names: ["A"], caption: "X" })
+  expect(bad.ok).toBe(false)
+  if (!bad.ok) expect(bad.error).toContain("style")
+  expect(await call(evUser, "export_stickers", { style: "onyx", event_id: id() })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(seller, "export_stickers", { style: "onyx", names: ["A"], caption: "X" })).toEqual({ ok: false, error: GATE })
+  expect(await call(seller, "export_signs", { style: "signal", signs: [{ place: "Zal", direction: "left" }] })).toEqual({ ok: false, error: GATE })
+})
+
+test.skipIf(!testSql)("export_stickers: a very long event name gives a file base of at most 80 characters", async () => {
+  const eid = id(), long = `${"Uzun ".repeat(60)}${tag}`.slice(0, 300)
+  delEvents.push(eid)
+  await testSql!`insert into public.events (id, name, date, manager_id) values (${eid}, ${long}, now(), ${mgr})`
+  try {
+    const r = await exp(evUser, "export_stickers", { style: "onyx", event_id: eid, names: ["A B"] })
+    expect(r.file.length).toBeLessThanOrEqual(80 + "_stikerlar.pdf".length)
+    expect(r.file.endsWith("_stikerlar.pdf")).toBe(true)
+  } finally {
+    await testSql!`delete from public.events where id = ${eid}`
+  }
+})
+
+test.skipIf(!testSql)("export_signs: two per sheet, file named from the event or navigatsiya; bad direction and unknown event fail", async () => {
+  const signs = [{ place: "Zal", direction: "left" }, { place: "Kofe", direction: "up-right" }, { place: "WC", direction: "both" }]
+  const r = await exp(evUser, "export_signs", { style: "ember", signs })
+  expect(r).toMatchObject({ pages: 2, count: 3, file: "navigatsiya.pdf", expires_in: 900 })
+  const e = await exp(evUser, "export_signs", { style: "signal", signs, event_id: eventId })
+  expect(e.file).toBe(`Fixture_${tag}_navigatsiya.pdf`)
+  const bad = await call(evUser, "export_signs", { style: "signal", signs: [{ place: "Zal", direction: "sideways" }] })
+  expect(bad.ok).toBe(false)
+  if (!bad.ok) expect(bad.error).toContain("direction")
+  expect(await call(evUser, "export_signs", { style: "signal", signs, event_id: id() })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(evUser, "export_signs", { style: "signal", signs: [{ place: "   ", direction: "left" }] })).toMatchObject({ ok: false })
+})
+
+test.skipIf(!testSql)("the export tools are read-only tools behind the Tadbirlar gate", () => {
+  for (const n of ["export_stickers", "export_signs"]) {
+    const t = TOOLS.find((x) => x.name === n)
+    expect(t?.write).toBeUndefined()
+    expect(t?.module).toBe("tadbirlar")
+  }
 })

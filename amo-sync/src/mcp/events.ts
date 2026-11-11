@@ -4,6 +4,8 @@ import type { UserSql } from "./db"
 import { confirmOk, confirmToken } from "./confirm"
 import { date, limit, offset, tool, ToolError, uuid } from "./def"
 import type { ToolDef } from "./def"
+import { putFile } from "./files"
+import { publicBase } from "./oauth"
 
 export interface EventDetail {
   id: string; name: string; date: string | null; end_date: string | null; location: string | null
@@ -41,6 +43,25 @@ const place = z.string().trim().min(1).max(200)
 async function needManager(tx: UserSql, id: string): Promise<void> {
   const [m] = await tx`select 1 from public.profiles where id = ${id} and is_active is distinct from false`
   if (!m) throw new ToolError("Mas'ul topilmadi yoki nofaol")
+}
+
+const DELETE_ALSO = [
+  "Cancelled (voided) payments of its participants are removed together with them; cashback its participants earned from this event is taken back from their balances.",
+  "The counts show only what you are allowed to see; expenses, payments and voronkas hidden from you are affected as well.",
+]
+
+const STICKER_STYLES = z.enum(["onyx", "sandstone", "graphite", "linen", "ivory"])
+const SIGN_STYLES = z.enum(["signal", "ember"])
+const DIRECTIONS = z.enum(["left", "up", "right", "up-left", "up-right", "down", "down-left", "down-right", "both"])
+const LINK = "The result is a download link that expires in 15 minutes: give it to the user as a link. The booklet is exported in the platform (Tadbirlar → Dizayn materiallar)."
+
+/** Keeps the PDF for download and returns the tool result; a renderer Error (nothing to print, bad id) is the model's to read */
+async function exportFile(name: string, make: () => Promise<{ bytes: Uint8Array; pages: number }>, count: number) {
+  const base = publicBase()
+  if (!base) throw new ToolError("Eksport hozircha sozlanmagan")
+  let pdf: { bytes: Uint8Array; pages: number }
+  try { pdf = await make() } catch (e) { throw new ToolError(e instanceof Error ? e.message : "Eksport bajarilmadi") }
+  return { url: `${base}/mcp/files/${putFile(name, pdf.bytes)}`, file: name, pages: pdf.pages, count, expires_in: 900 }
 }
 
 const isGuard = (e: unknown) => e instanceof Error && e.message.includes("participant_has_payments")
@@ -157,21 +178,23 @@ export const EVENT_TOOLS: ToolDef[] = [
     } }),
   tool({ name: "delete_event", title: "Delete an event", module: "tadbirlar", write: true, destructive: true,
     input: { event_id: uuid, confirm_token: z.string().min(1).max(500).optional() },
-    description: "Deleting is permanent and removes the event's participants, tariffs and tasks. First call without confirm_token, show the returned summary to the user, and call again with the token only after they explicitly agree to delete this event. Expenses and the linked voronka are kept (detached). An event whose participants have payments cannot be deleted: those are handled in Moliya.",
+    description: "Deleting is permanent and removes the event's participants, tariffs and tasks. First call without confirm_token, show the returned summary to the user, and call again with the token only after they explicitly agree to delete this event. Expenses and the linked voronka are kept (detached). An event whose participants have payments cannot be deleted: those are handled in Moliya. Its voided payments go with it, cashback its participants earned is taken back, and the summary's counts show only what the caller can see.",
     run: async (tx, a, me) => {
       if (!process.env.JWT_SECRET) throw new ToolError("O'chirish hozircha sozlanmagan")
       const [ev] = await tx<{ id: string; name: string; date: string | null }[]>`select id, name, date from public.events where id = ${a.event_id}`
       if (!ev) throw new ToolError("Tadbir topilmadi")
       if (a.confirm_token === undefined) {
-        const [n] = await tx<{ participants: number; tariffs: number; tasks: number; expenses: number; pipelines: number; blocked: number }[]>`select
+        const [n] = await tx<{ participants: number; tariffs: number; tasks: number; expenses: number; pipelines: number; voided: number; cashback: number; blocked: number }[]>`select
           (select count(*)::int from public.event_participants where event_id = ${ev.id}) as participants,
           (select count(*)::int from public.event_tariffs where event_id = ${ev.id}) as tariffs,
           (select count(*)::int from public.tasks where event_id = ${ev.id}) as tasks,
           (select count(*)::int from public.expenses where event_id = ${ev.id}) as expenses,
           (select count(*)::int from public.crm_pipelines where event_id = ${ev.id}) as pipelines,
+          (select count(*)::int from public.payments y join public.event_participants p on p.id = y.participant_id where p.event_id = ${ev.id} and y.voided_at is not null) as voided,
+          (select count(*)::int from public.event_participants where event_id = ${ev.id} and coalesce(cashback_earned, 0) > 0) as cashback,
           (select count(*)::int from public.event_participants p where p.event_id = ${ev.id}
             and exists (select 1 from public.payments y where y.participant_id = p.id and y.voided_at is null)) as blocked`
-        const summary = { event: { id: ev.id, name: ev.name, date: ev.date }, will_delete: { participants: n!.participants, tariffs: n!.tariffs, tasks: n!.tasks }, will_detach: { expenses: n!.expenses, pipelines: n!.pipelines }, blocked_by_payments: n!.blocked }
+        const summary = { event: { id: ev.id, name: ev.name, date: ev.date }, will_delete: { participants: n!.participants, tariffs: n!.tariffs, tasks: n!.tasks, voided_payments: n!.voided, participants_with_cashback: n!.cashback }, will_detach: { expenses: n!.expenses, pipelines: n!.pipelines }, blocked_by_payments: n!.blocked, also: DELETE_ALSO }
         if (n!.blocked > 0) return { ...summary, next: "This event cannot be deleted while its participants have payments. Payments are handled in Moliya (void or refund them first)." }
         return { ...summary, confirm_token: await confirmToken("delete_event", me.id, ev.id), expires_in: 600, next: "Show this summary to the user and ask for an explicit yes. Only then call delete_event again with confirm_token." }
       }
@@ -238,5 +261,37 @@ export const EVENT_TOOLS: ToolDef[] = [
       const [row] = await tx<{ id: string; name: string }[]>`update public.crm_pipelines set event_id = ${a.event_id}::uuid where id = ${a.pipeline_id} returning id, name`
       if (!row) throw new ToolError("Voronka topilmadi")
       return { pipeline: { id: row.id, name: row.name }, event }
+    } }),
+  tool({ name: "export_stickers", title: "Name stickers PDF", module: "tadbirlar",
+    input: { style: STICKER_STYLES, event_id: uuid.optional(), names: z.array(z.string().min(1).max(200)).max(600).optional(), caption: z.string().min(1).max(200).optional() },
+    description: `Makes a PDF of name stickers: 14 per A4 sheet, for hand cutting. style is one of onyx, sandstone, graphite, linen, ivory. The names are the event's participants (event_id) followed by any extra names; the caption defaults to the event's name and is required without an event. At most 600 names. ${LINK}`,
+    run: async (tx, a) => {
+      let list: string[] = [], base = a.caption, evName: string | undefined
+      if (a.event_id) {
+        const [ev] = await tx<{ name: string }[]>`select name from public.events where id = ${a.event_id}`
+        if (!ev) throw new ToolError("Tadbir topilmadi")
+        list = (await tx<{ full_name: string }[]>`select full_name from public.event_participants where event_id = ${a.event_id} order by sort_order nulls last, created_at limit 601`).map((r) => r.full_name)
+        evName = ev.name
+        base ??= ev.name
+      }
+      list = [...list, ...(a.names ?? [])]
+      if (!list.length) throw new ToolError("Stiker uchun ism yo'q")
+      if (list.length > 600) throw new ToolError("Stikerlar soni 600 tadan oshmasin")
+      if (!base) throw new ToolError("Stiker uchun yozuv (caption) kerak")
+      const { stickersPdf, fileSafe } = await import("../pdf/render")
+      return exportFile(`${fileSafe(evName ?? base).slice(0, 80)}_stikerlar.pdf`, () => stickersPdf(list, a.caption ?? base!, a.style), list.length)
+    } }),
+  tool({ name: "export_signs", title: "Venue signs PDF", module: "tadbirlar",
+    input: { style: SIGN_STYLES, signs: z.array(z.object({ place: z.string().min(1).max(200), direction: DIRECTIONS })).min(1).max(100), event_id: uuid.optional() },
+    description: `Makes a PDF of venue direction signs: 2 per A4 landscape sheet. style is one of signal, ember; each sign has a place and a direction (left, up, right, up-left, up-right, down, down-left, down-right, both); at most 100 signs. event_id only names the file. ${LINK}`,
+    run: async (tx, a) => {
+      let base = "navigatsiya"
+      if (a.event_id) {
+        const [ev] = await tx<{ name: string }[]>`select name from public.events where id = ${a.event_id}`
+        if (!ev) throw new ToolError("Tadbir topilmadi")
+        base = ev.name
+      }
+      const { signsPdf, fileSafe } = await import("../pdf/render")
+      return exportFile(`${fileSafe(base).slice(0, 80)}${a.event_id ? "_navigatsiya" : ""}.pdf`, () => signsPdf(a.signs, a.style), a.signs.length)
     } }),
 ]
