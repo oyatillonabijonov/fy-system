@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   getPipelines, getStages, getLeads, getLead, createLead, updateLead, deleteLead,
   getNotes, getLeadCalls, getCalls, getCallbacks, getMyNewLeads, getDuplicateLeads, mergeLeads, renameClient, addNote, deleteNote, getLeadTasks, getOpenTasks, addTask, updateTask, deleteTask,
-  createPipeline, renamePipeline, setPipelineEvent, setPipelineAutoAssign, getPipelineSellers, setPipelineSeller, deletePipeline, saveStage, deleteStage,
+  createPipeline, renamePipeline, setPipelineEvent, setPipelineAutoAssign, setPipelineThreshold, getPipelineSellers, setPipelineSeller, deletePipeline, saveStage, deleteStage,
   type CallFilter, type Lead, type LeadDraft, type LeadPatch, type TaskDraft, type Stage,
 } from "@/lib/supabase/queries/sotuv"
 
@@ -57,6 +57,7 @@ export const useUpdateTask = () =>
 export const useCreatePipeline = () => useSotuvMutation(({ name, sortOrder }: { name: string; sortOrder: number }) => createPipeline(name, sortOrder), "Voronka yaratildi")
 export const useRenamePipeline = () => useSotuvMutation(({ id, name }: { id: string; name: string }) => renamePipeline(id, name))
 export const useSetPipelineEvent = () => useSotuvMutation(({ id, eventId }: { id: string; eventId: string | null }) => setPipelineEvent(id, eventId), "Tadbir biriktirildi")
+export const useSetPipelineThreshold = () => useSotuvMutation(({ id, value }: { id: string; value: number }) => setPipelineThreshold(id, value), "Chegara saqlandi")
 export const useSetPipelineAutoAssign = () => useSotuvMutation(({ id, on }: { id: string; on: boolean }) => setPipelineAutoAssign(id, on))
 export const usePipelineSellers = (pipelineId: string) =>
   useQuery({ queryKey: [...SOTUV_KEY, "pipeline-sellers", pipelineId], queryFn: () => getPipelineSellers(pipelineId) })

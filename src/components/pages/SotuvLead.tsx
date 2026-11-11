@@ -122,6 +122,8 @@ function LeadView({ lead }: { lead: Lead }) {
           {/* The voronka's event (081): enrol this client straight from the bitim */}
           {pipeline?.event_id && lead.client && <EnrollFromLead eventId={pipeline.event_id} client={lead.client} />}
 
+          <LeadQuality lead={lead} />
+
           {/* The form's answers, like AmoCRM's deal fields — the whole form, name and phone included */}
           {lead.fields.length > 0 && (
             <dl className="flex flex-col gap-2.5" aria-label="Forma javoblari">
@@ -308,6 +310,19 @@ function NoteItem({ note, canDelete, onDelete }: { note: FeedNote; canDelete: bo
         </div>
         <p className="mt-1 rounded-control bg-surface-sunken px-3 py-2 text-base text-ink whitespace-pre-wrap break-words">{note.text}</p>
       </div>
+    </div>
+  )
+}
+
+/** 093: the site form's score and verdict — only for applications that carried the new fields */
+function LeadQuality({ lead }: { lead: Pick<Lead, "lead_score" | "qualified"> }) {
+  if (lead.lead_score === null) return null
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`h-7 px-3 inline-flex items-center rounded-full text-sm font-semibold whitespace-nowrap ${lead.qualified ? "bg-success-soft text-success-text" : "bg-mute-soft text-ink-muted"}`}>
+        {lead.qualified ? "Sifatli lid" : "Sifatsiz lid"}
+      </span>
+      <span className="text-sm text-ink-muted tabular-nums whitespace-nowrap">Ball: {lead.lead_score} / 7</span>
     </div>
   )
 }
@@ -632,6 +647,8 @@ function LeadMobile(p: MobileProps) {
           {pipeline?.event_id && lead.client && (
             <EnrollFromLead card eventId={pipeline.event_id} client={lead.client} />
           )}
+
+          <LeadQuality lead={lead} />
 
           {lead.fields.length > 0 && (
             <section>

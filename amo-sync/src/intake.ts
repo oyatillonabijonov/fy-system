@@ -6,6 +6,7 @@
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
+import { clientMeta, scoreLead, splitCapi } from "./leadScore"
 import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
 import type { Attribution, MetaLead } from "./attribution"
 import { handleConnector, isConnectorPath } from "./mcp"
@@ -145,9 +146,26 @@ export function startIntake(sql: Sql): void {
         }
         const raw = await readBody(req)
         if (Object.keys(raw).length === 1 && raw.test) return new Response("ok")   // Tilda's "check webhook" ping
-        const { fields, attribution } = splitAttribution(raw, url.searchParams)
-        const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), attribution)
-        return Response.json({ ok: true, duplicate: !!r.duplicate }, { headers: CORS })
+        const split = splitAttribution(raw, url.searchParams)
+        const { fields, capi } = splitCapi(split.fields)
+        const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), split.attribution)
+        // A form with the new fields (093) gets a score; older forms answer exactly as before
+        const score = scoreLead(fields)
+        let qualified: boolean | undefined
+        if (score !== null && r.lead_id) {
+          // The bitim already exists: a failure here must not turn into "not sent" on the site
+          try {
+            const [row] = await sql<{ qualified: boolean }[]>`
+              update crm_leads l set lead_score = ${score}, qualified = ${score} >= p.lead_threshold,
+                     capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
+              from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
+            qualified = row?.qualified
+            console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
+          } catch (e) {
+            console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
+          }
+        }
+        return Response.json({ ok: true, duplicate: !!r.duplicate, ...(qualified === undefined ? {} : { qualified }) }, { headers: CORS })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         // CORS on errors too, or the browser shows a failed site form as a network error

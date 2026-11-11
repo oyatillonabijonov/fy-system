@@ -4,7 +4,7 @@ import { X, Trash, ArrowUp, ArrowDown, Plus, Copy, Check, Globe } from "@phospho
 import { useDialog } from "@/hooks/useDialog"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
-import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent, useSetPipelineAutoAssign, usePipelineSellers, useSetPipelineSeller } from "@/hooks/useSotuv"
+import { useRenamePipeline, useDeletePipeline, useSaveStage, useDeleteStage, useSetPipelineEvent, useSetPipelineAutoAssign, useSetPipelineThreshold, usePipelineSellers, useSetPipelineSeller } from "@/hooks/useSotuv"
 import { useEvents } from "@/hooks/useEvents"
 import { formatDate } from "@/lib/format"
 import type { Pipeline, Stage } from "@/lib/supabase/queries/sotuv"
@@ -89,6 +89,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
 
           <LeadIntake pipeline={pipeline} />
           <LeadSharing pipeline={pipeline} onError={onError} />
+          <LeadThreshold pipeline={pipeline} onError={onError} />
 
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-ink-muted mb-1">Bosqichlar</span>
@@ -195,6 +196,28 @@ function LeadIntake({ pipeline }: { pipeline: Pipeline }) {
       <button type="button" onClick={() => copy("url")} className="self-start px-1 text-sm text-ink-muted underline underline-offset-2 hover:text-ink transition-colors">
         {copied === "url" ? "Manzil nusxalandi" : "Tilda / Framer uchun manzilni nusxalash"}
       </button>
+    </div>
+  )
+}
+
+/** 093: a site application scores 0–7 (position, turnover, company); this many points = a qualified lead,
+ *  the only kind Meta hears about as "Lead". Applies to applications that arrive after the change. */
+function LeadThreshold({ pipeline, onError }: { pipeline: Pipeline; onError: (e: Error) => void }) {
+  const save = useSetPipelineThreshold()
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-ink-muted">Sifatli lid chegarasi</span>
+      <label className="flex items-center gap-3 p-3 rounded-control bg-surface-sunken">
+        <span className="flex-1 min-w-0">
+          <span className="block text-base font-medium text-ink">Kamida shuncha ball</span>
+          <span className="block text-sm text-ink-muted">Saytdagi ariza 0–7 ball oladi: lavozim, aylanma, kompaniya. Shundan yuqorisi sifatli lid — Meta'ga faqat ular "Lead" bo'lib boradi.</span>
+        </span>
+        <select value={pipeline.lead_threshold} aria-label="Sifatli lid chegarasi"
+          onChange={(e) => save.mutate({ id: pipeline.id, value: Number(e.target.value) }, { onError })}
+          className="h-control-md w-20 shrink-0 px-3 rounded-control bg-surface border border-line text-base text-ink tabular-nums">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </label>
     </div>
   )
 }
