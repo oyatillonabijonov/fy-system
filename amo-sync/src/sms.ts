@@ -61,6 +61,67 @@ export function mapStatus(s: string): "delivered" | "failed" | null {
   return null
 }
 
+// ─── Templates (095): ours ↔ Eskiz's ───────────────────────────────────────────
+
+const BLANK = /\{([^{}\s]+)\}/g
+/** The same rule as the web's src/lib/sms.ts: {ism} = one word, other blanks up to 10 words */
+export const toPattern = (text: string): string => text.replace(BLANK, (_, k: string) => (k === "ism" ? "%w" : "%w{1,10}"))
+const squash = (s: string) => s.replace(/\s+/g, " ").trim()
+export const sameText = (a: string, b: string): boolean => squash(a) === squash(b)
+
+export function eskizState(s: string): { status: "approved" | "moderation" | "rejected"; kind: "promo" | "reminder" | null } {
+  if (s === "service") return { status: "approved", kind: "reminder" }
+  if (s === "reklama") return { status: "approved", kind: "promo" }
+  return { status: s === "moderation" ? "moderation" : "rejected", kind: null }
+}
+
+/** A template made on my.eskiz.uz: its %w / %d holes become blanks {matn1}, {matn2}… */
+export function importText(template: string): string {
+  let n = 0
+  return template.replace(/%[wd](?:\{\d+,\d+\})?/g, () => `{matn${++n}}`)
+}
+
+interface EskizTpl { id: number; template: string; original_text: string; status: string }
+let syncing: Promise<void> | null = null
+let lastSync = 0
+
+/** Submit new templates, then mirror Eskiz's list into sms_templates (link by id, else by text, else import) */
+export function syncTemplates(sql: Sql): Promise<void> {
+  if (syncing) return syncing
+  syncing = (async () => {
+    const pending = await sql<{ id: string; text: string }[]>`select id, text from sms_templates where status = 'moderation' and submitted_at is null`
+    for (const t of pending) {
+      const pattern = toPattern(t.text)
+      const form = new FormData()
+      form.append("template", pattern)
+      await eskiz("user/template", form)
+      await sql`update sms_templates set pattern = ${pattern}, submitted_at = now() where id = ${t.id}`
+      console.log(`[sms] shablon Eskiz'ga yuborildi: ${t.id}`)
+    }
+    const r = await eskiz<{ result?: EskizTpl[] }>("user/templates")
+    const ours = await sql<{ id: string; eskiz_id: number | null; text: string; pattern: string | null; status: string }[]>`
+      select id, eskiz_id, text, pattern, status from sms_templates`
+    for (const e of r.result ?? []) {
+      const st = eskizState(e.status)
+      const mine = ours.find((o) => o.eskiz_id === e.id)
+        ?? ours.find((o) => o.eskiz_id === null && o.pattern !== null && sameText(o.pattern, e.template))
+        ?? ours.find((o) => o.eskiz_id === null && o.status === "draft" && sameText(o.text, e.original_text))   // an old saved text Eskiz approved
+      if (mine) {
+        await sql`update sms_templates set eskiz_id = ${e.id}, status = ${st.status}, kind = ${st.kind}, pattern = ${e.template},
+                    text = ${mine.status === "draft" ? importText(e.template) : mine.text}, checked_at = now() where id = ${mine.id}`
+        mine.eskiz_id = e.id
+      } else {
+        const title = squash(e.original_text).split(" ").slice(0, 5).join(" ")
+        await sql`insert into sms_templates (title, text, status, kind, eskiz_id, pattern, checked_at, created_by)
+                  values (${title || "Shablon"}, ${importText(e.template)}, ${st.status}, ${st.kind}, ${e.id}, ${e.template}, now(), null)
+                  on conflict (eskiz_id) do nothing`
+      }
+    }
+    lastSync = Date.now()
+  })().finally(() => { syncing = null })
+  return syncing
+}
+
 // ─── Queue ───────────────────────────────────────────────────────────────────
 
 let running = false
@@ -74,8 +135,10 @@ async function drain(sql: Sql): Promise<void> {
     do {
       again = false
       if (!sendingHours()) return
+      // Only what is due (095: a scheduled send waits for its time; a cancelled one never goes)
       const rows = await sql<{ id: number; phone: string; text: string }[]>`
-        select id, phone, text from sms_messages where status = 'queued' order by id limit 50`
+        select m.id, m.phone, m.text from sms_messages m join sms_campaigns c on c.id = m.campaign_id
+        where m.status = 'queued' and c.send_at <= now() and c.cancelled_at is null order by m.id limit 50`
       for (const row of rows) {
         try {
           const form = new FormData()
@@ -106,6 +169,7 @@ const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods
 /** /hooks/sms/status (Eskiz → us) and /hooks/sms/templates (browser) */
 export async function handleSms(req: Request, sql: Sql, url: URL): Promise<Response> {
   if (url.pathname === "/hooks/sms/status") return handleStatus(req, sql, url)
+  if (url.pathname === "/hooks/sms/templates/sync") return handleSync(req, sql)
   if (url.pathname !== "/hooks/sms/templates") return new Response("not found", { status: 404 })
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS })
   const uid = await verifyJwt((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, ""))
@@ -123,6 +187,23 @@ export async function handleSms(req: Request, sql: Sql, url: URL): Promise<Respo
     return Response.json({ error: "eskiz_error" }, { status: 502, headers: CORS })
   }
 }
+
+/** POST /hooks/sms/templates/sync — the Shablonlar tab's "Yangilash" (and its first open): submit + re-read now */
+async function handleSync(req: Request, sql: Sql): Promise<Response> {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: SYNC_CORS })
+  const uid = await verifyJwt((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, ""))
+  const [me] = uid ? await sql<{ ok: boolean }[]>`select public.has_permission(${uid}, 'sms') or public.has_permission(${uid}, 'sotuv-crmn') as ok` : []
+  if (!me?.ok) return Response.json({ error: "forbidden" }, { status: 403, headers: SYNC_CORS })
+  if (!EMAIL || !PASSWORD) return Response.json({ error: "sms_off" }, { status: 503, headers: SYNC_CORS })
+  try {
+    if (Date.now() - lastSync > 20_000) await syncTemplates(sql)
+    return Response.json({ ok: true }, { headers: SYNC_CORS })
+  } catch (e) {
+    console.error(`[sms] sync: ${e instanceof Error ? e.message : e}`)
+    return Response.json({ error: "eskiz_error" }, { status: 502, headers: SYNC_CORS })
+  }
+}
+const SYNC_CORS = { ...CORS, "Access-Control-Allow-Methods": "POST, OPTIONS" }
 
 /** POST /hooks/sms/status — Eskiz's delivery report */
 async function handleStatus(req: Request, sql: Sql, url: URL): Promise<Response> {
@@ -150,5 +231,9 @@ export async function startSms(sql: Sql): Promise<void> {
   await sql.listen("sms_outbox", wake)
   setInterval(wake, 30_000)
   wake()
+  // Template states (095): every 10 minutes, and at once from the Shablonlar tab
+  const sync = () => { syncTemplates(sql).catch((e) => console.error(`[sms] sync: ${e instanceof Error ? e.message : e}`)) }
+  setInterval(sync, 10 * 60_000)
+  sync()
   console.log(`[sms] Eskiz yoqildi (from ${FROM})`)
 }
