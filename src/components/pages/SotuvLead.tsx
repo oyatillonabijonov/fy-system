@@ -1,3 +1,4 @@
+import { attributionRows } from "@/lib/attribution"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText } from "@phosphor-icons/react"
@@ -129,6 +130,19 @@ function LeadView({ lead }: { lead: Lead }) {
                 <div key={f.k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-3">
                   <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
                   <dd className="text-base text-ink break-words">{f.v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          {/* Which ad / UTM brought it (091) */}
+          {attributionRows(lead.attribution).length > 0 && (
+            <dl className="flex flex-col gap-2.5" aria-label="Qayerdan keldi">
+              <span className="text-sm font-semibold text-ink">Qayerdan keldi</span>
+              {attributionRows(lead.attribution).map((f) => (
+                <div key={f.k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-3">
+                  <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
+                  <dd className="text-base text-ink break-all">{f.v}</dd>
                 </div>
               ))}
             </dl>
@@ -627,6 +641,20 @@ function LeadMobile(p: MobileProps) {
                   <div key={f.k} className="px-4 py-3 border-b border-line last:border-b-0">
                     <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
                     <dd className="text-base text-ink break-words">{f.v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {attributionRows(lead.attribution).length > 0 && (
+            <section>
+              <h2 className={SECTION}>Qayerdan keldi</h2>
+              <dl aria-label="Qayerdan keldi" className="rounded-surface bg-surface-sunken overflow-hidden">
+                {attributionRows(lead.attribution).map((f) => (
+                  <div key={f.k} className="px-4 py-3 border-b border-line last:border-b-0">
+                    <dt className="text-sm text-ink-muted break-words">{f.k}</dt>
+                    <dd className="text-base text-ink break-all">{f.v}</dd>
                   </div>
                 ))}
               </dl>

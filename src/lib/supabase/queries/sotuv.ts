@@ -50,6 +50,8 @@ export interface Lead {
   closed_at: string | null
   /** the form's answers, in its order (079) */
   fields: { k: string; v: string }[]
+  /** which ad / UTM brought it (091) */
+  attribution: Record<string, string>
   client: LeadClient | null
   responsible: Person | null
   /** the earliest open task, for the card */
@@ -183,7 +185,7 @@ export async function deleteStage(id: string): Promise<void> {
 // ─── Bitimlar ───────────────────────────────────────────────────────────────
 
 const LEAD_SELECT =
-  "id, name, pipeline_id, stage_id, client_id, price, source, responsible_user_id, loss_reason, is_won, is_lost, created_at, stage_changed_at, closed_at, fields, " +
+  "id, name, pipeline_id, stage_id, client_id, price, source, responsible_user_id, loss_reason, is_won, is_lost, created_at, stage_changed_at, closed_at, fields, attribution, " +
   "client:client_id(id, full_name, phone, image), responsible:responsible_user_id(full_name, avatar_url), " +
   "tasks:crm_tasks(due_date, kind, text, is_done)"
 
