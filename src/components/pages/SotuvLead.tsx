@@ -1,7 +1,7 @@
 import { attributionRows } from "@/lib/attribution"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText } from "@phosphor-icons/react"
+import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText, Copy } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
 import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, useRenameClient, SOTUV_KEY } from "@/hooks/useSotuv"
@@ -18,6 +18,11 @@ import { useEvents, useParticipants } from "@/hooks/useEvents"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
 import { useMedia } from "@/hooks/useMedia"
 import { Sheet } from "@/components/ui/Sheet"
+import { SmsSend } from "@/components/sms/SmsSend"
+import { useClientSms } from "@/hooks/useSms"
+import { SMS_STATUS, type ClientSmsRow } from "@/lib/supabase/queries/sms"
+import { usePhone } from "@/context/PhoneContext"
+import { toast } from "@/lib/toast"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -114,7 +119,7 @@ function LeadView({ lead }: { lead: Lead }) {
                     onBlur={saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
                     className="block w-full bg-transparent text-base font-medium text-ink truncate rounded-item -mx-1 px-1 hover:bg-surface-sunken focus:bg-surface-sunken focus:outline-none" />
                 : <span className="block text-base font-medium text-ink truncate">Mijoz biriktirilmagan</span>}
-              {lead.client?.phone && <span className="block text-sm text-ink-muted tabular-nums">{formatPhone(lead.client.phone)}</span>}
+              {lead.client?.phone && <PhoneMenu phone={lead.client.phone} client={lead.client} />}
             </div>
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
@@ -222,6 +227,7 @@ function useFeed(lead: Lead, stages: Stage[]) {
   const { data: notes = [] } = useNotes(lead.id)
   const { data: tasks = [] } = useLeadTasks(lead.id)
   const { data: calls = [] } = useLeadCalls(lead.id)
+  const { data: sms = [] } = useClientSms(lead.client?.id ?? null)
   const qc = useQueryClient()
   useEffect(() => subscribeLeadCalls(lead.id, () => qc.invalidateQueries({ queryKey: SOTUV_KEY })), [lead.id, qc])
   const delNote = useDeleteNote()
@@ -233,6 +239,7 @@ function useFeed(lead: Lead, stages: Stage[]) {
     ...notes.map((n) => ({ at: n.created_at, key: n.id, node: <NoteItem note={n} canDelete={n.kind === "note" && (n.created_by === user?.id || isAdmin)} onDelete={() => delNote.mutate(n.id)} /> })),
     ...tasks.filter((t) => t.is_done && t.done_at).map((t) => ({ at: t.done_at!, key: t.id, node: <DoneItem task={t} /> })),
     ...calls.map((c) => ({ at: c.started_at, key: c.uuid, node: <CallItem call={c} /> })),
+    ...sms.map((m) => ({ at: m.send_at > m.created_at ? m.send_at : m.created_at, key: `sms-${m.id}`, node: <SmsItem sms={m} /> })),
   ].sort((a, b) => a.at.localeCompare(b.at))
   return { items, open, isClosed }
 }
@@ -260,7 +267,7 @@ function Feed({ lead, stages, today }: { lead: Lead; stages: Stage[]; today: str
             <TaskChip kind={t.kind} due={t.due_date} today={today} />
           </div>
         )) : !isClosed && <div className="flex items-center gap-2 text-sm text-warning-text"><NoTaskChip />Keyingi qadamni belgilang — bitim vazifasiz qolmasin</div>}
-        <Composer leadId={lead.id} responsible={lead.responsible_user_id} today={today} />
+        <Composer leadId={lead.id} responsible={lead.responsible_user_id} today={today} client={lead.client} />
       </div>
       {closing && <TaskDone task={closing} onClose={() => setClosing(null)} />}
     </section>
@@ -366,12 +373,12 @@ function DoneItem({ task }: { task: SalesTask }) {
 }
 
 /** Izoh / Vazifa composer at the bottom of the feed */
-function Composer({ leadId, responsible, today }: { leadId: string; responsible: string | null; today: string }) {
+function Composer({ leadId, responsible, today, client }: { leadId: string; responsible: string | null; today: string; client: Lead["client"] }) {
   const { user } = useAuth()
   const { data: users = [] } = useUsers()
   const addNote = useAddNote()
   const addTask = useAddTask()
-  const [mode, setMode] = useState<"note" | "task">("note")
+  const [mode, setMode] = useState<"note" | "task" | "sms">("note")
   const [text, setText] = useState("")
   const [kind, setKind] = useState<TaskKind>("call")
   const [due, setDue] = useState<{ date: string | null; time: string | null }>({ date: addDays(today, 1), time: null })
@@ -392,13 +399,14 @@ function Composer({ leadId, responsible, today }: { leadId: string; responsible:
   return (
     <div className="rounded-control bg-surface border border-line focus-within:border-line-focus transition-colors">
       <div className="flex items-center gap-1 px-2 pt-2">
-        {([["note", "Izoh", NotePencil], ["task", "Vazifa", CheckCircle]] as const).map(([id, label, Icon]) => (
+        {([["note", "Izoh", NotePencil], ["task", "Vazifa", CheckCircle], ...(client?.phone ? [["sms", "SMS", ChatCircleText] as const] : [])] as const).map(([id, label, Icon]) => (
           <button key={id} type="button" onClick={() => setMode(id)} aria-pressed={mode === id}
             className={`h-7 px-3 inline-flex items-center gap-1.5 rounded-full text-sm font-medium transition-colors ${mode === id ? "bg-accent text-ink-on-accent" : "text-ink-muted hover:text-ink hover:bg-mute-ghost-hover"}`}>
             <Icon size={16} />{label}
           </button>
         ))}
       </div>
+      {mode === "sms" && client && <div className="p-3"><SmsSend clientId={client.id} clientName={client.full_name} onSent={() => setMode("note")} /></div>}
       {mode === "task" && (
         <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2">
           {TASK_KINDS.map((k) => {
@@ -417,7 +425,7 @@ function Composer({ leadId, responsible, today }: { leadId: string; responsible:
           </select>
         </div>
       )}
-      <div className="flex items-end gap-2 p-2">
+      {mode !== "sms" && <div className="flex items-end gap-2 p-2">
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2}
           placeholder={mode === "note" ? "Izoh yozing…" : "Nima qilish kerak (ixtiyoriy)"}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit() }}
@@ -427,6 +435,68 @@ function Composer({ leadId, responsible, today }: { leadId: string; responsible:
           className="h-9 px-4 shrink-0 inline-flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover disabled:opacity-40 transition-opacity">
           <PaperPlaneRight size={16} />{mode === "note" ? "Yuborish" : "Qo'shish"}
         </button>
+      </div>}
+    </div>
+  )
+}
+
+/** The client's phone number: a tap opens Qo'ng'iroq qilish · SMS yuborish · Nusxalash (the client's AmoCRM habit) */
+function PhoneMenu({ phone, client, big }: { phone: string; client: NonNullable<Lead["client"]>; big?: boolean }) {
+  const { status, dial, call } = usePhone()
+  const [open, setOpen] = useState(false)
+  const [sms, setSms] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
+  }, [open])
+  const row = "w-full h-10 px-3 flex items-center gap-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover disabled:opacity-40"
+  return (
+    <div ref={box} className="relative">
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open}
+        className={`block tabular-nums text-ink-muted hover:text-ink underline-offset-2 hover:underline ${big ? "text-base" : "text-sm"}`}>{formatPhone(phone)}</button>
+      {open && (
+        <div role="menu" className="absolute left-0 top-full mt-1 z-20 w-56 p-1 rounded-menu bg-surface border border-line">
+          <button role="menuitem" type="button" disabled={!!call} className={row}
+            onClick={() => { setOpen(false); if (status === "ready") void dial(phone).catch(() => {}); else location.href = `tel:${phone}` }}>
+            <Phone size={18} />Qo'ng'iroq qilish
+          </button>
+          <button role="menuitem" type="button" className={row} onClick={() => { setOpen(false); setSms(true) }}><ChatCircleText size={18} />SMS yuborish</button>
+          <button role="menuitem" type="button" className={row}
+            onClick={() => { setOpen(false); void navigator.clipboard.writeText(phone).then(() => toast.success("Raqam nusxalandi")) }}>
+            <Copy size={18} />Nusxalash
+          </button>
+        </div>
+      )}
+      <SmsSheet open={sms} onClose={() => setSms(false)} client={client} />
+    </div>
+  )
+}
+
+function SmsSheet({ open, onClose, client }: { open: boolean; onClose: () => void; client: NonNullable<Lead["client"]> }) {
+  return (
+    <Sheet open={open} onClose={onClose} title={`SMS — ${client.full_name}`}>
+      <SmsSend clientId={client.id} clientName={client.full_name} onSent={onClose} />
+    </Sheet>
+  )
+}
+
+/** An SMS to the bitim's client in the feed: text, who, when, delivery */
+function SmsItem({ sms }: { sms: ClientSmsRow }) {
+  const scheduled = sms.status === "queued" && new Date(sms.send_at) > new Date()
+  return (
+    <div className="flex gap-3 py-2">
+      <span className="w-7 h-7 rounded-full bg-surface-sunken max-lg:bg-card text-ink-muted flex items-center justify-center shrink-0"><ChatCircleText size={16} /></span>
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
+          <span className="text-ink">SMS{sms.bulk ? " · ommaviy" : ""}</span>
+          {sms.author && <span className="truncate">· {sms.author}</span>}
+          <span className={SMS_STATUS[sms.status].cls} title={sms.error ?? undefined}>· {scheduled ? `${when(sms.send_at)} da ketadi` : SMS_STATUS[sms.status].label}</span>
+          <span className="tabular-nums ml-auto shrink-0">{when(sms.created_at)}</span>
+        </div>
+        <p className="mt-1 rounded-control bg-surface-sunken px-3 py-2 text-base text-ink whitespace-pre-wrap break-words">{sms.text}</p>
       </div>
     </div>
   )
@@ -486,6 +556,7 @@ function LeadMobile(p: MobileProps) {
   const at = stage?.is_won || stage?.is_lost ? openStages.length : openStages.findIndex((s) => s.id === lead.stage_id) + 1
   const phone = lead.client?.phone
   const title = lead.client?.full_name ?? lead.name
+  const [smsOpen, setSmsOpen] = useState(false)
   const chips = useRef<HTMLDivElement>(null)
   useEffect(() => { chips.current?.querySelector("[aria-checked=true]")?.scrollIntoView({ inline: "center", block: "nearest" }) }, [lead.stage_id])
 
@@ -496,6 +567,7 @@ function LeadMobile(p: MobileProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {lead.client && <SmsSheet open={smsOpen} onClose={() => setSmsOpen(false)} client={lead.client} />}
       <Link to={`/sotuv?p=${lead.pipeline_id}`} className="self-start inline-flex items-center gap-1.5 h-9 px-3 -ml-3 rounded-full text-sm font-medium text-ink-muted active:bg-mute-ghost-hover">
         <ArrowLeft size={16} />{pipeline?.name ?? "Sotuv bo'limi"}
       </Link>
@@ -510,7 +582,7 @@ function LeadMobile(p: MobileProps) {
                   onBlur={p.saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
                   className="block w-full h-8 bg-transparent text-lg font-semibold text-ink rounded-item -mx-1 px-1 focus:bg-surface focus:outline-none" />
               : <span className="block text-lg font-semibold text-ink line-clamp-1">Mijoz biriktirilmagan</span>}
-            {phone && <span className="block text-base text-ink-muted tabular-nums">{formatPhone(phone)}</span>}
+            {phone && lead.client && <PhoneMenu phone={phone} client={lead.client} big />}
           </div>
         </div>
         <div className="flex flex-col gap-2.5">
@@ -538,7 +610,7 @@ function LeadMobile(p: MobileProps) {
             <span className={`${circle} bg-success text-white`}><Phone size={22} weight="fill" /></span>Qo'ng'iroq
           </CallButton>
         )}
-        {phone && <a href={`sms:${phone}`} className={act}><span className={neutral}><ChatCircleText size={22} weight="light" /></span>SMS</a>}
+        {phone && lead.client && <button type="button" onClick={() => setSmsOpen(true)} className={act}><span className={neutral}><ChatCircleText size={22} weight="light" /></span>SMS</button>}
         <button type="button" onClick={() => setTaskOpen(true)} className={act}><span className={neutral}><CheckCircle size={22} weight="light" /></span>Vazifa</button>
         <button type="button" onClick={writeNote} className={act}><span className={neutral}><NotePencil size={22} weight="light" /></span>Izoh</button>
       </div>
