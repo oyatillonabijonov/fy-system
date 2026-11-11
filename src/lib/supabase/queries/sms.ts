@@ -18,7 +18,8 @@ export const SMS_STATUS: Record<SmsStatus, { label: string; cls: string }> = {
 export interface SmsRecipient { id: string; full_name: string; phone: string | null; sms_opt_out: boolean; is_customer: boolean }
 /** 095: a template written here; Eskiz approves it (status, kind come from Eskiz through amo-sync) */
 export type TemplateStatus = "draft" | "moderation" | "approved" | "rejected"
-export interface SmsTemplate { id: string; title: string; text: string; status: TemplateStatus; kind: SmsKind | null; hidden: boolean; created_at: string }
+/** `pattern` = what Eskiz approved (the last check before sending); `error` = why Eskiz refused the submission */
+export interface SmsTemplate { id: string; title: string; text: string; status: TemplateStatus; kind: SmsKind | null; hidden: boolean; created_at: string; pattern: string | null; error: string | null }
 export const TEMPLATE_STATUS: Record<TemplateStatus, { label: string; cls: string }> = {
   draft: { label: "Qoralama", cls: "bg-mute-soft text-ink-muted" },
   moderation: { label: "Eskiz tekshirmoqda", cls: "bg-warning-soft text-warning-text" },
@@ -48,7 +49,7 @@ export async function getEventClientIds(eventId: string): Promise<string[]> {
 }
 
 export async function getSmsTemplates(): Promise<SmsTemplate[]> {
-  const { data, error } = await db.from("sms_templates").select("id, title, text, status, kind, hidden, created_at").order("created_at", { ascending: false })
+  const { data, error } = await db.from("sms_templates").select("id, title, text, status, kind, hidden, created_at, pattern, error").order("created_at", { ascending: false })
   if (error) throw error
   return data as SmsTemplate[]
 }

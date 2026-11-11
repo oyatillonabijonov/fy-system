@@ -8,7 +8,7 @@ import {
   useHideSmsTemplate, useDeleteSmsTemplate, useSyncSmsTemplates, useSendSmsTemplate, useSmsCampaigns, useSmsMessages, useCancelSmsCampaign,
 } from "@/hooks/useSms"
 import { SMS_STATUS, TEMPLATE_STATUS, KIND_LABEL, type SmsTemplate } from "@/lib/supabase/queries/sms"
-import { blanks, fillTemplate, smsParts } from "@/lib/sms"
+import { blanks, fillTemplate, fitsTemplate, smsParts } from "@/lib/sms"
 import { formatPhone } from "@/lib/format"
 import { confirmAction } from "@/lib/confirm"
 import { tbl } from "@/components/ui/table"
@@ -89,6 +89,7 @@ function Compose({ onSent, onTemplates }: { onSent: () => void; onTemplates: () 
   const sample = people.find((p) => picked.has(p.id))?.full_name ?? "Abdurahmon"
   const preview = t ? fillTemplate(t.text, values, sample) : ""
   const { parts } = smsParts(preview)
+  const fits = !t?.pattern || missing || fitsTemplate(preview, [t.pattern])
   const allVisible = visible.length > 0 && visible.every((p) => picked.has(p.id))
 
   const toggle = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
@@ -98,7 +99,7 @@ function Compose({ onSent, onTemplates }: { onSent: () => void; onTemplates: () 
     return n
   })
 
-  const ready = !!t && !missing && sendable > 0 && !send.isPending && (!schedule || !!later)
+  const ready = !!t && !missing && fits && sendable > 0 && !send.isPending && (!schedule || !!later)
   const sendLabel = send.isPending ? "Yuborilmoqda…" : !t ? "Shablonni tanlang" : sendable ? `${sendable} ta mijozga ${schedule ? "rejalashtirish" : "yuborish"}` : "Mijozlarni tanlang"
 
   async function submit() {
@@ -137,6 +138,8 @@ function Compose({ onSent, onTemplates }: { onSent: () => void; onTemplates: () 
             <input value={values[k] ?? ""} onChange={(e) => setValues({ ...values, [k]: e.target.value })} className={`${INPUT} max-lg:h-12 bg-surface max-lg:border-transparent`} />
           </label>
         ))}
+        {keys.length > 0 && <p className="-mt-2 text-xs text-ink-faint">Bo'sh joylarga yozilgan qiymat hamma oluvchilarga bir xil ketadi; mijoz ismi faqat {"{ism}"} o'rniga o'zi qo'yiladi.</p>}
+        {!fits && <p className="-mt-1 text-sm text-danger-text">Matn Eskiz tasdiqlagan shablonga mos kelmayapti — qiymatlarni tekshiring, aks holda SMS yetib bormaydi.</p>}
 
         {t && (
           <div className="rounded-control bg-surface px-3 py-2.5">
@@ -298,6 +301,7 @@ function Templates() {
                   {t.kind && <span className="h-6 px-2 inline-flex items-center rounded-full bg-surface text-xs font-medium text-ink whitespace-nowrap">{KIND_LABEL[t.kind]}</span>}
                 </div>
                 <p className="text-base text-ink whitespace-pre-wrap break-words">{t.text}</p>
+                {t.status === "rejected" && t.error && <p className="text-sm text-danger-text break-words">Eskiz: {t.error}</p>}
                 <div className="flex flex-wrap gap-2">
                   {t.status === "draft" && <button type="button" onClick={() => submit.mutate(t.id)} className="h-8 px-3 rounded-full bg-accent text-ink-on-accent text-sm font-medium">Eskiz'ga yuborish</button>}
                   {t.status !== "moderation" && <button type="button" onClick={() => setEditing(t)} className="h-8 px-3 rounded-full bg-surface text-ink text-sm font-medium hover:bg-mute-ghost-hover">Tahrirlash</button>}

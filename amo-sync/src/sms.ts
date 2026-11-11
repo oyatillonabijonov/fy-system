@@ -1,6 +1,6 @@
-// SMS through Eskiz (migration 083): drains sms_messages (status 'queued') into notify.eskiz.uz and
-// records Eskiz's delivery callback (POST /hooks/sms/status?token=…); GET /hooks/sms/templates hands the
-// browser (session + 'sms' module) the texts Eskiz has approved. Woken by pg_notify('sms_outbox'),
+// SMS through Eskiz (migration 083, 095): drains due sms_messages into notify.eskiz.uz, records Eskiz's
+// delivery callback (POST /hooks/sms/status?token=…) and keeps sms_templates in sync with Eskiz
+// (POST /hooks/sms/templates/sync, every 10 min). Woken by pg_notify('sms_outbox'),
 // plus a 30 s poll. Sends only 9:00–21:00 Tashkent — anything left waits for the morning.
 // Env: ESKIZ_EMAIL / ESKIZ_PASSWORD (the SMS gateway's login, not the cabinet's), ESKIZ_FROM (4546).
 // Unset = the queue just waits.
@@ -72,7 +72,7 @@ export const sameText = (a: string, b: string): boolean => squash(a) === squash(
 export function eskizState(s: string): { status: "approved" | "moderation" | "rejected"; kind: "promo" | "reminder" | null } {
   if (s === "service") return { status: "approved", kind: "reminder" }
   if (s === "reklama") return { status: "approved", kind: "promo" }
-  return { status: s === "moderation" ? "moderation" : "rejected", kind: null }
+  return { status: s === "rejected" ? "rejected" : "moderation", kind: null }   // unknown = still waiting
 }
 
 /** A template made on my.eskiz.uz: its %w / %d holes become blanks {matn1}, {matn2}… */
@@ -81,7 +81,7 @@ export function importText(template: string): string {
   return template.replace(/%[wd](?:\{\d+,\d+\})?/g, () => `{matn${++n}}`)
 }
 
-interface EskizTpl { id: number; template: string; original_text: string; status: string }
+interface EskizTpl { id: number; template: string; original_text: string | null; status: string }
 let syncing: Promise<void> | null = null
 let lastSync = 0
 
@@ -91,27 +91,37 @@ export function syncTemplates(sql: Sql): Promise<void> {
   syncing = (async () => {
     const pending = await sql<{ id: string; text: string }[]>`select id, text from sms_templates where status = 'moderation' and submitted_at is null`
     for (const t of pending) {
+      // One refused submission must not stop the rest (or the state sync below)
       const pattern = toPattern(t.text)
-      const form = new FormData()
-      form.append("template", pattern)
-      await eskiz("user/template", form)
-      await sql`update sms_templates set pattern = ${pattern}, submitted_at = now() where id = ${t.id}`
-      console.log(`[sms] shablon Eskiz'ga yuborildi: ${t.id}`)
+      try {
+        const form = new FormData()
+        form.append("template", pattern)
+        await eskiz("user/template", form)
+        await sql`update sms_templates set pattern = ${pattern}, submitted_at = now(), error = null where id = ${t.id}`
+        console.log(`[sms] shablon Eskiz'ga yuborildi: ${t.id}`)
+      } catch (err) {
+        const msg = (err instanceof Error ? err.message : String(err)).slice(0, 300)
+        await sql`update sms_templates set status = 'rejected', error = ${msg}, checked_at = now() where id = ${t.id}`
+        console.error(`[sms] shablon yuborilmadi ${t.id}: ${msg}`)
+      }
     }
     const r = await eskiz<{ result?: EskizTpl[] }>("user/templates")
+    const retired = new Set((await sql<{ eskiz_id: number }[]>`select eskiz_id from sms_eskiz_retired`).map((x) => x.eskiz_id))
     const ours = await sql<{ id: string; eskiz_id: number | null; text: string; pattern: string | null; status: string }[]>`
       select id, eskiz_id, text, pattern, status from sms_templates`
     for (const e of r.result ?? []) {
+      if (retired.has(e.id) || !e.template) continue   // replaced by an edit or deleted here — Eskiz can't delete it
+      const original = e.original_text ?? e.template
       const st = eskizState(e.status)
       const mine = ours.find((o) => o.eskiz_id === e.id)
         ?? ours.find((o) => o.eskiz_id === null && o.pattern !== null && sameText(o.pattern, e.template))
-        ?? ours.find((o) => o.eskiz_id === null && o.status === "draft" && sameText(o.text, e.original_text))   // an old saved text Eskiz approved
+        ?? ours.find((o) => o.eskiz_id === null && o.status === "draft" && sameText(o.text, original))   // an old saved text Eskiz approved
       if (mine) {
         await sql`update sms_templates set eskiz_id = ${e.id}, status = ${st.status}, kind = ${st.kind}, pattern = ${e.template},
                     text = ${mine.status === "draft" ? importText(e.template) : mine.text}, checked_at = now() where id = ${mine.id}`
         mine.eskiz_id = e.id
       } else {
-        const title = squash(e.original_text).split(" ").slice(0, 5).join(" ")
+        const title = squash(original).split(" ").slice(0, 5).join(" ")
         await sql`insert into sms_templates (title, text, status, kind, eskiz_id, pattern, checked_at, created_by)
                   values (${title || "Shablon"}, ${importText(e.template)}, ${st.status}, ${st.kind}, ${e.id}, ${e.template}, now(), null)
                   on conflict (eskiz_id) do nothing`
@@ -170,27 +180,13 @@ const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods
 export async function handleSms(req: Request, sql: Sql, url: URL): Promise<Response> {
   if (url.pathname === "/hooks/sms/status") return handleStatus(req, sql, url)
   if (url.pathname === "/hooks/sms/templates/sync") return handleSync(req, sql)
-  if (url.pathname !== "/hooks/sms/templates") return new Response("not found", { status: 404 })
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS })
-  const uid = await verifyJwt((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, ""))
-  const [me] = uid ? await sql<{ ok: boolean }[]>`select public.has_permission(${uid}, 'sms') as ok` : []
-  if (!me?.ok) return Response.json({ error: "forbidden" }, { status: 403, headers: CORS })
-  if (!EMAIL || !PASSWORD) return Response.json({ error: "sms_off" }, { status: 503, headers: CORS })
-  try {
-    const r = await eskiz<{ result?: { id: number; template: string; original_text: string; status: string }[] }>("user/templates")
-    // Only what Eskiz approved: "service" (eslatma) and "reklama"; moderation/rejected are left out
-    const list = (r.result ?? []).filter((t) => t.status === "service" || t.status === "reklama")
-      .map((t) => ({ id: t.id, template: t.template, example: t.original_text, kind: t.status === "reklama" ? "promo" : "reminder" }))
-    return Response.json(list, { headers: CORS })
-  } catch (e) {
-    console.error(`[sms] templates: ${e instanceof Error ? e.message : e}`)
-    return Response.json({ error: "eskiz_error" }, { status: 502, headers: CORS })
-  }
+  return new Response("not found", { status: 404 })
 }
 
 /** POST /hooks/sms/templates/sync — the Shablonlar tab's "Yangilash" (and its first open): submit + re-read now */
 async function handleSync(req: Request, sql: Sql): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: SYNC_CORS })
+  if (req.method !== "POST") return new Response("method not allowed", { status: 405, headers: SYNC_CORS })
   const uid = await verifyJwt((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, ""))
   const [me] = uid ? await sql<{ ok: boolean }[]>`select public.has_permission(${uid}, 'sms') or public.has_permission(${uid}, 'sotuv-crmn') as ok` : []
   if (!me?.ok) return Response.json({ error: "forbidden" }, { status: 403, headers: SYNC_CORS })

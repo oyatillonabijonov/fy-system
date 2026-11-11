@@ -64,8 +64,12 @@ export const useSmsMessages = (filter: { campaignId?: string; clientId?: string 
     refetchOnMount: true,
   })
 
+/** Polls while an SMS is still on its way (no realtime for sms_messages: a bulk send would flood the live channel) */
 export const useClientSms = (clientId: string | null) =>
-  useQuery({ queryKey: [...SMS_KEY, "client", clientId], queryFn: () => getClientSms(clientId!), enabled: !!clientId, refetchOnMount: true })
+  useQuery({
+    queryKey: [...SMS_KEY, "client", clientId], queryFn: () => getClientSms(clientId!), enabled: !!clientId, refetchOnMount: true,
+    refetchInterval: (q) => (q.state.data?.some((m) => m.status === "queued" || m.status === "sent") ? 15_000 : false),
+  })
 
 export function useSetSmsOptOut() {
   const qc = useQueryClient()

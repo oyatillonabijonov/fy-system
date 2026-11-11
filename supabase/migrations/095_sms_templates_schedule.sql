@@ -13,7 +13,24 @@ ALTER TABLE public.sms_templates
   ADD COLUMN pattern      text,
   ADD COLUMN hidden       boolean     NOT NULL DEFAULT false,
   ADD COLUMN submitted_at timestamptz,
-  ADD COLUMN checked_at   timestamptz;
+  ADD COLUMN checked_at   timestamptz,
+  ADD COLUMN error        text;          -- why Eskiz refused the submission (shown on the template)
+
+-- Eskiz ids we stopped using (the template was edited — a new one is submitted — or deleted): the sync
+-- must not import them back as fresh templates. Eskiz has no delete API, so they stay there.
+CREATE TABLE public.sms_eskiz_retired (eskiz_id integer PRIMARY KEY, retired_at timestamptz NOT NULL DEFAULT now());
+ALTER TABLE public.sms_eskiz_retired ENABLE ROW LEVEL SECURITY;   -- amo-sync only
+
+CREATE OR REPLACE FUNCTION public.retire_sms_eskiz_id()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+  IF OLD.eskiz_id IS NOT NULL AND (TG_OP = 'DELETE' OR NEW.eskiz_id IS DISTINCT FROM OLD.eskiz_id) THEN
+    INSERT INTO public.sms_eskiz_retired (eskiz_id) VALUES (OLD.eskiz_id) ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN NULL;
+END $$;
+CREATE TRIGGER trigger_retire_sms_eskiz_id AFTER UPDATE OR DELETE ON public.sms_templates   -- no column list: the guard clears eskiz_id itself
+  FOR EACH ROW EXECUTE FUNCTION public.retire_sms_eskiz_id();
 
 -- Template state is amo-sync's: the API may only write drafts / ask for moderation; changing the text of a
 -- template Eskiz already saw sends it back to moderation
@@ -23,17 +40,17 @@ BEGIN
   IF current_user NOT IN ('authenticated', 'anon') THEN RETURN NEW; END IF;
   IF TG_OP = 'INSERT' THEN
     IF NEW.status NOT IN ('draft', 'moderation') OR NEW.eskiz_id IS NOT NULL OR NEW.kind IS NOT NULL
-       OR NEW.pattern IS NOT NULL OR NEW.submitted_at IS NOT NULL OR NEW.checked_at IS NOT NULL THEN
+       OR NEW.pattern IS NOT NULL OR NEW.submitted_at IS NOT NULL OR NEW.checked_at IS NOT NULL OR NEW.error IS NOT NULL THEN
       RAISE EXCEPTION 'Shablon holatini faqat tizim belgilaydi' USING ERRCODE = '42501';
     END IF;
     RETURN NEW;
   END IF;
-  IF (NEW.eskiz_id, NEW.kind, NEW.pattern, NEW.submitted_at, NEW.checked_at) IS DISTINCT FROM (OLD.eskiz_id, OLD.kind, OLD.pattern, OLD.submitted_at, OLD.checked_at)
-     OR (NEW.status IS DISTINCT FROM OLD.status AND NEW.status NOT IN ('draft', 'moderation')) THEN
+  IF (NEW.eskiz_id, NEW.kind, NEW.pattern, NEW.submitted_at, NEW.checked_at, NEW.error) IS DISTINCT FROM (OLD.eskiz_id, OLD.kind, OLD.pattern, OLD.submitted_at, OLD.checked_at, OLD.error)
+     OR (NEW.status IS DISTINCT FROM OLD.status AND (NEW.status NOT IN ('draft', 'moderation') OR OLD.status = 'approved')) THEN
     RAISE EXCEPTION 'Shablon holatini faqat tizim belgilaydi' USING ERRCODE = '42501';
   END IF;
   IF NEW.text IS DISTINCT FROM OLD.text AND OLD.status <> 'draft' THEN
-    NEW.status := 'moderation'; NEW.eskiz_id := NULL; NEW.kind := NULL; NEW.pattern := NULL; NEW.submitted_at := NULL;
+    NEW.status := 'moderation'; NEW.eskiz_id := NULL; NEW.kind := NULL; NEW.pattern := NULL; NEW.submitted_at := NULL; NEW.error := NULL;
   END IF;
   RETURN NEW;
 END $$;
@@ -53,11 +70,7 @@ ALTER TABLE public.sms_messages ADD CONSTRAINT sms_messages_status_check CHECK (
 CREATE POLICY sms_campaigns_sotuv_read ON public.sms_campaigns FOR SELECT TO authenticated USING (public.has_permission(auth.uid(), 'sotuv-crmn'));
 CREATE POLICY sms_messages_sotuv_read  ON public.sms_messages  FOR SELECT TO authenticated USING (public.has_permission(auth.uid(), 'sotuv-crmn'));
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'sms_messages') THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.sms_messages;
-  END IF;
-END $$;
+-- No realtime for sms_messages: a bulk send would flood the one live channel; the feed polls while SMS are on their way
 
 CREATE OR REPLACE FUNCTION public.send_sms_template(p_template uuid, p_values jsonb, p_client_ids uuid[], p_send_at timestamptz DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$

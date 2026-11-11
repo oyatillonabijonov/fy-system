@@ -26,6 +26,7 @@ test("Eskiz states: service = reminder, reklama = promo, the rest by name", () =
   expect(eskizState("reklama")).toEqual({ status: "approved", kind: "promo" })
   expect(eskizState("moderation")).toEqual({ status: "moderation", kind: null })
   expect(eskizState("rejected")).toEqual({ status: "rejected", kind: null })
+  expect(eskizState("inproccess")).toEqual({ status: "moderation", kind: null })   // an unknown state is still waiting, not refused
 })
 
 test("an Eskiz template made on my.eskiz.uz becomes our text with named blanks", () => {

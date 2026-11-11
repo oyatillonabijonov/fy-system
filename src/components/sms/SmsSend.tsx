@@ -6,7 +6,7 @@ import { PaperPlaneRight } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useSendSmsTemplate, useSmsTemplates } from "@/hooks/useSms"
 import { KIND_LABEL } from "@/lib/supabase/queries/sms"
-import { blanks, fillTemplate, smsParts } from "@/lib/sms"
+import { blanks, fillTemplate, fitsTemplate, smsParts } from "@/lib/sms"
 
 const FIELD = "w-full h-control-md px-3 rounded-control bg-surface border border-line text-base text-ink focus:outline-none focus:border-line-focus"
 
@@ -29,6 +29,8 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
   const missing = keys.some((k) => !values[k]?.trim())
   const blockedPromo = t?.kind === "promo" && optOut
   const { parts } = smsParts(text)
+  // Eskiz delivers only what matches the approved pattern (e.g. a number where it expects one)
+  const fits = !t?.pattern || missing || fitsTemplate(text, [t.pattern])
 
   if (isLoading) return <p className="text-sm text-ink-muted p-1">Yuklanmoqda…</p>
   if (templates.length === 0) {
@@ -40,7 +42,7 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
   }
 
   function submit() {
-    if (!t || missing || blockedPromo) return
+    if (!t || missing || !fits || blockedPromo) return
     send.mutate({ templateId: t.id, values, clientIds: [clientId], sendAt: schedule ? toIso(later) : null }, {
       onSuccess: () => { setId(""); setValues({}); setSchedule(false); setLater(""); onSent?.() },
     })
@@ -71,6 +73,7 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
           <p className="mt-1 text-xs text-ink-faint tabular-nums">{KIND_LABEL[t.kind!]} · {text.length} belgi · {parts} SMS</p>
         </div>
       )}
+      {!fits && <p className="text-sm text-danger-text">Matn Eskiz tasdiqlagan shablonga mos kelmayapti — bo'sh joylardagi qiymatni qisqartiring yoki tekshiring.</p>}
       {blockedPromo && <p className="text-sm text-danger-text">Mijoz reklama SMS'idan voz kechgan — bu shablon unga yuborilmaydi.</p>}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -82,7 +85,7 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
         </div>
         {schedule && <input type="datetime-local" value={later} onChange={(e) => setLater(e.target.value)} aria-label="Yuborish vaqti"
           className="h-9 px-3 rounded-control bg-surface border border-line text-sm text-ink" />}
-        <button type="button" onClick={submit} disabled={!t || missing || !!blockedPromo || send.isPending || (schedule && !later)}
+        <button type="button" onClick={submit} disabled={!t || missing || !fits || !!blockedPromo || send.isPending || (schedule && !later)}
           className="ml-auto h-9 px-4 shrink-0 inline-flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover disabled:opacity-40">
           <PaperPlaneRight size={16} />{send.isPending ? "Yuborilmoqda…" : schedule ? "Rejalashtirish" : "SMS yuborish"}
         </button>

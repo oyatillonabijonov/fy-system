@@ -90,3 +90,11 @@ DO $$ BEGIN
   RAISE NOTICE 'TEST 7 ok';
 END $$;
 RESET ROLE;
+-- 8 (review): deleting a template Eskiz knows remembers its id too
+DELETE FROM public.sms_templates WHERE id = 'a9500000-0000-0000-0000-000000000004';
+DO $$ BEGIN
+  -- the table is amo-sync's (RLS, no policies): checked as the owner
+  IF NOT EXISTS (SELECT 1 FROM public.sms_eskiz_retired WHERE eskiz_id = 9501) THEN RAISE EXCEPTION 'TEST 8 FAILED: edited template''s old Eskiz id forgotten'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.sms_eskiz_retired WHERE eskiz_id = 9504) THEN RAISE EXCEPTION 'TEST 8 FAILED: deleted template''s Eskiz id forgotten'; END IF;
+  RAISE NOTICE 'TEST 8 ok';
+END $$;
