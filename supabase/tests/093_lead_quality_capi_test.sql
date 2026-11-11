@@ -74,11 +74,40 @@ BEGIN
   RAISE NOTICE 'TESTS 1-6, 8 ok';
 END $$;
 
+-- 9 (review): a won bitim with no Summa takes the participant's price, or waits for the payment
+INSERT INTO public.clients (id, full_name, phone) VALUES ('c9300000-0000-0000-0000-000000000004', 'Davron93', '+998901930004'), ('c9300000-0000-0000-0000-000000000005', 'Erkin93', '+998901930005');
+INSERT INTO public.crm_leads (id, pipeline_id, stage_id, name, client_id, price, capi) VALUES
+  ('d9300000-0000-0000-0000-000000000004', 'a9300000-0000-0000-0000-000000000001', 'b9300000-0000-0000-0000-000000000001', 'L4', 'c9300000-0000-0000-0000-000000000004', 0, '{"event_id":"ev-4"}'),
+  ('d9300000-0000-0000-0000-000000000005', 'a9300000-0000-0000-0000-000000000001', 'b9300000-0000-0000-0000-000000000001', 'L5', 'c9300000-0000-0000-0000-000000000005', 0, '{"event_id":"ev-5"}');
+INSERT INTO public.event_participants (id, event_id, contact_id, full_name, price) VALUES
+  ('f9300000-0000-0000-0000-000000000004', 'e9300000-0000-0000-0000-000000000001', 'c9300000-0000-0000-0000-000000000004', 'Davron93', 1500000);
+-- 10 (review): a payment prefers the client's bitim that came from the site form
+INSERT INTO public.clients (id, full_name, phone) VALUES ('c9300000-0000-0000-0000-000000000006', 'Farrux93', '+998901930006');
+INSERT INTO public.crm_leads (id, pipeline_id, stage_id, name, client_id, price, capi, created_at) VALUES
+  ('d9300000-0000-0000-0000-000000000006', 'a9300000-0000-0000-0000-000000000001', 'b9300000-0000-0000-0000-000000000001', 'L6 form', 'c9300000-0000-0000-0000-000000000006', 0, '{"event_id":"ev-6"}', now() - interval '2 days'),
+  ('d9300000-0000-0000-0000-000000000007', 'a9300000-0000-0000-0000-000000000001', 'b9300000-0000-0000-0000-000000000001', 'L6 qo''lda', 'c9300000-0000-0000-0000-000000000006', 0, NULL, now());
+INSERT INTO public.event_participants (id, event_id, contact_id, full_name, price) VALUES
+  ('f9300000-0000-0000-0000-000000000006', 'e9300000-0000-0000-0000-000000000001', 'c9300000-0000-0000-0000-000000000006', 'Farrux93', 1700000);
+DO $$
+BEGIN
+  UPDATE public.crm_leads SET stage_id = 'b9300000-0000-0000-0000-000000000002' WHERE id IN ('d9300000-0000-0000-0000-000000000004', 'd9300000-0000-0000-0000-000000000005');
+  IF (SELECT value FROM public.meta_events_log WHERE lead_id = 'd9300000-0000-0000-0000-000000000004' AND event_name = 'Purchase') IS DISTINCT FROM 1500000 THEN RAISE EXCEPTION 'TEST 9 FAILED: no Summa did not fall back to the participant price'; END IF;
+  IF pg_temp.n('d9300000-0000-0000-0000-000000000005', 'Purchase') <> 0 THEN RAISE EXCEPTION 'TEST 9 FAILED: a Purchase with no value was queued'; END IF;
+  INSERT INTO public.payments (participant_id, amount, method, paid_at) VALUES ('f9300000-0000-0000-0000-000000000006', 300000, 'naqd', now());
+  IF pg_temp.n('d9300000-0000-0000-0000-000000000006', 'Purchase') <> 1 THEN RAISE EXCEPTION 'TEST 10 FAILED: payment did not pick the form bitim'; END IF;
+  RAISE NOTICE 'TESTS 9-10 ok';
+END $$;
+
 GRANT USAGE ON SCHEMA public TO authenticated;
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '93000000-0000-0000-0000-000000000001', false);
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.meta_events_log) THEN RAISE EXCEPTION 'TEST 7 FAILED: seller reads the Meta log'; END IF;
+  BEGIN
+    INSERT INTO public.crm_leads (pipeline_id, stage_id, name, qualified, capi) VALUES
+      ('a9300000-0000-0000-0000-000000000001', 'b9300000-0000-0000-0000-000000000001', 'soxta', true, '{"event_id":"x"}');
+    RAISE EXCEPTION 'TEST 7 FAILED: seller inserted a scored bitim';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   BEGIN
     UPDATE public.crm_leads SET qualified = true, lead_score = 7 WHERE id = 'd9300000-0000-0000-0000-000000000002';
     IF (SELECT lead_score FROM public.crm_leads WHERE id = 'd9300000-0000-0000-0000-000000000002') = 7 THEN RAISE EXCEPTION 'TEST 7 FAILED: seller changed a score'; END IF;

@@ -20,13 +20,14 @@ ALTER TABLE public.crm_pipelines
 CREATE OR REPLACE FUNCTION public.guard_lead_quality()
 RETURNS trigger LANGUAGE plpgsql SET search_path = public, pg_temp AS $$
 BEGIN
-  IF current_user IN ('authenticated', 'anon')
-     AND (NEW.lead_score, NEW.qualified, NEW.capi) IS DISTINCT FROM (OLD.lead_score, OLD.qualified, OLD.capi) THEN
+  IF current_user IN ('authenticated', 'anon') AND (
+       (TG_OP = 'INSERT' AND (NEW.lead_score, NEW.qualified, NEW.capi) IS DISTINCT FROM (NULL::integer, NULL::boolean, NULL::jsonb))
+    OR (TG_OP = 'UPDATE' AND (NEW.lead_score, NEW.qualified, NEW.capi) IS DISTINCT FROM (OLD.lead_score, OLD.qualified, OLD.capi))) THEN
     RAISE EXCEPTION 'Lid bahosini faqat tizim yozadi' USING ERRCODE = '42501';
   END IF;
   RETURN NEW;
 END $$;
-CREATE TRIGGER trigger_guard_lead_quality BEFORE UPDATE ON public.crm_leads
+CREATE TRIGGER trigger_guard_lead_quality BEFORE INSERT OR UPDATE ON public.crm_leads
   FOR EACH ROW EXECUTE FUNCTION public.guard_lead_quality();
 
 CREATE TABLE public.meta_events_log (
@@ -66,12 +67,20 @@ REVOKE ALL ON FUNCTION public.queue_meta_event(uuid, text, numeric) FROM PUBLIC,
 
 CREATE OR REPLACE FUNCTION public.meta_on_lead()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE v_value numeric := NULLIF(NEW.price, 0);
 BEGIN
   IF NEW.qualified AND (TG_OP = 'INSERT' OR OLD.qualified IS DISTINCT FROM true) THEN
     PERFORM public.queue_meta_event(NEW.id, 'Lead');
   END IF;
   IF NEW.is_won AND (TG_OP = 'INSERT' OR NOT OLD.is_won) THEN
-    PERFORM public.queue_meta_event(NEW.id, 'Purchase', NEW.price);
+    -- No Summa on the bitim (form bitimlar rarely have one): the client's price on the voronka's event;
+    -- none either = wait for the payment, which queues the Purchase with a value
+    IF v_value IS NULL THEN
+      SELECT NULLIF(ep.price, 0) INTO v_value FROM public.event_participants ep
+      JOIN public.crm_pipelines p ON p.event_id = ep.event_id
+      WHERE p.id = NEW.pipeline_id AND ep.contact_id = NEW.client_id LIMIT 1;
+    END IF;
+    IF v_value IS NOT NULL THEN PERFORM public.queue_meta_event(NEW.id, 'Purchase', v_value); END IF;
   END IF;
   RETURN NULL;
 END $$;
@@ -105,7 +114,7 @@ BEGIN
   JOIN public.crm_pipelines p ON p.event_id = ep.event_id
   JOIN public.crm_leads l ON l.pipeline_id = p.id AND l.client_id = ep.contact_id
   WHERE ep.id = NEW.participant_id
-  ORDER BY l.created_at DESC LIMIT 1;
+  ORDER BY (l.capi IS NOT NULL) DESC, l.created_at DESC LIMIT 1;   -- the bitim the site form brought first
   IF v_lead IS NOT NULL THEN PERFORM public.queue_meta_event(v_lead, 'Purchase', v_price); END IF;
   RETURN NULL;
 END $$;

@@ -31,7 +31,8 @@ export function buildPayload(e: QueuedEvent): Record<string, unknown> {
   const c = e.capi
   const user_data: Record<string, unknown> = {
     ...(e.phone && phoneDigits(e.phone) ? { ph: [sha(phoneDigits(e.phone))] } : {}),
-    ...(e.name?.trim() ? { fn: [sha(e.name.trim().toLowerCase())] } : {}),
+    // fn is the FIRST name in Meta's matching; a full name hashed never matches
+    ...(e.name?.trim() ? { fn: [sha(e.name.trim().split(/\s+/)[0].toLowerCase())] } : {}),
     external_id: [sha(e.lead_id)],
     ...(c.fbc ? { fbc: c.fbc } : {}),
     ...(c.fbp ? { fbp: c.fbp } : {}),

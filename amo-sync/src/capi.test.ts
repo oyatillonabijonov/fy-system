@@ -18,7 +18,7 @@ describe("buildPayload", () => {
     expect(p.event_id).toBe("3f1c")
     expect(p.action_source).toBe("website")
     expect(p.event_source_url).toBe(base.capi.event_source_url!)
-    expect(p.user_data).toEqual({ ph: [sha("998901234567")], fn: [sha("anvar karimov")], external_id: [sha(base.lead_id)], fbc: "fb.1.1.IwAR", fbp: "fb.1.2.3", client_ip_address: "5.6.7.8", client_user_agent: "UA" })
+    expect(p.user_data).toEqual({ ph: [sha("998901234567")], fn: [sha("anvar")], external_id: [sha(base.lead_id)], fbc: "fb.1.1.IwAR", fbp: "fb.1.2.3", client_ip_address: "5.6.7.8", client_user_agent: "UA" })
     expect(p.custom_data).toEqual({ content_name: "Biznes nonushta #11" })
   })
   test("missing click ids, address and browser are left out, not sent empty", () => {

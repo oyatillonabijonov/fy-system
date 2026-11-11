@@ -153,12 +153,17 @@ export function startIntake(sql: Sql): void {
         const score = scoreLead(fields)
         let qualified: boolean | undefined
         if (score !== null && r.lead_id) {
-          const [row] = await sql<{ qualified: boolean }[]>`
-            update crm_leads l set lead_score = ${score}, qualified = ${score} >= p.lead_threshold,
-                   capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
-            from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
-          qualified = row?.qualified
-          console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
+          // The bitim already exists: a failure here must not turn into "not sent" on the site
+          try {
+            const [row] = await sql<{ qualified: boolean }[]>`
+              update crm_leads l set lead_score = ${score}, qualified = ${score} >= p.lead_threshold,
+                     capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
+              from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
+            qualified = row?.qualified
+            console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
+          } catch (e) {
+            console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
+          }
         }
         return Response.json({ ok: true, duplicate: !!r.duplicate, ...(qualified === undefined ? {} : { qualified }) }, { headers: CORS })
       } catch (e) {
