@@ -203,7 +203,7 @@ test.skipIf(!testSql)("create_event: an unknown copy_tasks_from is refused befor
 })
 
 /** Runs fn with a temporary trigger on `table` that raises when column `col` equals `marker`; always removed */
-async function withBomb(table: "event_tariffs" | "tasks", col: "name" | "title", marker: string, fn: () => Promise<void>) {
+async function withBomb(table: "event_tariffs" | "tasks" | "event_participants", col: "name" | "title" | "full_name", marker: string, fn: () => Promise<void>) {
   const n = `zz_bomb_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`
   await testSql!.unsafe(`create function public.${n}() returns trigger language plpgsql as $f$ begin if new.${col} = '${marker}' then raise exception 'bomb'; end if; return new; end $f$`)
   await testSql!.unsafe(`create trigger ${n} before insert on public.${table} for each row execute function public.${n}()`)
@@ -359,7 +359,7 @@ test.skipIf(!testSql)("find_clients: a phone stored with separators matches by d
   const [fmt, short] = [id(), id()]
   await testSql!.begin(async (tx) => {
     await tx`set local session_replication_role = replica`   // skips the phone normaliser: legacy-style rows
-    await tx`insert into public.clients (id, full_name, phone) values (${fmt}, ${`Legacy ${tag}`}, '+7 (912) 345-67-89'), (${short}, ${`Qwerty ${tag}`}, '+7 (912) 111-22-33')`
+    await tx`insert into public.clients (id, full_name, phone) values (${fmt}, ${`Legacy ${tag}`}, '+7 (912) 345-67-89'), (${short}, ${'Qwerty Zxcvb'}, '+7 (912) 111-22-33')`
   })
   try {
     const r = await call(evUser, "find_clients", { query: "9123456" })
@@ -520,4 +520,179 @@ test.skipIf(!testSql)("delete_event with JWT_SECRET unset refuses both paths and
     expect(await call(admin, "delete_event", { event_id: f.eid, confirm_token: t })).toEqual({ ok: false, error: "O'chirish hozircha sozlanmagan" })
     expect(await exists(f.eid)).toBe(true)
   } finally { process.env.JWT_SECRET = "delete-event-test-secret"; await dropFixture(f) }
+})
+
+// ─── copy_event_tasks / enroll_participant / link_pipeline ───
+const mkEvent = async (s: string) => {
+  const eid = id()
+  await testSql!`insert into public.events (id, name, date, manager_id) values (${eid}, ${nm(s)}, now(), ${mgr})`
+  return eid
+}
+const mkTariff = async (eid: string, price: number) => {
+  const tid = id()
+  await testSql!`insert into public.event_tariffs (id, event_id, name, price, sort_order) values (${tid}, ${eid}, 'Std', ${price}, 1)`
+  return tid
+}
+const newPhone = () => `+99891${String(Math.floor(Math.random() * 9000000) + 1000000)}`
+const t5Clients: string[] = []
+const t5Pipelines: string[] = []
+const t5Phones: string[] = []
+afterAll(async () => {
+  if (!testSql) return
+  if (t5Phones.length) await testSql`delete from public.clients where phone in ${testSql(t5Phones)}`
+  if (t5Clients.length) await testSql`delete from public.clients where id in ${testSql(t5Clients)}`
+  if (t5Pipelines.length) await testSql`delete from public.crm_pipelines where id in ${testSql(t5Pipelines)}`
+})
+const ADMIN_ONLY = "Bu amalni faqat admin bajara oladi"
+
+test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate; link_pipeline is admin only; admin sees eighteen", async () => {
+  for (const n of ["copy_event_tasks", "enroll_participant", "link_pipeline"]) {
+    const t = TOOLS.find((x) => x.name === n)
+    expect(t?.write).toBe(true)
+    expect(t?.module).toBe("tadbirlar")
+    expect(t?.destructive).toBeUndefined()
+  }
+  expect(TOOLS.find((x) => x.name === "link_pipeline")?.adminOnly).toBe(true)
+  expect(TOOLS.find((x) => x.name === "copy_event_tasks")?.adminOnly).toBeUndefined()
+  expect(TOOLS.find((x) => x.name === "enroll_participant")?.adminOnly).toBeUndefined()
+  const d = TOOLS.find((x) => x.name === "enroll_participant")!.description
+  expect(d).toContain("debt")
+  expect(d).toContain("no payment")
+  expect(d).toContain("reference")
+  expect(TOOLS.length).toBe(18)
+  const [e1, e2] = [await mkEvent("Gt1"), await mkEvent("Gt2")]
+  expect(await call(seller, "copy_event_tasks", { from_event_id: e1, to_event_id: e2 })).toEqual({ ok: false, error: GATE })
+  expect(await call(seller, "enroll_participant", { event_id: e1, client_id: clientA })).toEqual({ ok: false, error: GATE })
+  expect(await call(seller, "link_pipeline", { pipeline_id: pipelineId, event_id: null })).toEqual({ ok: false, error: GATE })
+})
+
+test.skipIf(!testSql)("copy_event_tasks: copies with a count; same id, unknown event, and a target with tasks are refused until add_anyway", async () => {
+  const [from, to] = [await mkEvent("Cp1"), await mkEvent("Cp2")]
+  await testSql!`insert into public.tasks (event_id, title, sort_order) values (${from}, 'A', 1), (${from}, 'B', 2)`
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: from, to_event_id: from })).toEqual({ ok: false, error: "Bir xil tadbir tanlandi" })
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: from, to_event_id: id() })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: id(), to_event_id: to })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: from, to_event_id: to })).toEqual({ ok: true, data: { copied: 2 } })
+  expect((await testSql!`select count(*)::int n from public.tasks where event_id = ${to}`)[0]!.n).toBe(2)
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: from, to_event_id: to })).toEqual({ ok: false, error: "Bu tadbirda allaqachon 2 ta vazifa bor. Baribir qo'shish uchun add_anyway: true bilan chaqiring" })
+  expect((await testSql!`select count(*)::int n from public.tasks where event_id = ${to}`)[0]!.n).toBe(2)
+  expect(await call(evUser, "copy_event_tasks", { from_event_id: from, to_event_id: to, add_anyway: true })).toEqual({ ok: true, data: { copied: 2 } })
+  expect((await testSql!`select count(*)::int n from public.tasks where event_id = ${to}`)[0]!.n).toBe(4)
+})
+
+test.skipIf(!testSql)("enroll_participant: an existing client by id copies the tariff's price and seller, no money moves", async () => {
+  const ev = await mkEvent("En1")
+  const tf = await mkTariff(ev, 175)
+  const c = id(); t5Clients.push(c)
+  await testSql!`insert into public.clients (id, full_name, phone) values (${c}, 'Zuhra Enrol', null)`
+  const r = await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, seller_id: sell2, client_id: c })
+  expect(r.ok).toBe(true)
+  if (!r.ok) return
+  const d = r.data as { participant_id: string; full_name: string; tariff: string; seller: string }
+  expect(d.full_name).toBe("Zuhra Enrol")
+  expect(d.tariff).toBe("Std")
+  expect(d.seller).toContain("Fixture")
+  expect(Object.keys(d).sort()).toEqual(["full_name", "participant_id", "seller", "tariff"])
+  const [p] = await testSql!`select contact_id, tariff_id, seller_id, price::float pr, paid::float pd from public.event_participants where id = ${d.participant_id}`
+  expect(p).toMatchObject({ contact_id: c, tariff_id: tf, seller_id: sell2, pr: 175, pd: 0 })
+  expect((await testSql!`select count(*)::int n from public.payments where participant_id = ${d.participant_id}`)[0]!.n).toBe(0)
+  // no seller → Belgilanmagan (null)
+  const c2 = id(); t5Clients.push(c2)
+  await testSql!`insert into public.clients (id, full_name) values (${c2}, 'Bez Sotuvchi')`
+  const r2 = await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, client_id: c2 })
+  expect(r2.ok).toBe(true)
+  if (r2.ok) expect((r2.data as { seller: string | null }).seller).toBeNull()
+  // already enrolled
+  expect(await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, client_id: c })).toEqual({ ok: false, error: "Bu mijoz allaqachon ushbu tadbirga qo'shilgan" })
+})
+
+test.skipIf(!testSql)("enroll_participant: a new client by name + phone is created; the same phone again names the existing client and creates no second one", async () => {
+  const ev = await mkEvent("En2")
+  const tf = await mkTariff(ev, 90)
+  const phone = newPhone(); t5Phones.push(phone)
+  const r = await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, full_name: "Yangi Odam", phone })
+  expect(r.ok).toBe(true)
+  const rows = await testSql!`select id, full_name from public.clients where phone = ${phone}`
+  expect(rows).toHaveLength(1)
+  expect(rows[0]!.full_name).toBe("Yangi Odam")
+  const ev2 = await mkEvent("En2b")
+  const tf2 = await mkTariff(ev2, 90)
+  const again = await call(evUser, "enroll_participant", { event_id: ev2, tariff_id: tf2, full_name: "Boshqa Ism", phone })
+  expect(again).toEqual({ ok: false, error: `Bu telefon raqami bilan mijoz bor: Yangi Odam. Shu mijozni yozish uchun client_id: ${rows[0]!.id} bilan qayta chaqiring` })
+  expect((await testSql!`select count(*)::int n from public.clients where phone = ${phone}`)[0]!.n).toBe(1)
+  expect((await testSql!`select count(*)::int n from public.event_participants where event_id = ${ev2}`)[0]!.n).toBe(0)
+})
+
+test.skipIf(!testSql)("enroll_participant: the web's texts for another event's tariff, a non-Sotuv seller, a missing tariff, no price, an unknown client, a bad phone", async () => {
+  const [ev, other] = [await mkEvent("En3"), await mkEvent("En3o")]
+  const tfOther = await mkTariff(other, 10)
+  const tf = await mkTariff(ev, 10)
+  const c = id(); t5Clients.push(c)
+  await testSql!`insert into public.clients (id, full_name) values (${c}, 'Matn Tekshiruv')`
+  const err = async (a: Record<string, unknown>) => (await call(evUser, "enroll_participant", a) as { ok: false; error: string }).error
+  expect(await err({ event_id: ev, tariff_id: tfOther, client_id: c })).toBe("Tarif bu tadbirga tegishli emas")
+  expect(await err({ event_id: ev, tariff_id: tf, seller_id: mgr, client_id: c })).toBe("Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak")
+  expect(await err({ event_id: ev, client_id: c })).toBe("Bu tadbirda tariflar bor — tarifni tanlang")
+  expect(await err({ event_id: other, client_id: c, tariff_id: undefined })).toBe("Bu tadbirda tariflar bor — tarifni tanlang")
+  const bare = await mkEvent("En3n")
+  expect(await err({ event_id: bare, client_id: c })).toBe("Kelishilgan narxni kiriting")
+  expect(await err({ event_id: ev, tariff_id: tf, client_id: id() })).toBe("Mijoz topilmadi")
+  expect(await err({ event_id: ev, tariff_id: tf, full_name: "Xato Telefon", phone: "12" })).toBe("Ism va to'g'ri telefon raqamni kiriting")
+  // an event with no tariffs takes an individual price
+  const ok = await call(evUser, "enroll_participant", { event_id: bare, client_id: c, price: 42 })
+  expect(ok.ok).toBe(true)
+  if (ok.ok) {
+    const [p] = await testSql!`select price::float pr, tariff_id from public.event_participants where id = ${(ok.data as { participant_id: string }).participant_id}`
+    expect(p).toMatchObject({ pr: 42, tariff_id: null })
+    expect((ok.data as { tariff: string | null }).tariff).toBeNull()
+  }
+})
+
+test.skipIf(!testSql)("enroll_participant: client_id together with name/phone, neither, or only one of name/phone is refused before any SQL", async () => {
+  const ev = await mkEvent("En4")
+  const tf = await mkTariff(ev, 10)
+  const phone = newPhone(); t5Phones.push(phone)
+  for (const a of [
+    { client_id: clientB, full_name: "X Y", phone },
+    { client_id: clientB, full_name: "X Y" },
+    {},
+    { full_name: "Faqat Ism" },
+    { phone },
+  ]) {
+    const r = await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, ...a })
+    expect(r.ok).toBe(false)
+  }
+  expect((await testSql!`select count(*)::int n from public.event_participants where event_id = ${ev}`)[0]!.n).toBe(0)
+  expect((await testSql!`select count(*)::int n from public.clients where phone = ${phone} or full_name in ('Faqat Ism', 'X Y')`)[0]!.n).toBe(0)
+})
+
+test.skipIf(!testSql)("enroll_participant: a failure after the new client was inserted leaves no client behind", async () => {
+  const ev = await mkEvent("En5")
+  const tf = await mkTariff(ev, 10)
+  const phone = newPhone(); t5Phones.push(phone)
+  const marker = `bomb-${crypto.randomUUID()}`
+  await withBomb("event_participants", "full_name", marker, async () => {
+    const r = await call(evUser, "enroll_participant", { event_id: ev, tariff_id: tf, full_name: marker, phone })
+    expect(r.ok).toBe(false)
+  })
+  expect((await testSql!`select count(*)::int n from public.clients where phone = ${phone}`)[0]!.n).toBe(0)
+  expect((await testSql!`select count(*)::int n from public.event_participants where event_id = ${ev}`)[0]!.n).toBe(0)
+})
+
+test.skipIf(!testSql)("link_pipeline: an admin sets and clears the event; a non-admin with Tadbirlar is refused and nothing changes; unknown ids", async () => {
+  const pid = id(); t5Pipelines.push(pid)
+  await testSql!`insert into public.crm_pipelines (id, name) values (${pid}, ${nm("Link")})`
+  const ev = await mkEvent("Lk1")
+  const cur = async () => (await testSql!`select event_id from public.crm_pipelines where id = ${pid}`)[0]!.event_id as string | null
+  expect(await call(evUser, "link_pipeline", { pipeline_id: pid, event_id: ev })).toEqual({ ok: false, error: ADMIN_ONLY })
+  expect(await cur()).toBeNull()
+  expect(await call(admin, "link_pipeline", { pipeline_id: pid, event_id: ev })).toEqual({ ok: true, data: { pipeline: { id: pid, name: nm("Link") }, event: { id: ev, name: nm("Lk1") } } })
+  expect(await cur()).toBe(ev)
+  expect(await call(evUser, "link_pipeline", { pipeline_id: pid, event_id: null })).toEqual({ ok: false, error: ADMIN_ONLY })
+  expect(await cur()).toBe(ev)
+  expect(await call(admin, "link_pipeline", { pipeline_id: pid, event_id: null })).toEqual({ ok: true, data: { pipeline: { id: pid, name: nm("Link") }, event: null } })
+  expect(await cur()).toBeNull()
+  expect(await call(admin, "link_pipeline", { pipeline_id: id(), event_id: ev })).toEqual({ ok: false, error: "Voronka topilmadi" })
+  expect(await call(admin, "link_pipeline", { pipeline_id: pid, event_id: id() })).toEqual({ ok: false, error: "Tadbir topilmadi" })
+  expect(await cur()).toBeNull()
 })

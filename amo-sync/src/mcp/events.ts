@@ -47,6 +47,25 @@ const isGuard = (e: unknown) => e instanceof Error && e.message.includes("partic
 
 const isFk = (e: unknown) => e instanceof Error && (e as { code?: string }).code === "23503"
 
+// The web's texts for enroll_participant's errors, copied from ENROLL_ERRORS in src/lib/supabase/queries/events.ts
+const ENROLL_ERRORS: Record<string, string> = {
+  "forbidden: staff_only": "Bu amal uchun ruxsat yo'q",
+  tariff_mismatch: "Tarif bu tadbirga tegishli emas",
+  tariff_required: "Bu tadbirda tariflar bor — tarifni tanlang",
+  price_required: "Kelishilgan narxni kiriting",
+  seller_invalid: "Sotuvchi Sotuv bo'limining faol hodimi bo'lishi kerak",
+  client_not_found: "Mijoz topilmadi",
+  client_required: "Ism va to'g'ri telefon raqamni kiriting",
+  already_enrolled: "Bu mijoz allaqachon ushbu tadbirga qo'shilgan",
+}
+
+/** The web's Uzbek text for a raised enroll_participant message; `client_exists:<id>:<name>` names the existing client; anything else is undefined */
+function enrollText(msg: string): string | undefined {
+  const m = /^client_exists:([^:]+):([\s\S]*)$/.exec(msg)
+  if (m) return `Bu telefon raqami bilan mijoz bor: ${m[2]}. Shu mijozni yozish uchun client_id: ${m[1]} bilan qayta chaqiring`
+  return ENROLL_ERRORS[msg]
+}
+
 export const EVENT_TOOLS: ToolDef[] = [
   tool({ name: "events", title: "Events", module: "tadbirlar", input: { limit: limit(200, 50), offset },
     description: "Events newest start date first, with location, manager and participant count. Pass an id to the event tool for tariffs and people.",
@@ -165,5 +184,59 @@ export const EVENT_TOOLS: ToolDef[] = [
         throw e
       }
       return { deleted: true, name: ev.name }
+    } }),
+  tool({ name: "copy_event_tasks", title: "Copy an event's tasks", module: "tadbirlar", write: true,
+    input: { from_event_id: uuid, to_event_id: uuid, add_anyway: z.boolean().default(false) },
+    description: "Copies the whole task list of one event into another, with each task's section, owner and attachments (status and dates start fresh). Ask the user before adding to an event that already has tasks: the call refuses until add_anyway is true. Returns how many tasks were copied.",
+    run: async (tx, a) => {
+      if (a.from_event_id === a.to_event_id) throw new ToolError("Bir xil tadbir tanlandi")
+      const found = await tx`select id from public.events where id in (${a.from_event_id}, ${a.to_event_id})`
+      if (found.length !== 2) throw new ToolError("Tadbir topilmadi")
+      const [t] = await tx<{ n: number }[]>`select count(*)::int as n from public.tasks where event_id = ${a.to_event_id}`
+      if (t!.n > 0 && !a.add_anyway) throw new ToolError(`Bu tadbirda allaqachon ${t!.n} ta vazifa bor. Baribir qo'shish uchun add_anyway: true bilan chaqiring`)
+      const [r] = await tx<{ n: number }[]>`select public.copy_event_tasks(${a.from_event_id}::uuid, ${a.to_event_id}::uuid) as n`
+      return { copied: r!.n }
+    } }),
+  tool({ name: "enroll_participant", title: "Enrol a participant", module: "tadbirlar", write: true,
+    input: { event_id: uuid, tariff_id: uuid.optional(), seller_id: uuid.optional(), client_id: uuid.optional(), full_name: name.optional(), phone: z.string().trim().min(1).max(40).optional(), price: price.optional() },
+    description: "Enrols one person into an event and creates their debt for the tariff's price (an event without tariffs takes an individual price); it takes no payment — payments are made in Moliya. tariff_id comes from the event tool's tariffs[].id; the person is either an existing client (client_id from find_clients) or a new one (give full_name and phone, never together with client_id); a phone that already belongs to a client is refused with that client's id. seller_id comes from the reference tool's sellers (omit it for \"Belgilanmagan\"). Ask the user for the person, the tariff and the seller before calling.",
+    run: async (tx, a) => {
+      const byName = a.full_name !== undefined || a.phone !== undefined
+      if (a.client_id !== undefined && byName) throw new ToolError("client_id yoki (full_name va phone) dan faqat birini bering")
+      if (a.client_id === undefined && !(a.full_name !== undefined && a.phone !== undefined)) throw new ToolError("client_id yoki (full_name va phone) ning ikkalasini bering")
+      const [ev] = await tx`select 1 from public.events where id = ${a.event_id}`
+      if (!ev) throw new ToolError("Tadbir topilmadi")
+      let pid: string
+      try {
+        const [r] = await tx<{ id: string }[]>`select public.enroll_participant(
+          p_event_id => ${a.event_id}::uuid, p_tariff_id => ${a.tariff_id ?? null}::uuid, p_seller_id => ${a.seller_id ?? null}::uuid,
+          p_client_id => ${a.client_id ?? null}::uuid, p_full_name => ${a.full_name ?? null}::text, p_phone => ${a.phone ?? null}::text,
+          p_price => ${a.price ?? null}::numeric) as id`
+        pid = r!.id
+      } catch (e) {
+        const text = e instanceof Error && e.name === "PostgresError" ? enrollText(e.message) : undefined
+        if (text) throw new ToolError(text)
+        throw e
+      }
+      const [d] = await tx`select p.id as participant_id, p.full_name, tf.name as tariff, sp.full_name as seller
+        from public.event_participants p left join public.event_tariffs tf on tf.id = p.tariff_id left join public.profiles sp on sp.id = p.seller_id
+        where p.id = ${pid}`
+      return d
+    } }),
+  tool({ name: "link_pipeline", title: "Link a voronka to an event", module: "tadbirlar", write: true, adminOnly: true,
+    input: { pipeline_id: uuid, event_id: uuid.nullable() },
+    description: "Admins only. Sets which event a sales voronka belongs to, or clears it with event_id: null. The ids come from the reference tool (pipelines, events).",
+    run: async (tx, a) => {
+      const [p] = await tx`select 1 from public.crm_pipelines where id = ${a.pipeline_id}`
+      if (!p) throw new ToolError("Voronka topilmadi")
+      let event: { id: string; name: string } | null = null
+      if (a.event_id !== null) {
+        const [e] = await tx<{ id: string; name: string }[]>`select id, name from public.events where id = ${a.event_id}`
+        if (!e) throw new ToolError("Tadbir topilmadi")
+        event = e
+      }
+      const [row] = await tx<{ id: string; name: string }[]>`update public.crm_pipelines set event_id = ${a.event_id}::uuid where id = ${a.pipeline_id} returning id, name`
+      if (!row) throw new ToolError("Voronka topilmadi")
+      return { pipeline: { id: row.id, name: row.name }, event }
     } }),
 ]
