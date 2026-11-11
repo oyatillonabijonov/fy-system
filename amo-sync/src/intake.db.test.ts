@@ -55,7 +55,7 @@ describe("lead is kept and the site hears ok", () => {
     expect(await res.json()).toEqual({ ok: true, duplicate: false, qualified: false })
     const [l] = await leadsOf("+998909990002")
     expect([l.lead_score, l.qualified]).toEqual([4, false])
-    expect(await metaOf(l.id)).toEqual([])
+    expect(await metaOf(l.id)).toHaveLength(0)
   })
 
   run("unknown or missing options, odd companies, no fbc/fbp/UTM, mixed apostrophes: all saved", async () => {
