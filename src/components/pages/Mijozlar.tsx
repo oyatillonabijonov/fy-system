@@ -1042,7 +1042,7 @@ export function Mijozlar() {
                                 ))}
                             </div>
 
-                            {drawerTab === 'sms' && <ClientSms key={selectedCustomer.id} clientId={selectedCustomer.id} optOut={selectedCustomer.smsOptOut} />}
+                            {drawerTab === 'sms' && <ClientSms key={selectedCustomer.id} clientId={selectedCustomer.id} optOut={selectedCustomer.smsOptOut} clientName={selectedCustomer.name} hasPhone={!!selectedCustomer.phone} />}
 
                             {/* TAB: Cashback */}
                             {drawerTab === 'cashback' && (

@@ -32,3 +32,21 @@ export const fitsTemplate = (text: string, templates: string[]): boolean => {
   const t = squash(text.replace(/\{ism\}/g, "Ali"))
   return templates.some((tpl) => templateRegex(tpl).test(t))
 }
+
+// ─── Templates written in the platform (095) ───────────────────────────────────
+// A template is plain text with blanks in braces: {ism} = the recipient's first name, any other {nom}
+// is filled once per send. Eskiz approves the pattern: {ism} → %w, other blanks → %w{1,10}
+// (amo-sync's toPattern is the same rule).
+
+const BLANK = /\{([^{}\s]+)\}/g
+
+export function blanks(text: string): string[] {
+  return [...new Set([...text.matchAll(BLANK)].map((m) => m[1]).filter((k) => k !== "ism"))]
+}
+
+export function fillTemplate(text: string, values: Record<string, string>, fullName: string | null): string {
+  const first = fullName?.trim().split(/\s+/)[0] ?? ""
+  return text.replace(BLANK, (all, k: string) => (k === "ism" ? first : values[k]?.trim() ?? all))
+}
+
+export const toPattern = (text: string): string => text.replace(BLANK, (_, k: string) => (k === "ism" ? "%w" : "%w{1,10}"))

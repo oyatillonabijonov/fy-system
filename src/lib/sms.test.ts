@@ -1,6 +1,6 @@
 // bun test src/lib/sms.test.ts
 import { expect, test } from "bun:test"
-import { fitsTemplate, smsParts } from "./sms"
+import { blanks, fillTemplate, fitsTemplate, smsParts, toPattern } from "./sms"
 
 // Real templates from the Eskiz account and the texts it approved them from
 const MISSED = "Sizga afsus bog'lana olmadik.  \n%w{1,15} uchun %d{1,3} ga qayta aloqaga chiqing."
@@ -22,4 +22,19 @@ test("SMS parts: Latin 160/153, Cyrillic 70/67", () => {
   expect(smsParts("a".repeat(161)).parts).toBe(2)
   expect(smsParts("я".repeat(70)).parts).toBe(1)
   expect(smsParts("я".repeat(71)).parts).toBe(2)
+})
+
+test("blanks: the {…} keys except ism, in order, once each", () => {
+  expect(blanks("Salom, {ism}! {sana} kuni {joy}da. {sana} esingizda bo'lsin")).toEqual(["sana", "joy"])
+  expect(blanks("Tayyor matn")).toEqual([])
+})
+
+test("fillTemplate: blanks from values, {ism} = the first name only", () => {
+  expect(fillTemplate("Salom, {ism}! {sana} kuni", { sana: "28-noyabr" }, "Anvar Karimov")).toBe("Salom, Anvar! 28-noyabr kuni")
+  expect(fillTemplate("Salom, {ism}!", {}, null)).toBe("Salom, !")
+})
+
+test("toPattern: what Eskiz gets to approve — {ism} one word, other blanks up to 10 words", () => {
+  expect(toPattern("Salom, {ism}! {sana} kuni")).toBe("Salom, %w! %w{1,10} kuni")
+  expect(fitsTemplate(fillTemplate("Salom, {ism}! {sana} kuni", { sana: "28-noyabr, shanba" }, "Ali"), [toPattern("Salom, {ism}! {sana} kuni")])).toBe(true)
 })

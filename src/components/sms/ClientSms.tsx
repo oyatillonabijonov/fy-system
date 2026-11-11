@@ -1,16 +1,21 @@
 import { useState } from "react"
 import { useSmsMessages, useSetSmsOptOut } from "@/hooks/useSms"
+import { SmsSend } from "@/components/sms/SmsSend"
 import { SMS_STATUS } from "@/lib/supabase/queries/sms"
 
 const when = (iso: string) => new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tashkent" })
 
 /** Mijozlar → client card → SMS: the "no promo" switch and every SMS sent to this client */
-export function ClientSms({ clientId, optOut }: { clientId: string; optOut: boolean }) {
+export function ClientSms({ clientId, optOut, clientName, hasPhone }: { clientId: string; optOut: boolean; clientName: string; hasPhone: boolean }) {
   const { data = [], isLoading } = useSmsMessages({ clientId })
   const setOptOut = useSetSmsOptOut()
   const [on, setOn] = useState(optOut)   // the card holds a snapshot of the client
   return (
     <div className="px-4 pb-6 lg:px-8 lg:py-6 flex flex-col gap-4">
+      {/* 095: send from an approved template, right here */}
+      {hasPhone
+        ? <div className="p-4 rounded-surface bg-surface-sunken"><SmsSend clientId={clientId} clientName={clientName} optOut={on} /></div>
+        : <p className="text-sm text-ink-muted">Mijozning raqami yo'q — SMS yuborib bo'lmaydi.</p>}
       <label className="flex items-center justify-between gap-4 p-4 rounded-surface bg-surface-sunken cursor-pointer">
         <span className="flex flex-col gap-0.5">
           <span className="text-base font-medium text-ink">Reklama SMS'i yubormang</span>
