@@ -6,7 +6,7 @@
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
-import { clientMeta, scoreLead, splitCapi } from "./leadScore"
+import { clientMeta, noBusiness, scoreLead, splitCapi } from "./leadScore"
 import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
 import type { Attribution, MetaLead } from "./attribution"
 import { handleConnector, isConnectorPath } from "./mcp"
@@ -114,6 +114,66 @@ export async function health(sql: Sql): Promise<Response> {
   return Response.json({ ok, checks }, { status: ok ? 200 : 503 })
 }
 
+/** A refused or failed request is logged with its reason, so the lead can be restored by hand (094) */
+async function logFailure(sql: Sql, source: string, body: Record<string, string> | null, text: string, error: string): Promise<void> {
+  await sql`insert into webhook_logs (source, raw_body, processed, error)
+            values (${source}, ${sql.json(body ?? { _raw: text.slice(0, 100_000) })}, false, ${error.slice(0, 500)})`
+    .catch((e) => console.error(`[intake] ${source}: log yozilmadi: ${e instanceof Error ? e.message : e}`))
+}
+
+/** A site or form-builder application. ok:true only once intake_lead() has committed the bitim; whatever
+ *  follows (score, Meta queue) can fail without turning the answer into an error. */
+export async function handleSiteLead(req: Request, sql: Sql, source: string, url: URL): Promise<Response> {
+  const token = url.searchParams.get("token") ?? ""
+  const text = await req.clone().text().catch(() => "")
+  let raw: Record<string, string> | null = null
+  try {
+    raw = await readBody(req)
+    if (Object.keys(raw).length === 1 && raw.test) return new Response("ok")   // Tilda's "check webhook" ping
+    const split = splitAttribution(raw, url.searchParams)
+    const { fields, capi } = splitCapi(split.fields)
+
+    // The site sends one event_id per filled form: the same id again is a retried request (the answer was
+    // lost on the way), not a new application — same bitim, no second feed row, the stored verdict
+    if (capi.event_id) {
+      const [seen] = await sql<{ id: string; qualified: boolean | null }[]>`
+        select l.id, l.qualified from crm_leads l join crm_lead_sources s on s.id = ${source} and s.token = ${token}
+        where l.capi->>'event_id' = ${capi.event_id} limit 1`
+      if (seen) {
+        await sql`insert into webhook_logs (source, raw_body, processed, lead_id) values (${source}, ${sql.json(raw)}, true, ${seen.id})`
+        console.log(`[intake] ${source}: takroriy so'rov (event_id) ${seen.id}`)
+        return Response.json({ ok: true, duplicate: true, ...(seen.qualified === null ? {} : { qualified: seen.qualified }) }, { headers: CORS })
+      }
+    }
+
+    const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), split.attribution)
+    // A form with the new fields (093) gets a score; older forms answer exactly as before
+    const score = scoreLead(fields)
+    let qualified: boolean | undefined
+    if (score !== null && r.lead_id) {
+      // The bitim already exists: a failure here must not turn into "not sent" on the site
+      try {
+        const [row] = await sql<{ qualified: boolean }[]>`
+          update crm_leads l set lead_score = ${score}, qualified = ${!noBusiness(fields)} and ${score} >= p.lead_threshold,
+                 capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
+          from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
+        qualified = row?.qualified
+        console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
+      } catch (e) {
+        console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
+      }
+    }
+    return Response.json({ ok: true, duplicate: !!r.duplicate, ...(qualified === undefined ? {} : { qualified }) }, { headers: CORS })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    await logFailure(sql, source, raw, text, msg)
+    // CORS on errors too, or the browser shows a failed site form as a network error
+    if (msg.includes("unknown source or token")) return new Response("forbidden", { status: 403, headers: CORS })
+    console.error(`[intake] ${source}: ${msg}`)
+    return Response.json({ ok: false }, { status: 500, headers: CORS })
+  }
+}
+
 export function startIntake(sql: Sql): void {
   Bun.serve({
     port: PORT,
@@ -144,33 +204,9 @@ export function startIntake(sql: Sql): void {
           void metaLeads(sql, token, body)
           return Response.json({ ok: true })
         }
-        const raw = await readBody(req)
-        if (Object.keys(raw).length === 1 && raw.test) return new Response("ok")   // Tilda's "check webhook" ping
-        const split = splitAttribution(raw, url.searchParams)
-        const { fields, capi } = splitCapi(split.fields)
-        const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), split.attribution)
-        // A form with the new fields (093) gets a score; older forms answer exactly as before
-        const score = scoreLead(fields)
-        let qualified: boolean | undefined
-        if (score !== null && r.lead_id) {
-          // The bitim already exists: a failure here must not turn into "not sent" on the site
-          try {
-            const [row] = await sql<{ qualified: boolean }[]>`
-              update crm_leads l set lead_score = ${score}, qualified = ${score} >= p.lead_threshold,
-                     capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
-              from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
-            qualified = row?.qualified
-            console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
-          } catch (e) {
-            console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
-          }
-        }
-        return Response.json({ ok: true, duplicate: !!r.duplicate, ...(qualified === undefined ? {} : { qualified }) }, { headers: CORS })
+        return await handleSiteLead(req, sql, source, url)
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        // CORS on errors too, or the browser shows a failed site form as a network error
-        if (msg.includes("unknown source or token")) return new Response("forbidden", { status: 403, headers: CORS })
-        console.error(`[intake] ${source}: ${msg}`)
+        console.error(`[intake] ${source}: ${e instanceof Error ? e.message : e}`)
         return Response.json({ ok: false }, { status: 500, headers: CORS })
       }
     },

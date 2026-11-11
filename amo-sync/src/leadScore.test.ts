@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { clientMeta, scoreLead, splitCapi } from "./leadScore"
+import { clientMeta, noBusiness, scoreLead, splitCapi } from "./leadScore"
 
 const form = (Lavozim: string, aylanma: string, Kompaniya: string) => ({ name: "Anvar", phone: "+998901234567", Lavozim, "Oylik aylanma": aylanma, Kompaniya })
 
@@ -41,5 +41,25 @@ describe("clientMeta", () => {
     expect(clientMeta(new Headers({ "cf-connecting-ip": "5.6.7.8", "x-forwarded-for": "1.2.3.4", "user-agent": "UA" }))).toEqual({ client_ip: "5.6.7.8", user_agent: "UA" })
     expect(clientMeta(new Headers({ "x-forwarded-for": "1.2.3.4, 10.0.0.1" }))).toEqual({ client_ip: "1.2.3.4" })
     expect(clientMeta(new Headers())).toEqual({})
+  })
+})
+
+describe("noBusiness (agreed variant 1: no business = never qualified)", () => {
+  test("either 'no business' answer, any apostrophe", () => {
+    expect(noBusiness(form("Biznes egasi / asoschi", "Hali biznesim yo‘q", "947270899bdhj"))).toBe(true)
+    expect(noBusiness(form("Hozircha biznesim yo'q", "1 mlrd so‘mdan yuqori", "Savdo"))).toBe(true)
+    expect(noBusiness(form("Biznes egasi / asoschi", "Hali biznesim yoʻq", "x"))).toBe(true)
+  })
+  test("a real business, or an old form without the fields, is not 'no business'", () => {
+    expect(noBusiness(form("Direktor / top-menejer", "100–500 mln so‘m", "Savdo"))).toBe(false)
+    expect(noBusiness({ name: "A" })).toBe(false)
+  })
+})
+
+describe("unexpected values never throw", () => {
+  test("long, emoji, Cyrillic, digits-only companies and unknown options", () => {
+    expect(scoreLead(form("Boshqa lavozim", "2 mlrd", "🚀".repeat(300) + "Ж".repeat(300)))).toBe(1)
+    expect(scoreLead(form("", "", "1234567"))).toBe(0)
+    expect(scoreLead(form("Biznes egasi / asoschi", "", "ООО Ромашка"))).toBe(4)
   })
 })

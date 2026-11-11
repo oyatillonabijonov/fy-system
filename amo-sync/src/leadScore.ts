@@ -30,6 +30,11 @@ export function scoreLead(fields: Record<string, string>): number | null {
   return (POSITION[loose(position ?? "")] ?? 0) + (TURNOVER[loose(turnover ?? "")] ?? 0) + companyPoint(field(fields, "kompaniya") ?? "")
 }
 
+/** Agreed with the owner (variant 1): an applicant who says they have no business is never qualified, whatever the score */
+export function noBusiness(fields: Record<string, string>): boolean {
+  return [field(fields, "lavozim"), field(fields, "oylik aylanma")].some((v) => v !== undefined && /biznesim yo'q/.test(norm(v)))
+}
+
 export function splitCapi(fields: Record<string, string>): { fields: Record<string, string>; capi: Capi } {
   const rest: Record<string, string> = {}
   const capi: Capi = {}
