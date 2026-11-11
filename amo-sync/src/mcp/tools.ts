@@ -1,24 +1,14 @@
 // The connector's tools: thin wrappers over SQL that already exists. Fixed statements with bound parameters only, and only through the user's transaction (`tx`).
 import * as z from "zod"
 import type { AsUser, UserSql } from "./db"
+import { date, LABEL, limit, offset, tool, ToolError, uuid } from "./def"
+import type { Me, ToolDef, ToolResult } from "./def"
+import { EVENT_TOOLS } from "./events"
 
-export interface Me { id: string; name: string; role: string; isAdmin: boolean; modules: string[] }
-type Shape = Record<string, z.ZodType>
-type Module = "dashboard" | "sotuv-crmn" | "tadbirlar-moliya"
-export interface ToolDef {
-  name: string; title: string; description: string
-  module: Module | null   // null = any signed-in staff
-  input: Shape
-  run: (tx: UserSql, args: Record<string, unknown>, me: Me) => Promise<unknown>
-}
-export type ToolResult = { ok: true; data: unknown } | { ok: false; error: string }
-
-/** An error whose text is meant for the model */
-class ToolError extends Error {}
+export type { Me, ToolDef, ToolResult }
 
 // mirrors ModuleName in src/lib/supabase/queries/auth.ts
 const MODULE_IDS = ["dashboard", "mijozlar", "sotuv-crmn", "tadbirlar", "tadbirlar-moliya", "sozlamalar", "integratsiyalar", "sms"]
-const LABEL: Record<Module, string> = { dashboard: "Dashboard", "sotuv-crmn": "Sotuv bo'limi", "tadbirlar-moliya": "Moliya" }
 
 export async function loadMe(tx: UserSql): Promise<Me> {
   const [r] = await tx<{ id: string; name: string; role: string; is_admin: boolean; modules: string[] }[]>`
@@ -27,17 +17,6 @@ export async function loadMe(tx: UserSql): Promise<Me> {
     from public.profiles p where p.id = auth.uid()`
   if (!r) throw new ToolError("Foydalanuvchi topilmadi")
   return { id: r.id, name: r.name, role: r.role, isAdmin: r.is_admin, modules: r.modules }
-}
-
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD")
-  .refine((s) => { const d = new Date(`${s}T00:00:00Z`); return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s }, "not a calendar date")
-const uuid = z.string().uuid()
-const limit = (max: number, def: number) => z.number().int().min(1).max(max).default(def)
-const offset = z.number().int().min(0).default(0)
-
-/** Types `args` from the zod shape, so each tool reads its own arguments without casts */
-function tool<S extends Shape>(d: Omit<ToolDef, "input" | "run"> & { input: S; run: (tx: UserSql, a: z.infer<z.ZodObject<S>>, me: Me) => Promise<unknown> }): ToolDef {
-  return d as unknown as ToolDef
 }
 
 const Q = "Dates are Asia/Tashkent calendar days, YYYY-MM-DD."
@@ -90,25 +69,28 @@ export const TOOLS: ToolDef[] = [
   tool({ name: "event_results", title: "Profit per event", module: "tadbirlar-moliya", input: FIN,
     description: `Per event in so'm: agreed, collected, debt, expense and cash profit (payments minus refunds minus expenses). ${Q}`,
     run: async (tx, a) => tx`select * from public.event_profit(${a.from ?? null}::date, ${a.to ?? null}::date, ${a.event_id ?? null}::uuid)` }),
+  ...EVENT_TOOLS,
 ]
 
 const allowed = (me: Me, t: ToolDef) => t.module === null || me.isAdmin || me.modules.includes(t.module)
-export const toolsFor = (me: Me): ToolDef[] => TOOLS.filter((t) => allowed(me, t))
+export const toolsFor = (me: Me): ToolDef[] => TOOLS.filter((t) => allowed(me, t) && (!t.adminOnly || me.isAdmin))
 
 const INTERNAL = "Ma'lumotlar bazasiga murojaat bajarilmadi"
 
 /** One transaction as the user: who they are, the gate, the arguments, then the tool. Every failure is a result. */
 export async function callTool(asUser: AsUser, uid: string, name: string, args: unknown): Promise<ToolResult> {
   try {
+    const t = TOOLS.find((x) => x.name === name)
+    if (!t) return { ok: false, error: `Unknown tool: ${name}` }
     return await asUser(uid, async (tx): Promise<ToolResult> => {
+      // every refusal comes before run, and run never swallows a database error: a writer that returned normally after one would commit half its work
       const me = await loadMe(tx)
-      const t = TOOLS.find((x) => x.name === name)
-      if (!t) return { ok: false, error: `Unknown tool: ${name}` }
       if (!allowed(me, t)) return { ok: false, error: `«${LABEL[t.module!]}» bo'limiga ruxsatingiz yo'q` }
+      if (t.adminOnly && !me.isAdmin) return { ok: false, error: "Bu amalni faqat admin bajara oladi" }
       const parsed = z.object(t.input).safeParse(args ?? {})
       if (!parsed.success) return { ok: false, error: parsed.error.issues.map((i) => `${i.path.join(".") || "arguments"}: ${i.message}`).join("; ") }
       return { ok: true, data: await t.run(tx, parsed.data, me) }
-    })
+    }, { write: !!t.write })
   } catch (e) {
     // our own messages and Postgres' own (a raised exception, a timeout) are safe to show; anything else (a connection error) is not
     const pg = e instanceof Error && e.name === "PostgresError"

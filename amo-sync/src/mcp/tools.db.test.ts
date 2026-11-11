@@ -4,7 +4,8 @@ import type { AsUser } from "./db"
 import { handleMcp } from "./server"
 import { openConnection } from "./store"
 import { staff, testSql } from "./testdb"
-import { callTool, loadMe, toolsFor } from "./tools"
+import { tool } from "./def"
+import { callTool, loadMe, TOOLS, toolsFor } from "./tools"
 
 process.env.MCP_PUBLIC_URL ??= "https://x.test"
 const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
@@ -45,9 +46,26 @@ afterAll(async () => {
 
 const names = (uid: string) => asUser(uid, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))
 
-test.skipIf(!testSql)("a seller gets six tools, an admin all nine", async () => {
+const ADMIN_TOOLS = ["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis", "finance_summary", "debtors", "event_results",
+  "events", "event", "find_clients", "create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline", "export_stickers", "export_signs"]
+
+test.skipIf(!testSql)("a seller gets six tools, an admin all twenty, a Tadbirlar-only user twelve", async () => {
   expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis"])
-  expect(await names(admin)).toHaveLength(9)
+  expect(await names(admin)).toEqual(ADMIN_TOOLS)
+  const ev = await staff(testSql!, { modules: ["tadbirlar"] }); created.push(ev)
+  expect(await names(ev)).toEqual(["whoami", "reference", ...ADMIN_TOOLS.slice(9).filter((n) => n !== "link_pipeline")])
+  expect(await names(ev)).toHaveLength(12)
+})
+
+test.skipIf(!testSql)("tools/list hints: readers read-only, the six writers not, only delete_event destructive", async () => {
+  const tok = (await openConnection(testSql!, admin, "test-client")).access_token
+  const j = (await (await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })).json()) as { result: { tools: { name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }[] } }
+  const writers = ["create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline"]
+  expect(j.result.tools).toHaveLength(20)
+  for (const t of j.result.tools) {
+    expect(t.annotations.readOnlyHint).toBe(!writers.includes(t.name))
+    expect(t.annotations.destructiveHint).toBe(t.name === "delete_event")
+  }
 })
 
 test.skipIf(!testSql)("reference: no Sotuv module gives an explicit marker for pipelines, a seller gets the list", async () => {
@@ -174,6 +192,7 @@ test.skipIf(!testSql)("handleMcp: tools/list shows the caller's six tools; whoam
   const listed = (await list.json()) as { result: { tools: { name: string; annotations?: { readOnlyHint?: boolean } }[] } }
   expect(listed.result.tools.map((t) => t.name).sort()).toEqual(["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"])
   expect(listed.result.tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true)
+  expect(listed.result.tools.some((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint === true)).toBe(false)
 
   const call = await mcp(tok, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "whoami", arguments: {} } })
   const res = (await call.json()) as { result: { content: { text: string }[]; isError?: boolean } }
@@ -204,6 +223,8 @@ test.skipIf(!testSql)("handleMcp: initialize answers JSON with the instructions;
   const i = (await init.json()) as { result: { instructions: string; serverInfo: { name: string } } }
   expect(i.result.serverInfo.name).toBe("fy-system")
   expect(i.result.instructions).toContain("Fikr Yetakchilari")
+  expect(i.result.instructions).toContain("never invent it")
+  expect(i.result.instructions).toContain("expire in 15 minutes")
   const bad = await mcp(tok, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "call_analysis", arguments: { call_uuid: callUuid } } })
   const r = (await bad.json()) as { result: { isError: boolean; content: { text: string }[] } }
   expect(r.result.isError).toBe(true)
@@ -249,7 +270,7 @@ const modern = (token: string, method: string, params: Record<string, unknown> =
 const toolNames = async (r: Response) => ((await r.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort()
 const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"]
 
-test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin nine, back to back), JSON and no-store", async () => {
+test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin twenty, back to back), JSON and no-store", async () => {
   const a = (await openConnection(testSql!, sellerA, "test-client")).access_token
   const adm = (await openConnection(testSql!, admin, "test-client")).access_token
   const r1 = await modern(a, "tools/list")
@@ -257,7 +278,7 @@ test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin nin
   expect(r1.headers.get("content-type")).toContain("application/json")
   expect(r1.headers.get("cache-control")).toBe("no-store")
   expect(await toolNames(r1)).toEqual(SELLER_TOOLS)
-  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(9)
+  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(20)
   expect(await toolNames(await modern(a, "tools/list"))).toEqual(SELLER_TOOLS)
 })
 
@@ -299,4 +320,65 @@ test.skipIf(!testSql)("a tool the caller does not have is an explicit module err
   expect(JSON.stringify(await unknown.json())).not.toContain("Moliya")
   const list = await mcp(tok, { jsonrpc: "2.0", id: 7, method: "tools/list" })
   expect(await toolNames(list)).toEqual(SELLER_TOOLS)
+})
+
+/** Runs `fn` with temporary tools on TOOLS, always removed afterwards */
+async function withTools(extra: ReturnType<typeof tool>[], fn: () => Promise<void>) {
+  TOOLS.push(...extra)
+  try { await fn() } finally { for (const t of extra) TOOLS.splice(TOOLS.indexOf(t), 1) }
+}
+
+test.skipIf(!testSql)("a writer is gated by its module before it runs; an admin reaches it", async () => {
+  let reached = 0
+  const w = tool({ name: "tmp_writer", title: "tmp", description: "tmp", module: "tadbirlar", write: true, input: {}, run: async () => { reached++; return { done: true } } })
+  await withTools([w], async () => {
+    const denied = await callTool(asUser, sellerA, "tmp_writer", {})
+    expect(denied).toEqual({ ok: false, error: "«Tadbirlar» bo'limiga ruxsatingiz yo'q" })
+    expect(reached).toBe(0)
+    expect(await callTool(asUser, admin, "tmp_writer", {})).toEqual({ ok: true, data: { done: true } })
+    expect(reached).toBe(1)
+  })
+})
+
+test.skipIf(!testSql)("an adminOnly tool is hidden from and refused to a non-admin with every module, audited as a refusal", async () => {
+  let reached = 0
+  const a = tool({ name: "tmp_admin", title: "tmp", description: "tmp", module: null, adminOnly: true, input: {}, run: async () => { reached++; return 1 } })
+  const all = await staff(testSql!, { modules: ["dashboard", "sotuv-crmn", "tadbirlar", "tadbirlar-moliya"] }); created.push(all)
+  await withTools([a], async () => {
+    expect(await callTool(asUser, all, "tmp_admin", {})).toEqual({ ok: false, error: "Bu amalni faqat admin bajara oladi" })
+    expect(reached).toBe(0)
+    expect(await asUser(all, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))).not.toContain("tmp_admin")
+    expect(await asUser(admin, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))).toContain("tmp_admin")
+    const tok = (await openConnection(testSql!, all, "test-client")).access_token
+    const r = await mcp(tok, { jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "tmp_admin", arguments: {} } })
+    const j = (await r.json()) as { result: { isError: boolean; content: { text: string }[] } }
+    expect(j.result.isError).toBe(true)
+    expect(j.result.content[0]!.text).toBe("Bu amalni faqat admin bajara oladi")
+    const rows = await testSql!`select ok, error from public.mcp_calls where user_id = ${all} and tool = 'tmp_admin'`
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.ok).toBe(false)
+    expect(reached).toBe(0)
+  })
+})
+
+test.skipIf(!testSql)("a writer that inserts and then throws is rolled back: ok false, no row", async () => {
+  const name = `Rollback ${crypto.randomUUID()}`
+  const w = tool({ name: "tmp_rollback", title: "tmp", description: "tmp", module: null, write: true, input: {},
+    run: async (tx) => { await tx`insert into public.events (name) values (${name})`; throw new Error("after insert") } })
+  await withTools([w], async () => {
+    expect((await callTool(asUser, admin, "tmp_rollback", {})).ok).toBe(false)
+    expect(await testSql!`select id from public.events where name = ${name}`).toHaveLength(0)
+  })
+})
+
+test.skipIf(!testSql)("a non-writer tool that tries to INSERT is refused as read-only and writes nothing", async () => {
+  const name = `ReadOnly ${crypto.randomUUID()}`
+  const w = tool({ name: "tmp_sneaky", title: "tmp", description: "tmp", module: null, input: {},
+    run: async (tx) => tx`insert into public.events (name) values (${name}) returning id` })
+  await withTools([w], async () => {
+    const r = await callTool(asUser, admin, "tmp_sneaky", {})
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toMatch(/read-only/)
+    expect(await testSql!`select id from public.events where name = ${name}`).toHaveLength(0)
+  })
 })
