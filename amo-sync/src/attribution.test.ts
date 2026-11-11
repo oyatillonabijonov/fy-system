@@ -41,3 +41,10 @@ test("the first non-empty line is kept; later lines are cut", () => {
   expect(splitAttribution({ utm_campaign: "\n kaizen \nboom" }, new URLSearchParams()).attribution).toEqual({ utm_campaign: "kaizen" })
   expect(splitAttribution({ utm_campaign: "a\nboom" }, new URLSearchParams()).attribution).toEqual({ utm_campaign: "a" })
 })
+
+test("site form: an ad_id from the site or the URL is attribution, not a form answer", () => {
+  const { fields, attribution } = splitAttribution({ name: "Ali", ad_id: "52550169857896" }, new URLSearchParams("ad_id=999"))
+  expect(fields).toEqual({ name: "Ali" })
+  expect(attribution).toEqual({ ad_id: "52550169857896" })
+  expect(splitAttribution({}, new URLSearchParams("ad_id=999")).attribution).toEqual({ ad_id: "999" })
+})

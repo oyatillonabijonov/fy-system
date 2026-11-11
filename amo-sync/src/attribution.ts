@@ -10,7 +10,7 @@ export interface MetaLead {
   campaign_id?: string; campaign_name?: string; platform?: string; is_organic?: boolean
 }
 
-const WEB_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"]
+const WEB_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ad_id"]
 
 /** First non-empty line, trimmed, at most 300 characters */
 const clean = (v: unknown): string => String(v).trim().split("\n")[0].trim().slice(0, 300)
