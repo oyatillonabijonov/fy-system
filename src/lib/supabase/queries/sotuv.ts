@@ -8,7 +8,7 @@ const db = supabase as unknown as SupabaseClient
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export interface Pipeline { id: string; name: string; sort_order: number; event_id: string | null; auto_assign: boolean }
+export interface Pipeline { id: string; name: string; sort_order: number; event_id: string | null; auto_assign: boolean; lead_threshold: number }
 
 export interface Stage {
   id: string
@@ -52,6 +52,9 @@ export interface Lead {
   fields: { k: string; v: string }[]
   /** which ad / UTM brought it (091) */
   attribution: Record<string, string>
+  /** 093: site form score and verdict; null = not scored (older forms, manual bitimlar) */
+  lead_score: number | null
+  qualified: boolean | null
   client: LeadClient | null
   responsible: Person | null
   /** the earliest open task, for the card */
@@ -103,7 +106,7 @@ export const sourceLabel = (s: string | null) => SOURCES.find((x) => x.id === s)
 // ─── Voronkalar / bosqichlar (admin edits; RLS enforces it) ────────────────
 
 export async function getPipelines(): Promise<Pipeline[]> {
-  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order, event_id, auto_assign").order("sort_order").order("created_at")
+  const { data, error } = await db.from("crm_pipelines").select("id, name, sort_order, event_id, auto_assign, lead_threshold").order("sort_order").order("created_at")
   if (error) throw error
   return data as Pipeline[]
 }
@@ -142,6 +145,12 @@ export async function renamePipeline(id: string, name: string): Promise<void> {
 /** The voronka's event (081); null unlinks */
 export async function setPipelineEvent(id: string, eventId: string | null): Promise<void> {
   const { error } = await db.from("crm_pipelines").update({ event_id: eventId }).eq("id", id)
+  if (error) throw error
+}
+
+/** 093: the score a site application needs to count as a qualified lead */
+export async function setPipelineThreshold(id: string, value: number): Promise<void> {
+  const { error } = await db.from("crm_pipelines").update({ lead_threshold: value }).eq("id", id)
   if (error) throw error
 }
 
@@ -185,7 +194,7 @@ export async function deleteStage(id: string): Promise<void> {
 // ─── Bitimlar ───────────────────────────────────────────────────────────────
 
 const LEAD_SELECT =
-  "id, name, pipeline_id, stage_id, client_id, price, source, responsible_user_id, loss_reason, is_won, is_lost, created_at, stage_changed_at, closed_at, fields, attribution, " +
+  "id, name, pipeline_id, stage_id, client_id, price, source, responsible_user_id, loss_reason, is_won, is_lost, created_at, stage_changed_at, closed_at, fields, attribution, lead_score, qualified, " +
   "client:client_id(id, full_name, phone, image), responsible:responsible_user_id(full_name, avatar_url), " +
   "tasks:crm_tasks(due_date, kind, text, is_done)"
 
