@@ -19,6 +19,7 @@ import { startIntake } from "./intake"
 import { startPbxSync } from "./pbx"
 import { startCallAnalysis } from "./callAnalysis"
 import { startCapi } from "./capi"
+import { startIntakeAlert } from "./intakeAlert"
 import { seedGroups } from "./groups"
 import { startSms } from "./sms"
 
@@ -64,6 +65,7 @@ if (process.argv.includes("--once")) {
   startPbxSync(sql)
   startCallAnalysis(sql)
   startCapi(sql)
+  startIntakeAlert(sql)
   await startSms(sql).catch((e) => console.error(`[sms] ${e instanceof Error ? e.message : e}`))
   for (;;) {
     await runOnce()
