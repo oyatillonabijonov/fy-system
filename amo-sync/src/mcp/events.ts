@@ -222,7 +222,7 @@ export const EVENT_TOOLS: ToolDef[] = [
     } }),
   tool({ name: "enroll_participant", title: "Enrol a participant", module: "tadbirlar", write: true,
     input: { event_id: uuid, tariff_id: uuid.optional(), seller_id: uuid.optional(), client_id: uuid.optional(), full_name: name.optional(), phone: z.string().trim().min(1).max(40).optional(), price: price.optional() },
-    description: "Enrols one person into an event and creates their debt for the tariff's price (an event without tariffs takes an individual price); it takes no payment — payments are made in Moliya. tariff_id comes from the event tool's tariffs[].id; the person is either an existing client (client_id from find_clients) or a new one (give full_name and phone, never together with client_id); a phone that already belongs to a client is refused with that client's id. seller_id comes from the reference tool's sellers (omit it for \"Belgilanmagan\"). Ask the user for the person, the tariff and the seller before calling.",
+    description: "Enrols one person into an event and creates their debt for the tariff's price (an event without tariffs takes an individual price; price is ignored when tariff_id is given); it takes no payment — payments are made in Moliya. tariff_id comes from the event tool's tariffs[].id; the person is either an existing client (client_id from find_clients) or a new one (give full_name and phone, never together with client_id); a phone that already belongs to a client is refused with that client's id. seller_id comes from the reference tool's sellers (omit it for \"Belgilanmagan\"). Ask the user for the person, the tariff and the seller before calling.",
     run: async (tx, a) => {
       const byName = a.full_name !== undefined || a.phone !== undefined
       if (a.client_id !== undefined && byName) throw new ToolError("client_id yoki (full_name va phone) dan faqat birini bering")
@@ -238,6 +238,7 @@ export const EVENT_TOOLS: ToolDef[] = [
         pid = r!.id
       } catch (e) {
         const text = e instanceof Error && e.name === "PostgresError" ? enrollText(e.message) : undefined
+        if ((e as { constraint_name?: string }).constraint_name === "clients_phone_unique") throw new ToolError("Bu telefon raqam boshqa mijozda band")
         if (text) throw new ToolError(text)
         throw e
       }

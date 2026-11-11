@@ -83,6 +83,7 @@ export async function callTool(asUser: AsUser, uid: string, name: string, args: 
     const t = TOOLS.find((x) => x.name === name)
     if (!t) return { ok: false, error: `Unknown tool: ${name}` }
     return await asUser(uid, async (tx): Promise<ToolResult> => {
+      // every refusal comes before run, and run never swallows a database error: a writer that returned normally after one would commit half its work
       const me = await loadMe(tx)
       if (!allowed(me, t)) return { ok: false, error: `«${LABEL[t.module!]}» bo'limiga ruxsatingiz yo'q` }
       if (t.adminOnly && !me.isAdmin) return { ok: false, error: "Bu amalni faqat admin bajara oladi" }
