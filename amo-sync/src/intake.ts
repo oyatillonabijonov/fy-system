@@ -2,11 +2,13 @@
 //   POST /hooks/lead/<source>?token=…   Tilda / Framer / any site form (JSON, urlencoded or multipart)
 //   GET  /hooks/lead/meta?hub.…         Meta webhook verification (verify token = the source token)
 //   POST /hooks/lead/meta?token=…       Meta lead ads: leadgen ids → Graph API → the form's answers
+//   POST /hooks/fb-lead?voronka=…       Facebook / Instagram lead forms posted by Make.com (header X-FY-Secret)
 // The gateway routes /hooks/ here. Everything is decided in intake_lead() (token, on/off,
 // voronka, one open deal per phone); this file only turns a request into name/phone/details.
 
 import type { Sql } from "postgres"
-import { clientMeta, noBusiness, scoreLead, splitCapi } from "./leadScore"
+import { createHash, timingSafeEqual } from "node:crypto"
+import { clientMeta, noBusiness, scoreLead, splitCapi, type Capi } from "./leadScore"
 import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
 import type { Attribution, MetaLead } from "./attribution"
 import { handleConnector, isConnectorPath } from "./mcp"
@@ -121,6 +123,72 @@ async function logFailure(sql: Sql, source: string, body: Record<string, string>
     .catch((e) => console.error(`[intake] ${source}: log yozilmadi: ${e instanceof Error ? e.message : e}`))
 }
 
+/** A form with the new fields (093) gets a score; older forms are left as they were (undefined). The bitim
+ *  already exists: a failure here must not turn into "not sent". `capi` = the site's Meta fields (none for
+ *  lead forms — no browser event to pair with, so the Conversions API queue stays out of it). */
+async function scoreBitim(sql: Sql, source: string, leadId: string, fields: Record<string, string>, capi?: Capi): Promise<boolean | undefined> {
+  const score = scoreLead(fields)
+  if (score === null) return undefined
+  try {
+    const [row] = await sql<{ qualified: boolean }[]>`
+      update crm_leads l set lead_score = ${score}, qualified = ${!noBusiness(fields)} and ${score} >= p.lead_threshold,
+             capi = coalesce(${capi ? sql.json(capi) : null}::jsonb, l.capi)
+      from crm_pipelines p where p.id = l.pipeline_id and l.id = ${leadId} returning l.qualified`
+    console.log(`[intake] ${source}: ball ${score}, ${row?.qualified ? "sifatli" : "sifatsiz"}`)
+    return row?.qualified
+  } catch (e) {
+    console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
+    return undefined
+  }
+}
+
+const sameSecret = (a: string, b: string) =>
+  timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest())
+
+/** Facebook / Instagram lead forms, posted one by one by Make.com (2026-11-13). Opened exactly like a site
+ *  application — source 'sayt', the voronka from ?voronka=, the same scoring — with the ad fields as UTM +
+ *  ad_id + leadgen_id. The same leadgen_id again (Make retries) answers with the bitim it already opened. */
+export async function handleFbLead(req: Request, sql: Sql, url: URL): Promise<Response> {
+  if (req.method !== "POST") return new Response("method not allowed", { status: 405 })
+  const text = await req.text().catch(() => "")
+  let body: Record<string, string> | null = null
+  try { body = flatten(JSON.parse(text)) } catch { /* logged below */ }
+  const secret = process.env.FB_LEAD_SECRET
+  if (!secret || !sameSecret(req.headers.get("x-fy-secret") ?? "", secret)) {
+    await logFailure(sql, "fb-lead", body, text, "fb-lead: X-FY-Secret yo'q yoki noto'g'ri")
+    return Response.json({ ok: false }, { status: 401 })
+  }
+  try {
+    if (!body) throw new Error("JSON emas")
+    const v = (k: string) => (body![k] ?? "").trim()
+    const leadgen = v("leadgen_id")
+    if (leadgen) {
+      // the bitim it opened, or the "Qayta murojaat" row it added to an open one (091 keeps attribution there)
+      const [seen] = await sql<{ id: string }[]>`
+        select id from crm_leads where attribution->>'leadgen_id' = ${leadgen}
+        union all select lead_id from crm_notes where kind = 'lead' and meta->>'leadgen_id' = ${leadgen} limit 1`
+      if (seen) {
+        console.log(`[intake] fb-lead: takroriy leadgen_id ${leadgen} → ${seen.id}`)
+        return Response.json({ ok: true, lead_id: seen.id, duplicate: true })
+      }
+    }
+    const fields: Record<string, string> = { name: v("name"), phone: v("phone"), Kompaniya: v("company"), Lavozim: v("role"), "Oylik aylanma": v("turnover") }
+    const attribution = Object.fromEntries(Object.entries({
+      utm_source: v("platform"), utm_medium: "form", utm_campaign: v("campaign_name"), utm_term: v("adset_name"),
+      utm_content: v("ad_name"), ad_id: v("ad_id"), leadgen_id: leadgen,
+    }).filter(([, x]) => x))
+    const [src] = await sql<{ token: string }[]>`select token from crm_lead_sources where id = 'sayt'`
+    const r = await intake(sql, "sayt", src?.token ?? "", parseLead(fields), body, url.searchParams.get("voronka"), attribution)
+    if (r.lead_id) await scoreBitim(sql, "fb-lead", r.lead_id, fields)
+    return Response.json({ ok: !!r.lead_id, lead_id: r.lead_id ?? null })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    await logFailure(sql, "fb-lead", body, text, msg)
+    console.error(`[intake] fb-lead: ${msg}`)
+    return Response.json({ ok: false }, { status: 500 })
+  }
+}
+
 /** A site or form-builder application. ok:true only once intake_lead() has committed the bitim; whatever
  *  follows (score, Meta queue) can fail without turning the answer into an error. */
 export async function handleSiteLead(req: Request, sql: Sql, source: string, url: URL): Promise<Response> {
@@ -147,22 +215,7 @@ export async function handleSiteLead(req: Request, sql: Sql, source: string, url
     }
 
     const r = await intake(sql, source, token, parseLead(fields), raw, url.searchParams.get("voronka"), split.attribution)
-    // A form with the new fields (093) gets a score; older forms answer exactly as before
-    const score = scoreLead(fields)
-    let qualified: boolean | undefined
-    if (score !== null && r.lead_id) {
-      // The bitim already exists: a failure here must not turn into "not sent" on the site
-      try {
-        const [row] = await sql<{ qualified: boolean }[]>`
-          update crm_leads l set lead_score = ${score}, qualified = ${!noBusiness(fields)} and ${score} >= p.lead_threshold,
-                 capi = ${sql.json({ ...capi, ...clientMeta(req.headers) })}
-          from crm_pipelines p where p.id = l.pipeline_id and l.id = ${r.lead_id} returning l.qualified`
-        qualified = row?.qualified
-        console.log(`[intake] ${source}: ball ${score}, ${qualified ? "sifatli" : "sifatsiz"}`)
-      } catch (e) {
-        console.error(`[intake] ${source}: ball yozilmadi: ${e instanceof Error ? e.message : e}`)
-      }
-    }
+    const qualified = r.lead_id ? await scoreBitim(sql, source, r.lead_id, fields, { ...capi, ...clientMeta(req.headers) }) : undefined
     return Response.json({ ok: true, duplicate: !!r.duplicate, ...(qualified === undefined ? {} : { qualified }) }, { headers: CORS })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -182,6 +235,7 @@ export function startIntake(sql: Sql): void {
       if (url.pathname.startsWith("/hooks/pbx/")) return handlePbx(req, sql, url.pathname.slice("/hooks/pbx/".length))
       if (url.pathname === "/hooks/health") return health(sql)
       if (url.pathname.startsWith("/hooks/sms/")) return handleSms(req, sql, url)
+      if (url.pathname === "/hooks/fb-lead") return handleFbLead(req, sql, url)
       if (isConnectorPath(url.pathname)) return handleConnector(req, sql, url)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
