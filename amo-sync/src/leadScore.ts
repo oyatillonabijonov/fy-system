@@ -3,7 +3,9 @@
 // (event_id, fbc, fbp, …) are kept for the Conversions API, never shown as answers.
 
 export const CAPI_KEYS = ["event_id", "event_source_url", "content_name", "fbc", "fbp"] as const
-export type Capi = Partial<Record<(typeof CAPI_KEYS)[number] | "client_ip" | "user_agent", string>>
+/** The site's own verdict (since 2026-11-12) is kept for comparison only — a browser value can be forged, so ours decides */
+const SITE_KEYS: Record<string, "site_score" | "site_qualified"> = { ball: "site_score", qualified: "site_qualified" }
+export type Capi = Partial<Record<(typeof CAPI_KEYS)[number] | "client_ip" | "user_agent" | "site_score" | "site_qualified", string>>
 
 /** Lower case, spaces folded, every apostrophe one ', every dash one - (site texts use ‘ and –) */
 export function norm(s: string): string {
@@ -39,7 +41,7 @@ export function splitCapi(fields: Record<string, string>): { fields: Record<stri
   const rest: Record<string, string> = {}
   const capi: Capi = {}
   for (const [k, v] of Object.entries(fields)) {
-    const key = CAPI_KEYS.find((c) => c === k.toLowerCase())
+    const key = CAPI_KEYS.find((c) => c === k.toLowerCase()) ?? SITE_KEYS[k.toLowerCase()]
     if (!key) { rest[k] = v; continue }
     const value = String(v).trim().slice(0, 1000)
     if (value) capi[key] = value
