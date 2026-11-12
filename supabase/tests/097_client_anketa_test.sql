@@ -54,6 +54,10 @@ BEGIN
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_too_long' THEN RAISE; END IF; END;
   BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Ali V","photo_path":"anketa/OTHER/x.jpg"}'); RAISE EXCEPTION 'TEST 2 FAILED: foreign photo';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_photo' THEN RAISE; END IF; END;
+  -- the token must never be a storage folder name (anon can list the bucket)
+  BEGIN PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali V', 'photo_path', 'anketa/' || t || '/x.jpg')); RAISE EXCEPTION 'TEST 2 FAILED: token-named folder accepted';
+    EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_photo' THEN RAISE; END IF; END;
+  IF (public.anketa_open(t)->>'link_id') IS NULL THEN RAISE EXCEPTION 'TEST 2 FAILED: open gives no link_id'; END IF;
   BEGIN PERFORM public.anketa_submit('nope', '{"full_name":"Ali V"}'); RAISE EXCEPTION 'TEST 2 FAILED: unknown token';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_invalid' THEN RAISE; END IF; END;
   RAISE NOTICE 'TEST 2 ok';
@@ -66,12 +70,13 @@ END $$;
 -- TEST 3: submitting twice keeps one pending row with the latest values
 SET ROLE anon;
 DO $$
-DECLARE t text := current_setting('test.ta');
+DECLARE t text := current_setting('test.ta'); lid text := public.anketa_open(current_setting('test.ta'))->>'link_id';
 BEGIN
+  PERFORM set_config('test.la', lid, false);
   PERFORM public.anketa_submit(t, '{"full_name":"Ali Valiyev","company":"Savdo"}');
-  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali Valiyevich', 'company', 'Savdo', 'photo_path', 'anketa/' || t || '/p.jpg'));
+  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali Valiyevich', 'company', 'Savdo', 'photo_path', 'anketa/' || lid || '/p.jpg'));
   IF public.anketa_open(t)->>'full_name' <> 'Ali Valiyevich' THEN RAISE EXCEPTION 'TEST 3 FAILED: open shows %', public.anketa_open(t); END IF;
-  IF public.anketa_open(t)->>'photo_path' <> 'anketa/' || t || '/p.jpg' THEN RAISE EXCEPTION 'TEST 3 FAILED: photo %', public.anketa_open(t); END IF;
+  IF public.anketa_open(t)->>'photo_path' <> 'anketa/' || lid || '/p.jpg' THEN RAISE EXCEPTION 'TEST 3 FAILED: photo %', public.anketa_open(t); END IF;
 END $$;
 RESET ROLE;
 DO $$ BEGIN
@@ -110,7 +115,7 @@ BEGIN
   SELECT id INTO v_id FROM public.client_profile_submissions WHERE client_id = 'c9700000-0000-0000-0000-000000000001' AND phone IS NULL;
   BEGIN PERFORM public.approve_profile_submission(v_id, '{"image":"https://x/storage/v1/object/public/client-images/other.jpg"}'); RAISE EXCEPTION 'TEST 5 FAILED: foreign image';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_photo' THEN RAISE; END IF; END;
-  v_url := 'https://x/storage/v1/object/public/client-images/anketa/' || t || '/p.jpg';
+  v_url := 'https://x/storage/v1/object/public/client-images/anketa/' || current_setting('test.la') || '/p.jpg';
   IF public.approve_profile_submission(v_id, jsonb_build_object('role', 'Direktor', 'image', v_url)) <> 'c9700000-0000-0000-0000-000000000001' THEN RAISE EXCEPTION 'TEST 5 FAILED: wrong client'; END IF;
   BEGIN PERFORM public.approve_profile_submission(v_id, '{}'); RAISE EXCEPTION 'TEST 5 FAILED: approved twice';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_reviewed' THEN RAISE; END IF; END;
@@ -225,5 +230,50 @@ SET ROLE anon;
 DO $$ BEGIN
   IF public.anketa_open(current_setting('test.tc'))->>'full_name' <> 'Cecil' THEN RAISE EXCEPTION 'TEST 9 FAILED: after reject the card is not shown'; END IF;
   RAISE NOTICE 'TEST 9 ok';
+END $$;
+RESET ROLE;
+
+-- TEST 10 (review #2): fixing the phone on the universal link replaces the earlier pending row, not a second one
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '97000000-0000-0000-0000-000000000003', false);
+DO $$ BEGIN PERFORM set_config('test.tu2', public.universal_profile_link(true), false); END $$;
+RESET ROLE;
+SET ROLE anon;
+DO $$
+DECLARE t text := current_setting('test.tu2'); v uuid;
+BEGIN
+  v := public.anketa_submit(t, '{"full_name":"Farhod","phone":"+998901970006"}');
+  IF v IS NULL THEN RAISE EXCEPTION 'TEST 10 FAILED: submit returns no id'; END IF;
+  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Farhod', 'phone', '+998901970007', 'replace_id', v));
+END $$;
+RESET ROLE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM public.client_profile_submissions WHERE phone = '+998901970006' AND status = 'pending') THEN RAISE EXCEPTION 'TEST 10 FAILED: the mistyped phone''s row stayed'; END IF;
+  IF (SELECT count(*) FROM public.client_profile_submissions WHERE phone = '+998901970007' AND status = 'pending') <> 1 THEN RAISE EXCEPTION 'TEST 10 FAILED: corrected row missing'; END IF;
+  RAISE NOTICE 'TEST 10 ok';
+END $$;
+
+-- TEST 11 (review #5): approving a row the client has since replaced says so ('anketa_gone'), not "link invalid"
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '97000000-0000-0000-0000-000000000001', false);
+DO $$ BEGIN
+  BEGIN PERFORM public.approve_profile_submission(gen_random_uuid(), '{}'); RAISE EXCEPTION 'TEST 11 FAILED: approved nothing';
+    EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_gone' THEN RAISE; END IF; END;
+  BEGIN PERFORM public.reject_profile_submission(gen_random_uuid()); RAISE EXCEPTION 'TEST 11 FAILED: rejected nothing';
+    EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_gone' THEN RAISE; END IF; END;
+  RAISE NOTICE 'TEST 11 ok';
+END $$;
+RESET ROLE;
+
+-- TEST 12 (review #3): an event hall shares one IP — 60 people an hour from it get through, the 61st waits
+SET ROLE anon;
+SELECT set_config('request.headers', '{"cf-connecting-ip":"9.9.9.9"}', false);
+DO $$
+DECLARE t text := current_setting('test.tu2');
+BEGIN
+  FOR i IN 1..60 LOOP PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Mehmon ' || i, 'phone', '+99890198' || lpad(i::text, 4, '0'))); END LOOP;
+  BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Mehmon 61","phone":"+998901989999"}'); RAISE EXCEPTION 'TEST 12 FAILED: 61st accepted';
+    EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_rate_limited' THEN RAISE; END IF; END;
+  RAISE NOTICE 'TEST 12 ok';
 END $$;
 RESET ROLE;

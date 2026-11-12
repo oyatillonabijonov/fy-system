@@ -26,7 +26,7 @@ CREATE TABLE public.client_profile_submissions (
   company     text,
   role        text,
   activity    text,
-  photo_path  text,                                                       -- client-images: anketa/<token>/…
+  photo_path  text,                                                       -- client-images: anketa/<link id>/… (never the token: anon can list the bucket)
   ip          text,
   status      text        NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   reviewed_by uuid        REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -127,13 +127,14 @@ DECLARE l public.client_profile_links; c public.clients; s public.client_profile
 BEGIN
   l := public.anketa_link(p_token);
   IF l.client_id IS NULL THEN
-    RETURN jsonb_build_object('kind', 'universal', 'full_name', '', 'company', '', 'role', '', 'activity', '',
+    RETURN jsonb_build_object('kind', 'universal', 'link_id', l.id, 'full_name', '', 'company', '', 'role', '', 'activity', '',
                               'image', NULL, 'photo_path', NULL, 'phone_masked', NULL);
   END IF;
   SELECT * INTO c FROM public.clients WHERE id = l.client_id;
   SELECT * INTO s FROM public.client_profile_submissions WHERE link_id = l.id AND status = 'pending';
   RETURN jsonb_build_object(
     'kind', 'personal',
+    'link_id', l.id,
     'full_name', COALESCE(s.full_name, c.full_name, ''),
     'company', COALESCE(s.company, c.company, ''),
     'role', COALESCE(s.role, c.role, ''),
@@ -158,13 +159,15 @@ BEGIN
   RETURN v;
 END $$;
 
--- Public page: send (replaces this link's — universal: this phone's — pending submission)
+-- Public page: send (replaces this link's — universal: this phone's, or `replace_id`'s when the person fixed
+-- the phone — pending submission). Returns the row id, so a resend can say which row it replaces.
 CREATE OR REPLACE FUNCTION public.anketa_submit(p_token text, p_data jsonb)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
 DECLARE
   l public.client_profile_links;
   v_ip text := NULLIF(current_setting('request.headers', true), '')::json->>'cf-connecting-ip';
-  v_name text; v_company text; v_role text; v_activity text; v_photo text; v_phone text; v_client uuid;
+  v_name text; v_company text; v_role text; v_activity text; v_photo text; v_phone text; v_client uuid; v_id uuid;
+  v_replace text := NULLIF(p_data->>'replace_id', '');
 BEGIN
   l := public.anketa_link(p_token);
   v_name := public.anketa_name(p_data->>'full_name');
@@ -172,7 +175,7 @@ BEGIN
   v_role := public.anketa_text(p_data, 'role');
   v_activity := public.anketa_text(p_data, 'activity');
   v_photo := NULLIF(btrim(p_data->>'photo_path'), '');
-  IF v_photo IS NOT NULL AND v_photo !~ ('^anketa/' || l.token || '/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$') THEN
+  IF v_photo IS NOT NULL AND v_photo !~ ('^anketa/' || l.id::text || '/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$') THEN
     RAISE EXCEPTION 'anketa_photo';
   END IF;
   IF l.client_id IS NULL THEN
@@ -186,7 +189,7 @@ BEGIN
       RAISE EXCEPTION 'anketa_rate_limited'; END IF;
   ELSIF (SELECT count(*) FROM public.client_profile_submit_log WHERE link_id = l.id AND at > now() - interval '1 hour') >= 1000
      OR (v_ip IS NOT NULL AND (SELECT count(*) FROM public.client_profile_submit_log
-                                WHERE link_id = l.id AND ip = v_ip AND at > now() - interval '1 hour') >= 10) THEN
+                                WHERE link_id = l.id AND ip = v_ip AND at > now() - interval '1 hour') >= 60) THEN   -- an event hall shares one IP
     RAISE EXCEPTION 'anketa_rate_limited';
   END IF;
   INSERT INTO public.client_profile_submit_log (link_id, ip) VALUES (l.id, v_ip);
@@ -196,10 +199,12 @@ BEGIN
     DELETE FROM public.client_profile_submissions WHERE link_id = l.id AND status = 'pending';
   ELSE
     SELECT id INTO v_client FROM public.clients WHERE phone = v_phone;
-    DELETE FROM public.client_profile_submissions WHERE link_id = l.id AND phone = v_phone AND status = 'pending';
+    DELETE FROM public.client_profile_submissions WHERE link_id = l.id AND status = 'pending'
+       AND (phone = v_phone OR (v_replace ~ '^[0-9a-f-]{36}$' AND id = v_replace::uuid));
   END IF;
   INSERT INTO public.client_profile_submissions (link_id, client_id, phone, full_name, company, role, activity, photo_path, ip)
-  VALUES (l.id, v_client, v_phone, v_name, v_company, v_role, v_activity, v_photo, v_ip);
+  VALUES (l.id, v_client, v_phone, v_name, v_company, v_role, v_activity, v_photo, v_ip) RETURNING id INTO v_id;
+  RETURN v_id;
 END $$;
 
 -- Staff: write a pending submission to the card (staff may correct the text first); returns the client
@@ -211,7 +216,7 @@ DECLARE
 BEGIN
   IF NOT public.has_permission(auth.uid(), 'mijozlar') THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'insufficient_privilege'; END IF;
   SELECT * INTO s FROM public.client_profile_submissions WHERE id = p_id FOR UPDATE;
-  IF s.id IS NULL THEN RAISE EXCEPTION 'anketa_invalid'; END IF;
+  IF s.id IS NULL THEN RAISE EXCEPTION 'anketa_gone'; END IF;   -- the client resent it meanwhile (new row)
   IF s.status <> 'pending' THEN RAISE EXCEPTION 'anketa_reviewed'; END IF;
 
   v_name := public.anketa_name(COALESCE(NULLIF(btrim(p_overrides->>'full_name'), ''), s.full_name));
@@ -262,7 +267,9 @@ BEGIN
   IF NOT public.has_permission(auth.uid(), 'mijozlar') THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'insufficient_privilege'; END IF;
   UPDATE public.client_profile_submissions SET status = 'rejected', reviewed_by = auth.uid(), reviewed_at = now()
    WHERE id = p_id AND status = 'pending';
-  IF NOT FOUND THEN RAISE EXCEPTION 'anketa_reviewed'; END IF;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION '%', CASE WHEN EXISTS (SELECT 1 FROM public.client_profile_submissions WHERE id = p_id) THEN 'anketa_reviewed' ELSE 'anketa_gone' END;
+  END IF;
 END $$;
 
 REVOKE ALL ON FUNCTION public.anketa_new_token(), public.anketa_require_link_right(), public.anketa_link(text),

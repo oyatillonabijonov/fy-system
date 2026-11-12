@@ -33,6 +33,7 @@ export function LiveSync() {
     if (!uid) return
     preloadNotify().catch(() => { /* falls back to the UI cue */ })
     let all = false
+    let lastAnketa = 0
     const dirty = new Set<string>()
     let timer: ReturnType<typeof setTimeout> | undefined
     // A burst of rows (an import, a merge) → one refetch
@@ -56,7 +57,9 @@ export function LiveSync() {
           if (lead.created_by !== uid) toast.notify(`Yangi lid: ${lead.name ?? ""}`, sourceLabel(lead.source ?? null))
         }
         // 097: RLS delivers these rows only to Mijozlar users — they are the ones who approve
-        if (p.table === "client_profile_submissions" && p.eventType === "INSERT") {
+        // at most one sound a minute: a resend is a new row, and a QR at an event brings many at once
+        if (p.table === "client_profile_submissions" && p.eventType === "INSERT" && Date.now() - lastAnketa > 60_000) {
+          lastAnketa = Date.now()
           toast.notify("Yangi anketa", (p.new as { full_name?: string }).full_name ?? "")
         }
       })

@@ -5,7 +5,7 @@ import { anketaError, type AnketaFields } from "@/lib/anketa"
 // ponytail: untyped client until `bun run gen:types` picks up migration 097
 const db = supabase as unknown as SupabaseClient
 
-export interface AnketaOpen extends AnketaFields { kind: "personal" | "universal"; image: string | null; photo_path: string | null; phone_masked: string | null }
+export interface AnketaOpen extends AnketaFields { kind: "personal" | "universal"; link_id: string; image: string | null; photo_path: string | null; phone_masked: string | null }
 export type AnketaStatus = "pending" | "approved" | "rejected"
 export interface AnketaClient extends AnketaFields { id: string; phone: string | null; image: string | null }
 export interface AnketaSubmission {
@@ -15,28 +15,28 @@ export interface AnketaSubmission {
   client: AnketaClient | null
 }
 
-/** Database error codes ('anketa_…') become the Uzbek text the toast / page shows */
-const fail = (e: { message: string }) => new Error(anketaError(e.message))
-
-async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+/** Database error codes ('anketa_…') become the Uzbek text the toast / page shows; staff calls keep unknown errors as they are */
+async function rpc<T>(fn: string, args: Record<string, unknown>, staff = true): Promise<T> {
   const { data, error } = await db.rpc(fn, args)
-  if (error) throw fail(error)
+  if (error) throw new Error(anketaError(error.message, staff))
   return data as T
 }
 
 export const getClientAnketaToken = (clientId: string) => rpc<string>("client_profile_link", { p_client: clientId })
 export const getUniversalAnketaToken = (regenerate = false) => rpc<string>("universal_profile_link", { p_regenerate: regenerate })
-export const openAnketa = (token: string) => rpc<AnketaOpen>("anketa_open", { p_token: token })
-export const submitAnketa = (token: string, data: AnketaFields & { phone?: string; photo_path?: string | null }) =>
-  rpc<null>("anketa_submit", { p_token: token, p_data: data })
+export const openAnketa = (token: string) => rpc<AnketaOpen>("anketa_open", { p_token: token }, false)
+/** Returns the row id; pass it back as `replace_id` when the person resends (e.g. fixed the phone) */
+export const submitAnketa = (token: string, data: AnketaFields & { phone?: string; photo_path?: string | null; replace_id?: string | null }) =>
+  rpc<string>("anketa_submit", { p_token: token, p_data: data }, false)
 export const approveAnketa = (id: string, overrides: Partial<AnketaFields> & { image?: string }) =>
   rpc<string>("approve_profile_submission", { p_id: id, p_overrides: overrides })
 export const rejectAnketa = (id: string) => rpc<null>("reject_profile_submission", { p_id: id })
 
 export const anketaPhotoUrl = (path: string) => supabase.storage.from("client-images").getPublicUrl(path).data.publicUrl
 
-export async function uploadAnketaPhoto(token: string, file: Blob): Promise<string> {
-  const path = `anketa/${token}/${crypto.randomUUID()}.jpg`
+/** Under the link's id, never its token: anyone with the anon key can list this bucket */
+export async function uploadAnketaPhoto(linkId: string, file: Blob): Promise<string> {
+  const path = `anketa/${linkId}/${crypto.randomUUID()}.jpg`
   const { error } = await supabase.storage.from("client-images").upload(path, file, { upsert: false, contentType: "image/jpeg" })
   if (error) throw new Error(anketaError("anketa_photo"))
   return path

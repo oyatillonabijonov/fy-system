@@ -11,7 +11,9 @@ import { anketaPhotoUrl, openAnketa, submitAnketa, uploadAnketaPhoto, type Anket
 const FIELD = "w-full h-control-lg max-sm:h-12 px-3.5 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
 const PLACEHOLDER: Record<keyof AnketaFields, string> = { full_name: "Masalan, Anvar Karimov", company: "Kompaniya nomi", role: "Masalan, asoschi", activity: "Masalan, qurilish, savdo, IT" }
 
-type State = { step: "loading" } | { step: "invalid"; message: string } | { step: "form"; info: AnketaOpen } | { step: "sent"; info: AnketaOpen }
+/** What the form keeps between sends: the typed phone and the sent row (a resend replaces it) */
+type Draft = { phone: string; lastId: string | null }
+type State = { step: "loading" } | { step: "invalid"; message: string } | { step: "form" | "sent"; info: AnketaOpen; draft: Draft }
 
 export function Anketa() {
   const { token = "" } = useParams()
@@ -19,7 +21,8 @@ export function Anketa() {
   const [state, setState] = useState<State>({ step: "loading" })
 
   useEffect(() => {
-    openAnketa(token).then((info) => setState({ step: "form", info }), (e: Error) => setState({ step: "invalid", message: e.message }))
+    document.title = "Fikr Yetakchilari — ma'lumotlaringiz"
+    openAnketa(token).then((info) => setState({ step: "form", info, draft: { phone: "", lastId: null } }), (e: Error) => setState({ step: "invalid", message: e.message }))
   }, [token])
 
   return (
@@ -39,13 +42,13 @@ export function Anketa() {
 
           {state.step === "loading" && <p className="text-center text-base text-ink-muted py-8">Yuklanmoqda…</p>}
           {state.step === "invalid" && <div role="alert" className="px-3.5 py-3 bg-danger-soft rounded-control text-base text-danger-text">{state.message}</div>}
-          {state.step === "form" && <AnketaForm token={token} info={state.info} onSent={(info) => setState({ step: "sent", info })} />}
+          {state.step === "form" && <AnketaForm token={token} info={state.info} draft={state.draft} onSent={(info, draft) => setState({ step: "sent", info, draft })} />}
           {state.step === "sent" && (
             <div className="flex flex-col items-center gap-3 text-center py-6">
               <CheckCircle size={48} weight="light" className="text-success" />
               <p className="text-lg font-semibold text-ink">Rahmat! Ma'lumotlaringiz yuborildi.</p>
               <p className="text-base text-ink-muted">Xodimlarimiz tekshirib, kartochkangizga qo'shadi.</p>
-              <button type="button" onClick={() => setState({ step: "form", info: state.info })}
+              <button type="button" onClick={() => setState({ ...state, step: "form" })}
                 className="mt-2 h-10 px-5 rounded-full bg-surface-sunken text-ink text-base font-medium hover:bg-surface-sunken-hover">O'zgartirish</button>
             </div>
           )}
@@ -58,9 +61,9 @@ export function Anketa() {
   )
 }
 
-function AnketaForm({ token, info, onSent }: { token: string; info: AnketaOpen; onSent: (info: AnketaOpen) => void }) {
+function AnketaForm({ token, info, draft, onSent }: { token: string; info: AnketaOpen; draft: Draft; onSent: (info: AnketaOpen, draft: Draft) => void }) {
   const [values, setValues] = useState<AnketaFields>({ full_name: info.full_name, company: info.company, role: info.role, activity: info.activity })
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState(draft.phone)
   const [photoPath, setPhotoPath] = useState(info.photo_path)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [busy, setBusy] = useState<"" | "photo" | "send">("")
@@ -74,18 +77,18 @@ function AnketaForm({ token, info, onSent }: { token: string; info: AnketaOpen; 
   async function onCropped(blob: Blob) {
     setCropSrc(null)
     setBusy("photo"); setError("")
-    try { setPhotoPath(await uploadAnketaPhoto(token, blob)) } catch (e) { setError((e as Error).message) } finally { setBusy("") }
+    try { setPhotoPath(await uploadAnketaPhoto(info.link_id, blob)) } catch (e) { setError((e as Error).message) } finally { setBusy("") }
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
     const sent = { ...info, ...values, photo_path: photoPath }
-    if (honeypot.current?.value) { onSent(sent); return }   // a bot filled the hidden field: pretend, send nothing
+    if (honeypot.current?.value) { onSent(sent, draft); return }   // a bot filled the hidden field: pretend, send nothing
     setBusy("send")
     try {
-      await submitAnketa(token, { ...values, photo_path: photoPath, ...(universal ? { phone } : {}) })
-      onSent(sent)
+      const id = await submitAnketa(token, { ...values, photo_path: photoPath, ...(universal ? { phone, replace_id: draft.lastId } : {}) })
+      onSent(sent, { phone, lastId: id })
     } catch (err) { setError((err as Error).message) } finally { setBusy("") }
   }
 
@@ -122,7 +125,7 @@ function AnketaForm({ token, info, onSent }: { token: string; info: AnketaOpen; 
       )}
 
       {/* Hidden from people; bots fill every field */}
-      <input ref={honeypot} name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] size-px opacity-0" />
+      <input ref={honeypot} name="fy_hp_field" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] size-px opacity-0" />
 
       {error && <div role="alert" className="px-3.5 py-2.5 bg-danger-soft rounded-control text-sm text-danger-text font-medium">{error}</div>}
 

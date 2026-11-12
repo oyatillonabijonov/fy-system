@@ -27,22 +27,31 @@ export function AnketaLinkButton({ clientId, clientName, optOut }: { clientId: s
   const canSms = hasAccess("sms") || hasAccess("sotuv-crmn")
   const row = "w-full h-10 px-3 flex items-center gap-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover disabled:opacity-40"
 
+  // The link is fetched when the menu opens, so "Nusxalash" writes it inside the tap itself —
+  // iOS Safari refuses clipboard writes that come after a network round-trip
+  function toggle() {
+    if (!open && !link.data && !link.isPending) link.mutate(clientId)
+    setOpen(!open)
+  }
   function copy() {
+    const url = link.data
     setOpen(false)
-    link.mutate(clientId, {
-      onSuccess: (url) => void navigator.clipboard.writeText(url).then(() => toast.success("Anketa havolasi nusxalandi", "Mijozga Telegram yoki SMS orqali yuboring")),
-    })
+    if (!url) return
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Anketa havolasi nusxalandi", "Mijozga Telegram yoki SMS orqali yuboring"),
+      () => toast.info("Havolani qo'lda nusxalang", url),
+    )
   }
 
   return (
     <div ref={box} className="relative">
-      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open} disabled={link.isPending}
+      <button type="button" onClick={toggle} aria-haspopup="menu" aria-expanded={open}
         className="h-8 px-3 inline-flex items-center gap-1.5 rounded-full bg-surface-sunken text-sm font-medium text-ink whitespace-nowrap hover:bg-surface-sunken-hover disabled:opacity-50">
         <IdentificationCard size={16} />Anketa havolasi
       </button>
       {open && (
         <div role="menu" className="absolute left-0 top-full mt-1 z-20 w-56 p-1 rounded-menu bg-surface border border-line">
-          <button role="menuitem" type="button" className={row} onClick={copy}><Copy size={18} />Nusxalash</button>
+          <button role="menuitem" type="button" className={row} onClick={copy} disabled={!link.data}><Copy size={18} />{link.isPending ? "Tayyorlanmoqda…" : "Nusxalash"}</button>
           {canSms && <button role="menuitem" type="button" className={row} onClick={() => { setOpen(false); setSms(true) }}><ChatCircleText size={18} />SMS yuborish</button>}
         </div>
       )}

@@ -18,5 +18,8 @@ const ERRORS: Record<string, string> = {
   anketa_phone: "Telefon raqamini to'g'ri yozing, masalan 90 123 45 67.",
   anketa_photo: "Rasm yuklanmadi, qaytadan tanlang.",
   anketa_reviewed: "Bu anketa allaqachon ko'rib chiqilgan.",
+  anketa_gone: "Mijoz anketani qayta yubordi — ro'yxatni yangilab, yangisini oching.",
 }
-export const anketaError = (code: string) => ERRORS[code] ?? "Yuborilmadi. Internetni tekshirib, qaytadan urinib ko'ring."
+/** Uzbek text for a database error code; `staff` shows anything unknown as it is (a client gets a generic line) */
+export const anketaError = (code: string, staff = false) =>
+  ERRORS[code] ?? (staff ? code : "Yuborilmadi. Internetni tekshirib, qaytadan urinib ko'ring.")

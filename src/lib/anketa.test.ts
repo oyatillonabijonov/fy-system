@@ -10,4 +10,9 @@ describe("anketa", () => {
     expect(anketaError("anketa_invalid")).toContain("eskirgan")
     expect(anketaError("boom")).toContain("Yuborilmadi")
   })
+  test("anketaError: a row the client resent meanwhile; staff see unknown errors as they are", () => {
+    expect(anketaError("anketa_gone")).toContain("qayta yubordi")
+    expect(anketaError("forbidden", true)).toBe("forbidden")
+    expect(anketaError("anketa_name", true)).toContain("2–100")
+  })
 })
