@@ -63,3 +63,21 @@ describe("unexpected values never throw", () => {
     expect(scoreLead(form("Biznes egasi / asoschi", "", "ООО Ромашка"))).toBe(4)
   })
 })
+
+describe("site options as of 2026-11-12", () => {
+  test("'Mutaxassis / xodim' and 'Bilmayman' score 0; real ones still count", () => {
+    expect(scoreLead(form("Mutaxassis / xodim", "Bilmayman", "Savdo"))).toBe(1)
+    expect(scoreLead(form("Direktor / top-menejer", "Bilmayman", "Savdo"))).toBe(3)
+    expect(scoreLead(form("Biznes egasi / asoschi", "1 mlrd so‘mdan yuqori", "Savdo"))).toBe(7)
+  })
+  test("no business yet: turnover comes as 'yo‘q' — 0 points and never qualified", () => {
+    const f = form("Hozircha biznesim yo‘q", "yo‘q", "Savdo")
+    expect(scoreLead(f)).toBe(1)
+    expect(noBusiness(f)).toBe(true)
+  })
+  test("the site's own ball / qualified are kept aside, never counted as answers", () => {
+    const { fields, capi } = splitCapi({ name: "A", Lavozim: "Biznes egasi / asoschi", ball: "7", qualified: "true" })
+    expect(fields).toEqual({ name: "A", Lavozim: "Biznes egasi / asoschi" })
+    expect(capi).toEqual({ site_score: "7", site_qualified: "true" })
+  })
+})
