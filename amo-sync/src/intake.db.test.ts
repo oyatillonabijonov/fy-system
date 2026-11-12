@@ -2,7 +2,7 @@
 // Every case asks the same question first: is the lead kept, and does the site get ok:true?
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { testSql as sql } from "./mcp/testdb"
-import { handleSiteLead } from "./intake"
+import { handleFbLead, handleSiteLead } from "./intake"
 
 const TOKEN = "t-intake-db"
 const [pipeA, pipeB, stageA, stageB] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
@@ -36,7 +36,7 @@ afterAll(async () => {
   await sql`delete from crm_leads where pipeline_id in (${pipeA}, ${pipeB})`
   await sql`delete from crm_pipelines where id in (${pipeA}, ${pipeB})`
   await sql`delete from clients where phone like '+99890999%'`
-  await sql`delete from webhook_logs where source = 'sayt'`
+  await sql`delete from webhook_logs where source in ('sayt', 'fb-lead')`
 })
 
 describe("lead is kept and the site hears ok", () => {
@@ -134,5 +134,56 @@ describe("refused requests keep their body", () => {
     const [log] = await sql!<{ error: string; raw_body: { _raw: string } }[]>`select error, raw_body from webhook_logs where raw_body->>'_raw' like '%909990008%'`
     expect(log.raw_body._raw).toContain("Buzuq")
     expect(log.error).toBeTruthy()
+  })
+})
+
+// Facebook / Instagram lead forms through Make.com (2026-11-13)
+const FB_SECRET = "s-fb-test"
+const fb = (body: unknown, secret: string | null = FB_SECRET) => {
+  const url = new URL(`https://api.test/hooks/fb-lead?voronka=${pipeB}`)
+  return handleFbLead(new Request(url, {
+    method: "POST", body: JSON.stringify(body),
+    headers: { "content-type": "application/json", ...(secret === null ? {} : { "x-fy-secret": secret }) },
+  }), sql!, url)
+}
+const fbLead = (phone: string, leadgen: string) => ({
+  name: "TEST Fb", phone, company: "Savdo MChJ", role: "Biznes egasi / asoschi", turnover: "500 mln – 1 mlrd so‘m",
+  leadgen_id: leadgen, ad_id: "120200001", ad_name: "Nonushta video", adset_name: "Toshkent 25-45", campaign_name: "BN11 lid", platform: "ig",
+})
+
+describe("fb-lead (Make.com)", () => {
+  run("no or wrong secret: 401, no bitim, the refusal is logged", async () => {
+    process.env.FB_LEAD_SECRET = FB_SECRET
+    expect((await fb(fbLead("+998909990201", "lg-1"), null)).status).toBe(401)
+    expect((await fb(fbLead("+998909990201", "lg-1"), "wrong")).status).toBe(401)
+    expect(await leadsOf("+998909990201")).toHaveLength(0)
+    const [log] = await sql!<{ error: string }[]>`select error from webhook_logs where source = 'fb-lead' and raw_body::text like '%909990201%' limit 1`
+    expect(log?.error).toBeTruthy()
+  })
+
+  run("a lead: bitim in the given voronka like a site lead — form answers, UTM + ad_id, score", async () => {
+    process.env.FB_LEAD_SECRET = FB_SECRET
+    const res = await fb(fbLead("+998909990202", "lg-2"))
+    const json = await res.json() as { ok: boolean; lead_id: string }
+    const [l] = await leadsOf("+998909990202")
+    expect(json).toEqual({ ok: true, lead_id: l.id })
+    expect(l.pipeline_id).toBe(pipeB)
+    expect(l.fields).toEqual([{ k: "Kompaniya", v: "Savdo MChJ" }, { k: "Lavozim", v: "Biznes egasi / asoschi" }, { k: "Oylik aylanma", v: "500 mln – 1 mlrd so‘m" }])
+    expect(l.lead_score).toBe(6)
+    const [{ attribution }] = await sql!<{ attribution: Record<string, string> }[]>`select attribution from crm_leads where id = ${l.id}`
+    expect(attribution).toEqual({ utm_source: "ig", utm_medium: "form", utm_campaign: "BN11 lid", utm_term: "Toshkent 25-45", utm_content: "Nonushta video", ad_id: "120200001", leadgen_id: "lg-2" })
+    expect(await metaOf(l.id)).toHaveLength(0)   // no site pixel event behind it, so nothing for the Conversions API
+  })
+
+  run("the same leadgen_id again: 200 with the same lead_id, no second bitim, no feed row", async () => {
+    process.env.FB_LEAD_SECRET = FB_SECRET
+    const first = await (await fb(fbLead("+998909990203", "lg-3"))).json() as { lead_id: string }
+    const notes = () => sql!<{ n: number }[]>`select count(*)::int as n from crm_notes where lead_id = ${first.lead_id}`.then(([r]) => r.n)
+    const before = await notes()
+    const again = await fb(fbLead("+998909990203", "lg-3"))
+    expect(again.status).toBe(200)
+    expect(await again.json()).toEqual({ ok: true, lead_id: first.lead_id, duplicate: true })
+    expect(await leadsOf("+998909990203")).toHaveLength(1)
+    expect(await notes()).toBe(before)
   })
 })
