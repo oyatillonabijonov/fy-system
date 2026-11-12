@@ -81,3 +81,16 @@ describe("site options as of 2026-11-12", () => {
     expect(capi).toEqual({ site_score: "7", site_qualified: "true" })
   })
 })
+
+describe("Facebook lead-form options (2026-11-13)", () => {
+  test("owner / investor = 3, rahbar yoki direktor = 2, mutaxassis yoki xodim = 0", () => {
+    expect(scoreLead(form("Biznes egasi / investor", "1 mlrd so'mdan yuqori", "Rizq choy"))).toBe(7)
+    expect(scoreLead(form("Rahbar yoki direktor", "1 mlrd so'mdan yuqori", "Metal City"))).toBe(6)
+    expect(scoreLead(form("Mutaxassis yoki xodim", "1 mlrd so'mdan yuqori", "Agrobank"))).toBe(4)
+    expect(scoreLead(form("Biznes egasi / investor", "100 mln so'mgacha", "Ai"))).toBe(3)
+  })
+  test("planning to open a business = no business yet: never qualified (variant 1)", () => {
+    expect(noBusiness(form("Biznes ochishni rejalashtiryapman", "100 mln so'mgacha", "Marketing"))).toBe(true)
+    expect(scoreLead(form("Biznes ochishni rejalashtiryapman", "100 mln so'mgacha", "Marketing"))).toBe(1)
+  })
+})
