@@ -13,7 +13,11 @@ export function norm(s: string): string {
 }
 const loose = (s: string) => norm(s).replace(/\s*([/-])\s*/g, "$1")
 
-const POSITION: Record<string, number> = { "biznes egasi/asoschi": 3, "direktor/top-menejer": 2, "bo'lim rahbari": 1 }
+// site options + the Facebook lead form's own wording (2026-11-13)
+const POSITION: Record<string, number> = {
+  "biznes egasi/asoschi": 3, "direktor/top-menejer": 2, "bo'lim rahbari": 1,
+  "biznes egasi/investor": 3, "rahbar yoki direktor": 2,
+}
 const TURNOVER: Record<string, number> = { "1 mlrd so'mdan yuqori": 3, "500 mln-1 mlrd so'm": 2, "100-500 mln so'm": 1 }
 const NOT_A_COMPANY = new Set(["yo'q", "yoq", "нет", "-", "talaba", "student", "o'quvchi", "ishsiz", "test"])
 
@@ -34,7 +38,8 @@ export function scoreLead(fields: Record<string, string>): number | null {
 
 /** Agreed with the owner (variant 1): an applicant who says they have no business is never qualified, whatever the score */
 export function noBusiness(fields: Record<string, string>): boolean {
-  return [field(fields, "lavozim"), field(fields, "oylik aylanma")].some((v) => v !== undefined && /biznesim yo'q/.test(norm(v)))
+  // site: "Hali/Hozircha biznesim yo'q"; Facebook form: "Biznes ochishni rejalashtiryapman"
+  return [field(fields, "lavozim"), field(fields, "oylik aylanma")].some((v) => v !== undefined && /biznesim yo'q|biznes ochishni rejalashtir/.test(norm(v)))
 }
 
 export function splitCapi(fields: Record<string, string>): { fields: Record<string, string>; capi: Capi } {
