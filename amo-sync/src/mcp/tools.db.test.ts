@@ -12,6 +12,7 @@ const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
 const created: string[] = []
 const [eventId, clientId, partId] = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()]
 const callUuid = `t5-${crypto.randomUUID()}`
+const pipeId = crypto.randomUUID(), stageNew = crypto.randomUUID(), stageLost = crypto.randomUUID(), leadA = crypto.randomUUID(), leadB = crypto.randomUUID()
 let admin = "", sellerA = "", sellerB = "", dashOnly = ""
 
 beforeAll(async () => {
@@ -27,11 +28,22 @@ beforeAll(async () => {
   await testSql`insert into public.crm_calls (uuid, direction, phone, staff_id, client_id, started_at, duration, talk_time)
     values (${callUuid}, 'in', '+998900000555', ${sellerA}, ${clientId}, now() - interval '1 minute', 60, 50)`
   await testSql`insert into public.crm_call_analyses (call_uuid, status, summary, outcome, score, transcript) values (${callUuid}, 'done', 'Fixture summary', 'follow_up', 70, '[]'::jsonb)`
+  await testSql`insert into public.crm_pipelines (id, name) values (${pipeId}, 'Fixture voronka')`
+  await testSql`insert into public.crm_stages (id, pipeline_id, name, sort_order, is_won, is_lost) values (${stageNew}, ${pipeId}, 'Yangi', 0, false, false), (${stageLost}, ${pipeId}, 'Yutqazildi', 1, false, true)`
+  await testSql`insert into public.crm_leads (id, pipeline_id, stage_id, name, responsible_user_id, created_at, fields, attribution, lead_score, qualified)
+    values (${leadA}, ${pipeId}, ${stageNew}, 'Lid Bir', ${sellerA}, '2031-03-10 12:00+05',
+      '[{"k":"Lavozim","v":"Asoschi"},{"k":"Oylik aylanma","v":"50 mln"},{"k":"Qo''shimcha telefon","v":"+998901112233"}]'::jsonb,
+      '{"utm_source":"instagram","utm_medium":"cpc","utm_campaign":"nonushta","utm_term":"t","utm_content":"kreativ-7","ad_id":"ad-9"}'::jsonb, 6, true)`
+  await testSql`insert into public.crm_leads (id, pipeline_id, stage_id, name, created_at, loss_reason) values (${leadB}, ${pipeId}, ${stageLost}, '+998 90 111 22 33', '2031-03-11 12:00+05', 'Narx')`
+  await testSql`insert into public.crm_notes (lead_id, kind, text, created_at) values (${leadA}, 'note', 'eski izoh', now() - interval '1 hour'), (${leadA}, 'note', 'oxirgi izoh', now())`
+  await testSql`update public.crm_calls set lead_id = ${leadA} where uuid = ${callUuid}`
 })
 afterAll(async () => {
   await asUser.end()
   if (testSql) {
     await testSql`delete from public.crm_calls where uuid = ${callUuid}`
+    await testSql`delete from public.crm_leads where pipeline_id = ${pipeId}`
+    await testSql`delete from public.crm_pipelines where id = ${pipeId}`
     await testSql`delete from public.payments where participant_id = ${partId}`
     await testSql`delete from public.event_participants where id = ${partId}`
     await testSql`delete from public.clients where id = ${clientId}`
@@ -46,14 +58,14 @@ afterAll(async () => {
 
 const names = (uid: string) => asUser(uid, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))
 
-const ADMIN_TOOLS = ["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis", "finance_summary", "debtors", "event_results",
+const ADMIN_TOOLS = ["whoami", "reference", "sales_stats", "leads_list", "call_analysis_stats", "call_analyses", "call_analysis", "finance_summary", "debtors", "event_results",
   "events", "event", "find_clients", "create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline", "export_stickers", "export_signs"]
 
-test.skipIf(!testSql)("a seller gets six tools, an admin all twenty, a Tadbirlar-only user twelve", async () => {
-  expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "call_analysis_stats", "call_analyses", "call_analysis"])
+test.skipIf(!testSql)("a seller gets seven tools, an admin all twenty-one, a Tadbirlar-only user twelve", async () => {
+  expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "leads_list", "call_analysis_stats", "call_analyses", "call_analysis"])
   expect(await names(admin)).toEqual(ADMIN_TOOLS)
   const ev = await staff(testSql!, { modules: ["tadbirlar"] }); created.push(ev)
-  expect(await names(ev)).toEqual(["whoami", "reference", ...ADMIN_TOOLS.slice(9).filter((n) => n !== "link_pipeline")])
+  expect(await names(ev)).toEqual(["whoami", "reference", ...ADMIN_TOOLS.slice(10).filter((n) => n !== "link_pipeline")])
   expect(await names(ev)).toHaveLength(12)
 })
 
@@ -61,7 +73,7 @@ test.skipIf(!testSql)("tools/list hints: readers read-only, the six writers not,
   const tok = (await openConnection(testSql!, admin, "test-client")).access_token
   const j = (await (await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })).json()) as { result: { tools: { name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }[] } }
   const writers = ["create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline"]
-  expect(j.result.tools).toHaveLength(20)
+  expect(j.result.tools).toHaveLength(21)
   for (const t of j.result.tools) {
     expect(t.annotations.readOnlyHint).toBe(!writers.includes(t.name))
     expect(t.annotations.destructiveHint).toBe(t.name === "delete_event")
@@ -94,7 +106,10 @@ test.skipIf(!testSql)("finance without the module is an explicit error naming it
 test.skipIf(!testSql)("sales_stats returns the dashboard keys for an admin; a user without the module is refused", async () => {
   const r = await callTool(asUser, admin, "sales_stats", { from: "2026-10-01", to: "2026-10-31" })
   expect(r.ok).toBe(true)
-  if (r.ok) for (const k of ["kpi", "funnel", "by_source", "sellers", "calls", "attention"]) expect(r.data).toHaveProperty(k)
+  if (r.ok) for (const k of ["kpi", "funnel", "by_source", "sellers", "calls", "attention", "lost_reasons"]) expect(r.data).toHaveProperty(k)
+  const today = new Date().toISOString().slice(0, 10)
+  const lost = await callTool(asUser, admin, "sales_stats", { from: "2020-01-01", to: today.replace(/^\d{4}/, "2100"), pipeline_id: pipeId })
+  expect(lost.ok && (lost.data as { lost_reasons: unknown }).lost_reasons).toEqual([{ reason: "Narx", count: 1 }])
   const noModule = await staff(testSql!, { modules: ["sotuv-crmn"] }); created.push(noModule)
   const d = await callTool(asUser, noModule, "sales_stats", { from: "2026-10-01", to: "2026-10-31" })
   expect(d.ok).toBe(false)
@@ -131,6 +146,7 @@ test.skipIf(!testSql)("call_analyses lists the analysed call with names; call_an
   expect(row?.score).toBe(70)
   expect(row?.client).toBe("Fixture client")
   expect(row?.seller).toContain("Fixture")
+  expect(row).toMatchObject({ lead_id: leadA, utm_content: "kreativ-7" })
   expect((await callTool(asUser, sellerA, "call_analysis_stats", { from: "2020-01-01", to: "2100-01-01" })).ok).toBe(true)
 })
 
@@ -190,7 +206,7 @@ test.skipIf(!testSql)("handleMcp: tools/list shows the caller's six tools; whoam
   expect(list.status).toBe(200)
   expect(list.headers.get("cache-control")).toBe("no-store")
   const listed = (await list.json()) as { result: { tools: { name: string; annotations?: { readOnlyHint?: boolean } }[] } }
-  expect(listed.result.tools.map((t) => t.name).sort()).toEqual(["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"])
+  expect(listed.result.tools.map((t) => t.name).sort()).toEqual(["call_analyses", "call_analysis", "call_analysis_stats", "leads_list", "reference", "sales_stats", "whoami"])
   expect(listed.result.tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true)
   expect(listed.result.tools.some((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint === true)).toBe(false)
 
@@ -268,9 +284,9 @@ const modern = (token: string, method: string, params: Record<string, unknown> =
   body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: { ...params, _meta: META } }),
 }), testSql!, asUser)
 const toolNames = async (r: Response) => ((await r.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort()
-const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "reference", "sales_stats", "whoami"]
+const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "leads_list", "reference", "sales_stats", "whoami"]
 
-test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin twenty, back to back), JSON and no-store", async () => {
+test.skipIf(!testSql)("2026 era: tools/list is per caller (seller seven, admin twenty-one, back to back), JSON and no-store", async () => {
   const a = (await openConnection(testSql!, sellerA, "test-client")).access_token
   const adm = (await openConnection(testSql!, admin, "test-client")).access_token
   const r1 = await modern(a, "tools/list")
@@ -278,7 +294,7 @@ test.skipIf(!testSql)("2026 era: tools/list is per caller (seller six, admin twe
   expect(r1.headers.get("content-type")).toContain("application/json")
   expect(r1.headers.get("cache-control")).toBe("no-store")
   expect(await toolNames(r1)).toEqual(SELLER_TOOLS)
-  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(20)
+  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(21)
   expect(await toolNames(await modern(a, "tools/list"))).toEqual(SELLER_TOOLS)
 })
 
@@ -381,4 +397,29 @@ test.skipIf(!testSql)("a non-writer tool that tries to INSERT is refused as read
     if (!r.ok) expect(r.error).toMatch(/read-only/)
     expect(await testSql!`select id from public.events where name = ${name}`).toHaveLength(0)
   })
+})
+
+test.skipIf(!testSql)("leads_list: the period's bitimlar with form answers, score, UTM, reason and the last note — and no phone anywhere", async () => {
+  const r = await callTool(asUser, sellerA, "leads_list", { from: "2031-03-10", to: "2031-03-11", pipeline_id: pipeId })
+  expect(r.ok).toBe(true)
+  if (!r.ok) return
+  const d = r.data as { total: number; leads: Record<string, unknown>[] }
+  expect(d.total).toBe(2)
+  expect(d.leads.map((l) => l.lead_id)).toEqual([leadB, leadA])   // newest first
+  expect(d.leads[1]).toMatchObject({ name: "Lid Bir", pipeline: "Fixture voronka", stage: "Yangi", status: "open", score: 6, qualified: true,
+    form: [{ k: "Lavozim", v: "Asoschi" }, { k: "Oylik aylanma", v: "50 mln" }],
+    utm_source: "instagram", utm_medium: "cpc", utm_campaign: "nonushta", utm_term: "t", utm_content: "kreativ-7", ad_id: "ad-9", loss_reason: null, last_note: "oxirgi izoh" })
+  expect(String(d.leads[1]!.seller)).toContain("Fixture")
+  expect(d.leads[0]).toMatchObject({ name: null, status: "lost", loss_reason: "Narx", score: null, qualified: null, utm_content: null, form: [], last_note: null })
+  expect(JSON.stringify(d)).not.toMatch(/998|111 22 33/)
+  expect(d.leads[0]).not.toHaveProperty("total")
+})
+
+test.skipIf(!testSql)("leads_list: the Tashkent day bounds the period, pages by limit / offset, and needs the Sotuv module", async () => {
+  const day = await callTool(asUser, admin, "leads_list", { from: "2031-03-11", to: "2031-03-11", pipeline_id: pipeId })
+  expect(day.ok && (day.data as { leads: { lead_id: string }[] }).leads.map((l) => l.lead_id)).toEqual([leadB])
+  const page = await callTool(asUser, admin, "leads_list", { from: "2031-03-10", to: "2031-03-11", pipeline_id: pipeId, limit: 1, offset: 1 })
+  expect(page.ok && page.data).toMatchObject({ total: 2, leads: [{ lead_id: leadA }] })
+  const no = await callTool(asUser, dashOnly, "leads_list", { from: "2031-03-10", to: "2031-03-11" })
+  expect(no).toEqual({ ok: false, error: "«Sotuv bo'limi» bo'limiga ruxsatingiz yo'q" })
 })
