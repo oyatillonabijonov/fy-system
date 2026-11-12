@@ -38,3 +38,9 @@ test("toPattern: what Eskiz gets to approve — {ism} one word, other blanks up 
   expect(toPattern("Salom, {ism}! {sana} kuni")).toBe("Salom, %w! %w{1,10} kuni")
   expect(fitsTemplate(fillTemplate("Salom, {ism}! {sana} kuni", { sana: "28-noyabr, shanba" }, "Ali"), [toPattern("Salom, {ism}! {sana} kuni")])).toBe(true)
 })
+
+test("{havola}: the anketa link blank (097) is an ordinary blank and a filled URL fits its pattern", () => {
+  const t = "{ism}, ma'lumotlaringizni to'ldiring: {havola}"
+  expect(blanks(t)).toEqual(["havola"])
+  expect(fitsTemplate(fillTemplate(t, { havola: "https://app.fikryetakchilari.uz/anketa/3f9c0a1b2c3d4e5f60718293a4b5c6d7" }, "Ali Valiyev"), [toPattern(t)])).toBe(true)
+})

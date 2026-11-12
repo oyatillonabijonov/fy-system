@@ -26,6 +26,7 @@ import { isSeller } from "./lib/supabase/queries/auth"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Sms } from "./components/pages/Sms"
 import { Login } from "./components/pages/Login"
+import { Anketa } from "./components/pages/Anketa"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { ThemeProvider } from "./context/ThemeContext"
 import { motion, AnimatePresence } from "framer-motion"
@@ -191,6 +192,7 @@ function App() {
     <ThemeProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/anketa/:token" element={<Anketa />} />
 
         {/* All routes below sit inside ProtectedRoute → AppShell */}
         <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>

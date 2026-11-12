@@ -1,4 +1,5 @@
-import { useId, useState } from "react"
+import { useEffect, useId, useState } from "react"
+import QRCode from "qrcode"
 import { motion } from "framer-motion"
 import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown } from "@phosphor-icons/react"
 import { Fab } from "@/components/ui/Fab"
@@ -15,6 +16,8 @@ import { Switch } from "@/components/ui/Switch"
 import { GROUP_ROLES, leadHookUrl, type GroupRole, type TelegramGroup, type LeadSource } from "@/lib/supabase/queries/integrations"
 import { confirmAction } from "@/lib/confirm"
 import { useTaskProjects } from "@/hooks/useTasks"
+import { useRegenerateUniversalAnketa, useUniversalAnketaLink } from "@/hooks/useAnketa"
+import { Sheet } from "@/components/ui/Sheet"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
@@ -29,7 +32,7 @@ const isGone = (g: TelegramGroup) => g.bot_status === "left" || g.bot_status ===
 
 /** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's jobs across */
 export function Integratsiyalar() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, hasAccess } = useAuth()
   const { data: groups = [], isLoading, error } = useTelegramGroups()
   const { page, setPage, pageCount, pageItems } = usePaged(groups)
   const [openId, setOpenId] = useState<number | null>(null)
@@ -94,6 +97,7 @@ export function Integratsiyalar() {
 
       {isAdmin && <Telephony />}
       {isAdmin && <LeadSources />}
+      {(hasAccess("mijozlar") || hasAccess("sotuv-crmn")) && <UniversalAnketa />}
 
       {open && <GroupModal group={open} onClose={() => setOpenId(null)} />}
       {adding && <AddModal onClose={() => setAdding(false)} />}
@@ -255,6 +259,46 @@ function LeadSources() {
           </tbody>
         </table>
       </div>
+    </section>
+  )
+}
+
+/** 097: one anketa link for people not in the base yet — printed as a QR at events */
+function UniversalAnketa() {
+  const { isAdmin } = useAuth()
+  const { data: url, isLoading, error } = useUniversalAnketaLink(true)
+  const regenerate = useRegenerateUniversalAnketa()
+  const [qr, setQr] = useState<string | null>(null)
+  const [showQr, setShowQr] = useState(false)
+  useEffect(() => { if (url) void QRCode.toDataURL(url, { width: 512, margin: 2 }).then(setQr) }, [url])
+
+  async function onRegenerate() {
+    if (await confirmAction({ title: "Yangi havola yaratish", message: "Eski havola va chop etilgan QR kod ishlamay qoladi.", confirmLabel: "Yangilash" })) regenerate.mutate()
+  }
+
+  return (
+    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
+      <div className="flex flex-col gap-1 max-lg:px-1">
+        <h2 className="text-md font-semibold text-ink max-lg:text-base">Umumiy anketa havolasi</h2>
+        <p className="text-sm text-ink-muted">Bazada hali yo'q odamlar uchun (masalan, tadbirda QR kod): odam ma'lumotlari va telefonini o'zi yozadi, anketa Mijozlar → Anketalar'ga tushadi. Bor mijozga esa uning kartochkasidagi "Anketa havolasi" tugmasidan shaxsiy havola yuboring.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 p-4 rounded-surface bg-surface-sunken min-w-0">
+        {isLoading ? <span className="text-base text-ink-muted">Yuklanmoqda…</span>
+          : error ? <span className="text-base text-danger-text">{error.message}</span>
+          : url && <>
+            <code className="min-w-0 flex-1 truncate text-sm text-ink-muted max-lg:basis-full">{url}</code>
+            <CopyBtn value={url} phoneLabel="Nusxalash" />
+            <button type="button" onClick={() => setShowQr(true)} disabled={!qr} className={softBtn}>QR kod</button>
+            {isAdmin && <button type="button" onClick={onRegenerate} disabled={regenerate.isPending} className={softBtn}>Yangilash</button>}
+          </>}
+      </div>
+      <Sheet open={showQr && !!qr} onClose={() => setShowQr(false)} title="Anketa QR kodi">
+        <div className="flex flex-col items-center gap-3">
+          {qr && <img src={qr} alt="Anketa havolasining QR kodi" className="w-64 h-64 rounded-control bg-white" />}
+          <p className="text-sm text-ink-muted text-center">Telefon kamerasi bilan skanerlansa, anketa ochiladi.</p>
+          {qr && <a href={qr} download="anketa-qr.png" className={primaryBtn}>Yuklab olish (PNG)</a>}
+        </div>
+      </Sheet>
     </section>
   )
 }

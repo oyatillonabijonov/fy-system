@@ -1,3 +1,6 @@
+import { AnketaLinkButton } from "@/components/anketa/AnketaLinkButton"
+import { AnketaPending, AnketaReview } from "@/components/anketa/AnketaReview"
+import { useAnketaSubmissions } from "@/hooks/useAnketa"
 import {
     Users,
     UserPlus,
@@ -26,7 +29,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useMemo, useEffect, useRef, useId } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { findClientByPhone } from "@/lib/supabase/queries/sotuv"
 import { ImageCropModal } from "@/components/ui/ImageCropModal"
 import { useDialog } from "@/hooks/useDialog"
@@ -192,6 +195,10 @@ export function Mijozlar() {
     const journeyQuery = useClientJourney(selectedCustomer?.id ?? null)
     const expiryQuery = useCashbackNextExpiry(selectedCustomer?.id ?? null)
     const { canEdit, hasAccess } = useAuth()
+    // 097: Mijozlar ↔ Anketalar (what clients sent through their links)
+    const [params, setParams] = useSearchParams()
+    const anketaView = params.get('view') === 'anketalar' && hasAccess('mijozlar')
+    const { data: pendingAnketas = [] } = useAnketaSubmissions('pending')
     const [adjustOpen, setAdjustOpen] = useState(false)
 
     // Inline edit state for sidebar
@@ -663,18 +670,31 @@ export function Mijozlar() {
 
     return (
         <div className="flex flex-col gap-6 min-h-full pb-10 max-lg:pb-[calc(var(--tabbar-h)+88px)] animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
-            {loading && (
+            {hasAccess('mijozlar') && (
+                <div role="tablist" aria-label="Bo'lim" className="inline-flex self-start gap-1 p-1 rounded-full bg-surface-sunken">
+                    {([[false, "Mijozlar"], [true, "Anketalar"]] as const).map(([v, label]) => (
+                        <button key={label} type="button" role="tab" aria-selected={anketaView === v}
+                            onClick={() => setParams(v ? { view: 'anketalar' } : {}, { replace: true })}
+                            className={`h-8 px-3.5 inline-flex items-center gap-1.5 rounded-full text-sm font-medium whitespace-nowrap ${anketaView === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>
+                            {label}
+                            {v && pendingAnketas.length > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-danger text-white text-xs font-semibold tabular-nums inline-flex items-center justify-center">{pendingAnketas.length}</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+            {anketaView && <AnketaReview />}
+            {!anketaView && loading && (
                 <div className="flex items-center justify-center py-20">
                     <ThinkingOrb state="searching" size={64} theme="light" />
                 </div>
             )}
-            {error && !loading && (
+            {!anketaView && error && !loading && (
                 <div className="flex flex-col items-center justify-center py-20 gap-2">
                     <span className="text-base text-danger-text font-medium">{error}</span>
                     <button onClick={() => fetchCustomers()} className="text-base text-ink font-bold underline">Qayta urinish</button>
                 </div>
             )}
-            {!loading && !error && <>
+            {!anketaView && !loading && !error && <>
             {/* Stats */}
             <div className="max-lg:hidden grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
@@ -908,6 +928,11 @@ export function Mijozlar() {
                                     <WarningCircle size={16} className="shrink-0" />Yetishmaydi: {missingInfo(selectedCustomer).join(", ")}
                                 </div>
                             )}
+                            {/* 097: the client fills in their own card through a link */}
+                            <div className="flex flex-wrap items-center justify-center gap-2 px-5 pt-3">
+                                <AnketaLinkButton clientId={selectedCustomer.id} clientName={selectedCustomer.name} optOut={selectedCustomer.smsOptOut} />
+                                <AnketaPending clientId={selectedCustomer.id} />
+                            </div>
                             {/* AVATAR + INFO */}
                             <div className="max-lg:hidden relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}
