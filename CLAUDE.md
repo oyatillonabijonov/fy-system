@@ -218,7 +218,7 @@ After changing any secret, update Doppler — local `.env.local` is a convenienc
 
 **The active `.env.local` points at production** (`VITE_SUPABASE_URL=https://api.fikryetakchilari.uz`). ⚠️ Therefore `bun run dev` on localhost reads/writes the **live Oracle DB** — there is no local DB by default. (`.env.local.local` / `bun run dev:local` would use a local Supabase stack, but none is running for this project; port 54322 locally belongs to an unrelated project.)
 
-**Frontend deploy:** push to `main` on GitHub → Coolify auto-redeploys. `VITE_*` are embedded at **build time** → set them as Coolify *build* variables, not just runtime env.
+**Frontend deploy:** push to `main` on GitHub → Coolify auto-redeploys. Open tabs move to the new build by themselves (`src/hooks/useFreshBuild.ts`): when a tab comes back or the route changes, the page re-reads `index.html` (at most once a minute) and reloads if it names another build file — never over an open dialog, a live call, a half-written note or a save on its way; `sessionStorage.fy_reloaded` allows one reload per build. `VITE_*` are embedded at **build time** → set them as Coolify *build* variables, not just runtime env.
 
 **Database deploy is MANUAL and separate.** ⚠️ Coolify does **NOT** apply migrations. Pushing migration files to GitHub changes nothing in the DB. `bun run supabase:migrate` (= `supabase db push`) is linked to a **different** project (`ulbdlkkftbzgafsrprnm.supabase.co`) — **do not use it for Oracle.** Apply migrations to production by hand:
 

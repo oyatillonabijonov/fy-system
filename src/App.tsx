@@ -18,6 +18,7 @@ import { PhoneWidget } from "./components/sotuv/PhoneWidget"
 import { DialSheet } from "./components/sotuv/DialPad"
 import { SalesReminders } from "./components/sotuv/SalesReminders"
 import { LiveSync } from "./components/layout/LiveSync"
+import { useFreshBuild } from "./hooks/useFreshBuild"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { SotuvCalls } from "./components/pages/SotuvCalls"
 import { Bugun } from "./components/pages/Bugun"
@@ -185,6 +186,7 @@ function AppShell() {
 }
 
 function App() {
+  useFreshBuild()
   return (
     <ThemeProvider>
       <Routes>
