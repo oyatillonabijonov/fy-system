@@ -1,7 +1,9 @@
 // Anketalar (097): what clients sent through their links, old → new, approve (staff may fix the text first) or reject.
-import { useState } from "react"
-import { IdentificationCard } from "@phosphor-icons/react"
-import { useAnketaSubmissions, useApproveAnketa, usePendingAnketaFor, useRejectAnketa } from "@/hooks/useAnketa"
+import { useEffect, useRef, useState } from "react"
+import { Copy, IdentificationCard, LinkSimple, QrCode } from "@phosphor-icons/react"
+import { useAnketaSubmissions, useApproveAnketa, usePendingAnketaFor, useRejectAnketa, useUniversalAnketaLink } from "@/hooks/useAnketa"
+import { AnketaQrSheet } from "@/components/anketa/AnketaQr"
+import { toast } from "@/lib/toast"
 import { ANKETA_LABELS, fieldChanges, type AnketaFields } from "@/lib/anketa"
 import { anketaPhotoUrl, type AnketaSubmission } from "@/lib/supabase/queries/anketa"
 import { Sheet } from "@/components/ui/Sheet"
@@ -28,11 +30,14 @@ export function AnketaReview() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label="Anketalar" className="inline-flex self-start gap-1 p-1 rounded-full bg-surface-sunken">
-        {([["pending", "Kutilmoqda"], ["reviewed", "Ko'rib chiqilgan"]] as const).map(([v, label]) => (
-          <button key={v} type="button" role="radio" aria-checked={view === v} onClick={() => setView(v)}
-            className={`h-8 px-3.5 rounded-full text-sm font-medium whitespace-nowrap ${view === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>{label}</button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="radiogroup" aria-label="Anketalar" className="inline-flex gap-1 p-1 rounded-full bg-surface-sunken">
+          {([["pending", "Kutilmoqda"], ["reviewed", "Ko'rib chiqilgan"]] as const).map(([v, label]) => (
+            <button key={v} type="button" role="radio" aria-checked={view === v} onClick={() => setView(v)}
+              className={`h-8 px-3.5 rounded-full text-sm font-medium whitespace-nowrap ${view === v ? "bg-surface text-ink" : "text-ink-muted hover:text-ink"}`}>{label}</button>
+          ))}
+        </div>
+        <BlankAnketaButton />
       </div>
 
       <div className={tbl.scroll}>
@@ -122,6 +127,50 @@ export function AnketaSheet({ submission: s, onClose }: { submission: AnketaSubm
         {pending && <p className="text-xs text-ink-faint">Bo'sh qoldirilgan maydon kartochkadagi qiymatni o'zgartirmaydi.</p>}
       </div>
     </Sheet>
+  )
+}
+
+/** The universal (blank) anketa link for someone not in the base yet — a friend's referral, no form, no phone:
+ *  they fill in everything themselves, the anketa lands here, approval adds them to Mijozlar */
+function BlankAnketaButton() {
+  const { data: url } = useUniversalAnketaLink(true)   // fetched up front: iOS copies only inside the tap
+  const [open, setOpen] = useState(false)
+  const [qr, setQr] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    document.addEventListener("mousedown", close)
+    document.addEventListener("keydown", esc)
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc) }
+  }, [open])
+  const row = "w-full h-10 px-3 flex items-center gap-2.5 rounded-item text-base text-ink hover:bg-mute-ghost-hover disabled:opacity-40"
+
+  function copy() {
+    setOpen(false)
+    if (!url) return
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Bo'sh anketa havolasi nusxalandi", "Yangi odamga Telegram orqali yuboring"),
+      () => toast.info("Havolani qo'lda nusxalang", url),
+    )
+  }
+
+  return (
+    <div ref={box} className="relative">
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="menu" aria-expanded={open}
+        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-sm font-medium whitespace-nowrap hover:bg-accent-hover">
+        <LinkSimple size={16} />Bo'sh anketa havolasi
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-1 z-20 w-72 p-1 rounded-menu bg-surface border border-line">
+          <p className="px-3 py-2 text-sm text-ink-muted">Bazada yo'q odam uchun: ma'lumotlari va telefonini o'zi yozadi, tasdiqlasangiz Mijozlar'ga qo'shiladi.</p>
+          <button role="menuitem" type="button" className={row} onClick={copy} disabled={!url}><Copy size={18} />{url ? "Nusxalash" : "Tayyorlanmoqda…"}</button>
+          <button role="menuitem" type="button" className={row} disabled={!url} onClick={() => { setOpen(false); setQr(true) }}><QrCode size={18} />QR kod</button>
+        </div>
+      )}
+      <AnketaQrSheet url={url} open={qr} onClose={() => setQr(false)} />
+    </div>
   )
 }
 
