@@ -35,7 +35,7 @@ beforeAll(async () => {
       '[{"k":"Lavozim","v":"Asoschi"},{"k":"Oylik aylanma","v":"50 mln"},{"k":"Qo''shimcha telefon","v":"+998901112233"}]'::jsonb,
       '{"utm_source":"instagram","utm_medium":"cpc","utm_campaign":"nonushta","utm_term":"t","utm_content":"kreativ-7","ad_id":"ad-9"}'::jsonb, 6, true)`
   await testSql`insert into public.crm_leads (id, pipeline_id, stage_id, name, created_at, loss_reason) values (${leadB}, ${pipeId}, ${stageLost}, '+998 90 111 22 33', '2031-03-11 12:00+05', 'Narx')`
-  await testSql`insert into public.crm_notes (lead_id, kind, text, created_at) values (${leadA}, 'note', 'eski izoh', now() - interval '1 hour'), (${leadA}, 'note', 'oxirgi izoh', now())`
+  await testSql`insert into public.crm_notes (lead_id, kind, text, created_at) values (${leadA}, 'note', 'eski izoh', now() - interval '1 hour'), (${leadA}, 'note', 'oxirgi izoh: 5 000 000 dedi, +998 90 111-22-33 ga yoki 901112244 ga qo''ng''iroq', now())`
   await testSql`update public.crm_calls set lead_id = ${leadA} where uuid = ${callUuid}`
 })
 afterAll(async () => {
@@ -408,10 +408,10 @@ test.skipIf(!testSql)("leads_list: the period's bitimlar with form answers, scor
   expect(d.leads.map((l) => l.lead_id)).toEqual([leadB, leadA])   // newest first
   expect(d.leads[1]).toMatchObject({ name: "Lid Bir", pipeline: "Fixture voronka", stage: "Yangi", status: "open", score: 6, qualified: true,
     form: [{ k: "Lavozim", v: "Asoschi" }, { k: "Oylik aylanma", v: "50 mln" }],
-    utm_source: "instagram", utm_medium: "cpc", utm_campaign: "nonushta", utm_term: "t", utm_content: "kreativ-7", ad_id: "ad-9", loss_reason: null, last_note: "oxirgi izoh" })
+    utm_source: "instagram", utm_medium: "cpc", utm_campaign: "nonushta", utm_term: "t", utm_content: "kreativ-7", ad_id: "ad-9", loss_reason: null, last_note: "oxirgi izoh: 5 000 000 dedi, [telefon] ga yoki [telefon] ga qo'ng'iroq" })
   expect(String(d.leads[1]!.seller)).toContain("Fixture")
   expect(d.leads[0]).toMatchObject({ name: null, status: "lost", loss_reason: "Narx", score: null, qualified: null, utm_content: null, form: [], last_note: null })
-  expect(JSON.stringify(d)).not.toMatch(/998|111 22 33/)
+  expect(JSON.stringify(d)).not.toMatch(/998|111[ -]?22/)
   expect(d.leads[0]).not.toHaveProperty("total")
 })
 
