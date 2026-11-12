@@ -95,10 +95,11 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-2">
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={!!busy} aria-label="Rasm tanlash"
-          className="relative size-28 rounded-full bg-surface-sunken overflow-hidden flex items-center justify-center text-ink-faint hover:bg-surface-sunken-hover">
-          {photo ? <img src={photo} alt="" className="size-full object-cover" /> : <UserCircle size={64} weight="thin" />}
-          <span className="absolute bottom-1 right-1 size-8 rounded-full bg-accent text-ink-on-accent flex items-center justify-center"><Camera size={16} /></span>
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={!!busy} aria-label="Rasm tanlash" className="relative size-28">
+          <span className="size-full rounded-full bg-surface-sunken overflow-hidden flex items-center justify-center text-ink-faint">
+            {photo ? <img src={photo} alt="" className="size-full object-cover" /> : <UserCircle size={64} weight="thin" />}
+          </span>
+          <span className="absolute -bottom-0.5 -right-0.5 size-9 rounded-full bg-accent text-ink-on-accent border-2 border-surface flex items-center justify-center"><Camera size={16} /></span>
         </button>
         <span className="text-sm text-ink-muted">{busy === "photo" ? "Rasm yuklanmoqda…" : photo ? "Rasmni almashtirish" : "Rasmingizni qo'shing"}</span>
         <input ref={fileRef} type="file" accept="image/*" hidden
