@@ -14,6 +14,7 @@ import { CallScore } from "@/components/sotuv/CallAnalysis"
 import { KIND_ICON, TaskChip, NoTaskChip, DueText, Recording, CallButton, Segmented, StageDot, SECTION, callLabel, chip, secs } from "@/components/sotuv/ui"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { confirmAction } from "@/lib/confirm"
+import { askLossReason, LOSS_REASONS } from "@/lib/lossReason"
 import { useEvents, useParticipants } from "@/hooks/useEvents"
 import { EnrollParticipantModal } from "@/components/events/EnrollParticipantModal"
 import { useMedia } from "@/hooks/useMedia"
@@ -51,7 +52,6 @@ function LeadView({ lead }: { lead: Lead }) {
   const today = tashkentToday()
   const [name, setName] = useState(lead.name)
   const [price, setPrice] = useState(lead.price ? lead.price.toLocaleString("ru-RU") : "")
-  const [reason, setReason] = useState(lead.loss_reason ?? "")
   // A call-created client is named by their phone until the operator types the name
   const rename = useRenameClient()
   const isBareNumber = (v: string) => /^\+?\d[\d\s()-]*$/.test(v)
@@ -66,7 +66,14 @@ function LeadView({ lead }: { lead: Lead }) {
   const pipeline = pipelines.find((p) => p.id === lead.pipeline_id)
   const stage = stages.find((s) => s.id === lead.stage_id)
   const openStages = stages.filter((s) => !s.is_won && !s.is_lost)
-  const save = (patch: Parameters<typeof update.mutate>[0]["patch"]) => update.mutate({ id: lead.id, patch })
+  async function save(patch: Parameters<typeof update.mutate>[0]["patch"]) {
+    if (patch.stage_id && patch.stage_id !== lead.stage_id && stages.find((s) => s.id === patch.stage_id)?.is_lost) {
+      const loss_reason = await askLossReason()
+      if (!loss_reason) return
+      patch = { ...patch, loss_reason }
+    }
+    update.mutate({ id: lead.id, patch })
+  }
 
   async function movePipeline(pid: string) {
     const first = (await getStages(pid)).find((s) => !s.is_won && !s.is_lost)
@@ -79,7 +86,7 @@ function LeadView({ lead }: { lead: Lead }) {
 
   if (mobile) {
     return <LeadMobile lead={lead} stages={stages} pipelines={pipelines} users={users} today={today} isAdmin={isAdmin} save={save} movePipeline={movePipeline} del={del}
-      name={name} setName={setName} price={price} setPrice={setPrice} reason={reason} setReason={setReason}
+      name={name} setName={setName} price={price} setPrice={setPrice}
       clientName={clientName} setClientName={setClientName} saveClientName={saveClientName} />
   }
 
@@ -105,8 +112,7 @@ function LeadView({ lead }: { lead: Lead }) {
               </optgroup>
             </select>
             {stage?.is_lost && (
-              <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Yutqazish sababi"
-                onBlur={() => { if (reason.trim() !== (lead.loss_reason ?? "")) save({ loss_reason: reason.trim() || null }) }} className={FIELD} />
+              <LossReasonSelect value={lead.loss_reason} onPick={(r) => save({ loss_reason: r })} className={FIELD} />
             )}
           </div>
 
@@ -202,6 +208,17 @@ const Field = ({ label, children }: { label: string; children: ReactNode }) => (
 )
 
 /** AmoCRM's stage strip: filled up to the current stage; a click moves the deal */
+/** The reason of a lost bitim; one lost before the list keeps showing what it had until a new one is picked */
+function LossReasonSelect({ value, onPick, className }: { value: string | null; onPick: (r: string) => void; className: string }) {
+  const known = (LOSS_REASONS as readonly string[]).includes(value ?? "")
+  return (
+    <select value={value ?? ""} onChange={(e) => onPick(e.target.value)} aria-label="Yutqazish sababi" className={className}>
+      {!known && <option value={value ?? ""} disabled>{value || "Sabab ko'rsatilmagan"}</option>}
+      {LOSS_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+    </select>
+  )
+}
+
 function StageBar({ stages, current, onPick }: { stages: Stage[]; current: string; onPick: (s: Stage) => void }) {
   const open = stages.filter((s) => !s.is_won && !s.is_lost)
   const cur = stages.find((s) => s.id === current)
@@ -535,7 +552,7 @@ interface MobileProps {
   lead: Lead; stages: Stage[]; pipelines: { id: string; name: string; event_id: string | null }[]; users: ReturnType<typeof useUsers>["data"]
   today: string; isAdmin: boolean; save: SaveLead; movePipeline: (pid: string) => void; del: () => void
   name: string; setName: (v: string) => void; price: string; setPrice: (v: string) => void
-  reason: string; setReason: (v: string) => void; clientName: string; setClientName: (v: string) => void; saveClientName: () => void
+  clientName: string; setClientName: (v: string) => void; saveClientName: () => void
 }
 
 const ROW = "min-h-14 px-4 flex items-center gap-3 border-b border-line last:border-b-0"
@@ -627,9 +644,8 @@ function LeadMobile(p: MobileProps) {
           ))}
         </div>
         {stage?.is_lost && (
-          <input value={p.reason} onChange={(e) => p.setReason(e.target.value)} placeholder="Yutqazish sababi" aria-label="Yutqazish sababi"
-            onBlur={() => { if (p.reason.trim() !== (lead.loss_reason ?? "")) save({ loss_reason: p.reason.trim() || null }) }}
-            className="mt-2 w-full h-12 px-4 rounded-control bg-surface-sunken text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+          <LossReasonSelect value={lead.loss_reason} onPick={(r) => save({ loss_reason: r })}
+            className="mt-2 w-full h-12 px-4 rounded-control bg-surface-sunken text-base text-ink focus:outline-none" />
         )}
       </section>
 

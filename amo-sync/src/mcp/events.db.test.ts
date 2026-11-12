@@ -572,7 +572,7 @@ afterAll(async () => {
 })
 const ADMIN_ONLY = "Bu amalni faqat admin bajara oladi"
 
-test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate; link_pipeline is admin only; admin sees twenty", async () => {
+test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate; link_pipeline is admin only; admin sees twenty-one", async () => {
   for (const n of ["copy_event_tasks", "enroll_participant", "link_pipeline"]) {
     const t = TOOLS.find((x) => x.name === n)
     expect(t?.write).toBe(true)
@@ -586,7 +586,7 @@ test.skipIf(!testSql)("the three new tools are writers behind the Tadbirlar gate
   expect(d).toContain("debt")
   expect(d).toContain("no payment")
   expect(d).toContain("reference")
-  expect(TOOLS.length).toBe(20)
+  expect(TOOLS.length).toBe(21)
   const [e1, e2] = [await mkEvent("Gt1"), await mkEvent("Gt2")]
   expect(await call(seller, "copy_event_tasks", { from_event_id: e1, to_event_id: e2 })).toEqual({ ok: false, error: GATE })
   expect(await call(seller, "enroll_participant", { event_id: e1, client_id: clientA })).toEqual({ ok: false, error: GATE })

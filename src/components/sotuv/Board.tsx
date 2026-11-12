@@ -4,6 +4,7 @@ import { Plus } from "@phosphor-icons/react"
 import { EdgeScroll } from "@/components/ui/EdgeScroll"
 import { sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
 import { useUpdateLead } from "@/hooks/useSotuv"
+import { askLossReason } from "@/lib/lossReason"
 import { addDays, dueLabel } from "@/components/vazifalar/pickers"
 import { tashkentClock, tashkentToday } from "@/lib/period"
 import { formatNumber } from "@/lib/format"
@@ -28,10 +29,15 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
 
   const [dragging, setDragging] = useState(false)
 
-  function onDragEnd(r: DropResult) {
+  async function onDragEnd(r: DropResult) {
     setDragging(false)
     const to = r.destination?.droppableId
     if (!to || to === r.source.droppableId) return
+    if (stages.find((s) => s.id === to)?.is_lost) {
+      const loss_reason = await askLossReason()
+      if (loss_reason) update.mutate({ id: r.draggableId, patch: { stage_id: to, loss_reason } })
+      return
+    }
     update.mutate({ id: r.draggableId, patch: { stage_id: to } })
   }
 
