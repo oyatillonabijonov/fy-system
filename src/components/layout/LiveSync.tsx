@@ -19,6 +19,7 @@ const TOUCHES: Record<string, string[] | "all"> = {
   payments: ["finance", "participants", "recent-payments", "event-payments", "client-participations", "client-journey"],
   expenses: ["finance"],
   cashback_transactions: ["cashback", "client-cashback", "clients", "participants"],
+  client_profile_submissions: ["anketa", "clients", "sotuv"],
 }
 
 /** Live updates: one realtime channel for the whole app. Another user's change refetches what shows
@@ -53,6 +54,10 @@ export function LiveSync() {
         if (p.table === "crm_leads" && p.eventType === "INSERT") {
           const lead = p.new as { name?: string; source?: string | null; created_by?: string | null }
           if (lead.created_by !== uid) toast.notify(`Yangi lid: ${lead.name ?? ""}`, sourceLabel(lead.source ?? null))
+        }
+        // 097: RLS delivers these rows only to Mijozlar users — they are the ones who approve
+        if (p.table === "client_profile_submissions" && p.eventType === "INSERT") {
+          toast.notify("Yangi anketa", (p.new as { full_name?: string }).full_name ?? "")
         }
       })
       .subscribe()
