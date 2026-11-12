@@ -1,3 +1,4 @@
+import { AnketaLinkButton } from "@/components/anketa/AnketaLinkButton"
 import {
     Users,
     UserPlus,
@@ -908,6 +909,10 @@ export function Mijozlar() {
                                     <WarningCircle size={16} className="shrink-0" />Yetishmaydi: {missingInfo(selectedCustomer).join(", ")}
                                 </div>
                             )}
+                            {/* 097: the client fills in their own card through a link */}
+                            <div className="flex flex-wrap items-center justify-center gap-2 px-5 pt-3">
+                                <AnketaLinkButton clientId={selectedCustomer.id} clientName={selectedCustomer.name} optOut={selectedCustomer.smsOptOut} />
+                            </div>
                             {/* AVATAR + INFO */}
                             <div className="max-lg:hidden relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
                                 {/* Close button overlaid top-right */}

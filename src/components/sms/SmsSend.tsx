@@ -1,10 +1,11 @@
 // SMS to ONE client (095): pick an approved template, fill its blanks, see the text with the client's
 // name, send now or later. Used in the bitim composer, the phone-number menu and the Mijozlar card.
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { PaperPlaneRight } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useSendSmsTemplate, useSmsTemplates } from "@/hooks/useSms"
+import { useAnketaLink } from "@/hooks/useAnketa"
 import { KIND_LABEL } from "@/lib/supabase/queries/sms"
 import { blanks, fillTemplate, fitsTemplate, smsParts } from "@/lib/sms"
 
@@ -25,6 +26,13 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
 
   const t = templates.find((x) => x.id === id) ?? null
   const keys = t ? blanks(t.text) : []
+  // {havola} (097) = this client's anketa link, filled in by itself
+  const link = useAnketaLink()
+  const needsLink = keys.includes("havola")
+  useEffect(() => {
+    if (needsLink) link.mutate(clientId, { onSuccess: (url) => setValues((v) => ({ ...v, havola: url })) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per picked template
+  }, [needsLink, id, clientId])
   const text = t ? fillTemplate(t.text, values, clientName) : ""
   const missing = keys.some((k) => !values[k]?.trim())
   const blockedPromo = t?.kind === "promo" && optOut
@@ -64,7 +72,8 @@ export function SmsSend({ clientId, clientName, optOut, onSent }: { clientId: st
 
       {keys.map((k) => (
         <input key={k} value={values[k] ?? ""} onChange={(e) => setValues({ ...values, [k]: e.target.value })}
-          placeholder={k} aria-label={k} className={FIELD} />
+          readOnly={k === "havola" && !link.isError} placeholder={k === "havola" && link.isPending ? "Havola tayyorlanmoqda…" : k} aria-label={k}
+          className={`${FIELD} ${k === "havola" && !link.isError ? "text-ink-muted" : ""}`} />
       ))}
 
       {t && (

@@ -20,6 +20,7 @@ import { EnrollParticipantModal } from "@/components/events/EnrollParticipantMod
 import { useMedia } from "@/hooks/useMedia"
 import { Sheet } from "@/components/ui/Sheet"
 import { SmsSend } from "@/components/sms/SmsSend"
+import { AnketaLinkButton } from "@/components/anketa/AnketaLinkButton"
 import { useClientSms } from "@/hooks/useSms"
 import { SMS_STATUS, type ClientSmsRow } from "@/lib/supabase/queries/sms"
 import { usePhone } from "@/context/PhoneContext"
@@ -129,6 +130,12 @@ function LeadView({ lead }: { lead: Lead }) {
             </div>
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
+
+          {lead.client && (
+            <div className="flex flex-wrap items-center gap-2">
+              <AnketaLinkButton clientId={lead.client.id} clientName={lead.client.full_name} />
+            </div>
+          )}
 
           {/* The voronka's event (081): enrol this client straight from the bitim */}
           {pipeline?.event_id && lead.client && <EnrollFromLead eventId={pipeline.event_id} client={lead.client} />}
