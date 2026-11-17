@@ -12,7 +12,7 @@ export type TgChat = { id: string; account_id: string; lead_id: string | null; t
 export type TgMessage = { id: string; chat_id: string; direction: "in" | "out"; text: string; files: TgFileRef[]; read_at: string | null; created_at: string; sender: { full_name: string } | null }
 export type TgTemplate = { id: string; title: string; body: string; files: TgFileRef[]; sort: number }
 export type TgUnread = { lead_id: string; unread: number; title: string; last_message_at: string | null; lead: { name: string | null; responsible_user_id: string | null } | null }
-export type LoginState = { state: "qr"; url: string } | { state: "password" } | { state: "done"; title: string } | { state: "error"; message: string }
+export type LoginState = { state: "wait" } | { state: "qr"; url: string } | { state: "password" } | { state: "done"; title: string } | { state: "error"; message: string }
 
 /** The worker; a refusal becomes an Error with the Uzbek text */
 export async function tgHook<T>(path: string, body?: unknown): Promise<T> {

@@ -134,7 +134,7 @@ function ConnectSheet({ onClose }: { onClose: () => void }) {
         </div>
       ) : (
         <div className="flex flex-col items-center gap-3">
-          {qr ? <img src={qr} alt="Telegramga kirish QR kodi" className="w-64 h-64 rounded-control bg-white" /> : <div className="w-64 h-64 rounded-control bg-surface-sunken" />}
+          {qr ? <img src={qr} alt="Telegramga kirish QR kodi" className="w-64 h-64 rounded-control bg-white" /> : <div className="w-64 h-64 rounded-control bg-surface-sunken flex items-center justify-center text-sm text-ink-muted">QR kod tayyorlanmoqda…</div>}
           <ol className="text-sm text-ink-muted list-decimal pl-5 flex flex-col gap-1 self-stretch">
             <li>Kompaniya raqami ochilgan telefonda Telegramni oching</li>
             <li>Sozlamalar → Qurilmalar → Qurilmani ulash</li>

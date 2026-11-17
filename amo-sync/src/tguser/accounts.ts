@@ -6,7 +6,7 @@ import { mtcutePort, sessionPath, type TgPort } from "./port"
 import { handleIncoming, shouldStore } from "./incoming"
 import { bucket } from "./storage"
 
-export type LoginState = { state: "qr"; url: string } | { state: "password" } | { state: "done"; title: string } | { state: "error"; message: string }
+export type LoginState = { state: "wait" } | { state: "qr"; url: string } | { state: "password" } | { state: "done"; title: string } | { state: "error"; message: string }
 
 const LOGIN_TIMEOUT = 5 * 60_000
 
@@ -86,7 +86,7 @@ const loginError = (e: unknown) => {
 export async function beginLogin(sql: Sql, profileId: string | null, title: string): Promise<string> {
   const [row] = await sql<{ id: string }[]>`insert into telegram_accounts (profile_id, title) values (${profileId}, ${title}) returning id`
   const id = row.id
-  const entry: { state: LoginState; password?: (pw: string) => void } = { state: { state: "error", message: "Tayyorlanmoqda" } }
+  const entry: { state: LoginState; password?: (pw: string) => void } = { state: { state: "wait" } }
   logins.set(id, entry)
   const port = cfg.make(id)
   const timer = setTimeout(() => { if (entry.state.state !== "done") fail(new Error("timeout")) }, LOGIN_TIMEOUT)
