@@ -9,6 +9,8 @@ import { addDays, dueLabel } from "@/components/vazifalar/pickers"
 import { tashkentClock, tashkentToday } from "@/lib/period"
 import { formatNumber } from "@/lib/format"
 import { TaskChip, NoTaskChip, StageDot, shortMoney } from "./ui"
+import { useTgUnread } from "@/hooks/useTelegram"
+import { TgBadge } from "@/components/telegram/TgBadge"
 
 /** When the deal came in: "Bugun · 10:20", "Kecha · 17:15", "28-sen · 09:00" (Tashkent) */
 function cameIn(iso: string, today: string): string {
@@ -26,6 +28,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
   onAdd: (stageId: string) => void
 }) {
   const update = useUpdateLead()
+  const { byLead: tgUnread } = useTgUnread()
 
   const [dragging, setDragging] = useState(false)
 
@@ -88,6 +91,7 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
                               {l.source && l.source !== "manual" && <span className="inline-flex items-center h-6 px-2 rounded-full text-sm bg-surface-sunken text-ink-muted whitespace-nowrap">{sourceLabel(l.source)}</span>}
                               {open && (l.next_task ? <TaskChip onGrey kind={l.next_task.kind} due={l.next_task.due_date} today={today} /> : <NoTaskChip />)}
                               {l.price > 0 && <span className="text-sm text-ink-muted tabular-nums">{shortMoney(l.price)}</span>}
+                              <TgBadge n={tgUnread.get(l.id) ?? 0} icon />
                             </div>
                           </div>
                         )}

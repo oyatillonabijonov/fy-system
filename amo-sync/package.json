@@ -9,8 +9,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.7.0",
     "@modelcontextprotocol/server": "^2.4.0",
+    "@mtcute/bun": "0.32.8",
     "@resvg/resvg-js": "^2.6.2",
     "jspdf": "^4.2.0",
+    "long": "5.3.2",
     "postgres": "^3.4.9",
     "zod": "^4.6.7"
   },

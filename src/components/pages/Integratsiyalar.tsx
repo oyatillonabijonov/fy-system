@@ -17,6 +17,7 @@ import { confirmAction } from "@/lib/confirm"
 import { useTaskProjects } from "@/hooks/useTasks"
 import { useRegenerateUniversalAnketa, useUniversalAnketaLink } from "@/hooks/useAnketa"
 import { AnketaQrSheet } from "@/components/anketa/AnketaQr"
+import { TelegramSection } from "@/components/telegram/TgAccounts"
 
 const BOT = "@fymoliyabot"
 const inputCls = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface max-sm:bg-surface-sunken max-sm:border-transparent max-sm:focus:border-line-focus placeholder:text-ink-faint focus:outline-none focus:border-line-focus transition-colors"
@@ -95,6 +96,7 @@ export function Integratsiyalar() {
       <Pager page={page} pageCount={pageCount} total={groups.length} onPage={setPage} />
 
       {isAdmin && <Telephony />}
+      {isAdmin && <TelegramSection />}
       {isAdmin && <LeadSources />}
       {(hasAccess("mijozlar") || hasAccess("sotuv-crmn")) && <UniversalAnketa />}
 

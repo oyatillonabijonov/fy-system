@@ -16,6 +16,8 @@ import { useTheme, useSidebarScope, MODES, PHOTOS, photoThumb } from "@/context/
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
 import { navigationSections, type NavItem } from "./nav"
+import { useTgUnread } from "@/hooks/useTelegram"
+import { TgBadge } from "@/components/telegram/TgBadge"
 import { CLIENTS_KEY } from "@/hooks/useClients"
 import { EVENTS_KEY } from "@/hooks/useEvents"
 
@@ -30,6 +32,7 @@ export function Sidebar() {
     const navigate = useNavigate()
     const location = useLocation()
     const { user, hasAccess } = useAuth()
+    const { total: tgUnread } = useTgUnread()
     const isAdminUser = user?.role === "admin"
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -213,6 +216,7 @@ export function Sidebar() {
                                         {!isCollapsed && (
                                             <>
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">{item.name}</span>
+                                                {!isExpanded && item.subItems?.some((s) => s.path === "/sotuv") && <TgBadge n={tgUnread} />}
                                                 {hasSubItems && (
                                                     <CaretDown
                                                         size={16}
@@ -240,6 +244,7 @@ export function Sidebar() {
                                                     >
                                                         <subItem.icon size={16} className="flex-shrink-0" />
                                                         <span className="flex-1 text-left truncate">{subItem.name}</span>
+                                                        {subItem.path === "/sotuv" && <TgBadge n={tgUnread} />}
                                                     </button>
                                                 )
                                             })}

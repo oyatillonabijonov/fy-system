@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/context/AuthContext"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
@@ -20,6 +21,7 @@ const TOUCHES: Record<string, string[] | "all"> = {
   expenses: ["finance"],
   cashback_transactions: ["cashback", "client-cashback", "clients", "participants"],
   client_profile_submissions: ["anketa", "clients", "sotuv"],
+  tg_chats: ["telegram"], tg_messages: ["telegram"],
 }
 
 /** Live updates: one realtime channel for the whole app. Another user's change refetches what shows
@@ -61,6 +63,15 @@ export function LiveSync() {
         if (p.table === "client_profile_submissions" && p.eventType === "INSERT" && Date.now() - lastAnketa > 60_000) {
           lastAnketa = Date.now()
           toast.notify("Yangi anketa", (p.new as { full_name?: string }).full_name ?? "")
+        }
+        // 100: a lead wrote on Telegram — heard by the bitim's owner, or by everyone when it has none
+        if (p.table === "tg_messages" && p.eventType === "INSERT" && (p.new as { direction?: string }).direction === "in") {
+          const m = p.new as { chat_id: string; text?: string }
+          void (supabase as unknown as SupabaseClient).from("tg_chats").select("title, lead:lead_id(responsible_user_id)").eq("id", m.chat_id).maybeSingle()
+            .then(({ data }) => {
+              const c = data as { title: string; lead: { responsible_user_id: string | null } | null } | null
+              if (c && (!c.lead?.responsible_user_id || c.lead.responsible_user_id === uid)) toast.notify(`Telegram · ${c.title}`, m.text || "📎 Fayl")
+            })
         }
       })
       .subscribe()

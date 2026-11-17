@@ -5,6 +5,8 @@ import { formatNumber } from "@/lib/format"
 import { Pager, usePaged } from "@/components/ui/Pager"
 import { PersonDot } from "@/components/vazifalar/pickers"
 import { ChipCount, EmptyNote, NoTaskChip, RowCall, SECTION, StageDot, TaskChip, chip } from "./ui"
+import { useTgUnread } from "@/hooks/useTelegram"
+import { TgBadge } from "@/components/telegram/TgBadge"
 
 /** Phone: the deals of one voronka as a stage-grouped list — a chip per bosqich (tap = only that one), a card per deal */
 export function LeadCards({ stages, leads, today, onOpen }: {
@@ -72,6 +74,7 @@ function DealCard({ lead: l, stage, today, onOpen }: { lead: Lead; stage: Stage;
   const meta = [l.source && l.source !== "manual" ? sourceLabel(l.source) : null, sub].filter(Boolean).join(" · ")
   const closed = stage.is_won || stage.is_lost
   const phone = l.client?.phone
+  const tg = useTgUnread().byLead.get(l.id) ?? 0
   return (
     // A div, not a button: the call button lives inside (same pattern as the Kanban card)
     <article role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter") onOpen() }} aria-label={`${title} — bitimni ochish`}
@@ -82,6 +85,7 @@ function DealCard({ lead: l, stage, today, onOpen }: { lead: Lead; stage: Stage;
           <span className="block text-base font-semibold text-ink line-clamp-1">{title}</span>
           {meta && <span className="block text-sm text-ink-muted line-clamp-1">{meta}</span>}
         </div>
+        <TgBadge n={tg} icon />
         {phone && <span onClick={(e) => e.stopPropagation()} className="shrink-0"><RowCall phone={phone} /></span>}
       </div>
       <div className="flex items-center gap-3 min-h-8">
