@@ -11,6 +11,7 @@ describe("QR login", () => {
     let typed = ""
     const port = fakePort({
       start: async (h) => {
+        await tick()
         h.qr("tg://login?token=abc", new Date())
         await gate
         typed = await h.password()
@@ -21,6 +22,7 @@ describe("QR login", () => {
     configureTg({ make: () => port, alert: async () => {} })
     const id = await beginLogin(sql, null, "Umumiy")
     expect(id).toBe("acc-1")
+    expect(loginState(id)).toEqual({ state: "wait" })   // before Telegram hands a QR: still waiting, not an error
     await tick()
     expect(loginState(id)).toEqual({ state: "qr", url: "tg://login?token=abc" })
     release()
