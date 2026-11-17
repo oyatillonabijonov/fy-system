@@ -8,6 +8,8 @@ import { useAuth } from "@/context/AuthContext"
 import { useTheme, MODES } from "@/context/ThemeContext"
 import { isSeller, signOut, type ModuleName } from "@/lib/supabase/queries/auth"
 import { navigationSections, type NavItem } from "./nav"
+import { useTgUnread } from "@/hooks/useTelegram"
+import { TgBadge } from "@/components/telegram/TgBadge"
 
 type Tab = { label: string; icon: PhosphorIcon; path: string; module?: ModuleName; on?: (path: string, search: string) => boolean }
 
@@ -38,6 +40,7 @@ export function MobileNav() {
   const navigate = useNavigate()
   const { user, hasAccess } = useAuth()
   const isAdmin = user?.role === "admin"
+  const { total: tgUnread } = useTgUnread()
   const [moreFor, setMoreFor] = useState<string | null>(null)   // the sheet belongs to the page it was opened on
   const moreOpen = moreFor === location.pathname
 
@@ -59,8 +62,9 @@ export function MobileNav() {
             const on = active(t)
             return (
               <button key={t.path} type="button" onClick={() => navigate(t.path)} aria-current={on ? "page" : undefined}
-                className={`flex flex-col items-center justify-center gap-1 min-w-0 ${on ? "text-ink" : "text-ink-faint"}`}>
+                className={`relative flex flex-col items-center justify-center gap-1 min-w-0 ${on ? "text-ink" : "text-ink-faint"}`}>
                 <t.icon size={24} weight={on ? "fill" : "light"} />
+                {t.path === "/sotuv" && tgUnread > 0 && <span className="absolute top-1 left-1/2 ml-1.5"><TgBadge n={tgUnread} /></span>}
                 <span className="text-[11px] leading-none font-medium truncate max-w-full px-0.5">{t.label}</span>
               </button>
             )

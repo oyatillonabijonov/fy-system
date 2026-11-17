@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
-import { PhoneIncoming, CheckCircle, Sparkle, CaretRight } from "@phosphor-icons/react"
+import { PhoneIncoming, CheckCircle, Sparkle, CaretRight, TelegramLogo } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useCallbacks, useMyNewLeads, useOpenTasks } from "@/hooks/useSotuv"
 import { canonPhone, kindLabel, sourceLabel, fromDue, type SalesTask } from "@/lib/supabase/queries/sotuv"
@@ -8,6 +8,8 @@ import { tashkentToday } from "@/lib/period"
 import { formatPhone } from "@/lib/format"
 import { DoneButton, TaskDone } from "@/components/sotuv/SalesTasks"
 import { DueText, EmptyNote, KIND_ICON, ROW_BTN, RowCall, SECTION } from "@/components/sotuv/ui"
+import { useTgUnread } from "@/hooks/useTelegram"
+import { TgBadge } from "@/components/telegram/TgBadge"
 
 const clock = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit" }).format(new Date(iso))
 const when = (iso: string, today: string) => {
@@ -25,6 +27,7 @@ export function Bugun() {
   const { data: callbacks = [], isLoading: l1 } = useCallbacks()
   const { data: tasks = [], isLoading: l2 } = useOpenTasks()
   const { data: fresh = [], isLoading: l3 } = useMyNewLeads(user?.id)
+  const { mine: replies } = useTgUnread()   // 100: leads who wrote on Telegram and wait for an answer
 
   // Mine, or nobody's yet: someone else's client is theirs to call
   const calls = callbacks.filter((c) => !c.ownerId || c.ownerId === user?.id)
@@ -35,7 +38,19 @@ export function Bugun() {
 
   return (
     <div className="flex flex-col gap-6 pb-6">
-      {calls.length + due.length + fresh.length === 0 && <EmptyNote icon={CheckCircle} text="Bugungi ishlar bajarilgan" />}
+      {calls.length + due.length + fresh.length + replies.length === 0 && <EmptyNote icon={CheckCircle} text="Bugungi ishlar bajarilgan" />}
+
+      {replies.length > 0 && (
+        <Section title="Javob kutyapti" n={replies.length} danger>
+          {replies.map((c) => (
+            <Row key={c.lead_id} onClick={() => navigate(`/sotuv/bitim/${c.lead_id}?tab=telegram`)}
+              lead={<span className={`${ROW_BTN} text-info-text`}><TelegramLogo size={20} /></span>}
+              title={c.title || c.lead?.name || "Telegram"}
+              meta={<>Telegram{c.last_message_at && <> · <span className="tabular-nums">{when(c.last_message_at, today)}</span></>}</>}
+              trail={<TgBadge n={c.unread} />} />
+          ))}
+        </Section>
+      )}
 
       {calls.length > 0 && (
         <Section title="Qayta qo'ng'iroq" n={calls.length} danger>

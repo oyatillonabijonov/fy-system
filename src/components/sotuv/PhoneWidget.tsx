@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion"
-import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X, DotsSixVertical, DotsNine, CaretDown, CornersOut } from "@phosphor-icons/react"
+import { Phone, PhoneDisconnect, PhoneIncoming, PhoneOutgoing, Microphone, MicrophoneSlash, ArrowRight, X, DotsSixVertical, DotsNine, CaretDown, CornersOut, TelegramLogo } from "@phosphor-icons/react"
 import { usePhone } from "@/context/PhoneContext"
 import { formatPhone } from "@/lib/format"
 import { canonPhone } from "@/lib/supabase/queries/sotuv"
@@ -100,6 +100,10 @@ export function PhoneWidget() {
               <span className="truncate">{call.contact.leadName}</span><ArrowRight size={16} className="text-ink-muted shrink-0" />
             </Link>
           )}
+          {call.contact?.leadId && (
+            <Link to={`/sotuv/bitim/${call.contact.leadId}?tab=telegram`} onClick={() => setMini(true)}
+              className="mt-2 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface-sunken text-sm text-ink"><TelegramLogo size={16} />Ma'lumot yuborish</Link>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col justify-center gap-4 min-h-0">
@@ -166,6 +170,12 @@ export function PhoneWidget() {
             <Link to={`/sotuv/bitim/${call.contact.leadId}`}
               className="flex items-center gap-2 h-9 px-3 rounded-control bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors">
               <span className="flex-1 min-w-0 truncate">{call.contact.leadName}</span><ArrowRight size={16} className="text-ink-muted" />
+            </Link>
+          )}
+          {call.contact?.leadId && (
+            <Link to={`/sotuv/bitim/${call.contact.leadId}?tab=telegram`}
+              className="flex items-center gap-2 h-9 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors">
+              <TelegramLogo size={16} className="text-ink-muted" />Ma'lumot yuborish
             </Link>
           )}
           {call.state === "active" && keys && <DialKeys onKey={sendDigit} />}

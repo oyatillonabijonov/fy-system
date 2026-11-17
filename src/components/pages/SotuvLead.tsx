@@ -1,7 +1,7 @@
 import { attributionRows } from "@/lib/attribution"
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText, Copy } from "@phosphor-icons/react"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { ArrowLeft, Phone, PhoneIncoming, PhoneOutgoing, Trash, PaperPlaneRight, ArrowsLeftRight, Sparkle, CheckCircle, NotePencil, Tray, ChatCircleText, Copy, TelegramLogo } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useUsers } from "@/hooks/useUsers"
 import { useLead, useStages, usePipelines, useNotes, useLeadTasks, useUpdateLead, useDeleteLead, useAddNote, useDeleteNote, useAddTask, useLeadCalls, useRenameClient, SOTUV_KEY } from "@/hooks/useSotuv"
@@ -26,6 +26,9 @@ import { useClientSms } from "@/hooks/useSms"
 import { SMS_STATUS, type ClientSmsRow } from "@/lib/supabase/queries/sms"
 import { usePhone } from "@/context/PhoneContext"
 import { toast } from "@/lib/toast"
+import { useLeadTelegram, useReadTelegram } from "@/hooks/useTelegram"
+import { TgComposer } from "@/components/telegram/TgComposer"
+import { TgFeedItem } from "@/components/telegram/TgFeedItem"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -127,7 +130,7 @@ function LeadView({ lead }: { lead: Lead }) {
                     onBlur={saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
                     className="block w-full bg-transparent text-base font-medium text-ink truncate rounded-item -mx-1 px-1 hover:bg-surface-sunken focus:bg-surface-sunken focus:outline-none" />
                 : <span className="block text-base font-medium text-ink truncate">Mijoz biriktirilmagan</span>}
-              {lead.client?.phone && <PhoneMenu phone={lead.client.phone} client={lead.client} />}
+              {lead.client?.phone && <PhoneMenu phone={lead.client.phone} client={lead.client} leadId={lead.id} />}
             </div>
             {lead.client?.phone && <CallButton phone={lead.client.phone} />}
           </div>
@@ -254,6 +257,11 @@ function useFeed(lead: Lead, stages: Stage[]) {
   const { data: tasks = [] } = useLeadTasks(lead.id)
   const { data: calls = [] } = useLeadCalls(lead.id)
   const { data: sms = [] } = useClientSms(lead.client?.id ?? null)
+  const { data: tg } = useLeadTelegram(lead.id)
+  const readTg = useReadTelegram()
+  const unread = tg?.chats.some((c) => c.unread > 0) ?? false
+  // 100: the seller looking at the bitim has seen its Telegram messages (the lead gets ✓✓)
+  useEffect(() => { if (unread) readTg.mutate(lead.id) }, [unread, lead.id])   // eslint-disable-line react-hooks/exhaustive-deps
   const qc = useQueryClient()
   useEffect(() => subscribeLeadCalls(lead.id, () => qc.invalidateQueries({ queryKey: SOTUV_KEY })), [lead.id, qc])
   const delNote = useDeleteNote()
@@ -266,6 +274,7 @@ function useFeed(lead: Lead, stages: Stage[]) {
     ...tasks.filter((t) => t.is_done && t.done_at).map((t) => ({ at: t.done_at!, key: t.id, node: <DoneItem task={t} /> })),
     ...calls.map((c) => ({ at: c.started_at, key: c.uuid, node: <CallItem call={c} /> })),
     ...sms.map((m) => ({ at: m.send_at > m.created_at ? m.send_at : m.created_at, key: `sms-${m.id}`, node: <SmsItem sms={m} /> })),
+    ...(tg?.messages ?? []).map((m) => ({ at: m.created_at, key: `tg-${m.id}`, node: <TgFeedItem msg={m} chatTitle={tg?.chats.find((c) => c.id === m.chat_id)?.title ?? ""} /> })),
   ].sort((a, b) => a.at.localeCompare(b.at))
   return { items, open, isClosed }
 }
@@ -404,7 +413,14 @@ function Composer({ leadId, responsible, today, client }: { leadId: string; resp
   const { data: users = [] } = useUsers()
   const addNote = useAddNote()
   const addTask = useAddTask()
-  const [mode, setMode] = useState<"note" | "task" | "sms">("note")
+  const [params] = useSearchParams()
+  const { data: tg } = useLeadTelegram(leadId)
+  const canTg = !!client?.phone || (tg?.chats.length ?? 0) > 0
+  const [mode, setMode] = useState<"note" | "task" | "sms" | "telegram">(params.get("tab") === "telegram" ? "telegram" : "note")
+  // PhoneWidget's "Ma'lumot yuborish" may land here while the page is already open
+  const urlTab = params.get("tab")
+  const [seenTab, setSeenTab] = useState(urlTab)
+  if (urlTab !== seenTab) { setSeenTab(urlTab); if (urlTab === "telegram") setMode("telegram") }
   const [text, setText] = useState("")
   const [kind, setKind] = useState<TaskKind>("call")
   const [due, setDue] = useState<{ date: string | null; time: string | null }>({ date: addDays(today, 1), time: null })
@@ -425,7 +441,7 @@ function Composer({ leadId, responsible, today, client }: { leadId: string; resp
   return (
     <div className="rounded-control bg-surface border border-line focus-within:border-line-focus transition-colors">
       <div className="flex items-center gap-1 px-2 pt-2">
-        {([["note", "Izoh", NotePencil], ["task", "Vazifa", CheckCircle], ...(client?.phone ? [["sms", "SMS", ChatCircleText] as const] : [])] as const).map(([id, label, Icon]) => (
+        {([["note", "Izoh", NotePencil], ["task", "Vazifa", CheckCircle], ...(client?.phone ? [["sms", "SMS", ChatCircleText] as const] : []), ...(canTg ? [["telegram", "Telegram", TelegramLogo] as const] : [])] as const).map(([id, label, Icon]) => (
           <button key={id} type="button" onClick={() => setMode(id)} aria-pressed={mode === id}
             className={`h-7 px-3 inline-flex items-center gap-1.5 rounded-full text-sm font-medium transition-colors ${mode === id ? "bg-accent text-ink-on-accent" : "text-ink-muted hover:text-ink hover:bg-mute-ghost-hover"}`}>
             <Icon size={16} />{label}
@@ -433,6 +449,7 @@ function Composer({ leadId, responsible, today, client }: { leadId: string; resp
         ))}
       </div>
       {mode === "sms" && client && <div className="p-3"><SmsSend clientId={client.id} clientName={client.full_name} onSent={() => setMode("note")} /></div>}
+      {mode === "telegram" && <TgComposer leadId={leadId} />}
       {mode === "task" && (
         <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2">
           {TASK_KINDS.map((k) => {
@@ -451,7 +468,7 @@ function Composer({ leadId, responsible, today, client }: { leadId: string; resp
           </select>
         </div>
       )}
-      {mode !== "sms" && <div className="flex items-end gap-2 p-2">
+      {(mode === "note" || mode === "task") && <div className="flex items-end gap-2 p-2">
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2}
           placeholder={mode === "note" ? "Izoh yozing…" : "Nima qilish kerak (ixtiyoriy)"}
           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit() }}
@@ -467,10 +484,11 @@ function Composer({ leadId, responsible, today, client }: { leadId: string; resp
 }
 
 /** The client's phone number: a tap opens Qo'ng'iroq qilish · SMS yuborish · Nusxalash (the client's AmoCRM habit) */
-function PhoneMenu({ phone, client, big }: { phone: string; client: NonNullable<Lead["client"]>; big?: boolean }) {
+function PhoneMenu({ phone, client, leadId, big }: { phone: string; client: NonNullable<Lead["client"]>; leadId: string; big?: boolean }) {
   const { status, dial, call } = usePhone()
   const [open, setOpen] = useState(false)
   const [sms, setSms] = useState(false)
+  const [tg, setTg] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -490,6 +508,7 @@ function PhoneMenu({ phone, client, big }: { phone: string; client: NonNullable<
             <Phone size={18} />Qo'ng'iroq qilish
           </button>
           <button role="menuitem" type="button" className={row} onClick={() => { setOpen(false); setSms(true) }}><ChatCircleText size={18} />SMS yuborish</button>
+          <button role="menuitem" type="button" className={row} onClick={() => { setOpen(false); setTg(true) }}><TelegramLogo size={18} />Telegram'da yozish</button>
           <button role="menuitem" type="button" className={row}
             onClick={() => { setOpen(false); void navigator.clipboard.writeText(phone).then(() => toast.success("Raqam nusxalandi")) }}>
             <Copy size={18} />Nusxalash
@@ -497,6 +516,7 @@ function PhoneMenu({ phone, client, big }: { phone: string; client: NonNullable<
         </div>
       )}
       <SmsSheet open={sms} onClose={() => setSms(false)} client={client} />
+      <Sheet open={tg} onClose={() => setTg(false)} title={`Telegram — ${client.full_name}`}><TgComposer leadId={leadId} onSent={() => setTg(false)} /></Sheet>
     </div>
   )
 }
@@ -608,7 +628,7 @@ function LeadMobile(p: MobileProps) {
                   onBlur={p.saveClientName} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
                   className="block w-full h-8 bg-transparent text-lg font-semibold text-ink rounded-item -mx-1 px-1 focus:bg-surface focus:outline-none" />
               : <span className="block text-lg font-semibold text-ink line-clamp-1">Mijoz biriktirilmagan</span>}
-            {phone && lead.client && <PhoneMenu phone={phone} client={lead.client} big />}
+            {phone && lead.client && <PhoneMenu phone={phone} client={lead.client} leadId={lead.id} big />}
           </div>
         </div>
         <div className="flex flex-col gap-2.5">
