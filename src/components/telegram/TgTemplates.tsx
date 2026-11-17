@@ -70,7 +70,7 @@ function TemplateSheet({ template, nextSort, onClose }: { template: TgTemplate |
 
   async function add(list: FileList | null) {
     const picked = [...(list ?? [])].slice(0, 5 - files.length)
-    if (picked.some((f) => f.size > TG_MAX_FILE)) { toast.error("Fayl juda katta", "Har bir fayl 20 MB gacha"); return }
+    if (picked.some((f) => f.size > TG_MAX_FILE)) { toast.error("Fayl juda katta", "Har bir fayl 10 MB gacha"); return }
     setUploading(true)
     try { const up = await Promise.all(picked.map((f) => uploadTgFile("templates", f))); setFiles((fs) => [...fs, ...up]) }
     catch (e) { toast.error("Fayl yuklanmadi", (e as Error).message) }

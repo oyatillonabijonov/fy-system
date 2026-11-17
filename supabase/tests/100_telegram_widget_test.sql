@@ -156,6 +156,23 @@ BEGIN
   RAISE NOTICE 'TEST 8 ok';
 END $$;
 
+-- TEST 10: writing from another bitim of the same client moves the chat there (its feed shows the message)
+DO $$
+DECLARE p uuid := (SELECT id FROM public.crm_pipelines WHERE name = 'Umumiy');
+        st uuid := (SELECT id FROM public.crm_stages WHERE pipeline_id = (SELECT id FROM public.crm_pipelines WHERE name = 'Umumiy') AND NOT is_won AND NOT is_lost ORDER BY sort_order LIMIT 1);
+        r record; c uuid;
+BEGIN
+  INSERT INTO public.crm_leads (id, name, pipeline_id, stage_id, client_id) VALUES ('d1000000-0000-0000-0000-000000000004', 'Ali uchinchi', p, st, 'c1000000-0000-0000-0000-000000000001');
+  SELECT * INTO r FROM public.tg_send_target('d1000000-0000-0000-0000-000000000004');
+  IF r.chat_id IS NULL OR (SELECT lead_id FROM public.tg_chats WHERE id = r.chat_id) <> 'd1000000-0000-0000-0000-000000000004' THEN
+    RAISE EXCEPTION 'TEST 10 FAILED: chat stays on %', (SELECT lead_id FROM public.tg_chats WHERE id = r.chat_id); END IF;
+  -- an existing (account, user) chat found by tg_create_chat follows the bitim it is written from too
+  c := public.tg_create_chat('e1000000-0000-0000-0000-00000000000a', 'd1000000-0000-0000-0000-000000000002', 5002, 'h2', NULL, 'X');
+  IF (SELECT lead_id FROM public.tg_chats WHERE id = c) <> 'd1000000-0000-0000-0000-000000000002'
+     OR (SELECT client_id FROM public.tg_chats WHERE id = c) <> 'c1000000-0000-0000-0000-000000000002' THEN RAISE EXCEPTION 'TEST 10 FAILED: create_chat kept the old link'; END IF;
+  RAISE NOTICE 'TEST 10 ok';
+END $$;
+
 -- TEST 9: worker functions are closed to API roles; RLS on chats/templates
 DO $$
 DECLARE f text;

@@ -79,4 +79,20 @@ describe("session lost", () => {
     expect(portFor("acc-4")).toBeUndefined()
     expect(alerts).toHaveLength(1)
   })
+
+  test("a session ended while running is noticed by the periodic check", async () => {
+    const alerts: string[] = []
+    const port = fakePort()
+    port.ping = async () => { port.fireLoggedOut() }
+    const { sql } = fakeSql((t) => {
+      if (t.includes("where status = 'active'") && t.includes("select id")) return [{ id: "acc-5" }]
+      if (t.includes("status = 'logged_out'")) return [{ title: "Umumiy" }]
+      return []
+    })
+    configureTg({ make: () => port, alert: async (msg) => { alerts.push(msg) }, pingMs: 10 })
+    await startTgAccounts(sql)
+    await new Promise((r) => setTimeout(r, 40))
+    expect(alerts).toHaveLength(1)
+    expect(portFor("acc-5")).toBeUndefined()
+  })
 })

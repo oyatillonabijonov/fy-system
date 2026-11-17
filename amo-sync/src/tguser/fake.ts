@@ -29,6 +29,7 @@ export function fakePort(over: Partial<TgPort> = {}): TgPort & { sent: { kind: s
     fireLoggedOut: () => lost.forEach((cb) => cb()),
     start: async () => ({ id: 1, name: "FY", phone: "998900000000" }),
     resume: async () => true,
+    ping: async () => {},
     onMessage: () => {},
     onReadOutbox: () => {},
     onLoggedOut: (cb) => { lost.push(cb) },

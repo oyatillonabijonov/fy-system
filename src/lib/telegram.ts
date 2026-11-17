@@ -7,6 +7,8 @@ const TG_ERRORS: Record<string, string> = {
   tg_off: "Telegram ulanmagan",
   tg_empty: "Matn yoki fayl yo'q",
   tg_bad_file: "Fayl topilmadi",
+  tg_peer_flood: "Telegram bu akkauntga notanishlarga yozishni vaqtincha cheklagan",
+  tg_privacy: "Bu odam sozlamalarida unga yozishni yopgan",
 }
 
 export function tgErrorText(code: string, seconds = 0): string {
@@ -20,4 +22,5 @@ export const TG_BLANKS = [
   { key: "{sana}", label: "Sana" },
 ] as const
 
-export const TG_MAX_FILE = 20 * 1024 * 1024
+// the storage gateway caps request bodies at 11 MB (CLAUDE.md, task-files)
+export const TG_MAX_FILE = 10 * 1024 * 1024

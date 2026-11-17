@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { tgErrorText, TG_BLANKS } from "./telegram"
+import { tgErrorText, TG_BLANKS, TG_MAX_FILE } from "./telegram"
 
 describe("tgErrorText", () => {
   test("worker codes → the Uzbek copy", () => {
@@ -12,5 +12,10 @@ describe("tgErrorText", () => {
   })
   test("blanks offered in the template editor", () => {
     expect(TG_BLANKS.map((b) => b.key)).toEqual(["{ism}", "{tadbir}", "{sana}"])
+  })
+  test("upload limit fits under the storage gateway's 11 MB body cap", () => {
+    expect(TG_MAX_FILE).toBe(10 * 1024 * 1024)
+    expect(tgErrorText("tg_peer_flood")).toBe("Telegram bu akkauntga notanishlarga yozishni vaqtincha cheklagan")
+    expect(tgErrorText("tg_privacy")).toBe("Bu odam sozlamalarida unga yozishni yopgan")
   })
 })

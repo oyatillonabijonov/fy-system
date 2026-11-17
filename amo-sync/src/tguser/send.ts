@@ -43,6 +43,7 @@ export async function sendToLead(sql: Sql, uid: string, body: SendBody, store: S
   if (!port) throw new TgError("tg_logged_out")
 
   let chatId = target.chat_id
+  let opened = false
   let peer: TgPeer
   if (chatId && target.tg_user_id) {
     peer = { userId: Number(target.tg_user_id), accessHash: target.access_hash ?? "", username: null, title: "", phone: target.phone }
@@ -54,6 +55,7 @@ export async function sendToLead(sql: Sql, uid: string, body: SendBody, store: S
       select public.tg_create_chat(${target.account_id}, ${body.lead_id}, ${found.userId}, ${found.accessHash}, ${found.username}, ${found.title}) as id`
       .catch((e: unknown) => { throw fromDb(e) })
     chatId = c.id
+    opened = true
   }
 
   const [v] = await sql<{ client_name: string | null; event_name: string | null; event_date: string | null }[]>`
@@ -66,17 +68,27 @@ export async function sendToLead(sql: Sql, uid: string, body: SendBody, store: S
   const log = (msgId: number, t: string, f: (SendFile & { size: number })[]) =>
     sql`select public.tg_log_message(${chatId}, ${msgId}, ${"out"}, ${t}, ${JSON.stringify(f)}::jsonb, ${uid}, ${templateId}, ${new Date()})`
 
-  if (!files.length) { await log(await port.sendText(peer, text), text, []); return }
+  try {
+    await deliver(text)
+  } catch (e) {
+    // the first message never left: no empty chat, and its place in today's 30 is given back
+    if (opened) await sql`delete from tg_chats where id = ${chatId} and not exists (select 1 from tg_messages m where m.chat_id = tg_chats.id)`.catch(() => {})
+    throw e
+  }
+
+  async function deliver(text: string): Promise<void> {
+  if (!files.length) { await log(await port!.sendText(peer, text), text, []); return }
 
   const loaded: TgFile[] = await Promise.all(files.map(async (f) => ({ name: f.name, mime: f.mime, data: await store.get(f.path) })))
   const meta = files.map((f, i) => ({ ...f, size: loaded[i].data.length }))
   if (text.length > CAPTION_MAX) {
-    await log(await port.sendText(peer, text), text, [])
-    const [first] = await port.sendFiles(peer, loaded, "")
+    await log(await port!.sendText(peer, text), text, [])
+    const [first] = await port!.sendFiles(peer, loaded, "")
     await log(first, "", meta)
   } else {
-    const [first] = await port.sendFiles(peer, loaded, text)
+    const [first] = await port!.sendFiles(peer, loaded, text)
     await log(first, text, meta)
+  }
   }
 }
 

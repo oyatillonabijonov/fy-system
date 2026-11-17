@@ -108,6 +108,8 @@ DECLARE
   v_title  text := NULLIF(btrim(COALESCE(p_title, '')), '');
   src      public.crm_lead_sources;
 BEGIN
+  -- one Telegram user at a time: an album or two quick messages from a stranger must not open two clients
+  PERFORM pg_advisory_xact_lock(hashtextextended('tg_link_chat:' || p_account || ':' || p_tg_user, 0));
   SELECT id INTO v_chat FROM public.tg_chats WHERE account_id = p_account AND tg_user_id = p_tg_user;
   IF v_chat IS NOT NULL THEN
     UPDATE public.tg_chats SET username = COALESCE(username, v_user), phone = COALESCE(phone, v_phone),
@@ -192,6 +194,8 @@ BEGIN
   SELECT t.* INTO ch FROM public.tg_chats t JOIN public.telegram_accounts a ON a.id = t.account_id AND a.status = 'active'
   WHERE t.client_id = v_client ORDER BY t.last_message_at DESC NULLS LAST, t.created_at DESC LIMIT 1;
   IF ch.id IS NOT NULL THEN
+    -- written from this bitim: the chat (and so its feed) follows it
+    UPDATE public.tg_chats SET lead_id = p_lead WHERE id = ch.id AND lead_id IS DISTINCT FROM p_lead;
     RETURN QUERY SELECT ch.account_id, ch.id, ch.tg_user_id, ch.access_hash, v_phone;
     RETURN;
   END IF;
@@ -213,10 +217,13 @@ RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
 DECLARE v_chat uuid; v_client uuid;
 BEGIN
   PERFORM 1 FROM public.telegram_accounts WHERE id = p_account FOR UPDATE;
-  SELECT id INTO v_chat FROM public.tg_chats WHERE account_id = p_account AND tg_user_id = p_tg_user;
-  IF v_chat IS NOT NULL THEN RETURN v_chat; END IF;
-  IF public.tg_today_new(p_account) >= 30 THEN RAISE EXCEPTION 'tg_cap'; END IF;
   SELECT client_id INTO v_client FROM public.crm_leads WHERE id = p_lead;
+  SELECT id INTO v_chat FROM public.tg_chats WHERE account_id = p_account AND tg_user_id = p_tg_user;
+  IF v_chat IS NOT NULL THEN
+    UPDATE public.tg_chats SET lead_id = p_lead, client_id = v_client WHERE id = v_chat;
+    RETURN v_chat;
+  END IF;
+  IF public.tg_today_new(p_account) >= 30 THEN RAISE EXCEPTION 'tg_cap'; END IF;
   INSERT INTO public.tg_chats (account_id, tg_user_id, access_hash, username, title, phone, client_id, lead_id, first_out_at)
   VALUES (p_account, p_tg_user, COALESCE(p_access_hash, ''), NULLIF(lower(ltrim(btrim(COALESCE(p_username, '')), '@')), ''),
           COALESCE(NULLIF(btrim(p_title), ''), ''), (SELECT phone FROM public.clients WHERE id = v_client), v_client, p_lead, now())

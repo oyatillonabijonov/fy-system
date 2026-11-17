@@ -21,9 +21,11 @@ async function botAlert(text: string): Promise<void> {
   }).catch(() => {})
 }
 
-let cfg: { make: (id: string) => TgPort; alert: (text: string) => Promise<void> } = { make: mtcutePort, alert: botAlert }
+let cfg: { make: (id: string) => TgPort; alert: (text: string) => Promise<void>; pingMs: number } = { make: mtcutePort, alert: botAlert, pingMs: 5 * 60_000 }
+const pings = new Map<string, ReturnType<typeof setInterval>>()
+const stopPing = (id: string) => { clearInterval(pings.get(id)); pings.delete(id) }
 /** tests swap the Telegram client and the alert sender */
-export function configureTg(c: Partial<typeof cfg>): void { cfg = { ...cfg, ...c }; ports.clear(); logins.clear() }
+export function configureTg(c: Partial<typeof cfg>): void { cfg = { ...cfg, ...c }; ports.clear(); logins.clear(); for (const id of [...pings.keys()]) stopPing(id) }
 
 export const tgEnabled = () => !!process.env.TELEGRAM_API_ID && !!process.env.TELEGRAM_API_HASH
 export const portFor = (id: string) => ports.get(id)
@@ -39,6 +41,7 @@ const log = (e: unknown) => console.error(`[tg] ${e instanceof Error ? e.message
 async function lost(sql: Sql, id: string): Promise<void> {
   const port = ports.get(id)
   ports.delete(id)
+  stopPing(id)
   const [row] = await sql<{ title: string }[]>`
     update telegram_accounts set status = 'logged_out' where id = ${id} and status <> 'logged_out' returning title`
   await port?.close().catch(() => {})
@@ -54,6 +57,8 @@ function attach(sql: Sql, id: string, port: TgPort): void {
     sql`select public.tg_read_outbox(c.id, ${maxId}, now()) from tg_chats c where c.account_id = ${id} and c.tg_user_id = ${userId}`.catch(log)
   })
   port.onLoggedOut(() => { if (!gone) { gone = true; lost(sql, id).catch(log) } })
+  // mtcute's update loop stops silently when Telegram ends the session; a call every few minutes notices it
+  pings.set(id, setInterval(() => { port.ping().catch(() => { /* logged-out fires onLoggedOut; other errors: next time */ }) }, cfg.pingMs))
 }
 
 /** On boot: reconnect every active account (Telegram replays what came in while we were down) */
@@ -113,6 +118,7 @@ export function submitPassword(id: string, pw: string): void {
 export async function logoutAccount(sql: Sql, id: string): Promise<void> {
   const port = ports.get(id)
   ports.delete(id)
+  stopPing(id)
   await port?.logout().catch(() => {})
   await port?.close().catch(() => {})
   await dropSession(id)

@@ -91,4 +91,17 @@ describe("sendToLead", () => {
     await expect(sendToLead(other.sql, "u1", { lead_id: "L1", text: "  " }, store())).rejects.toEqual(new TgError("tg_empty"))
     await expect(sendToLead(other.sql, "u1", { lead_id: "L1", text: "a", files: [{ path: "../x", name: "x", mime: "a/b" }] }, store())).rejects.toEqual(new TgError("tg_bad_file"))
   })
+
+  test("a first send Telegram refuses drops the new chat (no empty chat, cap slot back); an old chat is kept", async () => {
+    const port = fakePort({ sendText: async () => { throw new TgError("tg_privacy") } })
+    const fresh = db({ account_id: "acc-1", chat_id: null, tg_user_id: null, access_hash: null, phone: "+998901000002" })
+    await withPort(port, fresh.sql)
+    await expect(sendToLead(fresh.sql, "u1", { lead_id: "L1", text: "Salom" }, store())).rejects.toEqual(new TgError("tg_privacy"))
+    const drop = fresh.calls.find((c) => c.text.includes("delete from tg_chats"))
+    expect(drop?.values).toEqual(["chat-new"])
+
+    const old = db({ account_id: "acc-1", chat_id: "chat-1", tg_user_id: 5001, access_hash: "h1", phone: null })
+    await expect(sendToLead(old.sql, "u1", { lead_id: "L1", text: "Salom" }, store())).rejects.toEqual(new TgError("tg_privacy"))
+    expect(old.calls.some((c) => c.text.includes("delete from tg_chats"))).toBe(false)
+  })
 })

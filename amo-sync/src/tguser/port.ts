@@ -1,6 +1,7 @@
 // The company Telegram account (MTProto user client, migration 100). This is the only file that imports mtcute;
 // everything else talks to the small TgPort interface, so it can be tested with a fake.
-import { TelegramClient, InputMedia, FileLocation, tl, type Message, type User } from "@mtcute/bun"
+import Long from "long"
+import { TelegramClient, InputMedia, FileLocation, MtArgumentError, MtPeerNotFoundError, tl, type Message, type User } from "@mtcute/bun"
 
 export type TgPeer = { userId: number; accessHash: string; username: string | null; title: string; phone: string | null }
 export type TgMedia = { name: string; mime: string; size: number }
@@ -15,6 +16,8 @@ export interface TgPort {
   start(h: { qr(url: string, expires: Date): void; password(): Promise<string> }): Promise<{ id: number; name: string; phone: string | null }>
   /** reconnect a saved session; false = the session is gone */
   resume(): Promise<boolean>
+  /** a cheap call that fails (firing onLoggedOut) when Telegram ended the session — the update loop stops silently */
+  ping(): Promise<void>
   onMessage(cb: (m: TgIncoming) => void): void
   onReadOutbox(cb: (userId: number, maxId: number) => void): void
   onLoggedOut(cb: () => void): void
@@ -38,7 +41,12 @@ const LOGGED_OUT = ["AUTH_KEY_UNREGISTERED", "SESSION_REVOKED", "USER_DEACTIVATE
 
 /** mtcute errors → TgError (flood → seconds to wait) */
 export function mapError(e: unknown): unknown {
+  if (e instanceof MtPeerNotFoundError) return new TgError("tg_not_found")
+  // start() swallows a revoked key and falls through to a phone login it has no phone for
+  if (e instanceof MtArgumentError && /phone nor bot token/i.test(e.message)) return new TgError("tg_logged_out")
   if (tl.RpcError.is(e)) {
+    if (e.text === "PEER_FLOOD") return new TgError("tg_peer_flood")
+    if (e.text === "USER_PRIVACY_RESTRICTED" || e.text === "PRIVACY_PREMIUM_REQUIRED") return new TgError("tg_privacy")
     if (e.text === "FLOOD_WAIT_%d" || e.code === 420) return new TgError("tg_flood", (e as unknown as { seconds?: number }).seconds ?? 0)
     if (LOGGED_OUT.includes(e.text)) return new TgError("tg_logged_out")
     if (e.text === "PHONE_NOT_OCCUPIED" || e.text === "USERNAME_NOT_OCCUPIED" || e.text === "PEER_ID_INVALID") return new TgError("tg_not_found")
@@ -63,7 +71,10 @@ const mediaOf = (m: Message): TgMedia | null => {
 }
 
 export function mtcutePort(accountId: string): TgPort {
-  const tg = new TelegramClient({ apiId: Number(process.env.TELEGRAM_API_ID), apiHash: process.env.TELEGRAM_API_HASH ?? "", storage: sessionPath(accountId) })
+  const tg = new TelegramClient({
+    apiId: Number(process.env.TELEGRAM_API_ID), apiHash: process.env.TELEGRAM_API_HASH ?? "", storage: sessionPath(accountId),
+    updates: { catchUp: true },   // replies that came in while the worker was down are replayed (tg_log_message is idempotent)
+  })
   const loggedOut: (() => void)[] = []
   const lost = () => loggedOut.forEach((cb) => cb())
   tg.onError.add((e) => { if (mapError(e) instanceof TgError && (mapError(e) as TgError).code === "tg_logged_out") lost() })
@@ -75,7 +86,9 @@ export function mtcutePort(accountId: string): TgPort {
     }
   }
   const msgs = new Map<string, Message>()   // incoming kept briefly so download() can fetch the file
-  const input = (p: TgPeer) => p.userId
+  // the stored access hash makes a peer independent of the session's own peer cache
+  const input = (p: TgPeer): tl.TypeInputPeer | number =>
+    p.accessHash ? { _: "inputPeerUser", userId: p.userId, accessHash: Long.fromString(p.accessHash) } : p.userId
 
   return {
     async start(h) {
@@ -85,6 +98,7 @@ export function mtcutePort(accountId: string): TgPort {
     async resume() {
       try { await tg.start({}); return true } catch (e) { const m = mapError(e); if (m instanceof TgError && m.code === "tg_logged_out") return false; throw e }
     },
+    ping: () => call(async () => { await tg.getMe() }),
     onMessage(cb) {
       tg.onNewMessage.add((m) => {
         const s = m.chat
@@ -103,14 +117,15 @@ export function mtcutePort(accountId: string): TgPort {
     onLoggedOut(cb) { loggedOut.push(cb) },
     async resolvePhone(phone) {
       return call(async () => {
+        let found: tl.TypeInputPeer
         try {
-          await tg.resolvePhoneNumber(phone.replace(/^\+/, ""))
+          found = await tg.resolvePhoneNumber(phone.replace(/^\+/, ""))
         } catch (e) {
           const m = mapError(e)
           if (m instanceof TgError && m.code === "tg_not_found") return null
           throw e
         }
-        const [u] = await tg.getUsers(phone.replace(/^\+/, ""))
+        const [u] = await tg.getUsers(found)   // a phone string would be read as a username and refused
         return u ? peerOf(u) : null
       })
     },
