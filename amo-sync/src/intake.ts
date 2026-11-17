@@ -12,6 +12,7 @@ import { clientMeta, noBusiness, scoreLead, splitCapi, type Capi } from "./leadS
 import { META_LEAD_FIELDS, metaAttribution, splitAttribution } from "./attribution"
 import type { Attribution, MetaLead } from "./attribution"
 import { handleConnector, isConnectorPath } from "./mcp"
+import { handleTg } from "./tguser/http"
 import { handlePbx, pbxSyncedAt } from "./pbx"
 import { handleSms } from "./sms"
 
@@ -236,6 +237,7 @@ export function startIntake(sql: Sql): void {
       if (url.pathname === "/hooks/health") return health(sql)
       if (url.pathname.startsWith("/hooks/sms/")) return handleSms(req, sql, url)
       if (url.pathname === "/hooks/fb-lead") return handleFbLead(req, sql, url)
+      if (url.pathname.startsWith("/hooks/tg/")) return handleTg(req, sql, url.pathname.slice("/hooks/tg/".length))
       if (isConnectorPath(url.pathname)) return handleConnector(req, sql, url)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
