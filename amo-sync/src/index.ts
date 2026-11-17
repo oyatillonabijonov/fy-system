@@ -22,6 +22,7 @@ import { startCapi } from "./capi"
 import { startIntakeAlert } from "./intakeAlert"
 import { seedGroups } from "./groups"
 import { startSms } from "./sms"
+import { startTgAccounts, tgEnabled } from "./tguser/accounts"
 
 const env = (k: string, d?: string): string => {
   const v = process.env[k] ?? d
@@ -67,6 +68,8 @@ if (process.argv.includes("--once")) {
   startCapi(sql)
   startIntakeAlert(sql)
   await startSms(sql).catch((e) => console.error(`[sms] ${e instanceof Error ? e.message : e}`))
+  if (tgEnabled()) await startTgAccounts(sql).catch((e) => console.error(`[tg] ${e instanceof Error ? e.message : e}`))
+  else console.log("[tg] TELEGRAM_API_ID/HASH yo'q — Telegram widget o'chiq")
   for (;;) {
     await runOnce()
     await sleep(INTERVAL_MIN * 60 * 1000)
