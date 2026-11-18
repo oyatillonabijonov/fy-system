@@ -36,10 +36,12 @@ describe("chat helpers", () => {
   })
   test("filterInbox: name, phone digits, mine = mine or unowned", () => {
     const r = (id: string, title: string, phone: string | null, owner_id: string | null) =>
-      ({ id, title, phone, owner_id, unread: 0, last_message_at: null, lead_id: null, client_id: null, last: null })
+      ({ id, title, phone, owner_id, unread: 0, last_message_at: null, lead_id: null, client_id: null, image: null, last: null })
     const rows = [r("1", "Farah", "+998978859666", "u1"), r("2", "Nuriddin", "+998901112120", null), r("3", "Akmal", null, "u2")]
-    expect(filterInbox(rows, "far", false, "u1").map((x) => x.id)).toEqual(["1"])
-    expect(filterInbox(rows, "97 885", false, "u1").map((x) => x.id)).toEqual(["1"])
-    expect(filterInbox(rows, "", true, "u1").map((x) => x.id)).toEqual(["1", "2"])
+    expect(filterInbox(rows, "far", "all", "u1").map((x) => x.id)).toEqual(["1"])
+    expect(filterInbox(rows, "97 885", "all", "u1").map((x) => x.id)).toEqual(["1"])
+    expect(filterInbox(rows, "", "mine", "u1").map((x) => x.id)).toEqual(["1", "2"])
+    const unread = rows.map((x) => (x.id === "3" ? { ...x, unread: 2 } : x))
+    expect(filterInbox(unread, "", "unread", "u1").map((x) => x.id)).toEqual(["3"])
   })
 })
