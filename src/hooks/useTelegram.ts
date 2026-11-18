@@ -2,8 +2,8 @@ import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/context/AuthContext"
 import {
-  deleteTgTemplate, getClientLeadId, getClientTelegram, getTgInbox, getTgAccounts, getTgTemplates, getTgUnread, saveTgTemplate, tgHook,
-  type LoginState, type TgFileRef, type TgTemplate,
+  deleteTgSchedule, deleteTgTemplate, getClientLeadId, getTgSchedules, saveTgSchedule, getClientTelegram, getTgInbox, getTgAccounts, getTgTemplates, getTgUnread, saveTgTemplate, tgHook,
+  type LoginState, type TgFileRef, type TgSchedule, type TgTemplate,
 } from "@/lib/supabase/queries/telegram"
 
 export const TG_KEY = ["telegram"] as const
@@ -46,3 +46,7 @@ export const useTgLogout = () => useTgMutation((id: string) => tgHook(`logout/${
 export const tgBeginLogin = (title: string, profileId: string | null) => tgHook<{ id: string }>("login", { title, profile_id: profileId })
 export const tgLoginState = (id: string) => tgHook<LoginState>(`login/${id}`)
 export const tgSubmitPassword = (id: string, password: string) => tgHook(`login/${id}/password`, { password })
+export const useTgSchedules = (pipelineId: string) => useQuery({ queryKey: [...TG_KEY, "schedules", pipelineId], queryFn: () => getTgSchedules(pipelineId), refetchOnMount: true })
+export const useSaveTgSchedule = () =>
+  useTgMutation((s: Pick<TgSchedule, "pipeline_id" | "template_id" | "days_before" | "at_time" | "stage_ids" | "enabled"> & { id?: string }) => saveTgSchedule(s))
+export const useDeleteTgSchedule = () => useTgMutation((id: string) => deleteTgSchedule(id), "Rejalashtirilgan xabar o'chirildi")
