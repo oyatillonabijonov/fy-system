@@ -141,7 +141,7 @@ export function PhoneWidget() {
     <AnimatePresence>
       {(call || busyCalls.length > 0) && (
         <div ref={area} className="fixed inset-3 max-lg:bottom-[calc(var(--tabbar-h)+0.75rem)] z-[120] pointer-events-none">
-        <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite"
+        <motion.div role="dialog" aria-label="Qo'ng'iroq" aria-live="polite" data-call-card
           drag dragControls={drag} dragListener={false} dragMomentum={false} dragElastic={0} dragConstraints={area} onDragEnd={savePos}
           initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
           className="pointer-events-auto absolute bottom-2 right-2 w-[320px] max-sm:w-full max-w-full rounded-surface bg-surface-raised border border-line p-4 flex flex-col gap-3"

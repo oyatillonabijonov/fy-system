@@ -1,12 +1,13 @@
 // The blue Telegram button + floating chat window (variant B, chosen 2026-11-18, AmoCRM style) on the bitim page
 // and the client card. Open state is the `tg` URL param, so the call card and the phone menu can open it.
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { useTgWindow } from "@/hooks/useTgWindow"
 import { AnimatePresence, motion } from "framer-motion"
 import { TelegramLogo } from "@phosphor-icons/react"
 import { useMedia } from "@/hooks/useMedia"
 import { useClientTelegram } from "@/hooks/useTelegram"
+import { usePhone } from "@/context/PhoneContext"
 import { TgBadge } from "./TgBadge"
 import { TgChat } from "./TgChat"
 
@@ -16,6 +17,13 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
   const phoneView = useMedia("(width < 40rem)")
   const { data } = useClientTelegram(clientId)
   const unread = (data?.chats ?? []).reduce((s, c) => s + c.unread, 0)
+  // The call card (PhoneWidget) lives in the same bottom-right corner and stays on top: while it shows, the
+  // Telegram button and window stand to its left on a desktop, and above it on a phone.
+  const { call, busyCalls } = usePhone()
+  const callCard = !!call || busyCalls.length > 0
+  const cardH = useCallCardHeight(callCard && phoneView)
+  const beside = callCard && !phoneView ? { right: 352 } : undefined                                    // 20 + 320 (card) + 12
+  const above = callCard && phoneView ? `calc(var(--tabbar-h) + ${cardH + 32}px)` : undefined           // card's bottom offset 20 + gap 12
 
   useEffect(() => {
     if (!open) return
@@ -35,6 +43,7 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
           <motion.div key="tg" role="dialog" aria-label={`Telegram — ${title}`}
             initial={{ opacity: 0, y: 16, scale: phoneView ? 1 : 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.18 }}
+            style={phoneView ? (above ? { paddingBottom: above } : undefined) : beside}
             className={phoneView
               ? "fixed inset-0 z-[110] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-surface"
               : "fixed right-6 bottom-24 z-[110] w-[380px] h-[560px] max-h-[calc(100dvh-8rem)] rounded-surface border border-line overflow-hidden bg-surface"}>
@@ -44,6 +53,7 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
       </AnimatePresence>
       {pill ? null : !(open && phoneView) && (
         <button type="button" onClick={() => setOpen(!open)} aria-label={open ? "Telegram oynasini yig'ish" : "Telegram"} aria-expanded={open}
+          style={phoneView ? (above ? { bottom: above } : undefined) : beside}
           className="fixed right-6 max-lg:right-4 bottom-6 max-lg:bottom-[calc(var(--tabbar-h)+5.5rem)] z-[70] size-14 rounded-full bg-[#2AABEE] text-white flex items-center justify-center hover:bg-[#229ED9] transition-colors">
           <TelegramLogo size={28} weight="fill" />
           {unread > 0 && <span className="absolute -top-1 -right-1"><TgBadge n={unread} /></span>}
@@ -63,4 +73,21 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
       {panel}
     </>
   )
+}
+
+/** Height of the call card while it shows (0 otherwise) — the card grows with the list of missed callers */
+function useCallCardHeight(active: boolean): number {
+  const [h, setH] = useState(0)
+  useEffect(() => {
+    if (!active) return
+    let ro: ResizeObserver | undefined
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>("[data-call-card]")
+      if (!el) return
+      ro = new ResizeObserver(() => setH(el.offsetHeight))
+      ro.observe(el)
+    })
+    return () => { cancelAnimationFrame(id); ro?.disconnect() }
+  }, [active])
+  return active ? h : 0
 }
