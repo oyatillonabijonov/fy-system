@@ -10,7 +10,6 @@ import { TG_KEY, tgBeginLogin, tgLoginState, tgSubmitPassword, useTgAccounts, us
 import type { LoginState } from "@/lib/supabase/queries/telegram"
 import { confirmAction } from "@/lib/confirm"
 import { formatPhone } from "@/lib/format"
-import { TgTemplates } from "./TgTemplates"
 
 const FIELD = "w-full h-control-md max-sm:h-12 border border-line rounded-control px-3 text-base text-ink bg-surface focus:outline-none focus:border-line-focus"
 const PRIMARY = "h-control-md max-sm:h-12 px-4 inline-flex items-center justify-center gap-2 rounded-full bg-accent text-ink-on-accent text-base font-medium whitespace-nowrap hover:bg-accent-hover disabled:opacity-40"
@@ -23,14 +22,8 @@ export function TelegramSection() {
   const [connecting, setConnecting] = useState(false)
 
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
-      <div className="flex flex-wrap items-end justify-between gap-3 max-lg:px-1">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-md font-semibold text-ink max-lg:text-base">Telegram · sotuvchilar yozishmasi</h2>
-          <p className="text-sm text-ink-muted max-lg:hidden">Kompaniya Telegram akkauntini ulang — sotuvchilar bitim sahifasidan lidga yozadi, javoblar bitimga tushadi.</p>
-        </div>
-        {enabled && <button type="button" onClick={() => setConnecting(true)} className={PRIMARY}><Plus size={16} /> Telegram ulash</button>}
-      </div>
+    <section className="flex flex-col gap-4 max-lg:gap-2">
+      {enabled && <button type="button" onClick={() => setConnecting(true)} className={`${PRIMARY} self-start`}><Plus size={16} /> Telegram ulash</button>}
       {enabled === false && (
         <p className="px-4 py-3 rounded-surface bg-warning-soft text-sm text-warning-text">
           Serverda Telegram sozlanmagan: my.telegram.org dan olingan TELEGRAM_API_ID va TELEGRAM_API_HASH kerak.
@@ -60,7 +53,6 @@ export function TelegramSection() {
           </tbody>
         </table>
       </div>
-      <TgTemplates />
       {connecting && <ConnectSheet onClose={() => setConnecting(false)} />}
     </section>
   )

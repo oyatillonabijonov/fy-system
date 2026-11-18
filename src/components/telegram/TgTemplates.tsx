@@ -28,7 +28,7 @@ export function TgTemplates() {
   return (
     <div className="flex flex-col gap-3 mt-2">
       <div className="flex items-center justify-between gap-3 max-lg:px-1">
-        <h3 className="text-base font-semibold text-ink">Shablonlar</h3>
+        <span className="text-sm text-ink-muted">{list.length ? `${list.length} ta shablon` : ""}</span>
         <button type="button" onClick={() => setOpen("new")} className="h-8 px-3 inline-flex items-center gap-1.5 rounded-full bg-mute-soft text-sm font-medium text-ink hover:bg-mute-soft-hover whitespace-nowrap">
           <Plus size={16} /> Shablon
         </button>
