@@ -61,7 +61,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali.", short: 'Faollik' },
   '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash.", short: 'Profilim' },
-  '/sozlamalar/integratsiyalar': { title: 'Integratsiyalar', desc: "Telegram guruhlar — bot qaysi guruhda nima qiladi." },
+  '/sozlamalar/integratsiyalar': { title: 'Integratsiyalar', desc: "Tashqi xizmatlar: Telegram, telefoniya, lid manbalari va anketa." },
 }
 
 function pageMetaFor(pathname: string): PageMeta {
