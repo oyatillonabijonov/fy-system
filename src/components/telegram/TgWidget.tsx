@@ -2,20 +2,13 @@
 // and the client card. Open state is the `tg` URL param, so the call card and the phone menu can open it.
 import { useEffect } from "react"
 import { createPortal } from "react-dom"
-import { useSearchParams } from "react-router-dom"
+import { useTgWindow } from "@/hooks/useTgWindow"
 import { AnimatePresence, motion } from "framer-motion"
 import { TelegramLogo } from "@phosphor-icons/react"
 import { useMedia } from "@/hooks/useMedia"
 import { useClientTelegram } from "@/hooks/useTelegram"
 import { TgBadge } from "./TgBadge"
 import { TgChat } from "./TgChat"
-
-export function useTgWindow() {
-  const [params, setParams] = useSearchParams()
-  const open = params.get("tg") === "1"
-  const set = (v: boolean) => setParams((p) => { const n = new URLSearchParams(p); if (v) n.set("tg", "1"); else n.delete("tg"); return n }, { replace: true })
-  return [open, set] as const
-}
 
 /** `pill`: a "Telegram" button in place (the client card, itself a dialog) instead of the floating round one */
 export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clientId: string; leadId: string | null; title: string; phone: string | null; image?: string | null; pill?: boolean }) {

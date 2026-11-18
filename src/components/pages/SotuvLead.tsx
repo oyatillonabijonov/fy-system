@@ -26,7 +26,8 @@ import { useClientSms } from "@/hooks/useSms"
 import { SMS_STATUS, type ClientSmsRow } from "@/lib/supabase/queries/sms"
 import { usePhone } from "@/context/PhoneContext"
 import { toast } from "@/lib/toast"
-import { TgWidget, useTgWindow } from "@/components/telegram/TgWidget"
+import { TgWidget } from "@/components/telegram/TgWidget"
+import { useTgWindow } from "@/hooks/useTgWindow"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
