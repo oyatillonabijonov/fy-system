@@ -1,12 +1,14 @@
-// The bitim's Telegram tab (100): pick a template and/or type, attach files, send from the company account.
+// The chat's footer (100, redesigned 2026-11-18): template chips, 📎, a growing text field — Enter sends,
+// Shift+Enter breaks the line — and the send button.
 import { useRef, useState } from "react"
 import { Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
 import { useSendTelegram, useTgTemplates } from "@/hooks/useTelegram"
 import { uploadTgFile, type TgFileRef } from "@/lib/supabase/queries/telegram"
 import { TG_MAX_FILE } from "@/lib/telegram"
-import { toast } from "@/lib/toast"
 
-export function TgComposer({ leadId, onSent }: { leadId: string; onSent?: () => void }) {
+const CHIP = "h-7 px-2.5 shrink-0 inline-flex items-center gap-1.5 rounded-full text-sm whitespace-nowrap max-w-56"
+
+export function TgComposer({ leadId }: { leadId: string }) {
   const { data: templates = [] } = useTgTemplates()
   const send = useSendTelegram()
   const [templateId, setTemplateId] = useState<string | null>(null)
@@ -18,11 +20,9 @@ export function TgComposer({ leadId, onSent }: { leadId: string; onSent?: () => 
   const template = templates.find((t) => t.id === templateId) ?? null
 
   function pick(id: string) {
-    const t = templates.find((x) => x.id === id)
-    if (!t) return
     if (templateId === id) { setTemplateId(null); setText(""); return }
-    setTemplateId(id)
-    setText(t.body)
+    const t = templates.find((x) => x.id === id)
+    if (t) { setTemplateId(id); setText(t.body) }
   }
 
   async function attach(list: FileList | null) {
@@ -34,52 +34,53 @@ export function TgComposer({ leadId, onSent }: { leadId: string; onSent?: () => 
     finally { setUploading(false) }
   }
 
+  const empty = !text.trim() && !files.length && !template?.files.length
   function submit() {
+    if (empty || uploading || send.isPending) return
     setError("")
     send.mutate({ lead_id: leadId, text, template_id: templateId, files }, {
-      onSuccess: () => { setText(""); setFiles([]); setTemplateId(null); toast.success("Telegramga yuborildi"); onSent?.() },
+      onSuccess: () => { setText(""); setFiles([]); setTemplateId(null) },
       onError: (e) => setError(e.message),
     })
   }
 
-  const empty = !text.trim() && !files.length && !template?.files.length
   return (
     <div className="flex flex-col gap-2 p-2">
       {templates.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar px-1">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
           {templates.map((t) => (
             <button key={t.id} type="button" onClick={() => pick(t.id)} aria-pressed={templateId === t.id}
-              className={`h-8 px-3 shrink-0 rounded-full text-sm whitespace-nowrap border transition-colors ${templateId === t.id ? "border-ink text-ink bg-surface-sunken" : "border-line text-ink-muted hover:text-ink"}`}>
-              {t.title}{t.files.length ? ` · 📎${t.files.length}` : ""}
+              className={`${CHIP} transition-colors ${templateId === t.id ? "bg-[#2AABEE] text-white" : "bg-mute-soft text-ink hover:bg-mute-soft-hover"}`}>
+              <span className="truncate">{t.title}</span>{t.files.length > 0 && <Paperclip size={12} weight="bold" className="shrink-0" />}
             </button>
           ))}
         </div>
       )}
       {(template?.files.length || files.length) ? (
-        <div className="flex flex-wrap gap-1.5 px-1">
-          {template?.files.map((f) => <span key={f.path} className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-full bg-surface-sunken text-sm text-ink-muted max-w-56"><Paperclip size={12} weight="bold" /><span className="truncate">{f.name}</span></span>)}
+        <div className="flex flex-wrap gap-1.5">
+          {template?.files.map((f) => <span key={f.path} className={`${CHIP} bg-surface-sunken text-ink-muted`}><Paperclip size={12} weight="bold" /><span className="truncate">{f.name}</span></span>)}
           {files.map((f) => (
-            <span key={f.path} className="h-7 pl-2.5 pr-1 inline-flex items-center gap-1.5 rounded-full bg-surface-sunken text-sm text-ink max-w-56">
+            <span key={f.path} className={`${CHIP} pr-1 bg-surface-sunken text-ink`}>
               <Paperclip size={12} weight="bold" /><span className="truncate">{f.name}</span>
               <button type="button" aria-label="Olib tashlash" onClick={() => setFiles(files.filter((x) => x.path !== f.path))} className="size-5 rounded-full flex items-center justify-center hover:bg-mute-ghost-hover"><X size={12} weight="bold" /></button>
             </span>
           ))}
         </div>
       ) : null}
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1.5">
         <button type="button" aria-label="Fayl biriktirish" disabled={uploading || files.length >= 5} onClick={() => fileRef.current?.click()}
-          className="size-9 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover disabled:opacity-40"><Paperclip size={18} /></button>
+          className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover disabled:opacity-40"><Paperclip size={20} /></button>
         <input ref={fileRef} type="file" multiple hidden onChange={(e) => { void attach(e.target.files); e.target.value = "" }} />
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} maxLength={4000}
-          placeholder={uploading ? "Fayl yuklanmoqda…" : "Telegram xabari… ({ism} o'zi to'ldiriladi)"}
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !empty) submit() }}
-          className="flex-1 resize-none bg-transparent px-1.5 py-1 text-base text-ink placeholder:text-ink-faint focus:outline-none" />
-        <button type="button" onClick={submit} disabled={empty || uploading || send.isPending}
-          className="h-9 px-4 shrink-0 inline-flex items-center gap-1.5 rounded-full bg-accent text-ink-on-accent text-sm font-medium hover:bg-accent-hover disabled:opacity-40">
-          <PaperPlaneRight size={16} />{send.isPending ? "Yuborilmoqda…" : "Yuborish"}
+        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} aria-label="Xabar"
+          placeholder={uploading ? "Fayl yuklanmoqda…" : "Xabar yozing…"}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit() } }}
+          className="flex-1 min-h-10 max-h-40 [field-sizing:content] resize-none rounded-[20px] bg-surface-sunken px-4 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+        <button type="button" onClick={submit} disabled={empty || uploading || send.isPending} aria-label="Yuborish"
+          className="size-10 shrink-0 rounded-full bg-[#2AABEE] text-white flex items-center justify-center hover:bg-[#229ED9] disabled:opacity-40">
+          <PaperPlaneRight size={18} weight="fill" />
         </button>
       </div>
-      {error && <p role="alert" className="px-1.5 text-sm text-danger-text">{error}</p>}
+      {error && <p role="alert" className="px-2 text-sm text-danger-text">{error}</p>}
     </div>
   )
 }

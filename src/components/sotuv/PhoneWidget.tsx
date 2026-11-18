@@ -101,7 +101,7 @@ export function PhoneWidget() {
             </Link>
           )}
           {call.contact?.leadId && (
-            <Link to={`/sotuv/bitim/${call.contact.leadId}?tab=telegram`} onClick={() => setMini(true)}
+            <Link to={`/sotuv/bitim/${call.contact.leadId}?tg=1`} onClick={() => setMini(true)}
               className="mt-2 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface-sunken text-sm text-ink"><TelegramLogo size={16} />Ma'lumot yuborish</Link>
           )}
         </div>
@@ -173,7 +173,7 @@ export function PhoneWidget() {
             </Link>
           )}
           {call.contact?.leadId && (
-            <Link to={`/sotuv/bitim/${call.contact.leadId}?tab=telegram`}
+            <Link to={`/sotuv/bitim/${call.contact.leadId}?tg=1`}
               className="flex items-center gap-2 h-9 px-3 rounded-full bg-surface-sunken text-sm text-ink hover:bg-surface-sunken-hover transition-colors">
               <TelegramLogo size={16} className="text-ink-muted" />Ma'lumot yuborish
             </Link>
