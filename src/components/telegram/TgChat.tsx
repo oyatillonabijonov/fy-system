@@ -9,7 +9,7 @@ import { withDays } from "@/lib/telegram"
 import { tashkentToday } from "@/lib/period"
 import { formatPhone } from "@/lib/format"
 import { toast } from "@/lib/toast"
-import { PersonDot } from "@/components/vazifalar/pickers"
+import { TgAvatar } from "./TgAvatar"
 import { TgComposer } from "./TgComposer"
 
 const clock = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit" }).format(new Date(iso))
@@ -36,28 +36,28 @@ export function TgChat({ clientId, leadId, title, phone, image, onClose, onColla
     <div className="flex flex-col h-full min-h-0 bg-surface">
       <div className="flex items-center gap-3 px-3 h-14 border-b border-line shrink-0">
         <span className="relative shrink-0">
-          <PersonDot name={title} url={image ?? null} size={36} />
+          <TgAvatar name={title} url={image ?? null} size={40} />
           <span className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full bg-[#2AABEE] text-white flex items-center justify-center ring-2 ring-surface"><TelegramLogo size={10} weight="fill" /></span>
         </span>
         <span className="flex-1 min-w-0 flex flex-col">
           <span className="text-base font-semibold text-ink truncate">{title}</span>
-          <span className="text-sm text-ink-muted truncate tabular-nums">{phone ? formatPhone(phone) : "Telegram"}</span>
+          <span className="text-sm text-[#2AABEE] truncate tabular-nums">Telegram{phone ? ` · ${formatPhone(phone)}` : ""}</span>
         </span>
         {bitimLink && leadId && <Link to={`/sotuv/bitim/${leadId}`} className="h-8 px-3 inline-flex items-center gap-1.5 rounded-full bg-mute-soft text-sm text-ink hover:bg-mute-soft-hover whitespace-nowrap"><ArrowSquareOut size={16} />Bitim</Link>}
         {onCollapse && <button type="button" aria-label="Yig'ish" onClick={onCollapse} className={ICON_BTN}><Minus size={18} /></button>}
         {onClose && <button type="button" aria-label="Yopish" onClick={onClose} className={ICON_BTN}><X size={18} /></button>}
       </div>
 
-      <div ref={body} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 flex flex-col gap-1 bg-surface-sunken">
+      <div ref={body} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col gap-1.5 bg-[#E9EEF3] dark:bg-[#0E1621]">
         {isLoading ? <p className="m-auto text-sm text-ink-muted">Yuklanmoqda…</p>
           : messages.length === 0 ? (
             <div className="m-auto flex flex-col items-center gap-2 text-center px-6">
               <span className="size-12 rounded-full bg-[#2AABEE] text-white flex items-center justify-center"><TelegramLogo size={28} weight="fill" /></span>
-              <p className="text-sm text-ink-muted">Hali yozishma yo'q — birinchi xabarni yuboring</p>
+              <p className="text-sm text-[#5F5E5A] dark:text-white/70">Hali yozishma yo'q — birinchi xabarni yuboring</p>
             </div>
           )
           : withDays(messages, today).map((m, i) => "day" in m
-            ? <div key={`d${i}`} className="self-center my-2 px-3 h-6 inline-flex items-center rounded-full bg-surface text-xs text-ink-muted">{m.day}</div>
+            ? <div key={`d${i}`} className="self-center my-2 px-3 h-6 inline-flex items-center rounded-full bg-black/10 dark:bg-white/10 text-xs font-medium text-[#444441] dark:text-white/80">{m.day}</div>
             : <Bubble key={m.id} msg={m} />)}
       </div>
 
@@ -74,20 +74,20 @@ function Bubble({ msg }: { msg: TgMessage }) {
   const open = (path: string) => tgFileUrl(path).then((u) => window.open(u, "_blank", "noopener"), (e: Error) => toast.error("Fayl ochilmadi", e.message))
   return (
     <div className={`flex ${out ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 ${out ? "rounded-br-md bg-[#D7EEFC] text-[#0C447C] dark:bg-[#163b55] dark:text-[#d7eefc]" : "rounded-bl-md bg-surface text-ink"}`}>
+      <div className={`max-w-[min(85%,560px)] rounded-2xl px-3 py-1.5 ${out ? "rounded-br-md bg-[#2AABEE] text-white dark:bg-[#2B5278]" : "rounded-bl-md bg-white text-[#2C2C2A] dark:bg-[#182533] dark:text-white"}`}>
         {files.map((f) => (
           <button key={f.path} type="button" onClick={() => void open(f.path)}
-            className="my-1 w-full flex items-center gap-2 text-left rounded-control bg-black/5 dark:bg-white/10 px-2.5 py-2 hover:bg-black/10 dark:hover:bg-white/15">
-            <span className="size-8 shrink-0 rounded-full bg-[#2AABEE] text-white flex items-center justify-center"><Paperclip size={16} /></span>
+            className={`my-1 w-full flex items-center gap-2 text-left rounded-control px-2.5 py-2 ${out ? "bg-white/15 hover:bg-white/25" : "bg-black/5 hover:bg-black/10 dark:bg-white/10"}`}>
+            <span className={`size-8 shrink-0 rounded-full flex items-center justify-center ${out ? "bg-white text-[#2AABEE]" : "bg-[#2AABEE] text-white"}`}><Paperclip size={16} /></span>
             <span className="min-w-0 text-sm font-medium truncate">{f.name}</span>
           </button>
         ))}
         {msg.text && <p className="text-base whitespace-pre-wrap break-words">{msg.text}</p>}
-        <span className={`flex items-center justify-end gap-1 text-xs ${out ? "opacity-70" : "text-ink-faint"}`}>
+        <span className={`flex items-center justify-end gap-1 text-xs ${out ? "text-white/75" : "text-[#888780] dark:text-white/50"}`}>
           {out && !msg.sender && <span className="mr-auto">ilovadan</span>}
           {out && msg.sender && <span className="mr-auto truncate">{msg.sender.full_name.split(" ")[0]}</span>}
           <span className="tabular-nums">{clock(msg.created_at)}</span>
-          {out && (msg.read_at ? <Checks size={12} weight="bold" className="text-[#2AABEE]" /> : <Check size={12} weight="bold" />)}
+          {out && (msg.read_at ? <Checks size={12} weight="bold" className="text-white" /> : <Check size={12} weight="bold" />)}
         </span>
       </div>
     </div>

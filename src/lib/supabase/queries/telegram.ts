@@ -89,16 +89,16 @@ export async function getClientTelegram(clientId: string): Promise<{ chats: TgCh
 /** Sotuv bo'limi → Telegram: every chat with its newest message and its bitim's owner */
 export async function getTgInbox(): Promise<TgInboxRow[]> {
   const { data, error } = await db.from("tg_chats")
-    .select("id, title, phone, unread, last_message_at, lead_id, client_id, client:client_id(full_name, phone), lead:lead_id(responsible_user_id), last:tg_messages(text, files, direction, created_at)")
+    .select("id, title, phone, unread, last_message_at, lead_id, client_id, client:client_id(full_name, phone, image), lead:lead_id(responsible_user_id), last:tg_messages(text, files, direction, created_at)")
     .not("client_id", "is", null)
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("created_at", { referencedTable: "tg_messages", ascending: false }).limit(1, { referencedTable: "tg_messages" })
   if (error) throw error
   type Row = { id: string; title: string; phone: string | null; unread: number; last_message_at: string | null; lead_id: string | null; client_id: string | null
-    client: { full_name: string; phone: string | null } | null; lead: { responsible_user_id: string | null } | null; last: TgInboxRow["last"][] }
+    client: { full_name: string; phone: string | null; image: string | null } | null; lead: { responsible_user_id: string | null } | null; last: TgInboxRow["last"][] }
   return (data as unknown as Row[]).map((r) => ({
     id: r.id, title: r.client?.full_name || r.title, phone: r.client?.phone ?? r.phone, unread: r.unread, last_message_at: r.last_message_at,
-    lead_id: r.lead_id, client_id: r.client_id, owner_id: r.lead?.responsible_user_id ?? null, last: r.last[0] ?? null,
+    lead_id: r.lead_id, client_id: r.client_id, owner_id: r.lead?.responsible_user_id ?? null, image: r.client?.image ?? null, last: r.last[0] ?? null,
   }))
 }
 

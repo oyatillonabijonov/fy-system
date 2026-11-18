@@ -51,15 +51,17 @@ export function withDays<T extends { created_at: string }>(msgs: T[], today: str
 
 export type TgInboxRow = {
   id: string; title: string; phone: string | null; unread: number; last_message_at: string | null
-  lead_id: string | null; client_id: string | null; owner_id: string | null
+  lead_id: string | null; client_id: string | null; owner_id: string | null; image: string | null
   last: { text: string; files: unknown[]; direction: "in" | "out" } | null
 }
 
-/** Inbox search (name or phone digits) and "Mening" (my bitimlar + unowned) */
-export function filterInbox(rows: TgInboxRow[], q: string, mine: boolean, uid: string | null): TgInboxRow[] {
+export type InboxMode = "all" | "unread" | "mine"
+
+/** Inbox search (name or phone digits) and the tabs: Hammasi / O'qilmagan / Mening (my bitimlar + unowned) */
+export function filterInbox(rows: TgInboxRow[], q: string, mode: InboxMode, uid: string | null): TgInboxRow[] {
   const text = q.trim().toLowerCase()
   const digits = q.replace(/\D/g, "")
   return rows.filter((r) =>
-    (!mine || !r.owner_id || r.owner_id === uid) &&
+    (mode !== "mine" || !r.owner_id || r.owner_id === uid) && (mode !== "unread" || r.unread > 0) &&
     (!text || r.title.toLowerCase().includes(text) || (digits.length >= 3 && (r.phone ?? "").replace(/\D/g, "").includes(digits))))
 }
