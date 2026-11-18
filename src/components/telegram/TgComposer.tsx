@@ -5,7 +5,8 @@ import { Lightning, Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
 import { useSendTelegram, useTgTemplates } from "@/hooks/useTelegram"
 import { useLead } from "@/hooks/useSotuv"
 import { uploadTgFile, type TgFileRef } from "@/lib/supabase/queries/telegram"
-import { TG_MAX_FILE } from "@/lib/telegram"
+import { TG_MAX_FILE, smsFallback } from "@/lib/telegram"
+import { openSms } from "@/lib/smsOffer"
 
 const CHIP = "h-7 px-2.5 shrink-0 inline-flex items-center gap-1.5 rounded-full text-sm whitespace-nowrap max-w-56"
 
@@ -20,6 +21,7 @@ export function TgComposer({ leadId }: { leadId: string }) {
   const [files, setFiles] = useState<TgFileRef[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
+  const [offerSms, setOfferSms] = useState(false)   // Telegram can't reach this person: SMS instead
   const fileRef = useRef<HTMLInputElement>(null)
   const field = useRef<HTMLTextAreaElement>(null)
   // grow with the text up to 160px (Safari has no field-sizing: content)
@@ -49,10 +51,10 @@ export function TgComposer({ leadId }: { leadId: string }) {
   const empty = !text.trim() && !files.length && !template?.files.length
   function submit() {
     if (empty || uploading || send.isPending) return
-    setError("")
+    setError(""); setOfferSms(false)
     send.mutate({ lead_id: leadId, text, template_id: templateId, files }, {
       onSuccess: () => { setText(""); setFiles([]); setTemplateId(null) },
-      onError: (e) => setError(e.message),
+      onError: (e) => { setError(e.message); setOfferSms(smsFallback((e as { code?: string }).code)) },
     })
   }
 
@@ -93,7 +95,15 @@ export function TgComposer({ leadId }: { leadId: string }) {
           <PaperPlaneRight size={18} weight="fill" />
         </button>
       </div>
-      {error && <p role="alert" className="px-2 text-sm text-danger-text">{error}</p>}
+      {error && (
+        <div role="alert" className="px-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-danger-text">
+          <span>{error}</span>
+          {offerSms && lead?.client && (
+            <button type="button" onClick={() => openSms({ clientId: lead.client!.id, clientName: lead.client!.full_name })}
+              className="h-7 px-3 rounded-full bg-mute-soft text-ink font-medium whitespace-nowrap hover:bg-mute-soft-hover">SMS yuborish</button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

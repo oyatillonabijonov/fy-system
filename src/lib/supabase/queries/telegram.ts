@@ -23,7 +23,8 @@ export async function tgHook<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   const json = (await res.json().catch(() => ({}))) as { error?: string; seconds?: number } & T
-  if (!res.ok) throw new Error(json.error ? tgErrorText(json.error, json.seconds) : `HTTP ${res.status}`)
+  // the worker's refusal code rides along (smsFallback reads it)
+  if (!res.ok) throw Object.assign(new Error(json.error ? tgErrorText(json.error, json.seconds) : `HTTP ${res.status}`), { code: json.error })
   return json
 }
 

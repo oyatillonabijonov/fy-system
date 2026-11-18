@@ -20,7 +20,7 @@ describe("tgErrorText", () => {
   })
 })
 
-import { dayLabel, withDays, filterInbox } from "./telegram"
+import { dayLabel, withDays, filterInbox, smsFallback } from "./telegram"
 
 describe("chat helpers", () => {
   test("dayLabel: Bugun / Kecha / d-oy (Tashkent)", () => {
@@ -43,5 +43,15 @@ describe("chat helpers", () => {
     expect(filterInbox(rows, "", "mine", "u1").map((x) => x.id)).toEqual(["1", "2"])
     const unread = rows.map((x) => (x.id === "3" ? { ...x, unread: 2 } : x))
     expect(filterInbox(unread, "", "unread", "u1").map((x) => x.id)).toEqual(["3"])
+  })
+})
+
+describe("smsFallback", () => {
+  test("only when the person can't be reached on Telegram at all", () => {
+    expect(smsFallback("tg_not_found")).toBe(true)
+    expect(smsFallback("tg_privacy")).toBe(true)
+    expect(smsFallback("tg_cap")).toBe(false)        // tomorrow Telegram works again
+    expect(smsFallback("tg_logged_out")).toBe(false) // our side is broken, not theirs
+    expect(smsFallback(undefined)).toBe(false)
   })
 })
