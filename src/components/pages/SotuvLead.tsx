@@ -28,6 +28,7 @@ import { usePhone } from "@/context/PhoneContext"
 import { toast } from "@/lib/toast"
 import { TgWidget } from "@/components/telegram/TgWidget"
 import { useTgWindow } from "@/hooks/useTgWindow"
+import { offerStageTelegram } from "@/lib/telegramStage"
 
 /** One deal on its own page, like AmoCRM's deal card: fields on the left, the feed on the right */
 export function SotuvLead() {
@@ -79,7 +80,8 @@ function LeadView({ lead }: { lead: Lead }) {
       if (!loss_reason) return
       patch = { ...patch, loss_reason }
     }
-    update.mutate({ id: lead.id, patch })
+    const moved = patch.stage_id && patch.stage_id !== lead.stage_id ? patch.stage_id : null
+    update.mutate({ id: lead.id, patch }, { onSuccess: () => { if (moved) void offerStageTelegram(lead.id, moved) } })
   }
 
   async function movePipeline(pid: string) {
