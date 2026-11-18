@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useMedia } from "@/hooks/useMedia"
-import { useSalesDashboard } from "@/hooks/useSalesDashboard"
+import { useSalesDashboard, useSalesInsights } from "@/hooks/useSalesDashboard"
 import { periodRange, tashkentToday } from "@/lib/period"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Skeleton } from "@/components/ui/Skeleton"
@@ -15,6 +15,7 @@ import { AttentionPanel } from "@/components/dashboard/AttentionPanel"
 import { FinancePanel } from "@/components/dashboard/FinancePanel"
 import { PlanCard } from "@/components/dashboard/PlanCard"
 import { Bento } from "@/components/dashboard/Bento"
+import { QualityCard, LossCard, CycleCard, ActivityCard, AdsTable } from "@/components/dashboard/Insights"
 import { TasksCard } from "@/components/dashboard/TasksCard"
 import { SpeedCard } from "@/components/dashboard/SpeedCard"
 import { MobileDashboard } from "@/components/dashboard/MobileDashboard"
@@ -48,6 +49,7 @@ export function Dashboard() {
   const [pipelineId, setPipelineId] = useState<string | null>(null)
   const { from, to } = useMemo(() => range(period), [period])
   const { data: d, isLoading, error, refetch } = useSalesDashboard(from, to, pipelineId)
+  const { data: ins } = useSalesInsights(from, to, pipelineId)   // the lower half (104): the first screen never waits for it
   const mobile = useMedia("(width < 64rem)")   // phone / tablet: its own layout, same data
   const [funnel, setFunnel] = useState<"now" | "conv">("now")
   const conv = useMemo(() => (d ? convRows(d.stage_conv, d.pipelines) : []), [d])
@@ -55,7 +57,7 @@ export function Dashboard() {
   if (mobile) {
     return (
       <div className="flex flex-col gap-4 pb-6">
-        {d ? <MobileDashboard d={d} periods={PERIODS} period={period} onPeriod={(id: string) => setPeriod(id as PeriodId)} pipelineId={pipelineId} onPipeline={setPipelineId} from={from} to={to} />
+        {d ? <MobileDashboard d={d} ins={ins} periods={PERIODS} period={period} onPeriod={(id: string) => setPeriod(id as PeriodId)} pipelineId={pipelineId} onPipeline={setPipelineId} from={from} to={to} />
           : (!error || isLoading) && <Skeleton className="h-[420px] rounded-surface" />}
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-surface bg-danger-soft text-danger-dark text-base">
@@ -122,12 +124,29 @@ export function Dashboard() {
                 </div>
               </div>
             </Section>
+            {ins && (
+              <Section title="Lid sifati va yo'qotishlar" desc="Ball tizimi to'g'ri saralayaptimi, bitimlar nega yutqazilyapti, sotuv necha kunda yopilyapti">
+                <div className="@container"><div className="grid grid-cols-1 @3xl:grid-cols-3 gap-3">
+                  <QualityCard q={ins.quality} /><LossCard rows={ins.lost_reasons} /><CycleCard c={ins.cycle} />
+                </div></div>
+              </Section>
+            )}
+            {ins && (
+              <Section title="Reklama kesimi" desc="Davrda ochilgan bitimlar qaysi reklamadan kelgani va ulardan nechta sotuv chiqqani. Joy va summa — bitim egasining o'z joyi bo'yicha">
+                <AdsTable rows={ins.by_ad} />
+              </Section>
+            )}
             <Section title="Sotuvchilar" desc="Bitimlar, sotilgan joylar (Moliyadan) va vazifalar; qatorni bosing — vazifalar ro'yxati">
               <SellersTable rows={d.sellers} from={from} to={to} pipelineId={pipelineId} />
             </Section>
             <Section title="Vazifalar holati" desc="Ochiq bitimlar eng yaqin ochiq vazifasi bo'yicha, hozir. Vazifasiz — birorta ochiq vazifasi yo'q bitimlar">
               <TasksCard tasks={d.tasks} pipelineId={pipelineId} />
             </Section>
+            {ins && (
+              <Section title="Faollik" desc="Lid oqimi va qo'ng'iroqlar vaqti mos kelyaptimi">
+                <ActivityCard a={ins.activity} />
+              </Section>
+            )}
             <Section title="Aloqaga chiqish tezligi" desc="Formadan kelgan lid → birinchi chiquvchi qo'ng'iroq. Ish vaqti: 09:00–18:00, Du–Sha (tungi lid 09:00 dan sanaladi)">
               <SpeedCard speed={d.speed} />
             </Section>

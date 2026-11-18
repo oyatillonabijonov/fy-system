@@ -1,6 +1,7 @@
-// Why a bitim was lost: the list the DB enforces (crm_loss_reasons, migration 096), and the app-wide
+// Why a bitim was lost: the list the DB enforces (crm_loss_reasons, migrations 096 + 104), and the app-wide
 // picker rendered once by components/sotuv/LossReasonHost. `const r = await askLossReason(); if (!r) return`
-export const LOSS_REASONS = ["Narx", "Vaqt to'g'ri kelmadi", "Tadbirkor emas", "Tasodifiy ariza", "Noto'g'ri raqam", "Javob bermadi", "Boshqa"] as const
+export const LOSS_REASONS = ["Narx", "Vaqt to'g'ri kelmadi", "Tadbirkor emas", "Tasodifiy ariza", "Noto'g'ri raqam", "Javob bermadi",
+  "Dubl", "Keyingi tadbirga", "Boshqa shaharda", "Raqobatchi", "Boshqa"] as const
 
 let pending: ((reason: string | null) => void) | null = null
 const listeners = new Set<() => void>()
