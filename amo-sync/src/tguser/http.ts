@@ -50,7 +50,11 @@ export async function handleTg(req: Request, sql: Sql, path: string): Promise<Re
     if (out && req.method === "POST") { await logoutAccount(sql, out[1]); return json({ ok: true }) }
     return json({ error: "not_found" }, 404)
   } catch (e) {
-    if (e instanceof TgError) return json({ error: e.code, seconds: e.seconds || undefined }, 409)
+    if (e instanceof TgError) {
+      // a refusal the seller sees; logged so "it didn't go" can be traced afterwards
+      console.log(`[tg] ${path} ${typeof body.lead_id === "string" ? body.lead_id : ""}: ${e.code}`)
+      return json({ error: e.code, seconds: e.seconds || undefined }, 409)
+    }
     console.error(`[tg] ${path}: ${e instanceof Error ? e.message : e}`)
     return json({ error: "tg_error" }, 500)
   }

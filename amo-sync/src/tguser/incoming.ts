@@ -28,5 +28,5 @@ export async function handleIncoming(sql: Sql, accountId: string, port: TgPort, 
       }
     }
   }
-  await sql`select public.tg_log_message(${chat.id}, ${m.msgId}, ${m.out ? "out" : "in"}, ${text}, ${JSON.stringify(files)}::jsonb, ${null}, ${null}, ${m.date})`
+  await sql`select public.tg_log_message(${chat.id}, ${m.msgId}, ${m.out ? "out" : "in"}, ${text}, ${sql.json(files)}, ${null}, ${null}, ${m.date})`
 }

@@ -66,7 +66,7 @@ export async function sendToLead(sql: Sql, uid: string, body: SendBody, store: S
   const text = fillBlanks(text0, { ism: (v?.client_name ?? "").trim().split(/\s+/)[0] ?? "", tadbir: v?.event_name ?? "", sana: uzDate(v?.event_date ?? null) })
 
   const log = (msgId: number, t: string, f: (SendFile & { size: number })[]) =>
-    sql`select public.tg_log_message(${chatId}, ${msgId}, ${"out"}, ${t}, ${JSON.stringify(f)}::jsonb, ${uid}, ${templateId}, ${new Date()})`
+    sql`select public.tg_log_message(${chatId}, ${msgId}, ${"out"}, ${t}, ${sql.json(f)}, ${uid}, ${templateId}, ${new Date()})`
 
   try {
     await deliver(text)
