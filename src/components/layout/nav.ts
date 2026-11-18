@@ -1,4 +1,4 @@
-import { Code, Funnel, Kanban, PhoneCall, ChatText, House, Users, Ticket, Gear, Bank, ClockCounterClockwise, CheckCircle,
+import { Code, Funnel, Kanban, PhoneCall, TelegramLogo, ChatText, House, Users, Ticket, Gear, Bank, ClockCounterClockwise, CheckCircle,
     type Icon as PhosphorIcon } from "@phosphor-icons/react"
 import type { ModuleName } from "@/lib/supabase/queries/auth"
 
@@ -31,6 +31,7 @@ export const navigationSections: NavSection[] = [
                 subItems: [
                     { name: "Bitimlar", icon: Kanban, path: "/sotuv", module: "sotuv-crmn" },
                     { name: "Qo'ng'iroqlar", icon: PhoneCall, path: "/sotuv/qongiroqlar", module: "sotuv-crmn" },
+                    { name: "Telegram", icon: TelegramLogo, path: "/sotuv/telegram", module: "sotuv-crmn" },
                 ],
             },
             { name: "Vazifalar", icon: CheckCircle, path: "/vazifalar" },

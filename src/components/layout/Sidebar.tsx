@@ -216,7 +216,7 @@ export function Sidebar() {
                                         {!isCollapsed && (
                                             <>
                                                 <span className="flex-1 text-left whitespace-nowrap truncate">{item.name}</span>
-                                                {!isExpanded && item.subItems?.some((s) => s.path === "/sotuv") && <TgBadge n={tgUnread} />}
+                                                {!isExpanded && item.subItems?.some((s) => s.path === "/sotuv/telegram") && <TgBadge n={tgUnread} />}
                                                 {hasSubItems && (
                                                     <CaretDown
                                                         size={16}
@@ -244,7 +244,7 @@ export function Sidebar() {
                                                     >
                                                         <subItem.icon size={16} className="flex-shrink-0" />
                                                         <span className="flex-1 text-left truncate">{subItem.name}</span>
-                                                        {subItem.path === "/sotuv" && <TgBadge n={tgUnread} />}
+                                                        {subItem.path === "/sotuv/telegram" && <TgBadge n={tgUnread} />}
                                                     </button>
                                                 )
                                             })}
