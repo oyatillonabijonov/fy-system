@@ -3,7 +3,9 @@
 // on a phone: the list, then the chat full screen.
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ArrowSquareOut, MagnifyingGlass, Phone, TelegramLogo } from "@phosphor-icons/react"
+import { ArrowSquareOut, Lightning, MagnifyingGlass, Phone, TelegramLogo } from "@phosphor-icons/react"
+import { Sheet } from "@/components/ui/Sheet"
+import { TgTemplates } from "@/components/telegram/TgTemplates"
 import { useAuth } from "@/context/AuthContext"
 import { usePhone } from "@/context/PhoneContext"
 import { useMedia } from "@/hooks/useMedia"
@@ -20,7 +22,8 @@ const clock = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asi
 const TABS: [InboxMode, string][] = [["all", "Hammasi"], ["unread", "O'qilmagan"], ["mine", "Mening"]]
 
 export function SotuvTelegram() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
+  const [templates, setTemplates] = useState(false)
   const phoneView = useMedia("(width < 64rem)")
   const { data: rows = [], isLoading } = useTgInbox()
   const [params, setParams] = useSearchParams()
@@ -50,13 +53,19 @@ export function SotuvTelegram() {
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ism yoki raqam" aria-label="Qidirish"
               className="w-full h-control-md pl-9 pr-3 rounded-full bg-surface-sunken border border-transparent text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-line-focus" />
           </label>
-          <div role="radiogroup" aria-label="Suhbatlar" className="flex gap-1.5">
+          <div className="flex items-center gap-1.5">
+          <div role="radiogroup" aria-label="Suhbatlar" className="flex gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar">
             {TABS.map(([v, label]) => (
               <button key={v} type="button" role="radio" aria-checked={mode === v} onClick={() => setMode(v)}
                 className={`h-7 px-3 inline-flex items-center gap-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${mode === v ? "bg-[#2AABEE] text-white" : "bg-mute-soft text-ink-muted hover:text-ink"}`}>
                 {label}{v === "unread" && unreadTotal > 0 && <span className={`tabular-nums ${mode === v ? "text-white/80" : "text-[#2AABEE]"}`}>{unreadTotal}</span>}
               </button>
             ))}
+          </div>
+          {isAdmin && (
+            <button type="button" onClick={() => setTemplates(true)} aria-label="Shablonlar" title="Shablonlar"
+              className="size-7 shrink-0 rounded-full flex items-center justify-center bg-mute-soft text-[#2AABEE] hover:bg-mute-soft-hover"><Lightning size={16} weight="fill" /></button>
+          )}
           </div>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-1.5 pb-2">
@@ -83,6 +92,10 @@ export function SotuvTelegram() {
       )}
 
       {!phoneView && open && <ClientPanel row={open} leadId={leadId} />}
+      <Sheet open={templates} onClose={() => setTemplates(false)} title="Shablonlar" className="sm:max-w-2xl">
+        <p className="text-sm text-ink-muted mb-1">Tayyor xabarlar: chatda ⚡ tugma bo'lib chiqadi, voronka bosqichiga ham biriktiriladi.</p>
+        <TgTemplates />
+      </Sheet>
     </div>
   )
 }

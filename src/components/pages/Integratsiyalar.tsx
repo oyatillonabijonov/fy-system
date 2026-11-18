@@ -1,6 +1,9 @@
-import { useId, useState } from "react"
+import { useId, useState, type ReactNode } from "react"
+import { useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown } from "@phosphor-icons/react"
+import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown, UsersThree, Phone, Funnel, IdentificationCard, type Icon } from "@phosphor-icons/react"
+import { Sheet } from "@/components/ui/Sheet"
+import { useTgAccounts } from "@/hooks/useTelegram"
 import { Fab } from "@/components/ui/Fab"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
@@ -31,8 +34,88 @@ const initials = (s: string) => s.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(
 const isGone = (g: TelegramGroup) => g.bot_status === "left" || g.bot_status === "kicked"
 
 /** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's jobs across */
+// Sozlamalar → Integratsiyalar (redesign 2026-11-18, variant A chosen by the owner): one card per integration
+// with its state at a glance; a card opens its settings in a sheet (`?open=<id>`). Telegram templates moved to
+// Sotuv bo'limi → Telegram.
+type Card = { id: string; show: boolean; icon: Icon; tint: string; title: string; desc: string; about?: string; status: ReactNode; body: ReactNode }
+
 export function Integratsiyalar() {
   const { isAdmin, hasAccess } = useAuth()
+  const [params, setParams] = useSearchParams()
+  const setOpen = (id: string | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set("open", id); else n.delete("open"); return n }, { replace: true })
+  const cards: Card[] = [
+    { id: "telegram", show: isAdmin, icon: TelegramLogo, tint: "bg-[#E6F1FB] text-[#2AABEE]", title: "Telegram akkaunt", desc: "Sotuvchilar lid bilan Telegramda yozishadi",
+      about: "Kompaniya Telegram akkauntini ulang — sotuvchilar bitim sahifasidan va Sotuv → Telegram'dan lidga yozadi, javoblar chatga tushadi. Shablonlar Sotuv → Telegram sahifasida.",
+      status: <TgAccountStatus />, body: <TelegramSection /> },
+    { id: "groups", show: true, icon: UsersThree, tint: "bg-[#E6F1FB] text-[#185FA5]", title: "Telegram guruhlar", desc: "Cheklar, hisobot, eslatmalar, chatdan vazifa",
+      status: <GroupsStatus />, body: <GroupsSection /> },
+    { id: "phone", show: isAdmin, icon: Phone, tint: "bg-[#E1F5EE] text-[#0F6E56]", title: "Telefoniya", desc: "OnlinePBX ichki raqamlari hodimlarga",
+      about: "Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.",
+      status: <PhoneStatus />, body: <Telephony /> },
+    { id: "leads", show: isAdmin, icon: Funnel, tint: "bg-[#EEEDFE] text-[#534AB7]", title: "Lid manbalari", desc: "Sayt, Tilda, Facebook, qo'ng'iroq, Telegram",
+      about: "Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, shu voronkadagi ochiq bitimiga yoziladi. Saytni ma'lum voronkaga ulash: Sotuv → voronka → ⚙ → \"Lid qabul qilish\".",
+      status: <LeadSourcesStatus />, body: <LeadSources /> },
+    { id: "anketa", show: hasAccess("mijozlar") || hasAccess("sotuv-crmn"), icon: IdentificationCard, tint: "bg-[#FAEEDA] text-[#854F0B]", title: "Anketa havolasi", desc: "Bazada yo'q odam ma'lumotini o'zi yozadi",
+      about: "Masalan, tadbirda QR kod: odam ma'lumotlari va telefonini o'zi yozadi, anketa Mijozlar → Anketalar'ga tushadi. Bor mijozga uning kartochkasidagi \"Anketa havolasi\" tugmasidan shaxsiy havola yuboring.",
+      status: <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />Faol</span>, body: <UniversalAnketa /> },
+  ].filter((c) => c.show)
+  const open = cards.find((c) => c.id === params.get("open")) ?? null
+
+  return (
+    <div className="pb-10 max-lg:pb-20">
+      <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
+        {cards.map((c) => (
+          <button key={c.id} type="button" onClick={() => setOpen(c.id)}
+            className="group text-left p-5 rounded-surface bg-surface-sunken hover:bg-surface-sunken-hover transition-colors flex flex-col gap-3 min-h-44">
+            <span className={`size-11 rounded-control flex items-center justify-center ${c.tint}`}><c.icon size={24} weight="light" /></span>
+            <span className="flex flex-col gap-0.5">
+              <span className="text-base font-semibold text-ink">{c.title}</span>
+              <span className="text-sm text-ink-muted">{c.desc}</span>
+            </span>
+            <span className="mt-auto flex items-center justify-between gap-2 text-sm text-ink-muted">
+              <span className="min-w-0 truncate">{c.status}</span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-ink group-hover:underline">Sozlash<CaretRight size={12} weight="bold" /></span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.title ?? ""} className="sm:max-w-5xl">
+        {open && <div className="flex flex-col gap-4">{open.about && <p className="text-sm text-ink-muted">{open.about}</p>}{open.body}</div>}
+      </Sheet>
+    </div>
+  )
+}
+
+const Dot = ({ ok, warn }: { ok: boolean; warn?: boolean }) => <span className={`size-2 rounded-full shrink-0 ${ok ? (warn ? "bg-warning" : "bg-success") : "bg-mute-soft-hover"}`} />
+
+function TgAccountStatus() {
+  const { data: accounts = [] } = useTgAccounts()
+  const active = accounts.filter((a) => a.status === "active")
+  const lost = accounts.some((a) => a.status === "logged_out")
+  return <span className="flex items-center gap-1.5"><Dot ok={active.length > 0} warn={lost && !active.length} />{active.length ? `Ulangan${active[0].phone ? ` · +${active[0].phone.replace(/^\+/, "")}` : ""}` : lost ? "Uzilgan — qayta ulang" : "Ulanmagan"}</span>
+}
+
+function GroupsStatus() {
+  const { data: groups = [] } = useTelegramGroups()
+  const problems = groups.filter((g) => isGone(g) || !GROUP_ROLES.some((r) => g[r.id])).length
+  return <span className="flex items-center gap-1.5"><Dot ok={groups.length > 0} warn={problems > 0} />{groups.length ? `${groups.length} ta guruh${problems ? ` · ${problems} ta e'tibor` : ""}` : "Guruh yo'q"}</span>
+}
+
+function PhoneStatus() {
+  const { data: exts = [], error } = usePbxExts(true)
+  const { data: users = [] } = useUsers()
+  const free = exts.filter((e) => !users.some((u) => u.pbx_ext === e.num)).length
+  if (error) return <span className="flex items-center gap-1.5"><Dot ok warn />Aloqa yo'q</span>
+  return <span className="flex items-center gap-1.5"><Dot ok={exts.length > 0} warn={free > 0} />{exts.length ? `${exts.length} raqam${free ? ` · ${free} ta biriktirilmagan` : ""}` : "Raqam yo'q"}</span>
+}
+
+function LeadSourcesStatus() {
+  const { data: sources = [] } = useLeadSources(true)
+  const on = sources.filter((s) => s.enabled)
+  return <span className="flex items-center gap-1.5"><Dot ok={on.length > 0} />{on.length ? `${on.length} ta yoqilgan · ${on.reduce((n, s) => n + s.leads_count, 0)} lid` : "Hammasi o'chiq"}</span>
+}
+
+function GroupsSection() {
   const { data: groups = [], isLoading, error } = useTelegramGroups()
   const { page, setPage, pageCount, pageItems } = usePaged(groups)
   const [openId, setOpenId] = useState<number | null>(null)
@@ -40,14 +123,9 @@ export function Integratsiyalar() {
   const open = groups.find((g) => g.chat_id === openId)
 
   return (
-    <div className="flex flex-col gap-5 pb-10 max-lg:pb-20">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-md font-semibold text-ink max-lg:text-base max-lg:px-1">
-            Telegram guruhlar {groups.length > 0 && <span className="text-ink-faint max-lg:text-ink-muted font-medium tabular-nums">· {groups.length}</span>}
-          </h2>
-          <p className="text-sm text-ink-muted max-lg:hidden">{BOT} ni guruhga qo'shing — u shu ro'yxatga o'zi tushadi. Har bir xabar faqat yoqilgan guruhlarga boradi.</p>
-        </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-ink-muted max-lg:px-1">{BOT} ni guruhga qo'shing — u shu ro'yxatga o'zi tushadi. Har bir xabar faqat yoqilgan guruhlarga boradi.</p>
         <button type="button" onClick={() => setAdding(true)} className={`${primaryBtn} max-lg:hidden`}>
           <Plus size={16} /> Guruh qo'shish
         </button>
@@ -95,11 +173,6 @@ export function Integratsiyalar() {
       </div>
       <Pager page={page} pageCount={pageCount} total={groups.length} onPage={setPage} />
 
-      {isAdmin && <Telephony />}
-      {isAdmin && <TelegramSection />}
-      {isAdmin && <LeadSources />}
-      {(hasAccess("mijozlar") || hasAccess("sotuv-crmn")) && <UniversalAnketa />}
-
       {open && <GroupModal group={open} onClose={() => setOpenId(null)} />}
       {adding && <AddModal onClose={() => setAdding(false)} />}
     </div>
@@ -139,11 +212,7 @@ function Telephony() {
     )
   }
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
-      <div className="flex flex-col gap-1 max-lg:px-1">
-        <h2 className="text-md font-semibold text-ink max-lg:text-base">Telefoniya · OnlinePBX</h2>
-        <p className="text-sm text-ink-muted max-lg:hidden">Har bir ichki raqamni hodimga biriktiring — u Sotuv bo'limida brauzerdan qo'ng'iroq qiladi va qabul qiladi, qo'ng'iroqlari bitim lentasiga tushadi.</p>
-      </div>
+    <section className="flex flex-col gap-4 max-lg:gap-2">
       {/* Phones and tablets: one card per internal number */}
       <div className="lg:hidden rounded-surface bg-surface-sunken overflow-hidden">
         {isLoading ? <p className="py-10 text-center text-base text-ink-muted">Yuklanmoqda…</p>
@@ -212,11 +281,7 @@ function LeadSources() {
   const leadsInfo = (s: LeadSource) => `${s.leads_count} ta${s.last_lead_at ? ` · ${new Date(s.last_lead_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}`
   const callNote = <span className="text-sm text-ink-muted">OnlinePBX'dan — javobsiz yoki notanish raqamdan kelgan qo'ng'iroq bitim bo'ladi</span>
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
-      <div className="flex flex-col gap-1 max-lg:px-1">
-        <h2 className="text-md font-semibold text-ink max-lg:text-base">Lid manbalari</h2>
-        <p className="text-sm text-ink-muted">Forma manzilini Tilda / Framer / Meta sozlamasiga qo'ying — kelgan lid tanlangan voronkaning birinchi bosqichiga bitim bo'lib tushadi. Bir telefondan qayta kelsa, shu voronkadagi ochiq bitimiga yoziladi. <b className="text-ink">Saytni ma'lum voronkaga ulash:</b> Sotuv → voronka → ⚙ Voronka sozlamalari → "Lid qabul qilish" — har voronkaning o'z manzili va sayt uchun tayyor prompt bor.</p>
-      </div>
+    <section className="flex flex-col gap-4 max-lg:gap-2">
       {/* Phones: one card per source, so the address and its copy button are never off-screen */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:hidden">
         {isLoading ? <div className={tbl.empty}>Yuklanmoqda…</div>
@@ -276,11 +341,7 @@ function UniversalAnketa() {
   }
 
   return (
-    <section className="flex flex-col gap-4 mt-6 max-lg:gap-2 max-lg:mt-4">
-      <div className="flex flex-col gap-1 max-lg:px-1">
-        <h2 className="text-md font-semibold text-ink max-lg:text-base">Umumiy anketa havolasi</h2>
-        <p className="text-sm text-ink-muted">Bazada hali yo'q odamlar uchun (masalan, tadbirda QR kod): odam ma'lumotlari va telefonini o'zi yozadi, anketa Mijozlar → Anketalar'ga tushadi. Bor mijozga esa uning kartochkasidagi "Anketa havolasi" tugmasidan shaxsiy havola yuboring.</p>
-      </div>
+    <section className="flex flex-col gap-4 max-lg:gap-2">
       <div className="flex flex-wrap items-center gap-2 p-4 rounded-surface bg-surface-sunken min-w-0">
         {isLoading ? <span className="text-base text-ink-muted">Yuklanmoqda…</span>
           : error ? <span className="text-base text-danger-text">{error.message}</span>
