@@ -1,6 +1,6 @@
 // The chat's footer (100, redesigned 2026-11-18): template chips, 📎, a growing text field — Enter sends,
 // Shift+Enter breaks the line — and the send button.
-import { useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
 import { useSendTelegram, useTgTemplates } from "@/hooks/useTelegram"
 import { uploadTgFile, type TgFileRef } from "@/lib/supabase/queries/telegram"
@@ -17,6 +17,14 @@ export function TgComposer({ leadId }: { leadId: string }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
+  const field = useRef<HTMLTextAreaElement>(null)
+  // grow with the text up to 160px (Safari has no field-sizing: content)
+  useLayoutEffect(() => {
+    const el = field.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+  }, [text])
   const template = templates.find((t) => t.id === templateId) ?? null
 
   function pick(id: string) {
@@ -71,10 +79,10 @@ export function TgComposer({ leadId }: { leadId: string }) {
         <button type="button" aria-label="Fayl biriktirish" disabled={uploading || files.length >= 5} onClick={() => fileRef.current?.click()}
           className="size-10 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover disabled:opacity-40"><Paperclip size={20} /></button>
         <input ref={fileRef} type="file" multiple hidden onChange={(e) => { void attach(e.target.files); e.target.value = "" }} />
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} aria-label="Xabar"
+        <textarea ref={field} value={text} onChange={(e) => setText(e.target.value)} rows={1} maxLength={4000} aria-label="Xabar"
           placeholder={uploading ? "Fayl yuklanmoqda…" : "Xabar yozing…"}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit() } }}
-          className="flex-1 min-h-10 max-h-40 [field-sizing:content] resize-none rounded-[20px] bg-surface-sunken px-4 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none" />
+          className="flex-1 min-h-10 max-h-40 resize-none overflow-y-auto rounded-[20px] bg-surface-sunken px-4 py-2 text-base text-ink placeholder:text-ink-faint focus:outline-none" />
         <button type="button" onClick={submit} disabled={empty || uploading || send.isPending} aria-label="Yuborish"
           className="size-10 shrink-0 rounded-full bg-[#2AABEE] text-white flex items-center justify-center hover:bg-[#229ED9] disabled:opacity-40">
           <PaperPlaneRight size={18} weight="fill" />
