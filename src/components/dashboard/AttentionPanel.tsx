@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { CaretDown, CaretRight, CheckCircle, ClockCountdown, Hourglass, PhoneX } from "@phosphor-icons/react"
+import { CalendarX, CaretDown, CaretRight, CheckCircle, ClockCountdown, Hourglass, PhoneX } from "@phosphor-icons/react"
 import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
 import { kindLabel } from "@/lib/supabase/queries/sotuv"
 import { useAuth } from "@/context/AuthContext"
@@ -12,16 +12,19 @@ const ago = (iso: string) => {
 }
 
 type Item = { key: string; to: string | null; main: string; sub: string; side: string }
-type Group = { id: string; title: string; items: Item[] }
+// `total` is the real count; `items` holds the newest 50 of them
+type Group = { id: string; title: string; total: number; items: Item[] }
 
 // Row = who (client) first, what and whose below, how long on the right
 function groupsOf(a: SalesDashboard["attention"], link: (id: string | null) => string | null): Group[] {
   return [
-    { id: "tasks", title: "Muddati o'tgan vazifalar",
+    { id: "tasks", title: "Muddati o'tgan vazifalar", total: a.totals.overdue_tasks,
       items: a.overdue_tasks.map((t) => ({ key: t.id, to: link(t.lead_id), main: t.lead_name, sub: `${t.text || kindLabel(t.kind)} · ${t.assignee ?? "Belgilanmagan"}`, side: ago(t.due_date) })) },
-    { id: "stale", title: "Harakatsiz bitimlar",
+    { id: "idle", title: "Vazifasiz bitimlar", total: a.totals.idle_leads,
+      items: a.idle_leads.map((l) => ({ key: l.id, to: link(l.id), main: l.name, sub: `${l.stage} · ${l.responsible ?? "Mas'ulsiz"}`, side: `${l.days} kun` })) },
+    { id: "stale", title: "Harakatsiz bitimlar", total: a.totals.stale_leads,
       items: a.stale_leads.map((l) => ({ key: l.id, to: link(l.id), main: l.name, sub: `${l.stage} · ${l.responsible ?? "Mas'ulsiz"}`, side: `${l.days} kun` })) },
-    { id: "missed", title: "Qayta qo'ng'iroq qilinmagan",
+    { id: "missed", title: "Qayta qo'ng'iroq qilinmagan", total: a.totals.missed_unanswered,
       items: a.missed_unanswered.map((m) => ({ key: m.phone, to: link(m.lead_id), main: m.client_name ?? formatPhone(m.phone), sub: `${m.count} marta qo'ng'iroq qilgan`, side: ago(m.last_missed_at) })) },
   ]
 }
@@ -29,19 +32,19 @@ function groupsOf(a: SalesDashboard["attention"], link: (id: string | null) => s
 // A bitim page needs the Sotuv module; without it the rows are plain text
 const useLink = () => (useAuth().hasAccess("sotuv-crmn") ? (id: string | null) => (id ? `/sotuv/bitim/${id}` : null) : () => null)
 
-const ICONS: Record<string, ReactNode> = { tasks: <ClockCountdown size={20} />, stale: <Hourglass size={20} />, missed: <PhoneX size={20} /> }
+const ICONS: Record<string, ReactNode> = { tasks: <ClockCountdown size={20} />, idle: <CalendarX size={20} />, stale: <Hourglass size={20} />, missed: <PhoneX size={20} /> }
 const SHOWN = 4
 
-/** Three counted rows, one open at a time (the first with something in it opens by itself); each
+/** Four counted rows, one open at a time (the first with something in it opens by itself); each
  *  expands its items (bitim links), four shown, the rest behind "Yana N ta". Only the overdue tasks
- *  use the danger tint — the other two groups are neutral. Same on desktop and phone. */
+ *  use the danger tint — the other groups are neutral. Same on desktop and phone. */
 function Groups({ a }: { a: SalesDashboard["attention"] }) {
   const groups = groupsOf(a, useLink())
   const [open, setOpen] = useState<string | null>(() => groups.find((g) => g.items.length)?.id ?? null)
   const [all, setAll] = useState<string | null>(null)
   const hover = "lg:hover:bg-mute-ghost-hover active:bg-surface-sunken-hover transition-colors"
   return groups.map((g) => {
-    const n = g.items.length, on = open === g.id && n > 0
+    const n = g.total, on = open === g.id && n > 0
     const danger = g.id === "tasks" && n > 0
     const items = all === g.id ? g.items : g.items.slice(0, SHOWN)
     return (
@@ -65,12 +68,13 @@ function Groups({ a }: { a: SalesDashboard["attention"] }) {
                 ? <Link key={i.key} to={i.to} className={`${cls} ${hover}`}>{body}<CaretRight size={16} className="shrink-0 text-ink-faint lg:hidden" /></Link>
                 : <div key={i.key} className={cls}>{body}</div>
             })}
-            {n > SHOWN && (
+            {g.items.length > SHOWN && (
               <button type="button" onClick={() => setAll(all === g.id ? null : g.id)}
                 className="mt-1 w-full h-10 rounded-full bg-surface text-sm font-medium text-ink hover:bg-mute-ghost-hover active:opacity-80 transition-colors">
-                {all === g.id ? "Kamroq" : `Yana ${n - SHOWN} ta`}
+                {all === g.id ? "Kamroq" : `Yana ${g.items.length - SHOWN} ta`}
               </button>
             )}
+            {all === g.id && n > g.items.length && <p className="px-2 pt-2 text-sm text-ink-muted">Eng yangi {g.items.length} tasi ko'rsatildi, jami {n} ta</p>}
           </div>
         )}
       </div>
@@ -78,7 +82,7 @@ function Groups({ a }: { a: SalesDashboard["attention"] }) {
   })
 }
 
-const allClear = (a: SalesDashboard["attention"]) => a.overdue_tasks.length + a.stale_leads.length + a.missed_unanswered.length === 0
+const allClear = (a: SalesDashboard["attention"]) => Object.values(a.totals).every((n) => n === 0)
 const AllClear = () => <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-success-soft text-success-dark text-xs font-medium"><CheckCircle size={12} weight="bold" />Hammasi joyida</span>
 
 export function AttentionPanel({ a }: { a: SalesDashboard["attention"] }) {

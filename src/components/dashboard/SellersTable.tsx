@@ -21,6 +21,7 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
   const canOpen = hasAccess("sotuv-crmn")
   const [openId, setOpenId] = useState<string | null>(null)
   const { page, setPage, pageCount, pageItems } = usePaged(rows)
+  const money = rows.some((s) => s.agreed !== null)   // null without the Moliya right
   if (rows.length === 0) return <Empty text="Davrda sotuvchi faoliyati yo'q" />
   return (
     <div className="flex flex-col gap-3">
@@ -31,7 +32,8 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
             <th className={tbl.th}>Sotuvchi</th>
             <th className={`${tbl.th} text-right`}>Ochiq</th><th className={`${tbl.th} text-right`}>Yangi</th>
             <th className={`${tbl.th} text-right`}>Yutildi</th><th className={`${tbl.th} text-right`}>Yutqazildi</th>
-            <th className={`${tbl.th} text-right`}>Konversiya</th><th className={`${tbl.th} text-right`}>Summa</th>
+            <th className={`${tbl.th} text-right`}>Konversiya</th><th className={`${tbl.th} text-right`}>Joylar</th>
+            {money && <><th className={`${tbl.th} text-right`}>Shartnoma</th><th className={`${tbl.th} text-right`}>Tushum</th></>}
             <th className={`${tbl.th} text-right`}>Yakunlangan vazifa</th><th className={`${tbl.th} text-right`}>O'z vaqtida</th>
             <th className={`${tbl.th} text-right`}>Kechikkan</th>
           </tr>
@@ -54,12 +56,13 @@ export function SellersTable({ rows, from, to, pipelineId }: { rows: SalesSeller
                 <td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.won)}</td>
                 <td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.lost)}</td>
                 <td className={`${tbl.td} text-right tabular-nums`}>{pct(s.conversion)}</td>
-                <td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.won_sum)}</td>
+                <td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.seats)}</td>
+                {money && <><td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.agreed ?? 0)}</td><td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.collected ?? 0)}</td></>}
                 <td className={`${tbl.td} text-right tabular-nums`}>{formatNumber(s.tasks_done)}</td>
                 <td className={`${tbl.td} text-right tabular-nums`}>{pct(onTime)}</td>
                 <td className={`${tbl.td} text-right tabular-nums ${s.tasks_overdue_open ? "text-danger-text font-medium" : ""}`}>{formatNumber(s.tasks_overdue_open)}</td>
               </tr>,
-              open && <tr key={`${s.id}-tasks`}><td colSpan={10} className="p-0"><SellerTasks id={s.id} from={from} to={to} pipelineId={pipelineId} /></td></tr>,
+              open && <tr key={`${s.id}-tasks`}><td colSpan={money ? 12 : 10} className="p-0"><SellerTasks id={s.id} from={from} to={to} pipelineId={pipelineId} /></td></tr>,
             ]
           })}
         </tbody>
@@ -97,13 +100,13 @@ function SellerTasks({ id, from, to, pipelineId, inline = false }: { id: string;
 }
 
 /** Phone version of the table: one grouped list, best seller first. A row shows who, the sum, conversion,
- *  won count and the overdue badge; a tap opens the rest of the row's figures and, with the Sotuv
+ *  seats sold and the overdue badge; a tap opens the rest of the row's figures and, with the Sotuv
  *  module, the seller's tasks */
 export function SellerCards({ rows, from, to, pipelineId }: { rows: SalesSeller[]; from: string; to: string; pipelineId: string | null }) {
   const { hasAccess } = useAuth()
   const canOpen = hasAccess("sotuv-crmn")
   const [openId, setOpenId] = useState<string | null>(null)
-  const ranked = [...rows].sort((a, b) => b.won - a.won || b.won_sum - a.won_sum)
+  const ranked = [...rows].sort((a, b) => b.seats - a.seats || b.won - a.won)
   const { page, setPage, pageCount, pageItems } = usePaged(ranked)
   if (rows.length === 0) return <div className="bg-surface-sunken rounded-surface"><Empty text="Davrda sotuvchi faoliyati yo'q" /></div>
   return (
@@ -113,7 +116,8 @@ export function SellerCards({ rows, from, to, pipelineId }: { rows: SalesSeller[
           const open = openId === s.id
           const onTime = s.tasks_done ? Math.round((s.tasks_on_time / s.tasks_done) * 100) : null
           const more = [
-            { label: "Summa", value: `${formatNumber(s.won_sum)} so'm` },
+            ...(s.agreed !== null ? [{ label: "Shartnoma", value: `${formatNumber(s.agreed)} so'm` }, { label: "Tushum", value: `${formatNumber(s.collected ?? 0)} so'm` }] : []),
+            { label: "Yutildi", value: formatNumber(s.won) },
             { label: "Yangi", value: formatNumber(s.new) },
             { label: "Ochiq", value: formatNumber(s.open) },
             { label: "Yutqazildi", value: formatNumber(s.lost) },
@@ -127,10 +131,10 @@ export function SellerCards({ rows, from, to, pipelineId }: { rows: SalesSeller[
                 <PersonDot name={s.full_name} url={s.avatar_url} size={40} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-base font-medium text-ink truncate">{s.full_name}</span>
-                  <span className="block text-sm text-ink-muted tabular-nums truncate">{shortMoney(s.won_sum)} so'm · {pct(s.conversion)}</span>
+                  <span className="block text-sm text-ink-muted tabular-nums truncate">{s.collected !== null ? `${shortMoney(s.collected)} so'm tushum · ` : ""}{pct(s.conversion)}</span>
                 </span>
                 <span className="shrink-0 flex flex-col items-end gap-0.5">
-                  <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{formatNumber(s.won)} <span className="text-sm font-normal text-ink-muted">yutildi</span></span>
+                  <span className="text-base font-semibold tabular-nums text-ink whitespace-nowrap">{formatNumber(s.seats)} <span className="text-sm font-normal text-ink-muted">joy</span></span>
                   {s.tasks_overdue_open > 0
                     ? <span className="h-5 px-2 inline-flex items-center rounded-full bg-danger-soft text-danger-dark text-xs font-medium tabular-nums whitespace-nowrap">{s.tasks_overdue_open} kechikkan</span>
                     : <span className="h-5" />}
@@ -141,7 +145,7 @@ export function SellerCards({ rows, from, to, pipelineId }: { rows: SalesSeller[
                 <div className="px-4 pb-4 flex flex-col gap-3">
                   <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     {more.map((m) => (
-                      <div key={m.label} className={`flex items-baseline justify-between gap-2 min-w-0 ${m.label === "Summa" ? "col-span-2" : ""}`}>
+                      <div key={m.label} className={`flex items-baseline justify-between gap-2 min-w-0 ${m.value.endsWith("so'm") ? "col-span-2" : ""}`}>
                         <dt className="text-ink-muted truncate">{m.label}</dt>
                         <dd className="font-medium tabular-nums whitespace-nowrap text-ink">{m.value}</dd>
                       </div>

@@ -19,6 +19,8 @@ export interface Event {
   cashback_percent: number
   price: number
   total_value: number
+  /** Seats to sell (103); the Dashboard's plan card counts against it */
+  seats_plan: number | null
   manager_id: string | null
   has_tariffs: boolean
   created_at: string
@@ -76,6 +78,7 @@ export interface CreateEventInput {
   cashback_percent?: number
   price?: number
   total_value?: number
+  seats_plan?: number | null
   manager_id?: string | null
   has_tariffs?: boolean
 }
@@ -131,6 +134,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       ...(input.cashback_percent !== undefined ? { cashback_percent: input.cashback_percent } : {}),
       ...(input.price !== undefined ? { price: input.price } : {}),
       ...(input.total_value !== undefined ? { total_value: input.total_value } : {}),
+      ...(input.seats_plan !== undefined ? { seats_plan: input.seats_plan } : {}),
       ...(input.has_tariffs !== undefined ? { has_tariffs: input.has_tariffs } : {}),
     })
     .select()
@@ -142,7 +146,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 
 export async function updateEvent(
   id: string,
-  updates: Partial<Pick<Event, "name" | "description" | "date" | "end_date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price" | "total_value" | "manager_id" | "has_tariffs">>
+  updates: Partial<Pick<Event, "name" | "description" | "date" | "end_date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price" | "total_value" | "seats_plan" | "manager_id" | "has_tariffs">>
 ): Promise<void> {
   const { error } = await supabase
     .from("events")

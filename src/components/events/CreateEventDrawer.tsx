@@ -169,6 +169,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const cashbackId = useId()
   const locationId = useId()
   const totalValueId = useId()
+  const seatsPlanId = useId()
   const managerFieldId = useId()
 
   const [name, setName] = useState("")
@@ -177,6 +178,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [cashbackPercent, setCashbackPercent] = useState("5")
   const [location, setLocation] = useState("")
   const [totalValue, setTotalValue] = useState("") // digits only
+  const [seatsPlan, setSeatsPlan] = useState("") // digits only
   const [managerId, setManagerId] = useState<string | null>(null)
   const qc = useQueryClient()
   const { data: savedTariffs } = useEventTariffs(editEvent?.id ?? "")
@@ -199,6 +201,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setCashbackPercent(String(editEvent.cashback_percent ?? 5))
       setLocation(editEvent.location ?? "")
       setTotalValue(editEvent.total_value ? String(Math.round(editEvent.total_value)) : "")
+      setSeatsPlan(editEvent.seats_plan ? String(editEvent.seats_plan) : "")
       setManagerId(editEvent.manager_id)
       // Empty until the saved list arrives (effect below): saving is blocked
       // meanwhile, so a half-loaded form can't wipe the event's tariffs.
@@ -211,6 +214,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setCashbackPercent("5")
       setLocation("")
       setTotalValue("")
+      setSeatsPlan("")
       setManagerId(null)
       setTariffs([blankTariff()])
     }
@@ -253,6 +257,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
     try {
       const cb = Math.round(cbValue * 100) / 100
       const tv = totalValue ? Number(totalValue) : 0
+      const sp = Number(seatsPlan) || null
       const fields = {
         name: name.trim(),
         date: startDate,
@@ -260,6 +265,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         location: location.trim() || undefined,
         cashback_percent: cb,
         total_value: tv,
+        seats_plan: sp,
         manager_id: managerId,
       }
 
@@ -271,6 +277,7 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           location: location.trim() || null,
           cashback_percent: cb,
           total_value: tv,
+          seats_plan: sp,
           manager_id: managerId,
         }
         await updateEvent(editEvent.id, updates)
@@ -417,6 +424,17 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted pointer-events-none">UZS</span>
                   </div>
+                </Field>
+
+                <Field label="Joylar plani" htmlFor={seatsPlanId}>
+                  <input
+                    id={seatsPlanId}
+                    inputMode="numeric"
+                    value={seatsPlan}
+                    onChange={(e) => setSeatsPlan(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                    placeholder="Masalan: 60"
+                    className={INPUT}
+                  />
                 </Field>
 
                 {/* 7. Manager */}
