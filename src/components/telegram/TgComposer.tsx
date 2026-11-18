@@ -1,7 +1,7 @@
 // The chat's footer (100, redesigned 2026-11-18): template chips, 📎, a growing text field — Enter sends,
 // Shift+Enter breaks the line — and the send button.
 import { useLayoutEffect, useRef, useState } from "react"
-import { Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
+import { Lightning, Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
 import { useSendTelegram, useTgTemplates } from "@/hooks/useTelegram"
 import { useLead } from "@/hooks/useSotuv"
 import { uploadTgFile, type TgFileRef } from "@/lib/supabase/queries/telegram"
@@ -63,6 +63,7 @@ export function TgComposer({ leadId }: { leadId: string }) {
           {templates.map((t) => (
             <button key={t.id} type="button" onClick={() => pick(t.id)} aria-pressed={templateId === t.id}
               className={`${CHIP} transition-colors ${templateId === t.id ? "bg-[#2AABEE] text-white" : "bg-mute-soft text-ink hover:bg-mute-soft-hover"}`}>
+              <Lightning size={12} weight={templateId === t.id ? "fill" : "bold"} className={`shrink-0 ${templateId === t.id ? "" : "text-[#2AABEE]"}`} />
               <span className="truncate">{t.title}</span>{t.files.length > 0 && <Paperclip size={12} weight="bold" className="shrink-0" />}
             </button>
           ))}

@@ -86,7 +86,7 @@ export function AnketaSheet({ submission: s, onClose }: { submission: AnketaSubm
 
   return (
     <Sheet open onClose={onClose} title="Anketa" className="sm:max-w-lg" footer={pending && (
-      <div className="flex gap-2">
+      <div className="flex flex-1 gap-2">
         <button type="button" onClick={onReject} disabled={busy} className="h-10 px-4 rounded-full bg-surface-sunken text-ink text-base font-medium hover:bg-surface-sunken-hover disabled:opacity-50">Rad etish</button>
         <button type="button" disabled={busy || !values.full_name.trim()}
           onClick={() => approve.mutate({ id: s.id, overrides: { ...values, ...(photo ? { image: photo } : {}) } }, { onSuccess: onClose })}
