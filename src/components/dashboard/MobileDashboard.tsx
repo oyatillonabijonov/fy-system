@@ -1,5 +1,5 @@
 // Phone/tablet (below lg) layout of the sales Dashboard: the same data as the desktop page, distilled to
-// what a staff member acts on — period, the hero sum, four numbers, what needs attention, the funnel,
+// what a staff member acts on — period, the three sales tiles (Bento, without the daily bars), what needs attention, the funnel,
 // sellers, calls, money. The charts that only restate those numbers sit behind one "Batafsil statistika".
 import { useState, type ReactNode } from "react"
 import { Check, CaretDown, FunnelSimple } from "@phosphor-icons/react"
@@ -8,12 +8,17 @@ import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Sheet } from "@/components/ui/Sheet"   // explicit .tsx: on a case-insensitive disk "Sheet" resolves to sheet.ts
 import { formatNumber } from "@/lib/format"
-import { Card, DeltaBadge, Funnel, delta } from "./pieces"
+import { convRows } from "@/lib/stageConv"
+import { Card, Funnel } from "./pieces"
 import { MixDonut, DailyBars, ScoreGauge } from "./charts"
 import { SellerCards } from "./SellersTable"
 import { CallsMobile } from "./CallsCard"
 import { AttentionMobile } from "./AttentionPanel"
 import { FinancePanel } from "./FinancePanel"
+import { PlanCard } from "./PlanCard"
+import { Bento } from "./Bento"
+import { TasksCard } from "./TasksCard"
+import { SpeedCard } from "./SpeedCard"
 
 type PeriodOption = { id: string; label: string }
 
@@ -23,7 +28,7 @@ export function MobileDashboard({ d, periods, period, onPeriod, pipelineId, onPi
 }) {
   const { hasAccess } = useAuth()
   const [more, setMore] = useState(false)
-  const k = d.kpi, p = d.kpi_prev
+  const k = d.kpi
   const sources = d.by_source.map((r) => ({ key: r.source ?? "none", label: sourceLabel(r.source), value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))
   return (
     <div className="flex flex-col gap-6">
@@ -40,23 +45,15 @@ export function MobileDashboard({ d, periods, period, onPeriod, pipelineId, onPi
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="bg-surface-sunken rounded-surface p-4 flex flex-col gap-2 min-w-0">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-ink-muted whitespace-nowrap">Yutilgan summa</span>
-            <PipelinePick pipelines={d.pipelines} pipelineId={pipelineId} onPipeline={onPipeline} />
-          </div>
-          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-            <span className="text-3xl font-semibold tabular-nums text-ink whitespace-nowrap">{formatNumber(k.won_sum)}<span className="ml-1.5 text-base font-medium text-ink-muted">so'm</span></span>
-            <DeltaBadge value={delta(k.won_sum, p.won_sum)} />
-          </div>
+        <div className="flex items-center justify-between gap-3 px-1">
+          <h2 className="text-base font-semibold text-ink whitespace-nowrap">Sotuv natijasi</h2>
+          <PipelinePick pipelines={d.pipelines} pipelineId={pipelineId} onPipeline={onPipeline} />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Kpi label="Yangi bitimlar" value={formatNumber(k.new)} d={delta(k.new, p.new)} />
-          <Kpi label="Yutilgan" value={formatNumber(k.won)} d={delta(k.won, p.won)} />
-          <Kpi label="Yutqazilgan" value={formatNumber(k.lost)} d={delta(k.lost, p.lost)} invert />
-          <Kpi label="Konversiya" value={k.conversion === null ? "—" : `${k.conversion}%`} d={null} />
-        </div>
+        <Bento d={d} pipelineId={pipelineId} compact />
+        {!d.sales.linked && <span className="px-1 text-sm text-ink-muted">Bu voronka tadbirga bog'lanmagan: joylar va pul ko'rsatkichlari yo'q</span>}
       </div>
+
+      {d.plan.map((x) => <Block key={x.event_id} title={`Tadbir plani · ${x.name}`}><PlanCard p={x} bare /></Block>)}
 
       <AttentionMobile a={d.attention} />
 
@@ -82,6 +79,9 @@ export function MobileDashboard({ d, periods, period, onPeriod, pipelineId, onPi
               <Block title="Voronkalar"><Card><MixDonut compact grey totalLabel="yangi bitim" rows={d.by_pipeline.map((r) => ({ key: r.id, label: r.name, value: r.new, hint: r.won ? `${formatNumber(r.won)} yutildi` : undefined }))} /></Card></Block>
             )}
             <Block title="Kunlik dinamika"><Card><DailyBars rows={d.daily} height={200} /></Card></Block>
+            <Block title="Bosqichlar konversiyasi"><Card><Funnel rows={convRows(d.stage_conv, d.pipelines)} conv compact /></Card></Block>
+            <Block title="Vazifalar holati"><TasksCard tasks={d.tasks} pipelineId={pipelineId} compact /></Block>
+            <Block title="Aloqaga chiqish tezligi"><SpeedCard speed={d.speed} compact /></Block>
           </>
         )}
       </section>
@@ -99,19 +99,7 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function Kpi({ label, value, d, invert }: { label: string; value: string; d: number | null; invert?: boolean }) {
-  return (
-    <div className="bg-surface-sunken rounded-surface p-4 flex flex-col gap-1 min-w-0">
-      <span className="text-sm text-ink-muted truncate">{label}</span>
-      <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
-        <span className="text-2xl font-semibold tabular-nums text-ink whitespace-nowrap">{value}</span>
-        <DeltaBadge value={d} invert={invert} />
-      </div>
-    </div>
-  )
-}
-
-/** The voronka filter: a small pill in the hero card that opens a sheet */
+/** The voronka filter: a small pill beside the first section's title that opens a sheet */
 function PipelinePick({ pipelines, pipelineId, onPipeline }: {
   pipelines: SalesDashboard["pipelines"]; pipelineId: string | null; onPipeline: (id: string | null) => void
 }) {
@@ -121,7 +109,7 @@ function PipelinePick({ pipelines, pipelineId, onPipeline }: {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label="Voronka"
-        className="min-w-0 h-8 pl-2.5 pr-3 rounded-full bg-surface text-sm font-medium text-ink inline-flex items-center gap-1.5 active:opacity-80">
+        className="min-w-0 h-8 pl-2.5 pr-3 rounded-full bg-card text-sm font-medium text-ink inline-flex items-center gap-1.5 active:opacity-80">
         <FunnelSimple size={16} className="shrink-0 text-ink-muted" />
         <span className="truncate">{current?.name ?? "Barcha voronkalar"}</span>
         <CaretDown size={12} weight="bold" className="shrink-0 text-ink-muted" />

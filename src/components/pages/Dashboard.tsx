@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react"
-import { UserPlus, Handshake, XCircle, Percent, Coins } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useMedia } from "@/hooks/useMedia"
 import { useSalesDashboard } from "@/hooks/useSalesDashboard"
@@ -7,12 +6,17 @@ import { periodRange, tashkentToday } from "@/lib/period"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { formatNumber } from "@/lib/format"
-import { Section, Card, KpiCard, Funnel, delta } from "@/components/dashboard/pieces"
+import { convRows } from "@/lib/stageConv"
+import { Section, Card, Funnel } from "@/components/dashboard/pieces"
 import { MixDonut, DailyBars, ScoreGauge } from "@/components/dashboard/charts"
 import { SellersTable } from "@/components/dashboard/SellersTable"
 import { CallsCard } from "@/components/dashboard/CallsCard"
 import { AttentionPanel } from "@/components/dashboard/AttentionPanel"
 import { FinancePanel } from "@/components/dashboard/FinancePanel"
+import { PlanCard } from "@/components/dashboard/PlanCard"
+import { Bento } from "@/components/dashboard/Bento"
+import { TasksCard } from "@/components/dashboard/TasksCard"
+import { SpeedCard } from "@/components/dashboard/SpeedCard"
 import { MobileDashboard } from "@/components/dashboard/MobileDashboard"
 
 const PERIODS = [
@@ -45,6 +49,8 @@ export function Dashboard() {
   const { from, to } = useMemo(() => range(period), [period])
   const { data: d, isLoading, error, refetch } = useSalesDashboard(from, to, pipelineId)
   const mobile = useMedia("(width < 64rem)")   // phone / tablet: its own layout, same data
+  const [funnel, setFunnel] = useState<"now" | "conv">("now")
+  const conv = useMemo(() => (d ? convRows(d.stage_conv, d.pipelines) : []), [d])
 
   if (mobile) {
     return (
@@ -90,17 +96,23 @@ export function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           <div className="flex flex-col gap-8 min-w-0">
             <Section title="Sotuv natijasi" desc="Tanlangan davr, oldingi shuncha davrga nisbatan">
-              {/* columns follow the space left by the sidebar and the right column: 5 in a row only when each card can hold its figure */}
-              <div className="@container"><div className="grid grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-5 gap-3">
-                <KpiCard label="Yangi bitimlar" icon={<UserPlus size={16} />} value={formatNumber(d.kpi.new)} sub="davrda ochilgan" delta={delta(d.kpi.new, d.kpi_prev.new)} />
-                <KpiCard label="Yutilgan" icon={<Handshake size={16} />} value={formatNumber(d.kpi.won)} sub="davrda yopilgan" delta={delta(d.kpi.won, d.kpi_prev.won)} />
-                <KpiCard label="Yutqazilgan" icon={<XCircle size={16} />} value={formatNumber(d.kpi.lost)} sub="davrda yopilgan" delta={delta(d.kpi.lost, d.kpi_prev.lost)} invert />
-                <KpiCard label="Konversiya" icon={<Percent size={16} />} value={d.kpi.conversion === null ? "—" : `${d.kpi.conversion}%`} sub="yutilgan ÷ yopilgan" delta={null} />
-                <KpiCard className="col-span-2 @4xl:col-span-1" label="Yutilgan summa" icon={<Coins size={16} />} value={formatNumber(d.kpi.won_sum)} unit="so'm" sub="bitim narxi bo'yicha" delta={delta(d.kpi.won_sum, d.kpi_prev.won_sum)} />
-              </div></div>
+              <Bento d={d} pipelineId={pipelineId} />
+              {!d.sales.linked && <p className="px-1 text-sm text-ink-muted">Bu voronka tadbirga bog'lanmagan, shuning uchun joylar va pul ko'rsatkichlari yo'q. Bog'lash: Sotuv bo'limi → Voronka sozlamalari → Tadbir.</p>}
+              {d.plan.map((p) => <PlanCard key={p.event_id} p={p} />)}
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
                 <div className="flex flex-col gap-3 xl:col-span-2">
-                  <Card title="Voronka" aside="ochiq bitimlar, hozir" className="flex-1"><Funnel rows={d.funnel} /></Card>
+                  <Card title="Voronka" className="flex-1" aside={
+                    <span role="tablist" aria-label="Voronka ko'rinishi" className="inline-flex gap-1 p-1 rounded-control bg-surface">
+                      {([["now", "Hozir"], ["conv", "Konversiya"]] as const).map(([id, label]) => (
+                        <button key={id} type="button" role="tab" aria-selected={funnel === id} onClick={() => setFunnel(id)}
+                          className={`h-7 px-3 shrink-0 whitespace-nowrap rounded-item text-sm font-medium transition-colors ${funnel === id ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"}`}>{label}</button>
+                      ))}
+                    </span>}>
+                    {funnel === "now" ? <Funnel rows={d.funnel} /> : <Funnel key="conv" rows={conv} conv />}
+                    <p className="text-sm text-ink-muted">{funnel === "now"
+                      ? "Ochiq bitimlar hozir qaysi bosqichda turibdi; foiz — ochiq bitimlardagi ulushi."
+                      : "Davrda ochilgan bitimlar qaysi bosqichgacha yetdi. Foiz — keyingi bosqichga o'tganlar (eng pasti qizil), kun — bosqichda o'rtacha turish."}</p>
+                  </Card>
                   <Card title="Kunlik dinamika"><DailyBars rows={d.daily} /></Card>
                 </div>
                 <div className="flex flex-col gap-3">
@@ -110,8 +122,14 @@ export function Dashboard() {
                 </div>
               </div>
             </Section>
-            <Section title="Sotuvchilar" desc="Bitimlar va vazifalar; qatorni bosing — vazifalar ro'yxati">
+            <Section title="Sotuvchilar" desc="Bitimlar, sotilgan joylar (Moliyadan) va vazifalar; qatorni bosing — vazifalar ro'yxati">
               <SellersTable rows={d.sellers} from={from} to={to} pipelineId={pipelineId} />
+            </Section>
+            <Section title="Vazifalar holati" desc="Ochiq bitimlar eng yaqin ochiq vazifasi bo'yicha, hozir. Vazifasiz — birorta ochiq vazifasi yo'q bitimlar">
+              <TasksCard tasks={d.tasks} pipelineId={pipelineId} />
+            </Section>
+            <Section title="Aloqaga chiqish tezligi" desc="Formadan kelgan lid → birinchi chiquvchi qo'ng'iroq. Ish vaqti: 09:00–18:00, Du–Sha (tungi lid 09:00 dan sanaladi)">
+              <SpeedCard speed={d.speed} />
             </Section>
             <Section title="Qo'ng'iroqlar" desc="Tanlangan davr">
               <CallsCard calls={d.calls} sellers={d.sellers} />

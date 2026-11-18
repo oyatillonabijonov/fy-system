@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- small shared bits of the Dashboard (delta() next to its cards) */
-// Shared Dashboard pieces (cards, KPI tiles, lists, charts) — moved from pages/Dashboard.tsx in 080.
+// Shared Dashboard pieces (cards, lists, the funnel) — moved from pages/Dashboard.tsx in 080.
 import { useState, type CSSProperties, type ReactNode } from "react"
 import { ArrowUp, ArrowDown } from "@phosphor-icons/react"
 import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
+import type { ConvRow } from "@/lib/stageConv"
 import { formatNumber } from "@/lib/format"
 
 // A % change from a tiny base is noise ("3 → 30 = +900%"), so small bases show no delta.
@@ -22,7 +23,7 @@ export function Section({ title, desc, children }: { title: string; desc: string
     )
 }
 
-export function Card({ title, aside, className = "", children }: { title?: string; aside?: string; className?: string; children: ReactNode }) {
+export function Card({ title, aside, className = "", children }: { title?: string; aside?: ReactNode; className?: string; children: ReactNode }) {
     return (
         <div className={`bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-4 min-w-0 ${className}`}>
             {title && (
@@ -51,40 +52,21 @@ export function DeltaBadge({ value, invert = false }: { value: number | null; in
     )
 }
 
-/** `invert`: growth is bad news (e.g. Yutqazilgan) — the badge turns red on ↑ */
-export function KpiCard({ className = "", label, icon, value, unit, sub, delta: d, invert }: { className?: string; label: string; icon: ReactNode; value: string; unit?: string; sub: string; delta: number | null; invert?: boolean }) {
-    return (
-        <div className={`@container bg-surface-sunken rounded-surface p-4 sm:p-5 flex flex-col gap-3 min-w-0 ${className}`}>
-            <div className="flex items-center justify-between gap-2">
-                <span className="text-base font-medium text-ink-muted">{label}</span>
-                <span className="size-8 shrink-0 rounded-control-sm bg-surface flex items-center justify-center text-ink">{icon}</span>
-            </div>
-            <div className="flex items-center gap-x-2 gap-y-1 sm:gap-y-2 flex-wrap">
-                {/* a long figure shrinks to the card's width instead of spilling out (~0.6em per character) */}
-                <span className="text-xl sm:text-2xl font-semibold tabular-nums text-ink whitespace-nowrap">
-                    <span style={{ fontSize: `min(1em, ${(100 / (0.6 * value.length)).toFixed(1)}cqi)` }}>{value}</span>
-                </span>
-                {unit && <span className="text-base text-ink-muted">{unit}</span>}
-                <DeltaBadge value={d} invert={invert} />
-            </div>
-            <span className="text-sm text-ink-muted">{sub}</span>
-        </div>
-    )
-}
-
 /** Open bitimlar by stage as a horizontal flow funnel (after BoardUI's Funnel Chart Card): each stage
  *  is a column sized to its count that tapers into the next, a share pill in the middle and a
  *  name/value footer; hovering a stage dims the rest and puts it in the headline. "Hammasi" shows
- *  one voronka at a time behind tabs. */
-export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel"]; compact?: boolean }) {
+ *  one voronka at a time behind tabs.
+ *  `conv` (103): the same drawing for stage conversion — a column is how many of the period's bitimlar
+ *  got that far, the pill on each border is the % that went on, the weakest one in red. */
+export function Funnel({ rows, compact = false, conv = false }: { rows: (SalesDashboard["funnel"][number] & Partial<ConvRow>)[]; compact?: boolean; conv?: boolean }) {
   // By id: two voronkalar may share a name
   const pipelines = [...new Map(rows.map((r) => [r.pipeline_id, r.pipeline])).entries()]
   const [picked, setPicked] = useState<string | null>(null)
   const [hover, setHover] = useState<number | null>(null)
-  if (rows.length === 0) return <Empty text="Bosqich yo'q" />
+  if (rows.length === 0) return <Empty text={conv ? "Davrda ochilgan bitim yo'q" : "Bosqich yo'q"} />
   const pid = pipelines.some(([id]) => id === picked) ? picked! : pipelines[0][0]
   const stages = rows.filter((r) => r.pipeline_id === pid)
-  const total = stages.reduce((s, r) => s + r.open, 0)
+  const total = conv ? stages[0].open : stages.reduce((s, r) => s + r.open, 0)
   const max = Math.max(1, ...stages.map((r) => r.open))
 
   // Geometry in a 1000 × 200 box, stretched to the card width
@@ -120,7 +102,7 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
 
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-2xl font-semibold tabular-nums text-ink">{formatNumber(head ? head.open : total)}</span>
-        <span className="text-base text-ink-muted">{head ? `${head.name} · ${share(head.open)}%` : "ochiq bitim"}</span>
+        <span className="text-base text-ink-muted">{head ? `${head.name} · ${share(head.open)}%` : conv ? "bitim davrda ochilgan" : "ochiq bitim"}</span>
         {(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0)) > 0 && (
           <span className={`text-sm tabular-nums ${compact ? "text-ink-muted" : "text-ink-faint"}`}>· {formatNumber(head ? head.open_sum : stages.reduce((s, r) => s + r.open_sum, 0))} so'm</span>
         )}
@@ -139,8 +121,13 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
             </g>
           ))}
         </svg>
-        {/* share pills, one per column centre */}
-        {stages.map((r, i) => (
+        {/* share pills, one per column centre; conversion: one per border between two stages */}
+        {stages.map((r, i) => conv ? r.pct != null && (
+          <span key={r.stage_id} className={`pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 h-6 inline-flex items-center rounded-full text-sm font-medium tabular-nums ${r.weak ? "bg-danger text-white" : "bg-surface text-ink"}`}
+            style={{ left: `${((i + 1) / stages.length) * 100}%` }}>
+            {r.pct}%
+          </span>
+        ) : (
           <span key={r.stage_id} className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 h-6 inline-flex items-center rounded-full bg-surface text-sm font-medium tabular-nums text-ink transition-opacity duration-200"
             style={{ left: `${((i + 0.5) / stages.length) * 100}%`, opacity: hover === null || hover === i ? 1 : 0.4 }}>
             {share(r.open)}%
@@ -154,7 +141,7 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
           {stages.map((r, i) => (
             <div key={r.stage_id} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
               className="min-w-0 py-3 border-t border-line transition-opacity duration-200" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
-              <span className="block text-xl font-semibold tabular-nums text-ink">{formatNumber(r.open)}</span>
+              <span className="block text-xl font-semibold tabular-nums text-ink">{formatNumber(r.open)}{r.days != null && <span className="ml-1.5 text-sm font-normal text-ink-muted">{String(r.days).replace(".", ",")} kun</span>}</span>
               <span className="flex items-center gap-1.5 text-sm text-ink-muted min-w-0">
                 <span className="size-2.5 rounded-[3px] shrink-0" style={{ background: r.color }} />
                 <span className="truncate">{r.name}</span>
@@ -172,7 +159,7 @@ export function Funnel({ rows, compact = false }: { rows: SalesDashboard["funnel
               <span className="size-2.5 rounded-[3px] shrink-0" style={{ background: r.color }} />
               <span className="truncate">{r.name}</span>
             </span>
-            <span className="text-md font-semibold tabular-nums text-ink">{formatNumber(r.open)}</span>
+            <span className="text-md font-semibold tabular-nums text-ink">{formatNumber(r.open)}{r.days != null && <span className="ml-1.5 text-sm font-normal text-ink-muted">{String(r.days).replace(".", ",")} kun</span>}</span>
           </div>
         ))}
       </div></div>
