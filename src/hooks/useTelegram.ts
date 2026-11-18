@@ -2,11 +2,17 @@ import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/context/AuthContext"
 import {
-  deleteTgTemplate, getLeadTelegram, getTgAccounts, getTgTemplates, getTgUnread, saveTgTemplate, tgHook,
+  deleteTgTemplate, getClientLeadId, getClientTelegram, getLeadTelegram, getTgInbox, getTgAccounts, getTgTemplates, getTgUnread, saveTgTemplate, tgHook,
   type LoginState, type TgFileRef, type TgTemplate,
 } from "@/lib/supabase/queries/telegram"
 
 export const TG_KEY = ["telegram"] as const
+
+export const useClientTelegram = (clientId: string | null) =>
+  useQuery({ queryKey: [...TG_KEY, "client", clientId], queryFn: () => getClientTelegram(clientId!), enabled: !!clientId, refetchOnMount: true })
+export const useTgInbox = () => useQuery({ queryKey: [...TG_KEY, "inbox"], queryFn: getTgInbox, refetchOnMount: true })
+export const useClientLeadId = (clientId: string | null) =>
+  useQuery({ queryKey: [...TG_KEY, "client-lead", clientId], queryFn: () => getClientLeadId(clientId!), enabled: !!clientId })
 
 export const useLeadTelegram = (leadId: string | null) =>
   useQuery({ queryKey: [...TG_KEY, "lead", leadId], queryFn: () => getLeadTelegram(leadId!), enabled: !!leadId, refetchOnMount: true })

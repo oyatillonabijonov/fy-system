@@ -1,7 +1,7 @@
 // Telegram widget (migration 100): reads through PostgREST + RLS, writes through the worker (/hooks/tg/*).
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
-import { tgErrorText } from "@/lib/telegram"
+import { tgErrorText, type TgInboxRow } from "@/lib/telegram"
 
 // ponytail: untyped client until `bun run gen:types` picks up migration 100
 const db = supabase as unknown as SupabaseClient
@@ -83,4 +83,40 @@ export async function tgFileUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from("telegram-files").createSignedUrl(path, 300)
   if (error) throw error
   return data.signedUrl
+}
+
+/** Every chat of a client (the bitim page and the client card show the client's conversation) */
+export async function getClientTelegram(clientId: string): Promise<{ chats: TgChat[]; messages: TgMessage[] }> {
+  const { data: chats, error } = await db.from("tg_chats").select("id, account_id, lead_id, title, username, unread, last_message_at").eq("client_id", clientId)
+  if (error) throw error
+  const ids = (chats as TgChat[]).map((c) => c.id)
+  if (!ids.length) return { chats: [], messages: [] }
+  const { data: messages, error: e2 } = await db.from("tg_messages")
+    .select("id, chat_id, direction, text, files, read_at, created_at, sender:sent_by(full_name)").in("chat_id", ids).order("created_at")
+  if (e2) throw e2
+  return { chats: chats as TgChat[], messages: messages as unknown as TgMessage[] }
+}
+
+/** Sotuv bo'limi → Telegram: every chat with its newest message and its bitim's owner */
+export async function getTgInbox(): Promise<TgInboxRow[]> {
+  const { data, error } = await db.from("tg_chats")
+    .select("id, title, phone, unread, last_message_at, lead_id, client_id, client:client_id(full_name, phone), lead:lead_id(responsible_user_id), last:tg_messages(text, files, direction, created_at)")
+    .not("client_id", "is", null)
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { referencedTable: "tg_messages", ascending: false }).limit(1, { referencedTable: "tg_messages" })
+  if (error) throw error
+  type Row = { id: string; title: string; phone: string | null; unread: number; last_message_at: string | null; lead_id: string | null; client_id: string | null
+    client: { full_name: string; phone: string | null } | null; lead: { responsible_user_id: string | null } | null; last: TgInboxRow["last"][] }
+  return (data as unknown as Row[]).map((r) => ({
+    id: r.id, title: r.client?.full_name || r.title, phone: r.client?.phone ?? r.phone, unread: r.unread, last_message_at: r.last_message_at,
+    lead_id: r.lead_id, client_id: r.client_id, owner_id: r.lead?.responsible_user_id ?? null, last: r.last[0] ?? null,
+  }))
+}
+
+/** The bitim a send from the client card goes through: the newest open one, else the newest */
+export async function getClientLeadId(clientId: string): Promise<string | null> {
+  const { data, error } = await db.from("crm_leads").select("id, is_won, is_lost, created_at").eq("client_id", clientId).order("created_at", { ascending: false })
+  if (error) throw error
+  const rows = (data ?? []) as { id: string; is_won: boolean; is_lost: boolean }[]
+  return (rows.find((r) => !r.is_won && !r.is_lost) ?? rows[0])?.id ?? null
 }

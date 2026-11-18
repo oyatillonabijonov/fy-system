@@ -24,3 +24,42 @@ export const TG_BLANKS = [
 
 // the storage gateway caps request bodies at 11 MB (CLAUDE.md, task-files)
 export const TG_MAX_FILE = 10 * 1024 * 1024
+
+const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"]
+const tashkentDay = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date(iso))
+
+/** The day separator in a chat: "Bugun", "Kecha", else "12-noyabr" (Tashkent days) */
+export function dayLabel(iso: string, today: string): string {
+  const d = tashkentDay(iso)
+  if (d === today) return "Bugun"
+  const y = new Date(`${today}T12:00:00Z`); y.setUTCDate(y.getUTCDate() - 1)
+  if (d === y.toISOString().slice(0, 10)) return "Kecha"
+  return `${Number(d.slice(8))}-${MONTHS[Number(d.slice(5, 7)) - 1]}`
+}
+
+/** Messages with a { day } marker before the first one of each day */
+export function withDays<T extends { created_at: string }>(msgs: T[], today: string): ({ day: string } | T)[] {
+  const out: ({ day: string } | T)[] = []
+  let last = ""
+  for (const m of msgs) {
+    const d = tashkentDay(m.created_at)
+    if (d !== last) { out.push({ day: dayLabel(m.created_at, today) }); last = d }
+    out.push(m)
+  }
+  return out
+}
+
+export type TgInboxRow = {
+  id: string; title: string; phone: string | null; unread: number; last_message_at: string | null
+  lead_id: string | null; client_id: string | null; owner_id: string | null
+  last: { text: string; files: unknown[]; direction: "in" | "out" } | null
+}
+
+/** Inbox search (name or phone digits) and "Mening" (my bitimlar + unowned) */
+export function filterInbox(rows: TgInboxRow[], q: string, mine: boolean, uid: string | null): TgInboxRow[] {
+  const text = q.trim().toLowerCase()
+  const digits = q.replace(/\D/g, "")
+  return rows.filter((r) =>
+    (!mine || !r.owner_id || r.owner_id === uid) &&
+    (!text || r.title.toLowerCase().includes(text) || (digits.length >= 3 && (r.phone ?? "").replace(/\D/g, "").includes(digits))))
+}
