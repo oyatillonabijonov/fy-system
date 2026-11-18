@@ -51,7 +51,7 @@ describe("sendToLead", () => {
     await sendToLead(sql, "u1", { lead_id: "L1", text: "Salom {ism}!", template_id: "T1" }, store())
     expect(resolved).toBe(false)
     expect(port.sent[0]).toEqual({ kind: "text", args: [expect.objectContaining({ userId: 5001 }), "Salom Bek!"] })
-    expect(logs(calls)[0].values).toEqual(["chat-1", 100, "out", "Salom Bek!", "[]", "u1", "T1", expect.any(Date)])
+    expect(logs(calls)[0].values).toEqual(["chat-1", 100, "out", "Salom Bek!", [], "u1", "T1", expect.any(Date)])
   })
 
   test("a new chat goes through tg_create_chat with the resolved user", async () => {
@@ -73,7 +73,7 @@ describe("sendToLead", () => {
     expect(port.sent).toHaveLength(1)
     expect(port.sent[0].kind).toBe("files")
     expect(port.sent[0].args[2]).toBe("Narxlar")
-    expect(JSON.parse(logs(calls)[0].values[4] as string)).toEqual([{ path: "out/L1/a-narx.pdf", name: "narx.pdf", mime: "application/pdf", size: 2 }])
+    expect(logs(calls)[0].values[4]).toEqual([{ path: "out/L1/a-narx.pdf", name: "narx.pdf", mime: "application/pdf", size: 2 }])
 
     port.sent.length = 0
     await sendToLead(sql, "u1", { lead_id: "L1", text: "x".repeat(1100), files }, store())

@@ -12,7 +12,8 @@ export function fakeSql(answer: (text: string, values: unknown[]) => unknown[] =
     calls.push({ text, values })
     return Promise.resolve(answer(text, values))
   }
-  return { sql: tag as unknown as Sql, calls }
+  // sql.json(v) passes the value itself, so tests see the array that goes to the database
+  return { sql: Object.assign(tag, { json: (v: unknown) => v }) as unknown as Sql, calls }
 }
 
 export const peer = (over: Partial<TgPeer> = {}): TgPeer => ({ userId: 5001, accessHash: "h1", username: "ali", title: "Ali", phone: "998901000001", ...over })
