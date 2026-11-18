@@ -18,6 +18,8 @@ export interface Stage {
   sort_order: number
   is_won: boolean
   is_lost: boolean
+  /** 101: Telegram template offered when a bitim enters this stage */
+  tg_template_id?: string | null
 }
 
 export type TaskKind = "call" | "meeting" | "email" | "other"
@@ -112,7 +114,7 @@ export async function getPipelines(): Promise<Pipeline[]> {
 }
 
 export async function getStages(pipelineId: string): Promise<Stage[]> {
-  const { data, error } = await db.from("crm_stages").select("id, pipeline_id, name, color, sort_order, is_won, is_lost")
+  const { data, error } = await db.from("crm_stages").select("id, pipeline_id, name, color, sort_order, is_won, is_lost, tg_template_id")
     .eq("pipeline_id", pipelineId).order("sort_order")
   if (error) throw error
   return data as Stage[]
@@ -181,7 +183,7 @@ export async function deletePipeline(id: string): Promise<void> {
 
 export async function saveStage(s: Partial<Stage> & { pipeline_id: string }): Promise<void> {
   const { error } = s.id
-    ? await db.from("crm_stages").update({ name: s.name, color: s.color, sort_order: s.sort_order }).eq("id", s.id)
+    ? await db.from("crm_stages").update({ name: s.name, color: s.color, sort_order: s.sort_order, tg_template_id: s.tg_template_id ?? null }).eq("id", s.id)
     : await db.from("crm_stages").insert(s)
   if (error) throw error
 }

@@ -11,6 +11,7 @@ import { formatNumber } from "@/lib/format"
 import { TaskChip, NoTaskChip, StageDot, shortMoney } from "./ui"
 import { useTgUnread } from "@/hooks/useTelegram"
 import { TgBadge } from "@/components/telegram/TgBadge"
+import { offerStageTelegram } from "@/lib/telegramStage"
 
 /** When the deal came in: "Bugun · 10:20", "Kecha · 17:15", "28-sen · 09:00" (Tashkent) */
 function cameIn(iso: string, today: string): string {
@@ -38,10 +39,10 @@ export function Board({ stages, leads, today, onOpen, onAdd }: {
     if (!to || to === r.source.droppableId) return
     if (stages.find((s) => s.id === to)?.is_lost) {
       const loss_reason = await askLossReason()
-      if (loss_reason) update.mutate({ id: r.draggableId, patch: { stage_id: to, loss_reason } })
+      if (loss_reason) update.mutate({ id: r.draggableId, patch: { stage_id: to, loss_reason } }, { onSuccess: () => void offerStageTelegram(r.draggableId, to) })
       return
     }
-    update.mutate({ id: r.draggableId, patch: { stage_id: to } })
+    update.mutate({ id: r.draggableId, patch: { stage_id: to } }, { onSuccess: () => void offerStageTelegram(r.draggableId, to) })
   }
 
   return (

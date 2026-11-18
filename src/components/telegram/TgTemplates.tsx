@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import { ArrowDown, ArrowUp, Paperclip, Plus, Trash, X } from "@phosphor-icons/react"
 import { Sheet } from "@/components/ui/Sheet"
 import { useDeleteTgTemplate, useSaveTgTemplate, useTgTemplates } from "@/hooks/useTelegram"
+import { usePipelines } from "@/hooks/useSotuv"
 import { uploadTgFile, type TgFileRef, type TgTemplate } from "@/lib/supabase/queries/telegram"
 import { TG_BLANKS, TG_MAX_FILE } from "@/lib/telegram"
 import { confirmAction } from "@/lib/confirm"
@@ -13,6 +14,7 @@ const FIELD = "w-full px-3 border border-line rounded-control text-base text-ink
 
 export function TgTemplates() {
   const { data: list = [] } = useTgTemplates()
+  const { data: pipelines = [] } = usePipelines()
   const save = useSaveTgTemplate()
   const [open, setOpen] = useState<TgTemplate | "new" | null>(null)
 
@@ -37,7 +39,7 @@ export function TgTemplates() {
             <div key={t.id} className="min-h-14 px-4 py-2.5 flex items-center gap-3 border-b border-line last:border-0">
               <button type="button" onClick={() => setOpen(t)} className="flex-1 min-w-0 flex flex-col text-left">
                 <span className="text-base font-medium text-ink truncate">{t.title}</span>
-                <span className="text-sm text-ink-muted truncate">{t.body.split("\n")[0] || "—"}{t.files.length ? ` · 📎 ${t.files.length}` : ""}</span>
+                <span className="text-sm text-ink-muted truncate">{pipelines.find((p) => p.id === t.pipeline_id)?.name ?? "Hamma voronkalar"} · {t.body.split("\n")[0] || "—"}{t.files.length ? ` · 📎 ${t.files.length}` : ""}</span>
               </button>
               <span className="flex gap-1 shrink-0">
                 <button type="button" aria-label="Yuqoriga" disabled={i === 0} onClick={() => move(i, -1)} className="size-8 rounded-full flex items-center justify-center text-ink-muted hover:bg-mute-ghost-hover disabled:opacity-30"><ArrowUp size={16} /></button>
@@ -54,7 +56,9 @@ export function TgTemplates() {
 function TemplateSheet({ template, nextSort, onClose }: { template: TgTemplate | null; nextSort: number; onClose: () => void }) {
   const save = useSaveTgTemplate()
   const del = useDeleteTgTemplate()
+  const { data: pipelines = [] } = usePipelines()
   const [title, setTitle] = useState(template?.title ?? "")
+  const [pipelineId, setPipelineId] = useState<string | null>(template?.pipeline_id ?? null)
   const [body, setBody] = useState(template?.body ?? "")
   const [files, setFiles] = useState<TgFileRef[]>(template?.files ?? [])
   const [uploading, setUploading] = useState(false)
@@ -84,7 +88,7 @@ function TemplateSheet({ template, nextSort, onClose }: { template: TgTemplate |
           className="size-10 rounded-full flex items-center justify-center text-danger-text hover:bg-danger-soft"><Trash size={18} /></button>
       )}
       <button type="button" disabled={!title.trim() || (!body.trim() && !files.length) || uploading || save.isPending}
-        onClick={() => save.mutate({ id: template?.id, title, body, files, sort: template?.sort ?? nextSort }, { onSuccess: onClose })}
+        onClick={() => save.mutate({ id: template?.id, title, body, files, sort: template?.sort ?? nextSort, pipeline_id: pipelineId }, { onSuccess: onClose })}
         className="flex-1 h-10 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover disabled:opacity-40">Saqlash</button>
     </div>
   )
@@ -93,6 +97,14 @@ function TemplateSheet({ template, nextSort, onClose }: { template: TgTemplate |
     <Sheet open onClose={onClose} title={template ? "Shablon" : "Yangi shablon"} className="sm:max-w-lg" footer={footer}>
       <div className="flex flex-col gap-4">
         <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="Nomi, masalan: Nonushta haqida" aria-label="Nomi" className={`${FIELD} h-control-md`} />
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-ink">Qaysi voronka uchun</span>
+          <select value={pipelineId ?? ""} onChange={(e) => setPipelineId(e.target.value || null)} className={`${FIELD} h-control-md`}>
+            <option value="">Hamma voronkalar</option>
+            {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <span className="text-xs text-ink-faint">Chatda faqat shu voronka bitimlarida chiqadi.</span>
+        </label>
         <div className="flex flex-col gap-2">
           <textarea ref={text} value={body} onChange={(e) => setBody(e.target.value)} rows={7} maxLength={4000} placeholder="Assalomu alaykum, {ism}! …" aria-label="Matn" className={`${FIELD} py-2.5 resize-y`} />
           <div className="flex flex-wrap gap-1.5">

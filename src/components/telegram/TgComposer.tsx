@@ -3,13 +3,17 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { Paperclip, PaperPlaneRight, X } from "@phosphor-icons/react"
 import { useSendTelegram, useTgTemplates } from "@/hooks/useTelegram"
+import { useLead } from "@/hooks/useSotuv"
 import { uploadTgFile, type TgFileRef } from "@/lib/supabase/queries/telegram"
 import { TG_MAX_FILE } from "@/lib/telegram"
 
 const CHIP = "h-7 px-2.5 shrink-0 inline-flex items-center gap-1.5 rounded-full text-sm whitespace-nowrap max-w-56"
 
 export function TgComposer({ leadId }: { leadId: string }) {
-  const { data: templates = [] } = useTgTemplates()
+  const { data: all = [] } = useTgTemplates()
+  const { data: lead } = useLead(leadId)
+  // 101: this bitim's voronka's templates plus the general ones — another event's PDF never shows here
+  const templates = all.filter((t) => !t.pipeline_id || t.pipeline_id === lead?.pipeline_id)
   const send = useSendTelegram()
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [text, setText] = useState("")

@@ -10,7 +10,7 @@ export type TgFileRef = { path: string; name: string; mime: string; size?: numbe
 export type TgAccount = { id: string; title: string; phone: string | null; status: "pending" | "active" | "logged_out"; profile_id: string | null; connected_at: string | null; owner: { full_name: string } | null }
 export type TgChat = { id: string; account_id: string; lead_id: string | null; title: string; username: string | null; unread: number; last_message_at: string | null }
 export type TgMessage = { id: string; chat_id: string; direction: "in" | "out"; text: string; files: TgFileRef[]; read_at: string | null; created_at: string; sender: { full_name: string } | null }
-export type TgTemplate = { id: string; title: string; body: string; files: TgFileRef[]; sort: number }
+export type TgTemplate = { id: string; title: string; body: string; files: TgFileRef[]; sort: number; pipeline_id: string | null }
 export type TgUnread = { lead_id: string; unread: number; title: string; last_message_at: string | null; lead: { name: string | null; responsible_user_id: string | null } | null }
 export type LoginState = { state: "wait" } | { state: "qr"; url: string } | { state: "password" } | { state: "done"; title: string } | { state: "error"; message: string }
 
@@ -43,13 +43,13 @@ export async function getTgAccounts(): Promise<TgAccount[]> {
 }
 
 export async function getTgTemplates(): Promise<TgTemplate[]> {
-  const { data, error } = await db.from("tg_templates").select("id, title, body, files, sort").order("sort").order("created_at")
+  const { data, error } = await db.from("tg_templates").select("id, title, body, files, sort, pipeline_id").order("sort").order("created_at")
   if (error) throw error
   return data as TgTemplate[]
 }
 
 export async function saveTgTemplate(t: Omit<TgTemplate, "id"> & { id?: string }): Promise<void> {
-  const row = { title: t.title.trim(), body: t.body, files: t.files, sort: t.sort, updated_at: new Date().toISOString() }
+  const row = { title: t.title.trim(), body: t.body, files: t.files, sort: t.sort, pipeline_id: t.pipeline_id, updated_at: new Date().toISOString() }
   const { error } = t.id ? await db.from("tg_templates").update(row).eq("id", t.id) : await db.from("tg_templates").insert(row)
   if (error) throw error
 }

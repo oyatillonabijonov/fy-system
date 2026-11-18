@@ -1,6 +1,6 @@
 import { useId, useState } from "react"
 import { motion } from "framer-motion"
-import { X, Trash, ArrowUp, ArrowDown, Plus, Copy, Check, Globe } from "@phosphor-icons/react"
+import { X, Trash, ArrowUp, ArrowDown, Plus, Copy, Check, Globe, TelegramLogo } from "@phosphor-icons/react"
 import { useDialog } from "@/hooks/useDialog"
 import { useMedia } from "@/hooks/useMedia"
 import { sheet, sheetMotion } from "@/components/ui/sheetStyles"
@@ -16,6 +16,8 @@ import { leadHookUrl } from "@/lib/supabase/queries/integrations"
 import { toast } from "@/lib/toast"
 import { useUsers } from "@/hooks/useUsers"
 import { Switch } from "@/components/ui/Switch"
+import { useTgTemplates } from "@/hooks/useTelegram"
+import type { TgTemplate } from "@/lib/supabase/queries/telegram"
 
 const COLORS = ["#378ADD", "#BA7517", "#7F77DD", "#D4537E", "#1D9E75", "#E24B4A", "#888780", "#D85A30"]
 
@@ -40,6 +42,9 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
 
   const open = stages.filter((s) => !s.is_won && !s.is_lost)
   const closed = stages.filter((s) => s.is_won || s.is_lost)
+  // 101: a stage can offer this voronka's (or a general) Telegram template when a bitim enters it
+  const { data: allTemplates = [] } = useTgTemplates()
+  const templates = allTemplates.filter((t) => !t.pipeline_id || t.pipeline_id === pipeline.id)
 
   function move(i: number, d: -1 | 1) {
     const a = open[i], b = open[i + d]
@@ -94,7 +99,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-ink-muted mb-1">Bosqichlar</span>
             {open.map((s, i) => (
-              <StageRow key={s.id} stage={s} onSave={(p) => save.mutate({ ...s, ...p }, { onError })}
+              <StageRow key={s.id} stage={s} templates={templates} onSave={(p) => save.mutate({ ...s, ...p }, { onError })}
                 onUp={i > 0 ? () => move(i, -1) : undefined} onDown={i < open.length - 1 ? () => move(i, 1) : undefined}
                 onDelete={async () => { if (await confirmAction({ title: "Bosqichni o'chirish", message: `"${s.name}" bosqichi o'chirilsinmi?` })) delStage.mutate(s.id, { onError }) }} />
             ))}
@@ -105,7 +110,7 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
                 className="h-control-md aspect-square shrink-0 flex items-center justify-center rounded-full bg-accent text-ink-on-accent disabled:opacity-40 transition-opacity"><Plus size={16} /></button>
             </div>
             <span className="text-sm font-medium text-ink-muted mt-4 mb-1">Yakuniy bosqichlar</span>
-            {closed.map((s) => <StageRow key={s.id} stage={s} onSave={(p) => save.mutate({ ...s, ...p }, { onError })} />)}
+            {closed.map((s) => <StageRow key={s.id} stage={s} templates={templates} onSave={(p) => save.mutate({ ...s, ...p }, { onError })} />)}
           </div>
 
           <button onClick={removePipeline} className="self-start flex items-center gap-1.5 h-control-md px-3 rounded-full text-base font-medium text-danger-text hover:bg-danger-soft transition-colors">
@@ -117,8 +122,8 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
   )
 }
 
-function StageRow({ stage, onSave, onUp, onDown, onDelete }: {
-  stage: Stage; onSave: (p: Partial<Stage>) => void; onUp?: () => void; onDown?: () => void; onDelete?: () => void
+function StageRow({ stage, templates, onSave, onUp, onDown, onDelete }: {
+  stage: Stage; templates: TgTemplate[]; onSave: (p: Partial<Stage>) => void; onUp?: () => void; onDown?: () => void; onDelete?: () => void
 }) {
   const [name, setName] = useState(stage.name)
   const iconBtn = "p-2.5 sm:p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-mute-ghost-hover transition-colors disabled:opacity-30 disabled:pointer-events-none"
@@ -139,6 +144,17 @@ function StageRow({ stage, onSave, onUp, onDown, onDelete }: {
       <input value={name} onChange={(e) => setName(e.target.value)} aria-label="Bosqich nomi"
         onBlur={() => { const v = name.trim(); if (v && v !== stage.name) onSave({ name: v }); else setName(stage.name) }}
         className="flex-1 min-w-0 bg-transparent text-base text-ink focus:outline-none" />
+      {templates.length > 0 && (
+        <label className={`shrink-0 h-8 pl-2 pr-1 inline-flex items-center gap-1 rounded-full text-sm ${stage.tg_template_id ? "bg-[#2AABEE] text-white" : "bg-surface text-ink-muted"}`}
+          title="Bitim shu bosqichga o'tganda mijozga Telegramda yuborishni taklif qiladi">
+          <TelegramLogo size={16} weight={stage.tg_template_id ? "fill" : "regular"} />
+          <select value={stage.tg_template_id ?? ""} onChange={(e) => onSave({ tg_template_id: e.target.value || null })} aria-label={`${stage.name}: Telegram xabari`}
+            className="max-w-32 bg-transparent text-sm focus:outline-none truncate">
+            <option value="">Xabarsiz</option>
+            {templates.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
+        </label>
+      )}
       {stage.is_won && <span className="text-sm text-success-text">Yutildi</span>}
       {stage.is_lost && <span className="text-sm text-danger-text">Yutqazildi</span>}
       {(onUp || onDown) && <>
