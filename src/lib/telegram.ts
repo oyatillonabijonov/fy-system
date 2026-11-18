@@ -65,3 +65,7 @@ export function filterInbox(rows: TgInboxRow[], q: string, mode: InboxMode, uid:
     (mode !== "mine" || !r.owner_id || r.owner_id === uid) && (mode !== "unread" || r.unread > 0) &&
     (!text || r.title.toLowerCase().includes(text) || (digits.length >= 3 && (r.phone ?? "").replace(/\D/g, "").includes(digits))))
 }
+
+/** Telegram can't reach this person at all (no account on the number, or they closed "find me by phone") →
+ *  offer an SMS instead. Not for our own limits or outages: those pass, and Telegram is the better channel. */
+export const smsFallback = (code: string | undefined) => code === "tg_not_found" || code === "tg_privacy"

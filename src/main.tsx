@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthContext'
 import { Toaster } from './components/ui/Toaster'
 import { ConfirmHost } from './components/ui/ConfirmHost'
 import { LossReasonHost } from './components/sotuv/LossReasonHost'
+import { SmsHost } from './components/sms/SmsHost'
 import { toast, errorDetail } from './lib/toast'
 
 const queryClient = new QueryClient({
@@ -61,6 +62,7 @@ createRoot(document.getElementById('root')!).render(
             <Toaster />
             <ConfirmHost />
             <LossReasonHost />
+            <SmsHost />
           </MotionConfig>
         </AuthProvider>
       </BrowserRouter>
