@@ -1,11 +1,10 @@
-import { useEffect, useId, useState, type ReactNode } from "react"
-import QRCode from "qrcode"
-import { useSearchParams } from "react-router-dom"
+import { useId, useState, type ReactNode } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown, UsersThree, Phone, Funnel, IdentificationCard, ArrowUpRight, type Icon } from "@phosphor-icons/react"
+import { Plus, Trash, X, TelegramLogo, Copy, Check, CaretRight, CaretDown } from "@phosphor-icons/react"
+import { IntegrationsBento, type BentoData, type TileId } from "@/components/integratsiyalar/Bento"
 import { Sheet } from "@/components/ui/Sheet"
 import { useTgAccounts, useTgInbox, useTgTemplates } from "@/hooks/useTelegram"
-import { formatPhone } from "@/lib/format"
 import { toast } from "@/lib/toast"
 import { Fab } from "@/components/ui/Fab"
 import { useMedia } from "@/hooks/useMedia"
@@ -37,11 +36,9 @@ const initials = (s: string) => s.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(
 const isGone = (g: TelegramGroup) => g.bot_status === "left" || g.bot_status === "kicked"
 
 /** Sozlamalar → Integratsiyalar: a matrix — groups down, the bot's jobs across */
-// Sozlamalar → Integratsiyalar (bento, chosen by the owner 2026-11-18 after the plain card grid felt empty):
-// tiles of different sizes that fill the page and show what's inside each integration — numbers, accounts,
-// sources, extensions, groups — in the app's own flat style. A tile opens its settings in a sheet (`?open=<id>`).
-// Telegram templates live in Sotuv bo'limi → Telegram.
-type TileId = "telegram" | "leads" | "phone" | "anketa" | "groups"
+// Sozlamalar → Integratsiyalar: the bento (components/integratsiyalar/Bento.tsx) shows each integration as a small
+// live view; a tile opens that integration's settings in a sheet (`?open=<id>`). Telegram templates live in
+// Sotuv bo'limi → Telegram.
 const SHEETS: Record<TileId, { title: string; about?: string; body: ReactNode }> = {
   telegram: { title: "Telegram akkaunt", body: <TelegramSection />,
     about: "Kompaniya Telegram akkauntini ulang — sotuvchilar bitim sahifasidan va Sotuv → Telegram'dan lidga yozadi, javoblar chatga tushadi. Shablonlar Sotuv → Telegram sahifasida." },
@@ -56,171 +53,31 @@ const SHEETS: Record<TileId, { title: string; about?: string; body: ReactNode }>
 
 export function Integratsiyalar() {
   const { isAdmin, hasAccess } = useAuth()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const setOpen = (id: TileId | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set("open", id); else n.delete("open"); return n }, { replace: true })
   const anketa = hasAccess("mijozlar") || hasAccess("sotuv-crmn")
   const openId = params.get("open") as TileId | null
   const open = openId && openId in SHEETS ? SHEETS[openId] : null
 
+  const { data: accounts } = useTgAccounts()
+  const { data: chats } = useTgInbox()
+  const { data: templates } = useTgTemplates()
+  const { data: sources } = useLeadSources(isAdmin)
+  const { data: exts, error: extsError } = usePbxExts(isAdmin)
+  const { data: owners } = useUsers()
+  const { data: anketaUrl } = useUniversalAnketaLink(anketa)
+  const { data: groups } = useTelegramGroups()
+  const data: BentoData = { accounts, chats, templates: templates?.length, sources, exts, extsError: !!extsError, owners, anketaUrl, groups }
+
   return (
     <div className="pb-10 max-lg:pb-20">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-[minmax(164px,auto)]">
-        {isAdmin && <TelegramTile onOpen={() => setOpen("telegram")} />}
-        {isAdmin && <LeadsTile onOpen={() => setOpen("leads")} />}
-        {isAdmin && <PhoneTile onOpen={() => setOpen("phone")} />}
-        {anketa && isAdmin && <AnketaTile onOpen={() => setOpen("anketa")} />}
-        <GroupsTile onOpen={() => setOpen("groups")} wide={isAdmin || !anketa} />
-        {anketa && !isAdmin && <AnketaTile onOpen={() => setOpen("anketa")} />}
-      </div>
+      <IntegrationsBento data={data} admin={isAdmin} anketa={anketa} onOpen={setOpen} onInbox={() => navigate("/sotuv/telegram")}
+        onCopy={(url) => void navigator.clipboard.writeText(url).then(() => toast.success("Anketa havolasi nusxalandi"), () => toast.info("Havolani qo'lda nusxalang", url))} />
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.title ?? ""} className="sm:max-w-5xl">
         {open && <div className="flex flex-col gap-4">{open.about && <p className="text-sm text-ink-muted">{open.about}</p>}{open.body}</div>}
       </Sheet>
     </div>
-  )
-}
-
-/** One bento tile: a div, not a button — some tiles hold their own buttons (Anketa's copy) */
-function Tile({ onOpen, className = "", icon: I, tint, title, sub, children }: {
-  onOpen: () => void; className?: string; icon: Icon; tint: string; title: string; sub?: string; children: ReactNode
-}) {
-  return (
-    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) onOpen() }} aria-label={`${title} — sozlash`}
-      className={`group p-5 rounded-overlay bg-surface-sunken hover:bg-surface-sunken-hover transition-colors cursor-pointer flex flex-col gap-4 min-w-0 ${className}`}>
-      <div className="flex items-center gap-3 min-w-0">
-        <span className={`size-10 shrink-0 flex items-center justify-center ${tint}`}><I size={22} weight="light" /></span>
-        <span className="flex-1 min-w-0 flex flex-col">
-          <span className="text-base font-semibold text-ink truncate">{title}</span>
-          {sub && <span className="text-sm text-ink-muted truncate">{sub}</span>}
-        </span>
-        <ArrowUpRight size={18} className="shrink-0 text-ink-faint group-hover:text-ink transition-colors" />
-      </div>
-      <div className="mt-auto min-w-0">{children}</div>
-    </div>
-  )
-}
-
-const Stat = ({ n, label, accent }: { n: number; label: string; accent?: boolean }) => (
-  <span className="flex flex-col gap-1 min-w-0">
-    <span className={`text-3xl leading-none font-semibold tabular-nums ${accent && n > 0 ? "text-[#2AABEE]" : "text-ink"}`}>{n}</span>
-    <span className="text-sm text-ink-muted whitespace-nowrap">{label}</span>
-  </span>
-)
-const Dot = ({ tone }: { tone: "ok" | "warn" | "off" | "bad" }) =>
-  <span className={`size-2 rounded-full shrink-0 ${{ ok: "bg-success", warn: "bg-warning", off: "bg-mute-soft-hover", bad: "bg-danger" }[tone]}`} />
-
-function TelegramTile({ onOpen }: { onOpen: () => void }) {
-  const { data: accounts = [] } = useTgAccounts()
-  const { data: chats = [] } = useTgInbox()
-  const { data: templates = [] } = useTgTemplates()
-  return (
-    <Tile onOpen={onOpen} className="col-span-2 lg:row-span-2" icon={TelegramLogo} tint="rounded-full bg-[#2AABEE] text-white" title="Telegram akkaunt" sub="Sotuvchilar lid bilan Telegramda yozishadi">
-      <div className="flex flex-col gap-5">
-        <div className="flex items-end gap-8 max-sm:gap-5">
-          <Stat n={chats.length} label="suhbat" />
-          <Stat n={chats.filter((c) => c.unread > 0).length} label="javob kutyapti" accent />
-          <Stat n={templates.length} label="shablon" />
-        </div>
-        <div className="flex flex-col gap-2">
-          {accounts.length === 0 && <div className="px-3 py-3 rounded-surface bg-surface text-sm text-ink-muted flex items-center gap-2"><Dot tone="off" />Akkaunt ulanmagan — ulash uchun bosing</div>}
-          {accounts.slice(0, 3).map((a) => (
-            <div key={a.id} className="px-3 py-2.5 rounded-surface bg-surface flex items-center gap-3 min-w-0">
-              <span className="size-9 shrink-0 rounded-full bg-[#E6F1FB] text-[#185FA5] flex items-center justify-center text-sm font-semibold">{initials(a.title)}</span>
-              <span className="flex-1 min-w-0 flex flex-col">
-                <span className="text-base font-medium text-ink truncate">{a.title}</span>
-                <span className="text-sm text-ink-muted truncate tabular-nums">{a.phone ? formatPhone(`+${a.phone.replace(/^\+/, "")}`) : "—"} · {a.owner?.full_name ?? "Umumiy"}</span>
-              </span>
-              <span className="shrink-0 flex items-center gap-1.5 text-sm text-ink-muted whitespace-nowrap"><Dot tone={a.status === "active" ? "ok" : "bad"} />{a.status === "active" ? "Ulangan" : "Uzilgan"}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Tile>
-  )
-}
-
-function LeadsTile({ onOpen }: { onOpen: () => void }) {
-  const { data: sources = [] } = useLeadSources(true)
-  const on = sources.filter((s) => s.enabled)
-  return (
-    <Tile onOpen={onOpen} className="col-span-2" icon={Funnel} tint="rounded-control bg-[#EEEDFE] text-[#534AB7]" title="Lid manbalari" sub="Formalar, qo'ng'iroq va Telegram'dan bitim">
-      <div className="flex items-end gap-4">
-        <Stat n={sources.reduce((n, s) => n + s.leads_count, 0)} label={`lid · ${on.length} ta manba yoqilgan`} />
-        <div className="ml-auto flex flex-wrap justify-end gap-1.5 max-w-[62%]">
-          {[...on, ...sources.filter((s) => !s.enabled)].map((s) => (
-            <span key={s.id} className={`h-7 px-2.5 inline-flex items-center gap-1.5 rounded-full bg-surface text-sm whitespace-nowrap ${s.enabled ? "text-ink" : "text-ink-faint"}`}>
-              {s.enabled && <Dot tone="ok" />}{s.label.split(" /")[0]}{s.enabled && <span className="tabular-nums text-ink-muted">{s.leads_count}</span>}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Tile>
-  )
-}
-
-function PhoneTile({ onOpen }: { onOpen: () => void }) {
-  const { data: exts = [], error } = usePbxExts(true)
-  const { data: users = [] } = useUsers()
-  return (
-    <Tile onOpen={onOpen} icon={Phone} tint="rounded-control bg-[#E1F5EE] text-[#0F6E56]" title="Telefoniya">
-      {error ? <span className="text-sm text-danger-text">OnlinePBX bilan aloqa yo'q</span>
-        : exts.length === 0 ? <span className="text-sm text-ink-muted">Ichki raqam yo'q</span>
-        : <div className="flex flex-col gap-1.5">
-          {exts.slice(0, 3).map((e) => {
-            const owner = users.find((u) => u.pbx_ext === e.num)
-            return (
-              <span key={e.num} className="flex items-center gap-2 text-sm min-w-0">
-                <Dot tone={!e.enabled ? "off" : e.registered ? "ok" : "warn"} />
-                <span className="font-semibold text-ink tabular-nums">{e.num}</span>
-                <span className={`truncate ${owner ? "text-ink-muted" : "text-warning-text"}`}>{owner?.full_name ?? "biriktirilmagan"}</span>
-              </span>
-            )
-          })}
-          {exts.length > 3 && <span className="text-sm text-ink-faint">+{exts.length - 3} ta raqam</span>}
-        </div>}
-    </Tile>
-  )
-}
-
-function AnketaTile({ onOpen }: { onOpen: () => void }) {
-  const { data: url } = useUniversalAnketaLink(true)
-  const [qr, setQr] = useState<string | null>(null)
-  useEffect(() => { if (url) void QRCode.toDataURL(url, { width: 160, margin: 1 }).then(setQr) }, [url])
-  return (
-    <Tile onOpen={onOpen} icon={IdentificationCard} tint="rounded-control bg-[#FAEEDA] text-[#854F0B]" title="Anketa">
-      <div className="flex items-end gap-3">
-        {qr ? <img src={qr} alt="" className="size-14 shrink-0 rounded-control bg-white" /> : <span className="size-14 shrink-0 rounded-control bg-surface" />}
-        <div className="flex flex-col items-start gap-1.5 min-w-0">
-          <button type="button" disabled={!url}
-            onClick={(e) => { e.stopPropagation(); if (url) void navigator.clipboard.writeText(url).then(() => toast.success("Anketa havolasi nusxalandi")) }}
-            className="h-7 px-2.5 inline-flex items-center gap-1.5 rounded-full bg-surface text-sm text-ink whitespace-nowrap hover:bg-mute-soft-hover disabled:opacity-40"><Copy size={12} weight="bold" />Nusxalash</button>
-          <span className="text-sm text-ink-muted truncate max-w-full">Umumiy havola</span>
-        </div>
-      </div>
-    </Tile>
-  )
-}
-
-function GroupsTile({ onOpen, wide }: { onOpen: () => void; wide: boolean }) {
-  const { data: groups = [] } = useTelegramGroups()
-  const shown = groups.slice(0, 4)
-  return (
-    <Tile onOpen={onOpen} className={`col-span-2 ${wide ? "lg:col-span-4" : "lg:col-span-3"}`} icon={UsersThree} tint="rounded-control bg-[#E6F1FB] text-[#185FA5]" title="Telegram guruhlar" sub="Bot qaysi guruhda nima qiladi">
-      {groups.length === 0 ? <span className="text-sm text-ink-muted">{BOT} ni guruhga qo'shing — u shu yerda chiqadi</span>
-        : <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
-          {shown.map((g) => (
-            <div key={g.chat_id} className="px-3 py-2.5 rounded-surface bg-surface flex items-center gap-3 min-w-0">
-              <GroupAvatar g={g} />
-              <span className="flex-1 min-w-0 flex flex-col">
-                <span className="text-base font-medium text-ink truncate">{g.title || "Nomsiz guruh"}</span>
-                {isGone(g) ? <span className="text-sm text-danger-text truncate">Bot guruhdan chiqarilgan</span>
-                  : !GROUP_ROLES.some((r) => g[r.id]) ? <span className="text-sm text-warning-text truncate">Sozlanmagan</span>
-                  : <span className="text-sm text-ink-muted truncate">{GROUP_ROLES.filter((r) => g[r.id]).map((r) => r.short).join(" · ")}</span>}
-              </span>
-            </div>
-          ))}
-          {groups.length > shown.length && <div className="px-3 py-2.5 rounded-surface bg-surface flex items-center text-sm text-ink-muted">+{groups.length - shown.length} ta guruh</div>}
-        </div>}
-    </Tile>
   )
 }
 
