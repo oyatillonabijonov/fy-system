@@ -27,17 +27,6 @@ export async function tgHook<T>(path: string, body?: unknown): Promise<T> {
   return json
 }
 
-export async function getLeadTelegram(leadId: string): Promise<{ chats: TgChat[]; messages: TgMessage[] }> {
-  const { data: chats, error } = await db.from("tg_chats").select("id, account_id, lead_id, title, username, unread, last_message_at").eq("lead_id", leadId)
-  if (error) throw error
-  const ids = (chats as TgChat[]).map((c) => c.id)
-  if (!ids.length) return { chats: [], messages: [] }
-  const { data: messages, error: e2 } = await db.from("tg_messages")
-    .select("id, chat_id, direction, text, files, read_at, created_at, sender:sent_by(full_name)").in("chat_id", ids).order("created_at")
-  if (e2) throw e2
-  return { chats: chats as TgChat[], messages: messages as unknown as TgMessage[] }
-}
-
 /** Chats waiting for an answer (unread), with their bitim's owner — the caller filters to "mine or unowned" */
 export async function getTgUnread(): Promise<TgUnread[]> {
   const { data, error } = await db.from("tg_chats").select("lead_id, unread, title, last_message_at, lead:lead_id(name, responsible_user_id)")

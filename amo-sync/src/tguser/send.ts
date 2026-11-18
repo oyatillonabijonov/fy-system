@@ -101,3 +101,15 @@ export async function readLead(sql: Sql, leadId: string): Promise<void> {
   }
   await sql`select public.tg_read(${leadId})`
 }
+
+/** The seller opened the client's chat (window or inbox): every unread chat of that client is read on Telegram
+ *  (they see ✓✓) and here — by client, so a chat whose bitim was deleted or merged still clears */
+export async function readClient(sql: Sql, clientId: string): Promise<void> {
+  const chats = await sql<{ id: string; account_id: string; tg_user_id: number; access_hash: string }[]>`
+    select id, account_id, tg_user_id, access_hash from tg_chats where client_id = ${clientId} and unread > 0`
+  if (!chats.length) return
+  for (const c of chats) {
+    await portFor(c.account_id)?.readHistory({ userId: Number(c.tg_user_id), accessHash: c.access_hash, username: null, title: "", phone: null }).catch(() => {})
+  }
+  await sql`update tg_chats set unread = 0 where id = any(${chats.map((c) => c.id)}::uuid[])`
+}

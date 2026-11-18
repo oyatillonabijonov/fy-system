@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom"
 import { MagnifyingGlass, TelegramLogo } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
 import { useMedia } from "@/hooks/useMedia"
-import { useTgInbox } from "@/hooks/useTelegram"
+import { useClientLeadId, useTgInbox } from "@/hooks/useTelegram"
 import { filterInbox, dayLabel, type TgInboxRow } from "@/lib/telegram"
 import { tashkentToday } from "@/lib/period"
 import { PersonDot } from "@/components/vazifalar/pickers"
@@ -23,11 +23,13 @@ export function SotuvTelegram() {
   const [mine, setMine] = useState(true)
   const openId = params.get("chat")
   const list = filterInbox(rows, q, mine, user?.id ?? null)
-  const open = rows.find((r) => r.id === openId) ?? (phoneView ? null : list[0] ?? null)
+  // nothing opens by itself: opening marks the chat read and the client sees ✓✓
+  const open = rows.find((r) => r.id === openId) ?? null
+  const { data: clientLead = null } = useClientLeadId(open && !open.lead_id ? open.client_id : null)
   const pick = (id: string | null) => setParams((p) => { const n = new URLSearchParams(p); if (id) n.set("chat", id); else n.delete("chat"); return n }, { replace: true })
 
   const chat = open?.client_id && (
-    <TgChat key={open.id} clientId={open.client_id} leadId={open.lead_id} title={open.title} phone={open.phone} bitimLink
+    <TgChat key={open.id} clientId={open.client_id} leadId={open.lead_id ?? clientLead} title={open.title} phone={open.phone} bitimLink
       onClose={phoneView ? () => pick(null) : undefined} />
   )
 

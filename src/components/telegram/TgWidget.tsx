@@ -19,10 +19,13 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
 
   useEffect(() => {
     if (!open) return
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
-    document.addEventListener("keydown", esc)
-    return () => document.removeEventListener("keydown", esc)
+    // capture phase + stop: Escape closes the chat only, not the client card under it (its useDialog listens later)
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopImmediatePropagation(); setOpen(false) } }
+    window.addEventListener("keydown", esc, true)
+    return () => window.removeEventListener("keydown", esc, true)
   }, [open])   // eslint-disable-line react-hooks/exhaustive-deps
+  // the client card unmounts the pill: don't leave ?tg=1 behind for the next client it opens
+  useEffect(() => () => { if (pill) setOpen(false) }, [])   // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!phone && !data?.chats.length) return null
   const panel = createPortal(
@@ -33,8 +36,8 @@ export function TgWidget({ clientId, leadId, title, phone, image, pill }: { clie
             initial={{ opacity: 0, y: 16, scale: phoneView ? 1 : 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.18 }}
             className={phoneView
-              ? "fixed inset-0 z-[120] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-surface"
-              : "fixed right-6 bottom-24 z-[120] w-[380px] h-[560px] max-h-[calc(100dvh-8rem)] rounded-surface border border-line overflow-hidden bg-surface"}>
+              ? "fixed inset-0 z-[110] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-surface"
+              : "fixed right-6 bottom-24 z-[110] w-[380px] h-[560px] max-h-[calc(100dvh-8rem)] rounded-surface border border-line overflow-hidden bg-surface"}>
             <TgChat clientId={clientId} leadId={leadId} title={title} phone={phone} image={image} onCollapse={phoneView ? undefined : () => setOpen(false)} onClose={() => setOpen(false)} />
           </motion.div>
         )}

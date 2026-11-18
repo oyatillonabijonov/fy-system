@@ -3,6 +3,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { testSql as sql } from "../mcp/testdb"
 import { handleIncoming } from "./incoming"
+import { readClient } from "./send"
 import { fakePort, incoming } from "./fake"
 
 const run = sql ? test : test.skip
@@ -30,5 +31,12 @@ describe("files stored as a jsonb array", () => {
       select jsonb_typeof(m.files) as t, jsonb_array_length(case when jsonb_typeof(m.files) = 'array' then m.files else '[]' end) as n
       from tg_messages m join tg_chats c on c.id = m.chat_id where c.account_id = ${ACC} order by m.tg_msg_id`
     expect([...rows]).toEqual([{ t: "array", n: 0 }, { t: "array", n: 1 }])
+  })
+  run("readClient clears the client's unread chats", async () => {
+    const [c] = await sql!<{ client_id: string; unread: number }[]>`select client_id, unread from tg_chats where account_id = ${ACC}`
+    expect(c.unread).toBeGreaterThan(0)
+    await readClient(sql!, c.client_id)
+    const [after] = await sql!<{ unread: number }[]>`select unread from tg_chats where account_id = ${ACC}`
+    expect(after.unread).toBe(0)
   })
 })

@@ -1,6 +1,6 @@
 // /hooks/tg/* — the browser's side of the Telegram widget (migration 100). Session JWT like /hooks/pbx/*.
 //   POST send {lead_id, text, template_id?, files?}   sotuv   → {ok} | {error, seconds?}
-//   POST read {lead_id}                               sotuv
+//   POST read {client_id} | {lead_id}                 sotuv
 //   GET  status                                       sotuv   → {ok}  (503 tg_off when not configured)
 //   POST login {title, profile_id?}                   admin   → {id}
 //   GET  login/<id>                                   admin   → LoginState
@@ -10,7 +10,7 @@ import type { Sql } from "postgres"
 import { verifyJwt } from "../pbx"
 import { beginLogin, loginState, logoutAccount, submitPassword, tgEnabled } from "./accounts"
 import { TgError } from "./port"
-import { readLead, sendToLead, type SendBody } from "./send"
+import { readClient, readLead, sendToLead, type SendBody } from "./send"
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Authorization, Content-Type" }
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { ...CORS, "cache-control": "no-store" } })
@@ -33,8 +33,9 @@ export async function handleTg(req: Request, sql: Sql, path: string): Promise<Re
       return json({ ok: true })
     }
     if (path === "read" && req.method === "POST") {
-      if (typeof body.lead_id !== "string") return json({ error: "bad_request" }, 400)
-      await readLead(sql, body.lead_id)
+      if (typeof body.client_id === "string") await readClient(sql, body.client_id)
+      else if (typeof body.lead_id === "string") await readLead(sql, body.lead_id)
+      else return json({ error: "bad_request" }, 400)
       return json({ ok: true })
     }
 

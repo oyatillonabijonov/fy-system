@@ -19,15 +19,17 @@ export function TgChat({ clientId, leadId, title, phone, image, onClose, onColla
   clientId: string; leadId: string | null; title: string; phone: string | null; image?: string | null
   onClose?: () => void; onCollapse?: () => void; bitimLink?: boolean
 }) {
-  const { data, isLoading } = useClientTelegram(clientId)
+  const { data, isLoading, dataUpdatedAt } = useClientTelegram(clientId)
   const read = useReadTelegram()
-  const end = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
   const messages = data?.messages ?? []
-  const unreadLeads = (data?.chats ?? []).filter((c) => c.unread > 0 && c.lead_id).map((c) => c.lead_id!).join(",")
+  const unread = (data?.chats ?? []).some((c) => c.unread > 0)
 
-  // open = seen: the lead gets ✓✓, the badges clear (also for messages that arrive while it's open)
-  useEffect(() => { for (const id of unreadLeads.split(",").filter(Boolean)) read.mutate(id) }, [unreadLeads])   // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { end.current?.scrollIntoView({ block: "end" }) }, [messages.length])
+  // open = seen: the lead gets ✓✓, the badges clear — checked on every refresh, so a message that lands
+  // while the window is open is read too
+  useEffect(() => { if (unread && !read.isPending) read.mutate(clientId) }, [unread, dataUpdatedAt, clientId])   // eslint-disable-line react-hooks/exhaustive-deps
+  // newest at the bottom; scrolls only this list (scrollIntoView would move the page too)
+  useEffect(() => { const el = body.current; if (el) el.scrollTop = el.scrollHeight }, [messages.length])
 
   const today = tashkentToday()
   return (
@@ -46,7 +48,7 @@ export function TgChat({ clientId, leadId, title, phone, image, onClose, onColla
         {onClose && <button type="button" aria-label="Yopish" onClick={onClose} className={ICON_BTN}><X size={18} /></button>}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 flex flex-col gap-1 bg-surface-sunken">
+      <div ref={body} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 flex flex-col gap-1 bg-surface-sunken">
         {isLoading ? <p className="m-auto text-sm text-ink-muted">Yuklanmoqda…</p>
           : messages.length === 0 ? (
             <div className="m-auto flex flex-col items-center gap-2 text-center px-6">
@@ -57,7 +59,6 @@ export function TgChat({ clientId, leadId, title, phone, image, onClose, onColla
           : withDays(messages, today).map((m, i) => "day" in m
             ? <div key={`d${i}`} className="self-center my-2 px-3 h-6 inline-flex items-center rounded-full bg-surface text-xs text-ink-muted">{m.day}</div>
             : <Bubble key={m.id} msg={m} />)}
-        <div ref={end} />
       </div>
 
       <div className="border-t border-line shrink-0">
