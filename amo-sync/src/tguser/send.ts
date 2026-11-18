@@ -25,7 +25,7 @@ const fromDb = (e: unknown) => (e instanceof Error && /^tg_[a-z_]+$/.test(e.mess
 
 type Store = { get(path: string): Promise<Uint8Array> }
 
-export async function sendToLead(sql: Sql, uid: string, body: SendBody, store: Store = bucket): Promise<void> {
+export async function sendToLead(sql: Sql, uid: string | null, body: SendBody, store: Store = bucket): Promise<void> {
   const text0 = (body.text ?? "").trim()
   const files = [...(body.files ?? [])]
   if (files.some((f) => !/^(out|templates)\/[^]+$/.test(f.path) || f.path.includes(".."))) throw new TgError("tg_bad_file")

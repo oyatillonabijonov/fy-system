@@ -109,3 +109,26 @@ export async function getClientLeadId(clientId: string): Promise<string | null> 
   const rows = (data ?? []) as { id: string; is_won: boolean; is_lost: boolean }[]
   return (rows.find((r) => !r.is_won && !r.is_lost) ?? rows[0])?.id ?? null
 }
+
+/** 102: "N days before the event at HH:MM send template X" rules of a voronka, with how they went */
+export type TgSchedule = { id: string; pipeline_id: string; template_id: string; days_before: number; at_time: string; stage_ids: string[]; enabled: boolean; sent: number; failed: number }
+
+export async function getTgSchedules(pipelineId: string): Promise<TgSchedule[]> {
+  const { data, error } = await db.from("tg_schedules")
+    .select("id, pipeline_id, template_id, days_before, at_time, stage_ids, enabled, runs:tg_schedule_runs(status)")
+    .eq("pipeline_id", pipelineId).order("days_before", { ascending: false }).order("at_time")
+  if (error) throw error
+  return (data as unknown as (Omit<TgSchedule, "sent" | "failed"> & { runs: { status: string }[] })[]).map(({ runs, ...r }) =>
+    ({ ...r, at_time: r.at_time.slice(0, 5), sent: runs.filter((x) => x.status === "sent").length, failed: runs.filter((x) => x.status === "failed").length }))
+}
+
+export async function saveTgSchedule(s: Pick<TgSchedule, "pipeline_id" | "template_id" | "days_before" | "at_time" | "stage_ids" | "enabled"> & { id?: string }): Promise<void> {
+  const row = { pipeline_id: s.pipeline_id, template_id: s.template_id, days_before: s.days_before, at_time: s.at_time, stage_ids: s.stage_ids, enabled: s.enabled }
+  const { error } = s.id ? await db.from("tg_schedules").update(row).eq("id", s.id) : await db.from("tg_schedules").insert(row)
+  if (error) throw error
+}
+
+export async function deleteTgSchedule(id: string): Promise<void> {
+  const { error } = await db.from("tg_schedules").delete().eq("id", id)
+  if (error) throw error
+}

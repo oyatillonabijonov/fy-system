@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast"
 import { useUsers } from "@/hooks/useUsers"
 import { Switch } from "@/components/ui/Switch"
 import { useTgTemplates } from "@/hooks/useTelegram"
+import { TgSchedules } from "@/components/telegram/TgSchedules"
 import type { TgTemplate } from "@/lib/supabase/queries/telegram"
 
 const COLORS = ["#378ADD", "#BA7517", "#7F77DD", "#D4537E", "#1D9E75", "#E24B4A", "#888780", "#D85A30"]
@@ -91,6 +92,8 @@ export function PipelineSettings({ pipeline, stages, onClose, onDeleted }: {
               {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}{ev.date ? ` · ${formatDate(ev.date)}` : ""}</option>)}
             </select>
           </label>
+          {/* 102: messages tied to that event's date */}
+          {pipeline.event_id && <TgSchedules pipelineId={pipeline.id} stages={stages} />}
 
           <LeadIntake pipeline={pipeline} />
           <LeadSharing pipeline={pipeline} onError={onError} />
