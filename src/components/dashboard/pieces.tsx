@@ -64,7 +64,10 @@ export function Funnel({ rows, compact = false, conv = false }: { rows: (SalesDa
   const [picked, setPicked] = useState<string | null>(null)
   const [hover, setHover] = useState<number | null>(null)
   if (rows.length === 0) return <Empty text={conv ? "Davrda ochilgan bitim yo'q" : "Bosqich yo'q"} />
-  const pid = pipelines.some(([id]) => id === picked) ? picked! : pipelines[0][0]
+  // opens on the busiest voronka: the first in the list is the call inbox, where bitimlar wait in one stage
+  const size = (id: string) => { const own = rows.filter((r) => r.pipeline_id === id); return conv ? own[0].open : own.reduce((n, r) => n + r.open, 0) }
+  const busiest = pipelines.reduce((a, b) => (size(b[0]) > size(a[0]) ? b : a))[0]
+  const pid = pipelines.some(([id]) => id === picked) ? picked! : busiest
   const stages = rows.filter((r) => r.pipeline_id === pid)
   const total = conv ? stages[0].open : stages.reduce((s, r) => s + r.open, 0)
   const max = Math.max(1, ...stages.map((r) => r.open))
@@ -108,10 +111,10 @@ export function Funnel({ rows, compact = false, conv = false }: { rows: (SalesDa
         )}
       </div>
 
-      {/* the row stretches the card to the right-hand column's height: keep the funnel's own
-          proportions and sit it (with its footer) in the middle of whatever space is left */}
-      <div className="my-auto flex flex-col gap-4">
-      <div className={`relative ${compact ? "h-40" : "h-60"}`} onMouseLeave={() => setHover(null)}>
+      {/* the row stretches the card to the right-hand column's height: the drawing grows into that room
+          (up to a point — a very tall funnel stops reading as one), the rest is shared above and below */}
+      <div className="flex-1 flex flex-col justify-center gap-4">
+      <div className={`relative ${compact ? "h-40" : "flex-1 min-h-60 max-h-[26rem]"}`} onMouseLeave={() => setHover(null)}>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 w-full h-full block" aria-hidden>
           {stages.map((r, i) => (
             <g key={r.stage_id} onMouseEnter={() => setHover(i)} className="transition-opacity duration-200"
@@ -127,7 +130,7 @@ export function Funnel({ rows, compact = false, conv = false }: { rows: (SalesDa
             style={{ left: `${((i + 1) / stages.length) * 100}%` }}>
             {r.pct}%
           </span>
-        ) : (
+        ) : r.open > 0 && (   // an empty stage gets no "0%": it reads as "nobody got through"
           <span key={r.stage_id} className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 h-6 inline-flex items-center rounded-full bg-surface text-sm font-medium tabular-nums text-ink transition-opacity duration-200"
             style={{ left: `${((i + 0.5) / stages.length) * 100}%`, opacity: hover === null || hover === i ? 1 : 0.4 }}>
             {share(r.open)}%
