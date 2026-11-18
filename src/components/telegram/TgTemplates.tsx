@@ -82,14 +82,14 @@ function TemplateSheet({ template, nextSort, onClose }: { template: TgTemplate |
   }
 
   const footer = (
-    <div className="flex gap-2">
+    <div className="flex flex-1 gap-2">
       {template && (
         <button type="button" aria-label="O'chirish" onClick={async () => { if (await confirmAction({ title: "Shablonni o'chirish", message: template.title, confirmLabel: "O'chirish", danger: true })) del.mutate(template.id, { onSuccess: onClose }) }}
           className="size-10 rounded-full flex items-center justify-center text-danger-text hover:bg-danger-soft"><Trash size={18} /></button>
       )}
       <button type="button" disabled={!title.trim() || (!body.trim() && !files.length) || uploading || save.isPending}
         onClick={() => save.mutate({ id: template?.id, title, body, files, sort: template?.sort ?? nextSort, pipeline_id: pipelineId }, { onSuccess: onClose })}
-        className="flex-1 h-10 rounded-full bg-accent text-ink-on-accent text-base font-medium hover:bg-accent-hover disabled:opacity-40">Saqlash</button>
+        className="flex-1 h-10 px-5 rounded-full bg-accent text-ink-on-accent text-base font-medium whitespace-nowrap hover:bg-accent-hover disabled:opacity-40">Saqlash</button>
     </div>
   )
 
