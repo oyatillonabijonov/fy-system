@@ -64,24 +64,26 @@ export function MobileNav() {
               <button key={t.path} type="button" onClick={() => navigate(t.path)} aria-current={on ? "page" : undefined}
                 className={`relative flex flex-col items-center justify-center gap-1 min-w-0 ${on ? "text-ink" : "text-ink-faint"}`}>
                 <t.icon size={24} weight={on ? "fill" : "light"} />
-                {t.path === "/sotuv" && tgUnread > 0 && <span className="absolute top-1 left-1/2 ml-1.5"><TgBadge n={tgUnread} /></span>}
+                {t.path === "/sotuv/telegram" && tgUnread > 0 && <span className="absolute top-1 left-1/2 ml-1.5"><TgBadge n={tgUnread} /></span>}
                 <span className="text-[11px] leading-none font-medium truncate max-w-full px-0.5">{t.label}</span>
               </button>
             )
           })}
           <button type="button" onClick={() => setMoreFor(location.pathname)} aria-haspopup="dialog" aria-expanded={moreOpen}
-            className={`flex flex-col items-center justify-center gap-1 ${moreActive || moreOpen ? "text-ink" : "text-ink-faint"}`}>
+            className={`relative flex flex-col items-center justify-center gap-1 ${moreActive || moreOpen ? "text-ink" : "text-ink-faint"}`}>
             <DotsThreeOutline size={24} weight={moreActive || moreOpen ? "fill" : "light"} />
+            {/* Telegram lives in "Yana" (no tab of its own): the unread count shows where a tap leads to it */}
+            {tgUnread > 0 && !tabs.some((t) => t.path === "/sotuv/telegram") && <span className="absolute top-1 left-1/2 ml-1.5"><TgBadge n={tgUnread} /></span>}
             <span className="text-[11px] leading-none font-medium">Yana</span>
           </button>
         </div>
       </nav>
-      <MoreSheet open={moreOpen} onClose={() => setMoreFor(null)} items={rest} />
+      <MoreSheet open={moreOpen} onClose={() => setMoreFor(null)} items={rest} tgUnread={tgUnread} />
     </>
   )
 }
 
-function MoreSheet({ open, onClose, items }: { open: boolean; onClose: () => void; items: NavItem[] }) {
+function MoreSheet({ open, onClose, items, tgUnread }: { open: boolean; onClose: () => void; items: NavItem[]; tgUnread: number }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { themeId, setThemeId } = useTheme()
@@ -120,8 +122,9 @@ function MoreSheet({ open, onClose, items }: { open: boolean; onClose: () => voi
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {items.map((i) => (
                   <button key={i.path} type="button" onClick={() => { onClose(); if (i.path) navigate(i.path) }}
-                    className="h-[84px] flex flex-col items-center justify-center gap-2 rounded-surface bg-surface-sunken px-1">
+                    className="relative h-[84px] flex flex-col items-center justify-center gap-2 rounded-surface bg-surface-sunken px-1">
                     <i.icon size={24} weight="light" />
+                    {i.path === "/sotuv/telegram" && tgUnread > 0 && <span className="absolute top-2 right-2"><TgBadge n={tgUnread} /></span>}
                     <span className="text-sm font-medium leading-tight text-center line-clamp-2">{i.name}</span>
                   </button>
                 ))}
