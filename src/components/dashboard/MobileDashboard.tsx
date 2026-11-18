@@ -4,7 +4,7 @@
 import { useState, type ReactNode } from "react"
 import { Check, CaretDown, FunnelSimple } from "@phosphor-icons/react"
 import { useAuth } from "@/context/AuthContext"
-import type { SalesDashboard } from "@/lib/supabase/queries/salesDashboard"
+import type { SalesDashboard, SalesInsights } from "@/lib/supabase/queries/salesDashboard"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { Sheet } from "@/components/ui/Sheet"   // explicit .tsx: on a case-insensitive disk "Sheet" resolves to sheet.ts
 import { formatNumber } from "@/lib/format"
@@ -17,13 +17,14 @@ import { AttentionMobile } from "./AttentionPanel"
 import { FinancePanel } from "./FinancePanel"
 import { PlanCard } from "./PlanCard"
 import { Bento } from "./Bento"
+import { QualityCard, LossCard, CycleCard, ActivityCard, AdsTable } from "./Insights"
 import { TasksCard } from "./TasksCard"
 import { SpeedCard } from "./SpeedCard"
 
 type PeriodOption = { id: string; label: string }
 
-export function MobileDashboard({ d, periods, period, onPeriod, pipelineId, onPipeline, from, to }: {
-  d: SalesDashboard; periods: readonly PeriodOption[]; period: string; onPeriod: (id: string) => void
+export function MobileDashboard({ d, ins, periods, period, onPeriod, pipelineId, onPipeline, from, to }: {
+  d: SalesDashboard; ins: SalesInsights | undefined; periods: readonly PeriodOption[]; period: string; onPeriod: (id: string) => void
   pipelineId: string | null; onPipeline: (id: string | null) => void; from: string; to: string
 }) {
   const { hasAccess } = useAuth()
@@ -82,6 +83,15 @@ export function MobileDashboard({ d, periods, period, onPeriod, pipelineId, onPi
             <Block title="Bosqichlar konversiyasi"><Card><Funnel rows={convRows(d.stage_conv, d.pipelines)} conv compact /></Card></Block>
             <Block title="Vazifalar holati"><TasksCard tasks={d.tasks} pipelineId={pipelineId} compact /></Block>
             <Block title="Aloqaga chiqish tezligi"><SpeedCard speed={d.speed} compact /></Block>
+            {ins && (
+              <>
+                <Block title="Lid sifati"><QualityCard q={ins.quality} bare /></Block>
+                <Block title="Rad etish sabablari"><LossCard rows={ins.lost_reasons} bare /></Block>
+                <Block title="Sotuv sikli"><CycleCard c={ins.cycle} bare /></Block>
+                <Block title="Lidlar va qo'ng'iroqlar"><ActivityCard a={ins.activity} height={240} bare /></Block>
+                <Block title="Reklama kesimi"><AdsTable rows={ins.by_ad} compact /></Block>
+              </>
+            )}
           </>
         )}
       </section>

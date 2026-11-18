@@ -70,6 +70,38 @@ export async function getSalesDashboard(from: string, to: string, pipelineId: st
   return data as SalesDashboard
 }
 
+type Activity = { leads: number; out: number; connected: number; in: number }
+/** One ad of the period: who it brought, what they bought. Names are null where the lead carried none. */
+export interface AdRow {
+  source: string | null; campaign: string | null; adset: string | null; creative: string | null
+  leads: number; qualified: number; won: number; seats: number
+  /** null without the Moliya right */
+  agreed: number | null; paid: number | null
+}
+/** The Dashboard's second call (104). Bitimlar opened in the period unless a field says otherwise. */
+export interface SalesInsights {
+  /** all → qualified → won; `by_score` has a row for each score seen, `score` null = came without a scored form */
+  quality: { leads: number; scored: number; qualified: number; won: number; won_qualified: number; threshold: number | null; by_score: { score: number | null; leads: number; won: number }[] }
+  /** bitimlar lost in the period */
+  lost_reasons: { reason: string; count: number }[]
+  /** `connected` = an outgoing call that was answered; by_hour adds every day of the period up, Tashkent hours */
+  activity: { by_day: (Activity & { day: string })[]; by_hour: (Activity & { hour: number })[] }
+  by_ad: AdRow[]
+  /** bitimlar won in the period: days from the bitim to its first payment (none = the day it was won) */
+  cycle: {
+    count: number; avg_days: number | null; median_days: number | null
+    lt1: number; d1_3: number; d4_7: number; d8_14: number; gt14: number
+    by_seller: { id: string | null; full_name: string | null; count: number; median_days: number }[]
+    by_source: { source: string | null; count: number; median_days: number }[]
+  }
+}
+
+export async function getSalesInsights(from: string, to: string, pipelineId: string | null): Promise<SalesInsights> {
+  const { data, error } = await db.rpc("sales_insights", { p_from: from, p_to: to, p_pipeline: pipelineId })
+  if (error) throw error
+  return data as SalesInsights
+}
+
 export interface SellerTask { id: string; lead_id: string; text: string | null; kind: TaskKind; due_date: string; done_at: string | null; is_done: boolean; lead: { name: string } | null }
 
 /** A seller's tasks done in the period plus the ones still overdue, in the chosen voronka (RLS: sotuv-crmn) */
