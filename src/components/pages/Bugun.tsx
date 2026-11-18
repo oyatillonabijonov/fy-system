@@ -43,7 +43,7 @@ export function Bugun() {
       {replies.length > 0 && (
         <Section title="Javob kutyapti" n={replies.length} danger>
           {replies.map((c) => (
-            <Row key={c.lead_id} onClick={() => navigate(`/sotuv/bitim/${c.lead_id}?tab=telegram`)}
+            <Row key={c.lead_id} onClick={() => navigate(`/sotuv/bitim/${c.lead_id}?tg=1`)}
               lead={<span className={`${ROW_BTN} text-info-text`}><TelegramLogo size={20} /></span>}
               title={c.title || c.lead?.name || "Telegram"}
               meta={<>Telegram{c.last_message_at && <> · <span className="tabular-nums">{when(c.last_message_at, today)}</span></>}</>}

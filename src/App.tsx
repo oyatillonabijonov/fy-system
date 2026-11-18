@@ -21,6 +21,7 @@ import { LiveSync } from "./components/layout/LiveSync"
 import { useFreshBuild } from "./hooks/useFreshBuild"
 import { SotuvLead } from "./components/pages/SotuvLead"
 import { SotuvCalls } from "./components/pages/SotuvCalls"
+import { SotuvTelegram } from "./components/pages/SotuvTelegram"
 import { Bugun } from "./components/pages/Bugun"
 import { isSeller } from "./lib/supabase/queries/auth"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
@@ -52,6 +53,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/sotuv':         { title: "Sotuv bo'limi",   desc: "Voronkalar, bitimlar va sotuv vazifalari.", short: 'Sotuv' },
   '/bugun':         { title: 'Bugun',           desc: "Qayta qo'ng'iroq, bugungi vazifalar va yangi bitimlar." },
   '/sotuv/qongiroqlar': { title: "Qo'ng'iroqlar", desc: "Kiruvchi va chiquvchi qo'ng'iroqlar — qayta qo'ng'iroq, yozuv, bitim." },
+  '/sotuv/telegram': { title: 'Telegram', desc: "Kompaniya Telegram akkauntidagi barcha suhbatlar.", short: 'Telegram' },
   '/sms':           { title: 'SMS',             desc: "Mijozlarga reklama va eslatma SMS'lari — matn, tanlash, yuborish." },
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet.", short: 'Tadbirlar' },
@@ -217,6 +219,9 @@ function App() {
           } />
           <Route path="/sotuv/qongiroqlar" element={
             <ProtectedRoute module="sotuv-crmn"><SotuvCalls /></ProtectedRoute>
+          } />
+          <Route path="/sotuv/telegram" element={
+            <ProtectedRoute module="sotuv-crmn"><SotuvTelegram /></ProtectedRoute>
           } />
           <Route path="/sotuv/crm-n" element={<Navigate to="/sotuv" replace />} />
           <Route path="/sotuv/sdelka/:id" element={<OldDealLink />} />

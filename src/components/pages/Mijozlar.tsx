@@ -1,4 +1,6 @@
 import { AnketaLinkButton } from "@/components/anketa/AnketaLinkButton"
+import { TgWidget } from "@/components/telegram/TgWidget"
+import { useClientLeadId } from "@/hooks/useTelegram"
 import { AnketaPending, AnketaReview } from "@/components/anketa/AnketaReview"
 import { useAnketaSubmissions } from "@/hooks/useAnketa"
 import {
@@ -932,6 +934,7 @@ export function Mijozlar() {
                             <div className="flex flex-wrap items-center justify-center gap-2 px-5 pt-3">
                                 <AnketaLinkButton clientId={selectedCustomer.id} clientName={selectedCustomer.name} optOut={selectedCustomer.smsOptOut} />
                                 <AnketaPending clientId={selectedCustomer.id} />
+                                <ClientTelegram clientId={selectedCustomer.id} name={selectedCustomer.name} phone={selectedCustomer.phone || null} image={selectedCustomer.image || null} />
                             </div>
                             {/* AVATAR + INFO */}
                             <div className="max-lg:hidden relative flex flex-col items-center pt-6 pb-6 px-5 sm:px-8 border-b border-line gap-3">
@@ -2072,4 +2075,12 @@ function StatusFilterHeader({ column, table }: { column: Column<Customer, unknow
             )}
         </>
     )
+}
+
+/** 100: the client's Telegram chat from the card; sends go through their newest open bitim */
+function ClientTelegram({ clientId, name, phone, image }: { clientId: string; name: string; phone: string | null; image: string | null }) {
+    const { hasAccess } = useAuth()
+    const { data: leadId = null } = useClientLeadId(hasAccess("sotuv-crmn") ? clientId : null)
+    if (!hasAccess("sotuv-crmn")) return null
+    return <TgWidget pill clientId={clientId} leadId={leadId} title={name} phone={phone} image={image} />
 }

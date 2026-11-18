@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { fillBlanks, uzDate, sendToLead } from "./send"
+import { fillBlanks, uzDate, sendToLead, readClient } from "./send"
 import { configureTg, startTgAccounts } from "./accounts"
 import { fakePort, fakeSql, type SqlCall } from "./fake"
 import { TgError, type TgPort } from "./port"
@@ -103,5 +103,21 @@ describe("sendToLead", () => {
     const old = db({ account_id: "acc-1", chat_id: "chat-1", tg_user_id: 5001, access_hash: "h1", phone: null })
     await expect(sendToLead(old.sql, "u1", { lead_id: "L1", text: "Salom" }, store())).rejects.toEqual(new TgError("tg_privacy"))
     expect(old.calls.some((c) => c.text.includes("delete from tg_chats"))).toBe(false)
+  })
+})
+
+describe("readClient", () => {
+  test("marks every unread chat of the client read on Telegram and here — also a chat whose bitim is gone", async () => {
+    const port = fakePort()
+    const { sql, calls } = fakeSql((t) => {
+      if (t.includes("select id from telegram_accounts")) return [{ id: "acc-1" }]
+      if (t.includes("from tg_chats") && t.includes("unread > 0")) return [{ id: "c1", account_id: "acc-1", tg_user_id: 5001, access_hash: "h1" }]
+      return []
+    })
+    await withPort(port, sql)
+    await readClient(sql, "client-1")
+    expect(port.sent.filter((s) => s.kind === "read")).toHaveLength(1)
+    const upd = calls.find((c) => c.text.includes("update tg_chats set unread = 0"))
+    expect(upd?.values).toEqual([["c1"]])
   })
 })
