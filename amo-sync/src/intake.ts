@@ -15,6 +15,7 @@ import { handleConnector, isConnectorPath } from "./mcp"
 import { handleTg } from "./tguser/http"
 import { handlePbx, pbxSyncedAt } from "./pbx"
 import { handleSms } from "./sms"
+import { handleFy } from "./fyApp"
 
 const PORT = Number(process.env.INTAKE_PORT ?? 8787)
 const GRAPH = "https://graph.facebook.com/v19.0"
@@ -238,6 +239,7 @@ export function startIntake(sql: Sql): void {
       if (url.pathname.startsWith("/hooks/sms/")) return handleSms(req, sql, url)
       if (url.pathname === "/hooks/fb-lead") return handleFbLead(req, sql, url)
       if (url.pathname.startsWith("/hooks/tg/")) return handleTg(req, sql, url.pathname.slice("/hooks/tg/".length))
+      if (url.pathname.startsWith("/hooks/fy/")) return handleFy(req, sql, url.pathname.slice("/hooks/fy/".length))
       if (isConnectorPath(url.pathname)) return handleConnector(req, sql, url)
       const m = url.pathname.match(/^\/hooks\/lead\/([a-z0-9_-]+)\/?$/)
       if (!m) return new Response("not found", { status: 404 })
