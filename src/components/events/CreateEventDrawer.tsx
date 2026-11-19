@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useId } from "react"
+import { useState, useRef, useEffect, useId, useMemo } from "react"
 import { toast } from "@/lib/toast"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, CaretDown, MagnifyingGlass, Check, Plus, Trash } from "@phosphor-icons/react"
+import { X, CaretDown, MagnifyingGlass, Check, Plus, Trash, ImageSquare } from "@phosphor-icons/react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   createEvent,
@@ -15,12 +15,18 @@ import type { UserProfile } from "@/lib/supabase/queries/auth"
 import { useDialog } from "@/hooks/useDialog"
 import { useMedia } from "@/hooks/useMedia"
 import { formatNumber, formatDate } from "@/lib/format"
+import { Switch } from "@/components/ui/Switch"
+import { usePipelines } from "@/hooks/useSotuv"
+import { APP_CATEGORIES, uploadEventCover } from "@/lib/supabase/queries/fyApp"
+import { FY_PUSH_KEY } from "@/components/events/FyApp"
 
 interface CreateEventDrawerProps {
   isOpen: boolean
   onClose: () => void
   onCreated: () => void
   editEvent?: Event | null
+  /** Opened from the Ilova page to put the event in the app: the switch starts on */
+  forApp?: boolean
 }
 
 const LABEL = "text-sm font-medium text-ink-muted"
@@ -33,6 +39,9 @@ interface TariffRow {
   name: string
   price: string // digits only
 }
+
+/** The voronka select's "no leads" choice; "" = untouched, so the voronka linked to the event is offered */
+const NO_PIPELINE = "none"
 
 function blankTariff(): TariffRow {
   return { key: crypto.randomUUID(), name: "", price: "" }
@@ -159,7 +168,7 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
   )
 }
 
-export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: CreateEventDrawerProps) {
+export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent, forApp = false }: CreateEventDrawerProps) {
   const isEdit = !!editEvent
   const { data: users = [] } = useUsers()
   const managers = users.filter((u) => u.is_active)
@@ -171,6 +180,11 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const totalValueId = useId()
   const seatsPlanId = useId()
   const managerFieldId = useId()
+  const startTimeId = useId()
+  const aboutId = useId()
+  const categoryId = useId()
+  const capacityId = useId()
+  const pipelineFieldId = useId()
 
   const [name, setName] = useState("")
   const [startDate, setStartDate] = useState("")
@@ -180,6 +194,16 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const [totalValue, setTotalValue] = useState("") // digits only
   const [seatsPlan, setSeatsPlan] = useState("") // digits only
   const [managerId, setManagerId] = useState<string | null>(null)
+  const [startTime, setStartTime] = useState("") // "HH:MM"
+  // 105: the FY members' app
+  const [showInApp, setShowInApp] = useState(false)
+  const [about, setAbout] = useState("")
+  const [category, setCategory] = useState("")
+  const [capacity, setCapacity] = useState("") // digits only
+  const [pipelineId, setPipelineId] = useState("")
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const { data: pipelines = [] } = usePipelines()
   const qc = useQueryClient()
   const { data: savedTariffs } = useEventTariffs(editEvent?.id ?? "")
   const [tariffs, setTariffs] = useState<TariffRow[]>([blankTariff()])
@@ -203,6 +227,15 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setTotalValue(editEvent.total_value ? String(Math.round(editEvent.total_value)) : "")
       setSeatsPlan(editEvent.seats_plan ? String(editEvent.seats_plan) : "")
       setManagerId(editEvent.manager_id)
+      setStartTime(editEvent.start_time?.slice(0, 5) ?? "")
+      setShowInApp(editEvent.show_in_app || forApp)
+      setAbout(editEvent.description ?? "")
+      setCategory(editEvent.app_category ?? "")
+      setCapacity(editEvent.app_capacity ? String(editEvent.app_capacity) : "")
+      // Already set up for the app: keep its choice, "no voronka" included
+      setPipelineId(editEvent.app_pipeline_id ?? (editEvent.show_in_app ? NO_PIPELINE : ""))
+      setCoverUrl(editEvent.cover_image)
+      setCoverFile(null)
       // Empty until the saved list arrives (effect below): saving is blocked
       // meanwhile, so a half-loaded form can't wipe the event's tariffs.
       tariffsLoadedFor.current = null
@@ -216,11 +249,19 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       setTotalValue("")
       setSeatsPlan("")
       setManagerId(null)
+      setStartTime("")
+      setShowInApp(false)
+      setAbout("")
+      setCategory("")
+      setCapacity("")
+      setPipelineId("")
+      setCoverUrl(null)
+      setCoverFile(null)
       setTariffs([blankTariff()])
     }
     setError(null)
     setTouched(false)
-  }, [editEvent, isOpen])
+  }, [editEvent, isOpen, forApp])
 
   // Load saved tariffs once per open — a late fetch or refetch must not clobber
   // what the user has already typed.
@@ -241,10 +282,17 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
   const managerValid = !!managerId
   const endValid = !endDate || !startDate || endDate >= startDate
   const tariffsValid = tariffs.length > 0 && tariffs.every((t) => t.name.trim() && t.price !== "")
+  // The app shows the start hour, so a shown event needs one
+  const timeValid = !showInApp || startTime.length > 0
+  // A voronka linked to this event (Voronka sozlamalari → Tadbir) is the natural default
+  const linkedPipeline = editEvent ? pipelines.find((p) => p.event_id === editEvent.id)?.id ?? "" : ""
+  const pipelineChoice = pipelineId || linkedPipeline || NO_PIPELINE
+  const coverPreview = useMemo(() => (coverFile ? URL.createObjectURL(coverFile) : coverUrl), [coverFile, coverUrl])
+  useEffect(() => () => { if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview) }, [coverPreview])
 
   async function handleSubmit() {
     setTouched(true)
-    if (!nameValid || !startValid || !managerValid || !cbValid || !tariffsValid) {
+    if (!nameValid || !startValid || !managerValid || !cbValid || !tariffsValid || !timeValid) {
       setError("Yulduzcha (*) bilan belgilangan maydonlarni to'ldiring")
       return
     }
@@ -258,8 +306,16 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
       const cb = Math.round(cbValue * 100) / 100
       const tv = totalValue ? Number(totalValue) : 0
       const sp = Number(seatsPlan) || null
+      const app = {
+        start_time: startTime || null,
+        show_in_app: showInApp,
+        app_category: category || null,
+        app_capacity: Number(capacity) || null,
+        app_pipeline_id: pipelineChoice === NO_PIPELINE ? null : pipelineChoice,
+      }
       const fields = {
         name: name.trim(),
+        description: about.trim() || undefined,
         date: startDate,
         end_date: endDate || null,
         location: location.trim() || undefined,
@@ -267,11 +323,15 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
         total_value: tv,
         seats_plan: sp,
         manager_id: managerId,
+        ...app,
       }
 
+      let eventId: string
       if (isEdit && editEvent) {
+        eventId = editEvent.id
         const updates: Parameters<typeof updateEvent>[1] = {
           name: fields.name,
+          description: about.trim() || null,
           date: fields.date,
           end_date: fields.end_date,
           location: location.trim() || null,
@@ -279,15 +339,27 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
           total_value: tv,
           seats_plan: sp,
           manager_id: managerId,
+          ...app,
+          ...(coverUrl === null && editEvent.cover_image ? { cover_image: null } : {}),
         }
         await updateEvent(editEvent.id, updates)
         await saveEventTariffs(editEvent.id, tariffs.map((t) => ({ id: t.id, name: t.name, price: Number(t.price) })))
       } else {
         const event = await createEvent(fields)
+        eventId = event.id
         await saveEventTariffs(event.id, tariffs.map((t) => ({ name: t.name, price: Number(t.price) })))
+      }
+      // The event is saved either way; a failed upload only leaves the old cover
+      if (coverFile) {
+        try {
+          await updateEvent(eventId, { cover_image: await uploadEventCover(eventId, coverFile) })
+        } catch (err) {
+          toast.error("Rasm yuklanmadi", err instanceof Error ? err.message : undefined)
+        }
       }
 
       qc.invalidateQueries({ queryKey: TARIFFS_KEY })
+      qc.invalidateQueries({ queryKey: FY_PUSH_KEY })
 
       toast.success(isEdit ? "Tadbir saqlandi" : "Tadbir yaratildi")
       onCreated()
@@ -380,6 +452,17 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                         : `${formatDate(startDate)} (bir kunlik)`
                       : "Tugash sanasi ixtiyoriy"}
                   </span>
+                </Field>
+
+                <Field label="Boshlanish vaqti" required={showInApp} htmlFor={startTimeId}>
+                  <input
+                    id={startTimeId}
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className={`${INPUT} ${touched && !timeValid ? "border-danger" : ""}`}
+                  />
+                  {showInApp && <span className="text-xs text-ink-muted max-sm:hidden">Ilovada shu vaqt ko'rsatiladi (Toshkent vaqti)</span>}
                 </Field>
 
                 {/* 4. Cashback */}
@@ -494,6 +577,80 @@ export function CreateEventDrawer({ isOpen, onClose, onCreated, editEvent }: Cre
                     </span>
                   </div>
                 </Field>
+
+                {/* 9. The FY members' app (105) */}
+                <div className="flex flex-col gap-4 pt-4 border-t border-line">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-base font-medium text-ink">Ilovada ko'rsatish</span>
+                      <span className="text-xs max-sm:text-sm text-ink-muted">
+                        FY ilovasida chiqadi. Narx — eng arzon tarif, 0 so'm = bepul. Pullik arizalar tanlangan voronkaga lid bo'lib tushadi.
+                      </span>
+                    </div>
+                    <Switch on={showInApp} label="Ilovada ko'rsatish" onChange={setShowInApp} />
+                  </div>
+
+                  {showInApp && (
+                    <>
+                      <Field label="Rasm">
+                        <div className="flex items-center gap-3">
+                          <div className="size-20 shrink-0 rounded-control bg-surface-sunken overflow-hidden flex items-center justify-center text-ink-faint">
+                            {coverPreview ? <img src={coverPreview} alt="" className="w-full h-full object-cover" /> : <ImageSquare size={28} weight="light" />}
+                          </div>
+                          <div className="flex flex-col items-start gap-1.5">
+                            <label className="px-3 h-control-sm inline-flex items-center rounded-full bg-mute-soft hover:bg-mute-soft-hover text-sm font-medium text-ink cursor-pointer transition-colors">
+                              {coverPreview ? "Almashtirish" : "Rasm tanlash"}
+                              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
+                                onChange={(e) => { const f = e.target.files?.[0]; if (f) setCoverFile(f); e.target.value = "" }} />
+                            </label>
+                            {coverPreview && (
+                              <button type="button" onClick={() => { setCoverFile(null); setCoverUrl(null) }} className="text-sm text-ink-muted hover:text-danger-text">
+                                Olib tashlash
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </Field>
+
+                      <Field label="Tavsif" htmlFor={aboutId}>
+                        <textarea
+                          id={aboutId}
+                          value={about}
+                          onChange={(e) => setAbout(e.target.value)}
+                          rows={4}
+                          placeholder="Tadbir nima haqida, kimlar uchun, dastur"
+                          className={`${INPUT} max-sm:h-auto resize-y`}
+                        />
+                      </Field>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Kategoriya" htmlFor={categoryId}>
+                          <select id={categoryId} value={category} onChange={(e) => setCategory(e.target.value)} className={INPUT}>
+                            <option value="">Tanlanmagan</option>
+                            {APP_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </Field>
+                        <Field label="Sig'im" htmlFor={capacityId}>
+                          <input
+                            id={capacityId}
+                            inputMode="numeric"
+                            value={capacity}
+                            onChange={(e) => setCapacity(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                            placeholder="Cheksiz"
+                            className={INPUT}
+                          />
+                        </Field>
+                      </div>
+
+                      <Field label="Arizalar voronkasi" htmlFor={pipelineFieldId}>
+                        <select id={pipelineFieldId} value={pipelineChoice} onChange={(e) => setPipelineId(e.target.value)} className={INPUT}>
+                          <option value={NO_PIPELINE}>Lid yuborilmasin</option>
+                          {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </Field>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Footer */}

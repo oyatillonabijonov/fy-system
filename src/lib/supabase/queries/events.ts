@@ -23,6 +23,14 @@ export interface Event {
   seats_plan: number | null
   manager_id: string | null
   has_tariffs: boolean
+  /** 105: pushed to the FY members' app (amo-sync, src/fyApp.ts) */
+  show_in_app: boolean
+  /** 105: Tashkent wall clock "HH:MM:SS"; `date` keeps the day */
+  start_time: string | null
+  app_category: string | null
+  app_capacity: number | null
+  /** 105: the voronka the app's paid applications land in */
+  app_pipeline_id: string | null
   created_at: string
   updated_at: string
 }
@@ -81,6 +89,11 @@ export interface CreateEventInput {
   seats_plan?: number | null
   manager_id?: string | null
   has_tariffs?: boolean
+  show_in_app?: boolean
+  start_time?: string | null
+  app_category?: string | null
+  app_capacity?: number | null
+  app_pipeline_id?: string | null
 }
 
 export interface CreateParticipantInput {
@@ -100,9 +113,10 @@ export interface CreateParticipantInput {
 // ─── Events ──────────────────────────────────────────────
 
 export async function getEvents(): Promise<Event[]> {
-  const { data, error } = await supabase
+  // untyped: seats_plan (103) and the app columns (105) aren't in types.ts yet
+  const { data, error } = await db
     .from("events")
-    .select("id, name, description, date, end_date, location, cover_image, is_active, cashback_percent, price, total_value, manager_id, has_tariffs, created_at, updated_at")
+    .select("id, name, description, date, end_date, location, cover_image, is_active, cashback_percent, price, total_value, seats_plan, manager_id, has_tariffs, show_in_app, start_time, app_category, app_capacity, app_pipeline_id, created_at, updated_at")
     .order("date", { ascending: false })
 
   if (error) throw error
@@ -136,6 +150,11 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
       ...(input.total_value !== undefined ? { total_value: input.total_value } : {}),
       ...(input.seats_plan !== undefined ? { seats_plan: input.seats_plan } : {}),
       ...(input.has_tariffs !== undefined ? { has_tariffs: input.has_tariffs } : {}),
+      ...(input.show_in_app !== undefined ? { show_in_app: input.show_in_app } : {}),
+      ...(input.start_time !== undefined ? { start_time: input.start_time } : {}),
+      ...(input.app_category !== undefined ? { app_category: input.app_category } : {}),
+      ...(input.app_capacity !== undefined ? { app_capacity: input.app_capacity } : {}),
+      ...(input.app_pipeline_id !== undefined ? { app_pipeline_id: input.app_pipeline_id } : {}),
     })
     .select()
     .single()
@@ -146,7 +165,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 
 export async function updateEvent(
   id: string,
-  updates: Partial<Pick<Event, "name" | "description" | "date" | "end_date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price" | "total_value" | "seats_plan" | "manager_id" | "has_tariffs">>
+  updates: Partial<Pick<Event, "name" | "description" | "date" | "end_date" | "location" | "cover_image" | "is_active" | "cashback_percent" | "price" | "total_value" | "seats_plan" | "manager_id" | "has_tariffs" | "show_in_app" | "start_time" | "app_category" | "app_capacity" | "app_pipeline_id">>
 ): Promise<void> {
   const { error } = await supabase
     .from("events")

@@ -29,6 +29,7 @@ import { toast } from "@/lib/toast"
 import { Sheet } from "@/components/ui/Sheet"
 import { Fab } from "@/components/ui/Fab"
 import { confirmAction } from "@/lib/confirm"
+import { FyAppStrip } from "@/components/events/FyApp"
 
 function initials(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
@@ -112,6 +113,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
             </span>
           </div>
         </div>
+
+        <FyAppStrip event={event} />
 
         <div className="flex flex-col gap-2">
           <h3 className="text-base font-semibold text-ink px-1">Ishtirokchilar · {participants.length}</h3>
@@ -257,6 +260,8 @@ export function EventOverview({ event, onEdit, onDelete }: EventOverviewProps) {
           )}
         </InfoCard>
       </div>
+
+      <FyAppStrip event={event} />
 
       {/* Participants table */}
       <div className="flex flex-col gap-3">

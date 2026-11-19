@@ -26,6 +26,7 @@ import { Bugun } from "./components/pages/Bugun"
 import { isSeller } from "./lib/supabase/queries/auth"
 import { Integratsiyalar } from "./components/pages/Integratsiyalar"
 import { Sms } from "./components/pages/Sms"
+import { Ilova } from "./components/pages/Ilova"
 import { Login } from "./components/pages/Login"
 import { Anketa } from "./components/pages/Anketa"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
@@ -58,6 +59,7 @@ const PAGE_META: Record<string, PageMeta> = {
   '/vazifalar':     { title: 'Vazifalar',       desc: "Jamoa vazifalari: tadbirlar bo'yicha va shaxsiy." },
   '/tadbirlar/boshqaruv': { title: 'Tadbirlar — Boshqaruv', desc: "Tadbirlar, ishtirokchilar va booklet.", short: 'Tadbirlar' },
   '/tadbirlar/moliya':    { title: 'Tadbirlar — Moliya',    desc: "To'lovlar, qarzdorlik va keshbek.", short: 'Moliya' },
+  '/ilova':         { title: 'Ilova',           desc: "FY ilovasi: tadbirlarni chiqarish, yozilganlar va e'lonlar." },
   '/hodimlar':      { title: 'Hodimlar',        desc: "Tizim foydalanuvchilari va ularning ruxsatnomalari." },
   '/faollik':       { title: 'Faollik tarixi',  desc: "Tizimda kim nima qilgan — to'liq audit jurnali.", short: 'Faollik' },
   '/sozlamalar':    { title: 'Sozlamalar',      desc: "Tizim sozlamalari va shaxsiy ma'lumotlarni tahrirlash.", short: 'Profilim' },
@@ -237,6 +239,10 @@ function App() {
 
           <Route path="/tadbirlar/boshqaruv" element={
             <ProtectedRoute module="tadbirlar"><EventsBoshqaruv /></ProtectedRoute>
+          } />
+
+          <Route path="/ilova" element={
+            <ProtectedRoute module="tadbirlar"><Ilova /></ProtectedRoute>
           } />
 
           <Route path="/tadbirlar/moliya" element={
