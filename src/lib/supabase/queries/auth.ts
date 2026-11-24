@@ -1,3 +1,4 @@
+import { isAuthRetryableFetchError } from "@supabase/supabase-js"
 import { supabase } from "../client"
 import type { Database } from "../types"
 import type { Department } from "@/lib/constants/employee"
@@ -139,28 +140,41 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
+/** The server couldn't be asked (no network, a gateway error): the answer is unknown, not "no" */
+export class Unreachable extends Error {}
+// PostgREST: status 0 = the request never got an answer, 5xx = the gateway or the database is down
+const down = (status: number) => status === 0 || status >= 500
+
+/** null = nobody is signed in (or the account has no profile). Throws `Unreachable` when the server
+ *  couldn't be asked — a dropped connection must not read as "signed out" (2026-11-20: a seller's
+ *  network blinked on reload, the app showed the login page, she typed a wrong password four times). */
 export async function getCurrentProfile(): Promise<UserProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError && isAuthRetryableFetchError(authError)) throw new Unreachable(authError.message)
   if (!user) return null
 
-  const { data, error } = await supabase
+  const { data, error, status } = await supabase
     .from("profiles")
     .select(PROFILE_COLUMNS)
     .eq("id", user.id)
     .single()
 
+  if (error && down(status)) throw new Unreachable(error.message)
   if (error || !data) return null
   return mapProfileRow(data as unknown as ProfileRow)
 }
 
+/** Throws `Unreachable` like getCurrentProfile: an empty list would lock the person out of every page */
 export async function getCurrentPermissions(): Promise<UserPermission[]> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError && isAuthRetryableFetchError(authError)) throw new Unreachable(authError.message)
   if (!user) return []
 
-  const { data } = await supabase
+  const { data, error, status } = await supabase
     .from("user_permissions")
     .select("module, can_view, can_edit, can_delete")
     .eq("user_id", user.id)
+  if (error && down(status)) throw new Unreachable(error.message)
 
   return (data ?? []).map((row) => ({
     module: row.module as ModuleName,

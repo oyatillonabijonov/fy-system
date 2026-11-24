@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase/client"
 import {
   getCurrentProfile,
   getCurrentPermissions,
+  Unreachable,
   type UserProfile,
   type UserPermission,
   type ModuleName,
@@ -14,6 +15,9 @@ interface AuthContextType {
   user: UserProfile | null
   permissions: UserPermission[]
   loading: boolean
+  /** The server couldn't be asked who is signed in: with no `user` that is "unknown", not "signed out" */
+  offline: boolean
+  retry: () => void
   isAdmin: boolean
   hasAccess: (module: ModuleName) => boolean
   canEdit: (module: ModuleName) => boolean
@@ -26,12 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [permissions, setPermissions] = useState<UserPermission[]>([])
   const [loading, setLoading] = useState(true)
+  const [offline, setOffline] = useState(false)
   // Tracks the currently-loaded user id so we can ignore SIGNED_IN echoes
   // that Supabase fires every time the tab regains focus.
   const currentUserIdRef = useRef<string | null>(null)
 
-  const loadUser = useCallback(async () => {
-    setLoading(true)
+  // `quiet`: a retry behind the "no connection" screen — no loading orb over it
+  const loadUser = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true)
     try {
       let profile = await getCurrentProfile()
       // A session that outlived its account's deactivation is ended here (RLS already blocks the data)
@@ -39,18 +45,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
         profile = null
       }
+      // both answers first, then the state: a connection lost between them must not leave a user with no rights
+      const perms = profile ? await getCurrentPermissions() : []
       setUser(profile)
       currentUserIdRef.current = profile?.id ?? null
-      if (profile) {
-        const perms = await getCurrentPermissions()
-        setPermissions(perms)
-      } else {
-        setPermissions([])
-      }
+      setPermissions(perms)
+      setOffline(false)
+    } catch (e) {
+      if (!(e instanceof Unreachable)) throw e
+      // The session is still in the browser; whoever was loaded stays loaded
+      setOffline(true)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  // No connection: keep asking, so the page comes back by itself and nobody has to sign in again
+  useEffect(() => {
+    if (!offline) return
+    const again = () => void loadUser(true)
+    const id = setInterval(again, 5000)
+    window.addEventListener("online", again)
+    return () => { clearInterval(id); window.removeEventListener("online", again) }
+  }, [offline, loadUser])
 
   useEffect(() => {
     void loadUser()
@@ -121,6 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         permissions,
         loading,
+        offline,
+        retry: () => void loadUser(),
         isAdmin,
         hasAccess,
         canEdit,
