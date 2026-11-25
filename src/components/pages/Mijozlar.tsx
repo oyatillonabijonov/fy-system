@@ -54,6 +54,7 @@ import { useSetCommunityApproved } from "@/hooks/useCommunity"
 import { formatDate, formatMoney, formatNumber, formatPhone } from "@/lib/format"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { normalizePhone } from "@/lib/utils"
+import { validPhone } from "@/lib/phone"
 import { ThinkingOrb } from "thinking-orbs"
 import { useAuth } from "@/context/AuthContext"
 import { ClientSms } from "@/components/sms/ClientSms"
@@ -308,7 +309,7 @@ export function Mijozlar() {
     // Same phone already in the base? (the DB rejects it too — migration 057 — this just says so while typing)
     const newPhone = useMemo(() => {
         const p = normalizePhone(newCustomer.phone)
-        return p && /^\+998\d{9}$/.test(p) ? p : null
+        return validPhone(p) ? p : null
     }, [newCustomer.phone])
     const duplicateClient = useMemo(
         () => (newPhone ? customers.find(c => normalizePhone(c.phone) === newPhone) ?? null : null),

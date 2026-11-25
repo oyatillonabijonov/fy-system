@@ -1,12 +1,17 @@
 // Public page (097): a client fills in their own card through the link staff sent them. No sign-in — the
 // token in the URL is the only key; the anon functions return just these fields. Looks like Login on purpose.
-import { useEffect, useId, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react"
 import { useParams } from "react-router-dom"
 import { Camera, CheckCircle, UserCircle } from "@phosphor-icons/react"
 import { useTheme } from "@/context/ThemeContext"
-import { ImageCropModal } from "@/components/ui/ImageCropModal"
+import { PhoneInput } from "@/components/ui/PhoneInput"
+import { useMedia } from "@/hooks/useMedia"
+import { validPhone } from "@/lib/phone"
 import { ANKETA_LABELS, type AnketaFields } from "@/lib/anketa"
 import { anketaPhotoUrl, openAnketa, submitAnketa, uploadAnketaPhoto, type AnketaOpen } from "@/lib/supabase/queries/anketa"
+
+// The cropper (and the animation library under it) loads when a photo is picked, not with the page
+const ImageCropModal = lazy(() => import("@/components/ui/ImageCropModal").then((m) => ({ default: m.ImageCropModal })))
 
 const FIELD = "w-full h-control-lg max-sm:h-12 px-3.5 bg-surface-sunken border border-transparent rounded-control text-base text-ink placeholder:text-ink-faint hover:bg-surface-sunken-hover focus:border-line-focus outline-none transition-colors"
 const PLACEHOLDER: Record<keyof AnketaFields, string> = { full_name: "Masalan, Anvar Karimov", company: "Kompaniya nomi", role: "Masalan, asoschi", activity: "Masalan, qurilish, savdo, IT" }
@@ -18,6 +23,7 @@ type State = { step: "loading" } | { step: "invalid"; message: string } | { step
 export function Anketa() {
   const { token = "" } = useParams()
   const { themeId } = useTheme()
+  const wide = useMedia("(min-width: 40rem)")   // the photo ground is a desktop frame: a phone never downloads it
   const [state, setState] = useState<State>({ step: "loading" })
 
   useEffect(() => {
@@ -27,8 +33,8 @@ export function Anketa() {
 
   return (
     <div className="min-h-screen max-sm:min-h-dvh relative overflow-hidden flex items-center justify-center p-4 max-sm:p-0 max-sm:bg-surface">
-      <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover max-sm:hidden" />
-      <div className="absolute inset-0 bg-black/25 max-sm:hidden" />
+      {wide && <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />}
+      {wide && <div className="absolute inset-0 bg-black/25" />}
 
       <div className="relative z-10 w-full max-w-[440px] max-sm:max-w-none max-sm:min-h-dvh max-sm:flex max-sm:flex-col">
         <div className="bg-surface border border-line rounded-overlay p-6 sm:p-8 flex flex-col gap-6 max-sm:flex-1 max-sm:border-0 max-sm:rounded-none max-sm:px-5 max-sm:pt-[max(24px,env(safe-area-inset-top))]">
@@ -73,11 +79,12 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
   const id = useId()
   const universal = info.kind === "universal"
   const photo = photoPath ? anketaPhotoUrl(photoPath) : info.image
+  const [needPhoto, setNeedPhoto] = useState(false)
 
   async function onCropped(blob: Blob) {
     setCropSrc(null)
     setBusy("photo"); setError("")
-    try { setPhotoPath(await uploadAnketaPhoto(info.link_id, blob)) } catch (e) { setError((e as Error).message) } finally { setBusy("") }
+    try { setPhotoPath(await uploadAnketaPhoto(info.link_id, blob)); setNeedPhoto(false) } catch (e) { setError((e as Error).message) } finally { setBusy("") }
   }
 
   async function submit(e: React.FormEvent) {
@@ -85,6 +92,9 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
     setError("")
     const sent = { ...info, ...values, photo_path: photoPath }
     if (honeypot.current?.value) { onSent(sent, draft); return }   // a bot filled the hidden field: pretend, send nothing
+    // 108: the photo is required (the database refuses too); the card's own photo counts
+    if (!photo) { setNeedPhoto(true); setError("Rasmingizni qo'shing — rasmsiz yuborib bo'lmaydi."); fileRef.current?.closest("div")?.scrollIntoView({ block: "center", behavior: "smooth" }); return }
+    if (universal && !validPhone(phone)) { setError("Telefon raqamini to'liq yozing."); return }
     setBusy("send")
     try {
       const id = await submitAnketa(token, { ...values, photo_path: photoPath, ...(universal ? { phone, replace_id: draft.lastId } : {}) })
@@ -96,12 +106,12 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-2">
         <button type="button" onClick={() => fileRef.current?.click()} disabled={!!busy} aria-label="Rasm tanlash" className="relative size-28">
-          <span className="size-full rounded-full bg-surface-sunken overflow-hidden flex items-center justify-center text-ink-faint">
+          <span className={`size-full rounded-full bg-surface-sunken overflow-hidden flex items-center justify-center text-ink-faint ${needPhoto && !photo ? "ring-2 ring-danger" : ""}`}>
             {photo ? <img src={photo} alt="" className="size-full object-cover" /> : <UserCircle size={64} weight="thin" />}
           </span>
           <span className="absolute -bottom-0.5 -right-0.5 size-9 rounded-full bg-accent text-ink-on-accent border-2 border-surface flex items-center justify-center"><Camera size={16} /></span>
         </button>
-        <span className="text-sm text-ink-muted">{busy === "photo" ? "Rasm yuklanmoqda…" : photo ? "Rasmni almashtirish" : "Rasmingizni qo'shing"}</span>
+        <span className={`text-sm ${needPhoto && !photo ? "text-danger-text font-medium" : "text-ink-muted"}`}>{busy === "photo" ? "Rasm yuklanmoqda…" : photo ? "Rasmni almashtirish" : "Rasmingizni qo'shing (majburiy)"}</span>
         <input ref={fileRef} type="file" accept="image/*" hidden
           onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropSrc(URL.createObjectURL(f)); e.target.value = "" }} />
       </div>
@@ -118,8 +128,9 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
       {universal ? (
         <div>
           <label htmlFor={`${id}-phone`} className="text-sm font-medium text-ink mb-1.5 block">Telefon</label>
-          <input id={`${id}-phone`} type="tel" inputMode="tel" autoComplete="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
-            placeholder="90 123 45 67" className={FIELD} />
+          <PhoneInput id={`${id}-phone`} value={phone} onChange={setPhone}
+            className="h-control-lg max-sm:h-12 bg-surface-sunken! border-transparent! focus-within:border-line-focus!" />
+          <p className="mt-1.5 text-xs text-ink-faint">Boshqa davlat raqami bo'lsa, chapdagi kodni bosing.</p>
         </div>
       ) : info.phone_masked && (
         <p className="text-sm text-ink-muted">Telefon: <span className="tabular-nums text-ink">{info.phone_masked}</span></p>
@@ -135,7 +146,7 @@ function AnketaForm({ token, info, draft, onSent }: { token: string; info: Anket
         {busy === "send" ? "Yuborilmoqda…" : "Yuborish"}
       </button>
 
-      {cropSrc && <ImageCropModal isOpen imageSrc={cropSrc} onClose={() => setCropSrc(null)} onCropped={onCropped} outputWidth={1000} outputHeight={1000} />}
+      {cropSrc && <Suspense fallback={null}><ImageCropModal isOpen imageSrc={cropSrc} onClose={() => setCropSrc(null)} onCropped={onCropped} outputWidth={1000} outputHeight={1000} /></Suspense>}
     </form>
   )
 }
