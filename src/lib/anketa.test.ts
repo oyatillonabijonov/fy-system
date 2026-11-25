@@ -15,4 +15,8 @@ describe("anketa", () => {
     expect(anketaError("forbidden", true)).toBe("forbidden")
     expect(anketaError("anketa_name", true)).toContain("2–100")
   })
+  test("anketaError: the photo is required; a foreign phone is asked with its country code", () => {
+    expect(anketaError("anketa_photo_required")).toContain("Rasm")
+    expect(anketaError("anketa_phone")).toContain("davlat")
+  })
 })

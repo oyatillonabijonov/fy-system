@@ -14,7 +14,8 @@
     <meta name="apple-mobile-web-app-title" content="FY Tizim" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400..600&display=swap" />
+    <!-- the monospace face is only for addresses and codes: load it without holding the first paint -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400..600&display=swap" media="print" onload="this.media='all'" />
     <title>Fikr Yetakchilari</title>
   </head>
   <body>
