@@ -17,7 +17,7 @@ FY-System is an internal business management dashboard for the "Fikr Yetakchilar
 | Language | TypeScript (strict, no `any`); Deno TS in edge functions |
 | Framework | React 19 + Vite 7, react-router-dom 7, TanStack Query 5 |
 | Styling | Tailwind CSS 4 (`@tailwindcss/vite`, no config file) + Broom Plexus tokens + shadcn/ui (`base-nova`), framer-motion, DM Sans font (`@fontsource-variable/dm-sans`) |
-| Database | Supabase Postgres (migrations `001`–`106`) |
+| Database | Supabase Postgres (migrations `001`–`107`) |
 | Auth | Supabase Auth + `profiles` / `user_permissions` tables; roles `admin / manager / xodim` |
 | Hosting | Oracle Cloud VM (aarch64, 4 OCPU, 24 GB RAM); frontend via **Coolify** at `https://app.fikryetakchilari.uz`; self-hosted Supabase at `https://api.fikryetakchilari.uz` |
 | External APIs | Meta/Framer/Tilda lead webhooks; OnlinePBX; Telegram; Gemini (task bot). AmoCRM is no longer read (sync stopped in `080`; `amo_*` kept as an archive) |
@@ -49,7 +49,7 @@ Package manager: **bun** (not npm).
 │       ├── supabase/         # client.ts, generated types.ts, queries/ per feature
 │       └── constants/        # employee.ts (Department enum mirror, positions)
 ├── supabase/
-│   ├── migrations/           # 001–106, sequential — NEVER edit existing ones
+│   ├── migrations/           # 001–107, sequential — NEVER edit existing ones
 │   ├── tests/                # SQL behaviour tests per migration (throwaway DB only)
 │   └── functions/            # admin-create-user, admin-create-member, member-self-register
 ├── amo-sync/                 # Bun service: the scheduled worker (cashback, Telegram, tasks, lead intake, OnlinePBX; own Dockerfile)
