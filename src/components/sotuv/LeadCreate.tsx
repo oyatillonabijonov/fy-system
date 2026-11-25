@@ -8,6 +8,7 @@ import { findClientByPhone, SOURCES, type PhoneMatch, type Stage } from "@/lib/s
 import { INPUT as BASE_INPUT, LABEL } from "@/components/moliya/PaymentActionModals"
 import { FormSheet } from "./FormSheet"
 import { PhoneInput } from "@/components/ui/PhoneInput"
+import { validPhone } from "@/lib/phone"
 
 const INPUT = `${BASE_INPUT} max-sm:h-12`
 
@@ -36,13 +37,13 @@ export function LeadCreate({ pipelineId, stages, stageId, initialPhone, onClose,
 
   // Same phone already in the base? The deal goes to that client — say so while typing
   useEffect(() => {
-    if (f.phone.length !== 13) return
+    if (!validPhone(f.phone)) return
     let live = true
     findClientByPhone(f.phone).then((c) => { if (live) setExisting(c) }).catch(() => {})
     return () => { live = false; setExisting(null) }
   }, [f.phone])
 
-  const canSubmit = !!f.stage_id && (!!f.client_name.trim() || f.phone.length === 13)
+  const canSubmit = !!f.stage_id && (!!f.client_name.trim() || validPhone(f.phone))
   function submit() {
     create.mutate({
       pipeline_id: pipelineId, stage_id: f.stage_id, name: "",   // the bitim is named after its client
