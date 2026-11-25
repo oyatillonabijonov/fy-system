@@ -5,7 +5,9 @@ import { Phone, PhoneIncoming, PhoneOutgoing, PhoneX, ArrowRight, Plus, Play, X 
 import { useAuth } from "@/context/AuthContext"
 import { isSeller } from "@/lib/supabase/queries/auth"
 import { usePhone } from "@/context/PhoneContext"
-import { useCalls, usePipelines, useStages, SOTUV_KEY } from "@/hooks/useSotuv"
+import { useCalls, useCallsDay, usePipelines, useStages, SOTUV_KEY } from "@/hooks/useSotuv"
+import { CallsDay } from "@/components/sotuv/CallsDay"
+import { tashkentToday } from "@/lib/period"
 import { subscribeCalls, canonPhone, type CallFilter, type CallRow } from "@/lib/supabase/queries/sotuv"
 import { formatPhone } from "@/lib/format"
 import { tbl } from "@/components/ui/table"
@@ -31,6 +33,10 @@ export function SotuvCalls() {
   const mobile = useMedia("(width < 64rem)")
   const [creating, setCreating] = useState<string | null>(null)   // phone of a call with no bitim
   const { data, isLoading } = useCalls({ page, filter, staffId: mine ? user?.id ?? null : null })
+  const today = tashkentToday()
+  const [day, setDay] = useState(today)
+  const { data: dayData } = useCallsDay(day, mine ? user?.id ?? null : null)
+  const summary = <CallsDay day={day} today={today} onDay={setDay} data={dayData} mine={mine} />
   const { data: pipelines = [] } = usePipelines()
   const umumiy = pipelines[0] ?? null   // "Umumiy" is first (075)
   const { data: stages = [] } = useStages(umumiy?.id ?? null)
@@ -67,6 +73,7 @@ export function SotuvCalls() {
           ))}
           <button type="button" aria-pressed={mine} onClick={() => { setMine(!mine); setPage(0) }} className={chip(mine)}>Mening</button>
         </div>
+        {summary}
         {isLoading ? <EmptyNote icon={PhoneX} text="Yuklanmoqda…" />
           : rows.length === 0 ? <EmptyNote icon={PhoneX} text="Qo'ng'iroq yo'q" />
           : <ul className="rounded-surface bg-surface-sunken overflow-hidden">
@@ -99,6 +106,7 @@ export function SotuvCalls() {
         </div>
         <span className="text-sm text-ink-muted tabular-nums">{total} ta qo'ng'iroq</span>
       </div>
+      {summary}
 
       <div className={tbl.scroll}>
         <table className={tbl.table}>

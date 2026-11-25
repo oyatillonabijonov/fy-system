@@ -504,3 +504,12 @@ export async function renameClient(id: string, fullName: string): Promise<void> 
   const { error } = await db.from("clients").update({ full_name: fullName }).eq("id", id)
   if (error) throw error
 }
+
+/** 107: one Tashkent day's calls — answered = talk_time > 0; staffId null = everyone */
+export interface CallsDaySummary { out: number; out_answered: number; in: number; in_answered: number; talk_sec: number; numbers: number }
+
+export async function getCallsDay(day: string, staffId: string | null): Promise<CallsDaySummary> {
+  const { data, error } = await db.rpc("calls_day_summary", { p_day: day, p_staff: staffId })
+  if (error) throw error
+  return data as CallsDaySummary
+}
