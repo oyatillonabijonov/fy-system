@@ -21,11 +21,20 @@ export function dismiss(id: number) {
   emit()
 }
 
+// The loud sound is heard at most once in this many ms, whoever asks: a hundred of them started in
+// the same second (an import, every all-day task falling due at 9:00) hurt in headphones
+const LOUD_GAP = 1500
+let lastLoud = 0
+
 function push(kind: ToastKind, title: string, detail?: string, loud = false) {
   const t: Toast = { id: ++seq, kind, title, detail }
   items = [...items, t].slice(-MAX)
   emit()
-  if (!(loud && soundOn() && playNotify())) cue(kind === "info" ? "ready" : kind)
+  if (!loud) cue(kind === "info" ? "ready" : kind)
+  else if (Date.now() - lastLoud >= LOUD_GAP) {
+    lastLoud = Date.now()
+    if (!(soundOn() && playNotify())) cue("ready")
+  }
   setTimeout(() => dismiss(t.id), LIFETIME[kind])
 }
 
