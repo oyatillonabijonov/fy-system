@@ -4,6 +4,7 @@ import type { AsUser, UserSql } from "./db"
 import { date, LABEL, limit, offset, tool, ToolError, uuid } from "./def"
 import type { Me, ToolDef, ToolResult } from "./def"
 import { EVENT_TOOLS } from "./events"
+import { TASK_TOOLS } from "./tasks"
 
 export type { Me, ToolDef, ToolResult }
 
@@ -90,6 +91,7 @@ export const TOOLS: ToolDef[] = [
     description: `Per event in so'm: agreed, collected, debt, expense and cash profit (payments minus refunds minus expenses). ${Q}`,
     run: async (tx, a) => tx`select * from public.event_profit(${a.from ?? null}::date, ${a.to ?? null}::date, ${a.event_id ?? null}::uuid)` }),
   ...EVENT_TOOLS,
+  ...TASK_TOOLS,
 ]
 
 const allowed = (me: Me, t: ToolDef) => t.module === null || me.isAdmin || me.modules.includes(t.module)

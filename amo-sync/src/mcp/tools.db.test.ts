@@ -56,24 +56,25 @@ afterAll(async () => {
   }
 })
 
+const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "complete_task", "leads_list", "my_tasks", "reference", "reopen_task", "sales_stats", "whoami"]
 const names = (uid: string) => asUser(uid, async (tx) => toolsFor(await loadMe(tx)).map((t) => t.name))
 
 const ADMIN_TOOLS = ["whoami", "reference", "sales_stats", "leads_list", "call_analysis_stats", "call_analyses", "call_analysis", "finance_summary", "debtors", "event_results",
-  "events", "event", "find_clients", "create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline", "export_stickers", "export_signs"]
+  "events", "event", "find_clients", "create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline", "export_stickers", "export_signs", "my_tasks", "complete_task", "reopen_task"]
 
-test.skipIf(!testSql)("a seller gets seven tools, an admin all twenty-one, a Tadbirlar-only user twelve", async () => {
-  expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "leads_list", "call_analysis_stats", "call_analyses", "call_analysis"])
+test.skipIf(!testSql)("a seller gets ten tools, an admin all twenty-four, a Tadbirlar-only user fifteen", async () => {
+  expect(await names(sellerA)).toEqual(["whoami", "reference", "sales_stats", "leads_list", "call_analysis_stats", "call_analyses", "call_analysis", "my_tasks", "complete_task", "reopen_task"])
   expect(await names(admin)).toEqual(ADMIN_TOOLS)
   const ev = await staff(testSql!, { modules: ["tadbirlar"] }); created.push(ev)
   expect(await names(ev)).toEqual(["whoami", "reference", ...ADMIN_TOOLS.slice(10).filter((n) => n !== "link_pipeline")])
-  expect(await names(ev)).toHaveLength(12)
+  expect(await names(ev)).toHaveLength(15)
 })
 
-test.skipIf(!testSql)("tools/list hints: readers read-only, the six writers not, only delete_event destructive", async () => {
+test.skipIf(!testSql)("tools/list hints: readers read-only, the eight writers not, only delete_event destructive", async () => {
   const tok = (await openConnection(testSql!, admin, "test-client")).access_token
   const j = (await (await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })).json()) as { result: { tools: { name: string; annotations: { readOnlyHint: boolean; destructiveHint: boolean } }[] } }
-  const writers = ["create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline"]
-  expect(j.result.tools).toHaveLength(21)
+  const writers = ["create_event", "update_event", "delete_event", "copy_event_tasks", "enroll_participant", "link_pipeline", "complete_task", "reopen_task"]
+  expect(j.result.tools).toHaveLength(24)
   for (const t of j.result.tools) {
     expect(t.annotations.readOnlyHint).toBe(!writers.includes(t.name))
     expect(t.annotations.destructiveHint).toBe(t.name === "delete_event")
@@ -200,14 +201,14 @@ test.skipIf(!testSql)("handleMcp: a deactivated staff member's live token is 401
   expect(r.headers.get("www-authenticate")).toContain("resource_metadata")
 })
 
-test.skipIf(!testSql)("handleMcp: tools/list shows the caller's six tools; whoami returns the caller and is audited", async () => {
+test.skipIf(!testSql)("handleMcp: tools/list shows the caller's tools; whoami returns the caller and is audited", async () => {
   const tok = (await openConnection(testSql!, sellerA, "test-client")).access_token
   const list = await mcp(tok, { jsonrpc: "2.0", id: 1, method: "tools/list" })
   expect(list.status).toBe(200)
   expect(list.headers.get("cache-control")).toBe("no-store")
   const listed = (await list.json()) as { result: { tools: { name: string; annotations?: { readOnlyHint?: boolean } }[] } }
-  expect(listed.result.tools.map((t) => t.name).sort()).toEqual(["call_analyses", "call_analysis", "call_analysis_stats", "leads_list", "reference", "sales_stats", "whoami"])
-  expect(listed.result.tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true)
+  expect(listed.result.tools.map((t) => t.name).sort()).toEqual(SELLER_TOOLS)
+  expect(listed.result.tools.filter((t) => t.annotations?.readOnlyHint !== true).map((t) => t.name)).toEqual(["complete_task", "reopen_task"])
   expect(listed.result.tools.some((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint === true)).toBe(false)
 
   const call = await mcp(tok, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "whoami", arguments: {} } })
@@ -284,9 +285,8 @@ const modern = (token: string, method: string, params: Record<string, unknown> =
   body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: { ...params, _meta: META } }),
 }), testSql!, asUser)
 const toolNames = async (r: Response) => ((await r.json()) as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort()
-const SELLER_TOOLS = ["call_analyses", "call_analysis", "call_analysis_stats", "leads_list", "reference", "sales_stats", "whoami"]
 
-test.skipIf(!testSql)("2026 era: tools/list is per caller (seller seven, admin twenty-one, back to back), JSON and no-store", async () => {
+test.skipIf(!testSql)("2026 era: tools/list is per caller (seller ten, admin twenty-four, back to back), JSON and no-store", async () => {
   const a = (await openConnection(testSql!, sellerA, "test-client")).access_token
   const adm = (await openConnection(testSql!, admin, "test-client")).access_token
   const r1 = await modern(a, "tools/list")
@@ -294,7 +294,7 @@ test.skipIf(!testSql)("2026 era: tools/list is per caller (seller seven, admin t
   expect(r1.headers.get("content-type")).toContain("application/json")
   expect(r1.headers.get("cache-control")).toBe("no-store")
   expect(await toolNames(r1)).toEqual(SELLER_TOOLS)
-  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(21)
+  expect(await toolNames(await modern(adm, "tools/list"))).toHaveLength(24)
   expect(await toolNames(await modern(a, "tools/list"))).toEqual(SELLER_TOOLS)
 })
 
