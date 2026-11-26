@@ -5,13 +5,14 @@ import { callTool, TOOLS } from "./tools"
 
 const asUser = makeAsUser(process.env.TEST_DATABASE_URL ?? "postgres://unused")
 const created: string[] = []
-const eventId = crypto.randomUUID()
+const eventId = crypto.randomUUID(), projectId = crypto.randomUUID()
+const EXT = `todoist:${crypto.randomUUID()}`
 const T = { mine: crypto.randomUUID(), later: crypto.randomUUID(), nodue: crypto.randomUUID(), done: crypto.randomUUID(), failed: crypto.randomUUID(), others: crypto.randomUUID() }
 let a = "", b = "", gone = ""
 
 type Task = { id: string; title: string; section: string | null; status: string; due_date: string | null; due_time: string | null
   event: { id: string; name: string } | null; project: unknown; assigned_by: { id: string; name: string } | null
-  updated_at: string; completed_at: string | null; completed_by: { id: string; name: string } | null; last_comment: string | null; already_done?: boolean }
+  updated_at: string; completed_at: string | null; completed_by: { id: string; name: string } | null; last_comment: string | null; external_id: string | null; already_done?: boolean; already_existed?: boolean }
 const call = async <D>(uid: string, name: string, args: object) => {
   const r = await callTool(asUser, uid, name, args)
   if (!r.ok) throw new Error(r.error)
@@ -24,6 +25,7 @@ beforeAll(async () => {
   if (!testSql) return
   a = await staff(testSql, {}); b = await staff(testSql, {}); gone = await staff(testSql, { active: false }); created.push(a, b, gone)
   await testSql`insert into public.events (id, name, date) values (${eventId}, 'Vazifa tadbiri', now())`
+  await testSql`insert into public.task_projects (id, name) values (${projectId}, ${`Loyiha ${projectId.slice(0, 8)}`})`
   await testSql`insert into public.tasks (id, title, section, status, assignee_id, created_by, event_id, due_date, due_time) values
     (${T.mine}, 'Zalni band qilish', 'Zal', 'in_progress', ${a}, ${b}, ${eventId}, '2031-05-10', '14:30'),
     (${T.later}, 'Keyinroq', null, 'todo', ${a}, ${a}, ${eventId}, '2031-06-01', null),
@@ -37,7 +39,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await asUser.end()
   if (!testSql) return
-  await testSql`delete from public.tasks where id in ${testSql(Object.values(T))}`
+  await testSql`delete from public.tasks where id in ${testSql(Object.values(T))} or created_by in ${testSql(created)}`
+  await testSql`delete from public.task_projects where id = ${projectId}`
   await testSql`delete from public.events where id = ${eventId}`
   await testSql`delete from public.mcp_calls where user_id in ${testSql(created)}`
   await testSql`delete from public.profiles where id in ${testSql(created)}`
@@ -107,6 +110,56 @@ test.skipIf(!testSql)("an unknown task is an error; a deactivated staff member c
   expect(seen.ok && (seen.data as { total: number }).total).toBeFalsy()
 })
 
+test.skipIf(!testSql)("create_task: a title alone is the caller's own open Umumiy task; every field lands, the caller is who assigned it", async () => {
+  const t = await call<Task>(a, "create_task", { title: "  Yangi vazifa  " })
+  expect(t).toMatchObject({ title: "Yangi vazifa", status: "todo", section: null, due_date: null, due_time: null, event: null, project: null,
+    last_comment: null, external_id: null, completed_at: null, already_existed: false })
+  expect(t.assigned_by!.id).toBe(a)
+  expect((await mine(a)).tasks.map((x) => x.id)).toContain(t.id)
+
+  const full = await call<Task>(a, "create_task", { title: "To'liq", due_date: "2031-07-01", due_time: "09:05", assignee_id: b, event_id: eventId, section: "Zal", comment: "birinchi izoh", external_id: EXT })
+  expect(full).toMatchObject({ title: "To'liq", section: "Zal", due_date: "2031-07-01", due_time: "09:05", event: { id: eventId, name: "Vazifa tadbiri" }, project: null,
+    last_comment: "birinchi izoh", external_id: EXT, already_existed: false })
+  expect(full.assigned_by!.id).toBe(a)
+  expect((await mine(b)).tasks.map((x) => x.id)).toContain(full.id)
+  expect((await mine(a)).tasks.map((x) => x.id)).not.toContain(full.id)
+  const [c] = await testSql!`select author_id from public.task_comments where task_id = ${full.id}`
+  expect(c!.author_id).toBe(a)
+
+  const inProject = await call<Task>(a, "create_task", { title: "Loyihada", project_id: projectId })
+  expect(inProject).toMatchObject({ event: null, project: { id: projectId } })
+  const order = await testSql!`select sort_order from public.tasks where id in ${testSql([t.id, full.id])} order by sort_order`
+  expect(order.every((r) => r.sort_order > 0)).toBe(true)
+})
+
+test.skipIf(!testSql)("create_task with an external_id that exists returns that task and creates or changes nothing", async () => {
+  const again = await call<Task>(b, "create_task", { title: "Boshqa nom", comment: "ikkinchi izoh", external_id: EXT })
+  expect(again).toMatchObject({ title: "To'liq", last_comment: "birinchi izoh", external_id: EXT, already_existed: true })
+  expect(again.assigned_by!.id).toBe(a)
+  const rows = await testSql!`select id, (select count(*)::int from public.task_comments c where c.task_id = t.id) as comments from public.tasks t where external_id = ${EXT}`
+  expect(rows).toHaveLength(1)
+  expect(rows[0]!.comments).toBe(1)
+  const both = await Promise.all([1, 2].map(() => call<Task>(a, "create_task", { title: "Bir vaqtda", external_id: `${EXT}:race` })))
+  expect(both[0]!.id).toBe(both[1]!.id)
+  expect(both.filter((x) => x.already_existed)).toHaveLength(1)
+})
+
+test.skipIf(!testSql)("create_task refuses what the platform would: no title, a time without a date, two homes, unknown ids, a deactivated staff member", async () => {
+  const before = (await testSql!`select count(*)::int as n from public.tasks`)[0]!.n
+  const bad = (uid: string, args: object) => callTool(asUser, uid, "create_task", args)
+  expect((await bad(a, {})).ok).toBe(false)
+  expect((await bad(a, { title: "   " })).ok).toBe(false)
+  expect((await bad(a, { title: "x", due_time: "25:00", due_date: "2031-07-01" })).ok).toBe(false)
+  expect(await bad(a, { title: "x", due_time: "10:00" })).toEqual({ ok: false, error: "due_time faqat due_date bilan beriladi" })
+  expect(await bad(a, { title: "x", event_id: eventId, project_id: projectId })).toMatchObject({ ok: false })
+  expect(await bad(a, { title: "x", assignee_id: crypto.randomUUID() })).toEqual({ ok: false, error: "Xodim topilmadi (assignee_id)" })
+  expect(await bad(a, { title: "x", assignee_id: gone })).toEqual({ ok: false, error: "Xodim topilmadi (assignee_id)" })
+  expect(await bad(a, { title: "x", event_id: crypto.randomUUID() })).toEqual({ ok: false, error: "Tadbir topilmadi (event_id)" })
+  expect(await bad(a, { title: "x", project_id: crypto.randomUUID() })).toEqual({ ok: false, error: "Loyiha topilmadi (project_id)" })
+  expect((await bad(gone, { title: "x" })).ok).toBe(false)
+  expect((await testSql!`select count(*)::int as n from public.tasks`)[0]!.n).toBe(before)
+})
+
 test("there is no tool that deletes a task", () => {
-  expect(TOOLS.filter((t) => /task/.test(t.name)).map((t) => t.name).sort()).toEqual(["complete_task", "copy_event_tasks", "my_tasks", "reopen_task"])
+  expect(TOOLS.filter((t) => /task/.test(t.name)).map((t) => t.name).sort()).toEqual(["complete_task", "copy_event_tasks", "create_task", "my_tasks", "reopen_task"])
 })
