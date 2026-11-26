@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client"
 import { useAuth } from "@/context/AuthContext"
 import { sourceLabel } from "@/lib/supabase/queries/sotuv"
 import { toast } from "@/lib/toast"
+import { burst } from "@/lib/burst"
 import { preloadNotify } from "@/lib/phoneAudio"
 
 // Table (in the supabase_realtime publication, 072–076) → first elements of the query keys that
@@ -38,6 +39,12 @@ export function LiveSync() {
     let lastAnketa = 0
     const dirty = new Set<string>()
     let timer: ReturnType<typeof setTimeout> | undefined
+    // New leads that land together are announced once: one lead as before, several as a count
+    const leads = burst<{ name?: string; source?: string | null }>((got) => {
+      if (got.length === 1) return toast.notify(`Yangi lid: ${got[0].name ?? ""}`, sourceLabel(got[0].source ?? null))
+      const names = got.slice(0, 3).map((l) => l.name).filter(Boolean).join(", ")
+      toast.notify(`${got.length} ta yangi lid`, got.length > 3 ? `${names} va yana ${got.length - 3} ta` : names)
+    })
     // A burst of rows (an import, a merge) → one refetch
     const flush = () => {
       const every = all, keys = new Set(dirty)
@@ -56,7 +63,7 @@ export function LiveSync() {
 
         if (p.table === "crm_leads" && p.eventType === "INSERT") {
           const lead = p.new as { name?: string; source?: string | null; created_by?: string | null }
-          if (lead.created_by !== uid) toast.notify(`Yangi lid: ${lead.name ?? ""}`, sourceLabel(lead.source ?? null))
+          if (lead.created_by !== uid) leads.add(lead)
         }
         // 097: RLS delivers these rows only to Mijozlar users — they are the ones who approve
         // at most one sound a minute: a resend is a new row, and a QR at an event brings many at once
@@ -75,7 +82,7 @@ export function LiveSync() {
         }
       })
       .subscribe()
-    return () => { clearTimeout(timer); void supabase.removeChannel(ch) }
+    return () => { clearTimeout(timer); leads.cancel(); void supabase.removeChannel(ch) }
   }, [uid, qc])
 
   return null
