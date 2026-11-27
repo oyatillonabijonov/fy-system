@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf"
 import { cleanName, drawStickers, STICKER_STYLES } from "./drawStickers"
 import { DIRECTIONS, drawSigns, SIGN_STYLES } from "./drawSigns"
 import type { Sign } from "./drawSigns"
+import { COMPANY } from "../company"
 
 const MAX_NAMES = 600
 const MAX_SIGNS = 100
@@ -53,6 +54,6 @@ export async function signsPdf(signs: { place: string; direction: string }[], st
   if (list.length > MAX_SIGNS) throw new Error(`Ko'pi bilan ${MAX_SIGNS} ta belgi (${list.length} ta berildi)`)
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" })
   addDmSans(doc)
-  drawSigns(doc, list, st)
+  drawSigns(doc, list, st, COMPANY.name)
   return finish(doc)
 }
