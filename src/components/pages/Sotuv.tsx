@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext"
 import { isSeller } from "@/lib/supabase/queries/auth"
 import { usePipelines, useStages, useLeads, useCreatePipeline, useDuplicateLeads, SOTUV_KEY } from "@/hooks/useSotuv"
 import { subscribeLeads, sourceLabel, type Lead, type Stage } from "@/lib/supabase/queries/sotuv"
-import { tashkentToday } from "@/lib/period"
+import { dayEnd, dayStart, PERIOD_LABELS, periodRange, tashkentToday, type Period } from "@/lib/period"
 import { useEvents } from "@/hooks/useEvents"
 import { useMedia } from "@/hooks/useMedia"
 import { Sheet } from "@/components/ui/Sheet"
@@ -26,6 +26,9 @@ import { LeadCards } from "@/components/sotuv/LeadCards"
 import { TaskChip, NoTaskChip, StageDot, SotuvSegments, chip } from "@/components/sotuv/ui"
 
 const LAST_PIPELINE = "fy_last_crm_pipeline_id"
+const PERIODS = Object.keys(PERIOD_LABELS) as Period[]
+const DATE = "h-control-md max-w-full pl-3 pr-8 rounded-control bg-surface-sunken text-base text-ink border border-transparent outline-none focus:border-line-focus"
+const DATE_M = "h-11 min-w-0 px-4 rounded-full bg-surface-sunken text-base text-ink outline-none"
 type View = "kanban" | "list" | "tasks"
 
 export function Sotuv() {
@@ -67,14 +70,41 @@ export function Sotuv() {
     return subscribeLeads(pid, () => qc.invalidateQueries({ queryKey: [...SOTUV_KEY, "leads", pid] }))
   }, [pid, qc])
 
+  // Bitimlar by the day they came in (Tashkent days), kept in the URL like the Moliya filters
+  const period = PERIODS.find((x) => x === params.get("period")) ?? "all"
+  const { from, to } = periodRange(period, params.get("from"), params.get("to"), today)
+  const setPeriod = (v: string) => setParams((cur) => {
+    const n = new URLSearchParams(cur); n.delete("from"); n.delete("to")
+    if (v === "all") n.delete("period"); else n.set("period", v)
+    return n
+  }, { replace: true })
+  const dated = useMemo(() => {
+    if (!from && !to) return leads
+    const a = from ? Date.parse(dayStart(from)) : -Infinity, b = to ? Date.parse(dayEnd(to)) : Infinity
+    return leads.filter((l) => { const t = Date.parse(l.created_at); return t >= a && t <= b })
+  }, [leads, from, to])
+  const periodSelect = (cls: string) => (
+    <select aria-label="Kelgan sanasi" value={period} onChange={(e) => setPeriod(e.target.value)} className={cls}>
+      {PERIODS.map((x) => <option key={x} value={x}>{PERIOD_LABELS[x]}</option>)}
+    </select>
+  )
+  const dateInputs = (cls: string) => (
+    <>
+      <input type="date" aria-label="Boshlanish sanasi" value={params.get("from") ?? ""} max={params.get("to") ?? undefined}
+        onChange={(e) => set("from", e.target.value || null)} className={cls} />
+      <input type="date" aria-label="Tugash sanasi" value={params.get("to") ?? ""} min={params.get("from") ?? undefined}
+        onChange={(e) => set("to", e.target.value || null)} className={cls} />
+    </>
+  )
+
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase()
-    if (!s) return leads
+    if (!s) return dated
     const digits = s.replace(/\D/g, "")
-    return leads.filter((l) => l.name.toLowerCase().includes(s) || l.client?.full_name.toLowerCase().includes(s)
+    return dated.filter((l) => l.name.toLowerCase().includes(s) || l.client?.full_name.toLowerCase().includes(s)
       || (digits.length >= 3 && l.client?.phone?.includes(digits)))
-  }, [leads, q])
-  const openLeads = leads.filter((l) => !l.is_won && !l.is_lost)
+  }, [dated, q])
+  const openLeads = dated.filter((l) => !l.is_won && !l.is_lost)
 
   const [naming, setNaming] = useState(false)
   const newPipeline = () => setNaming(true)
@@ -123,6 +153,10 @@ export function Sotuv() {
           <>
             <div role="tablist" aria-label="Voronkalar" className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
               <button type="button" aria-pressed={mineOnly} onClick={() => setMineOnly(!mineOnly)} className={chip(mineOnly)}>Mening</button>
+              <label className={`${chip(period !== "all")} relative`}>
+                <CalendarBlank size={16} />{period === "all" ? "Sana" : PERIOD_LABELS[period]}
+                {periodSelect("absolute inset-0 opacity-0")}
+              </label>
               <span className="w-px h-5 bg-line shrink-0" aria-hidden />
               {pipelines.map((p) => (
                 <button key={p.id} role="tab" aria-selected={p.id === pid} onClick={() => pick(p.id)}
@@ -131,6 +165,7 @@ export function Sotuv() {
                 </button>
               ))}
             </div>
+            {period === "custom" && <div className="grid grid-cols-2 gap-2">{dateInputs(DATE_M)}</div>}
             <div className="flex items-center gap-2">
               <label className="flex-1 min-w-0 flex items-center gap-2 h-11 px-4 rounded-full bg-surface-sunken">
                 <MagnifyingGlass size={18} className="text-ink-muted shrink-0" />
@@ -205,6 +240,8 @@ export function Sotuv() {
               className="flex-1 min-w-0 bg-transparent text-base text-ink placeholder:text-ink-muted focus:outline-none" />
           </label>
         )}
+        {view !== "tasks" && periodSelect(DATE)}
+        {view !== "tasks" && period === "custom" && dateInputs(DATE)}
         {view !== "tasks" && (
           <span className="text-sm text-ink-muted tabular-nums">
             {openLeads.length} ta ochiq · {formatNumber(openLeads.reduce((a, l) => a + l.price, 0))} so'm
