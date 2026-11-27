@@ -55,6 +55,7 @@ Package manager: **bun** (not npm).
 │   └── functions/            # admin-create-user, admin-create-member, member-self-register
 ├── amo-sync/                 # Bun service: the scheduled worker (cashback, Telegram, tasks, lead intake, OnlinePBX; own Dockerfile)
 ├── Dockerfile                # Coolify build: bun builder → nginx:alpine; VITE_* passed as ARG (build-time)
+├── docker/40-app-config.sh   # runs when the web container starts: company settings from env → /config.js, title, manifest, /brand files
 ├── nginx.conf                # SPA fallback (try_files → index.html) + gzip
 └── vite.config.ts            # Port 5001, @ alias
 ```
@@ -112,6 +113,28 @@ STORAGE_URL=            # optional, default http://storage:5000 — the widget's
 TG_DATA_DIR=            # optional, default /data — mtcute session files (volume fy-telegram)
 FY_ADMIN_TOKEN=         # FY members' app (105): Bearer key of https://com.fikryetakchilari.uz/admin/* — the same value is in the app's Coolify env (fy-backend) (Doppler fy-system); unset = events wait in fy_app_outbox
 ```
+
+Company settings (2026-11-27) — what differs from one install to another. The SAME variables go to both containers (one env file) and are read **when a container starts, never at build**: the worker in `amo-sync/src/company.ts`, the web container in `docker/40-app-config.sh` (writes `/config.js`, read by `src/lib/config.ts`; rewrites the tab title and the PWA manifest). Nothing set = our own values, the ERP runs as before:
+
+```bash
+PRODUCT_MODE=1          # a customer's install. Then COMPANY_NAME, APP_URL, API_URL, SUPABASE_ANON_KEY are REQUIRED: the worker
+                        # refuses to start without them, the web app shows "Tizim sozlanmagan"; and nothing of ours is assumed
+                        # (no META_PIXEL_ID = Conversions API off, no FY_APP_URL = members' app off). Unset = the ERP
+COMPANY_NAME=           # default "Fikr Yetakchilari": login, footers, bot texts, receipts, PDF signs, MCP, tab title, manifest
+COMPANY_SHORT_NAME=     # default "FY Tizim" (PRODUCT_MODE: the name): the installed app's name, the MCP sign-in title
+COMPANY_TAGLINE=        # default "Biznes Klub": after the name in page footers
+COMPANY_KIND=           # default "biznes klubi": after the name in the call-analysis prompt
+COMPANY_ABOUT=          # what the company sells and what a seller is after — a sentence or more for the call-analysis prompt;
+                        # may hold line breaks (in an env file write them as \n)
+APP_URL=                # default https://app.fikryetakchilari.uz — links in bot messages
+API_URL=                # default https://api.fikryetakchilari.uz — recording links, SMS callback; for the web app the Supabase
+                        # address (falls back to the build's VITE_SUPABASE_URL). The old PUBLIC_API_URL is still read
+SUPABASE_ANON_KEY=      # web only (falls back to the build's VITE_SUPABASE_ANON_KEY)
+META_PIXEL_ID=          # default: our pixel
+FY_APP_URL=             # default https://com.fikryetakchilari.uz
+```
+
+Images are a mounted folder, not env: `/brand` in both containers with any of `logo.svg`, `logo-white.svg`, `favicon.svg`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `login-bg.jpg` (the worker uses `logo.svg` on receipts, `login-bg.jpg` and `icon-192.png` on the MCP sign-in page; `BRAND_DIR` moves it). A file that isn't there keeps ours. New company-specific text or address ⇒ a field in `company.ts` / `config.ts`, never a literal.
 
 Never create `.env*` files with real values.
 
@@ -226,6 +249,8 @@ After changing any secret, update Doppler — local `.env.local` is a convenienc
 **The active `.env.local` points at production** (`VITE_SUPABASE_URL=https://api.fikryetakchilari.uz`). ⚠️ Therefore `bun run dev` on localhost reads/writes the **live Oracle DB** — there is no local DB by default. (`.env.local.local` / `bun run dev:local` would use a local Supabase stack, but none is running for this project; port 54322 locally belongs to an unrelated project.)
 
 **Frontend deploy:** push to `main` on GitHub → Coolify auto-redeploys. Open tabs move to the new build by themselves (`src/hooks/useFreshBuild.ts`): when a tab comes back or the route changes, the page re-reads `index.html` (at most once a minute) and reloads if it names another build file — never over an open dialog, a live call, a half-written note or a save on its way; `sessionStorage.fy_reloaded` allows one reload per build. `VITE_*` are embedded at **build time** → set them as Coolify *build* variables, not just runtime env.
+
+**An image given to a customer is built WITHOUT any `VITE_*`** (`docker build .` with no `--build-arg`), and run with `PRODUCT_MODE=1` plus the company settings of §4 — one image for every customer, the difference is only the environment. Never bake a customer's (or our) address or key into such an image; `VITE_*` build args are for our own Coolify deploy only, where they remain the fallback when no runtime setting is given.
 
 **Database deploy is MANUAL and separate.** ⚠️ Coolify does **NOT** apply migrations. Pushing migration files to GitHub changes nothing in the DB. `bun run supabase:migrate` (= `supabase db push`) is linked to a **different** project (`ulbdlkkftbzgafsrprnm.supabase.co`) — **do not use it for Oracle.** Apply migrations to production by hand:
 
