@@ -1,0 +1,60 @@
+# Database tests on every pull request (and on main), on throwaway Postgres containers in the runner —
+# never a real database, no secrets needed.
+#   sql        supabase/tests/run.sh — every SQL test in its own clean database (see CLAUDE.md "Tests")
+#   worker-db  amo-sync's *.db.test.ts against a stand built from supabase/migrations
+# Not a required check yet: branch protection decides that separately.
+name: DB tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: db-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: public.ecr.aws/supabase/postgres:17.6.1.106
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull the test image
+        run: docker pull "$IMAGE"
+      - name: SQL tests (each in its own clean database)
+        run: supabase/tests/run.sh
+
+  worker-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Throwaway stand
+        run: |
+          docker run -d --name stand -p 127.0.0.1:55432:5432 -e POSTGRES_PASSWORD=postgres "$IMAGE"
+          for _ in $(seq 1 90); do docker exec stand pg_isready -U postgres -q && break; sleep 2; done
+          sleep 3
+          docker exec stand mkdir -p /work
+          docker cp supabase/migrations stand:/work/migrations
+          docker exec stand psql -U postgres -d postgres -qc "CREATE SCHEMA IF NOT EXISTS supabase_migrations; CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version text PRIMARY KEY);"
+          # the same expected failures as supabase/tests/run.sh: no storage schema in the image; 042's constraint exists
+          expected=" 013 014 016 019 021 025 029 042 048 098 099 "
+          for f in supabase/migrations/*.sql; do
+            b=$(basename "$f")
+            if ! docker exec stand psql -U postgres -d postgres -q -v ON_ERROR_STOP=1 -f "/work/migrations/$b" >/dev/null 2>/tmp/err; then
+              [[ "$expected" == *" ${b:0:3} "* ]] || { echo "migration $b failed unexpectedly"; cat /tmp/err; exit 1; }
+            fi
+          done
+      - name: Install worker dependencies
+        working-directory: amo-sync
+        run: bun install --frozen-lockfile
+      - name: Worker DB tests
+        working-directory: amo-sync
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55432/postgres
+        run: bun test db.test.ts
