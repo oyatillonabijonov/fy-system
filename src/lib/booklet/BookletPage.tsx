@@ -6,7 +6,6 @@ interface BookletPageProps {
   event: Event
   participants: Participant[]
   pageNumber: number
-  totalPages: number
   totalParticipants: number
   cardsPerPage: number
 }
@@ -20,7 +19,6 @@ export function BookletPage({
   event,
   participants,
   pageNumber,
-  totalPages,
   totalParticipants,
   cardsPerPage,
 }: BookletPageProps) {
@@ -92,9 +90,6 @@ export function BookletPage({
         }}
       >
         <span style={{ fontWeight: 500, color: BOOKLET.ink }}>Fikr Yetakchilari</span>
-        <span style={{ fontVariantNumeric: "tabular-nums" }}>
-          Sahifa {pageNumber} / {totalPages}
-        </span>
       </div>
     </div>
   )
