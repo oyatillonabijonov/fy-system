@@ -55,13 +55,14 @@ if [ -n "$COMPANY_NAME" ]; then
   t=$(html "$COMPANY_NAME" | rep)
   sed -i "s|<title>[^<]*</title>|<title>$t</title>|" "$ROOT/index.html"
   n=$(js "$COMPANY_NAME" | rep)
-  sed -i -e "s|^  \"name\": \"[^\"]*\"|  \"name\": \"$n\"|" \
-         -e "s|^  \"description\": \"[^\"]*\"|  \"description\": \"$n: sotuv, vazifalar va mijozlar.\"|" "$ROOT/manifest.webmanifest"
+  # whole lines: a value with a quote in it must not stop the match on a restart
+  sed -i -e "s|^  \"name\": .*|  \"name\": \"$n\",|" \
+         -e "s|^  \"description\": .*|  \"description\": \"$n: sotuv, vazifalar va mijozlar.\",|" "$ROOT/manifest.webmanifest"
 fi
 if [ -n "$SHORT" ]; then
   s=$(html "$SHORT" | rep)
   sed -i "s|\(name=\"apple-mobile-web-app-title\" content=\"\)[^\"]*|\1$s|" "$ROOT/index.html"
   s=$(js "$SHORT" | rep)
-  sed -i "s|^  \"short_name\": \"[^\"]*\"|  \"short_name\": \"$s\"|" "$ROOT/manifest.webmanifest"
+  sed -i "s|^  \"short_name\": .*|  \"short_name\": \"$s\",|" "$ROOT/manifest.webmanifest"
 fi
 exit 0
