@@ -159,35 +159,16 @@ bun run gen:types
 
 No JS test runner is configured. DB behaviour (money triggers, RLS, KPI periods) is covered by SQL scripts in `supabase/tests/`, one per migration. Each block `RAISE`s on failure, so `ON_ERROR_STOP=1` + exit code is the pass/fail signal.
 
-**Never run them against production** — they insert fixtures. Build a throwaway stand:
+**Never run them against production** — they insert fixtures — **and never stand them up on the production server** (`141.147.119.131`, even in a network-less container): only local Docker or CI.
 
 ```bash
-docker run -d --name fy-test -e POSTGRES_PASSWORD=postgres public.ecr.aws/supabase/postgres:17.6.1.106
-
-# GoTrue isn't in this image, but migrations FK to auth.users and handle_new_user
-# triggers off it — stub the parts the migrations touch:
-docker exec -i fy-test psql -U postgres -d postgres <<'SQL'
-CREATE SCHEMA IF NOT EXISTS auth;
-CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb, created_at timestamptz DEFAULT now());
-CREATE SCHEMA IF NOT EXISTS supabase_migrations;
-CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version text PRIMARY KEY);
-SQL
-
-# Replay the schema. `docker cp` + `-f` (not stdin) so psql reports the failing file.
-for f in supabase/migrations/*.sql; do
-  docker cp "$f" fy-test:/tmp/m.sql
-  docker exec fy-test psql -U postgres -d postgres -q -v ON_ERROR_STOP=1 -f /tmp/m.sql
-done
-# Expected failures on this stand: the storage.* migrations (013/014/016/019/021/025/029)
-# — no storage schema in the image — and 042 (constraint already present). Ignore those.
-
-# Run one test file:
-docker cp supabase/tests/043_money_guards_test.sql fy-test:/tmp/t.sql
-docker exec fy-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/t.sql
-
-docker rm -f fy-test
+supabase/tests/run.sh             # every test, each in its own clean database
+supabase/tests/run.sh 053 097     # only the tests whose file name starts with these
 ```
+
+`run.sh` starts a throwaway `public.ecr.aws/supabase/postgres:17.6.1.106` (`--network none`), builds the schema ONCE in the `postgres` database — only there does the image have `auth.uid()`, the realtime publication and pg_cron — and gives every test its own copy, `CREATE DATABASE tN TEMPLATE postgres`. **Tests must never share a database**: run one after another in one database they disturb each other (19 fail that way, 0 alone). Two traps it handles: (1) the copy is made by `supabase_admin` (the image's `postgres` role isn't a full superuser and can't end the background sessions on `postgres`), so it must say `OWNER postgres` — otherwise `CREATE` inside a test fails on the public schema, silently for anything that swallows errors; (2) a template may have no other sessions, so connections to `postgres` are closed for the copying (`ALLOW_CONNECTIONS false` + terminate) and opened again. Expected migration failures on this image (no storage schema; 042's constraint already exists) are listed in the script; any other one stops the run. Tests that are red on purpose are listed in `known_reason()` with the reason and shown as KUTILMOQDA, not counted — today only **045** (KPI month boundary: `calculate_employee_kpi_actual` assigns a won bitim by `updated_at`, waiting for the KPI fix). Exit code 0 = everything else passed.
+
+Test conventions: staff fixtures go through `pg_temp.make_staff(id, email, name, role)` from `supabase/tests/_helpers.sql` (pulled in with `\ir _helpers.sql`) — since 112 the auth trigger creates every profile as an inactive `xodim`, so the helper writes the role and `is_active` as `admin-create-user` does; member logins are still plain `auth.users` inserts. The worker's DB tests use `staff()` in `amo-sync/src/mcp/testdb.ts`, which does the same. Include files by a path relative to the test (`\ir`), never a stand path. Dates a test checks against `now()`-stamped rows must be relative to `now()`, not a fixed month. The worker's DB tests: `TEST_DATABASE_URL=… bun test src/*.db.test.ts src/mcp/*.db.test.ts` in `amo-sync` against a local stand (publish its port to 127.0.0.1 only).
 
 A test is only evidence if it **fails on the old code** — revert the function under test (re-apply the earlier migration) and confirm it goes red before trusting a green run. Both the migration-045 timezone bug and a false-passing test were caught exactly this way.
 

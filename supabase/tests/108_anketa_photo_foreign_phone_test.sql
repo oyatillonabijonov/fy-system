@@ -1,7 +1,10 @@
 -- Behavioural tests for migration 108 (anketa: photo required, phones of other countries). THROWAWAY DB only.
 \set ON_ERROR_STOP on
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('a1080000-0000-0000-0000-000000000001', 'm108@fy.uz', '{"full_name":"Mijozchi108","role":"admin"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('a1080000-0000-0000-0000-000000000001', 'm108@fy.uz', 'Mijozchi108', 'admin');
+END $staff$;
 INSERT INTO public.clients (id, full_name, phone, source, image) VALUES
   ('c1080000-0000-0000-0000-000000000001', 'Rasmsiz', '+998901080001', 'sayt', NULL),
   ('c1080000-0000-0000-0000-000000000002', 'Rasmli',  '+79991080002',  'sayt', 'https://x/y.jpg');

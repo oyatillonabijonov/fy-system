@@ -3,10 +3,13 @@
 -- they are checked on the local Supabase stack. This covers attach_receipt.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('55000000-0000-0000-0000-000000000001', 'fin55@fy.uz',    '{"full_name":"Moliyachi","role":"xodim"}'::jsonb),
-  ('55000000-0000-0000-0000-000000000002', 'view55@fy.uz',   '{"full_name":"Kuzatuvchi","role":"xodim"}'::jsonb),
-  ('55000000-0000-0000-0000-000000000004', 'seller55@fy.uz', '{"full_name":"Sotuvchi","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('55000000-0000-0000-0000-000000000001', 'fin55@fy.uz', 'Moliyachi', 'xodim');
+  PERFORM pg_temp.make_staff('55000000-0000-0000-0000-000000000002', 'view55@fy.uz', 'Kuzatuvchi', 'xodim');
+  PERFORM pg_temp.make_staff('55000000-0000-0000-0000-000000000004', 'seller55@fy.uz', 'Sotuvchi', 'xodim');
+END $staff$;
 UPDATE public.profiles SET department = 'sotuv' WHERE id = '55000000-0000-0000-0000-000000000004';
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('55000000-0000-0000-0000-000000000001', 'tadbirlar-moliya', true, true,  false),

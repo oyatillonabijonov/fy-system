@@ -1,9 +1,12 @@
 -- Behavioural tests for migration 107 (calls_day_summary). THROWAWAY DB only.
 \set ON_ERROR_STOP on
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('a1070000-0000-0000-0000-000000000001', 's107@fy.uz', '{"full_name":"Sotuvchi107","role":"xodim"}'::jsonb),
-  ('a1070000-0000-0000-0000-000000000002', 'x107@fy.uz', '{"full_name":"Boshqa107","role":"xodim"}'::jsonb),
-  ('a1070000-0000-0000-0000-000000000003', 'n107@fy.uz', '{"full_name":"Ruxsatsiz107","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('a1070000-0000-0000-0000-000000000001', 's107@fy.uz', 'Sotuvchi107', 'xodim');
+  PERFORM pg_temp.make_staff('a1070000-0000-0000-0000-000000000002', 'x107@fy.uz', 'Boshqa107', 'xodim');
+  PERFORM pg_temp.make_staff('a1070000-0000-0000-0000-000000000003', 'n107@fy.uz', 'Ruxsatsiz107', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES
   ('a1070000-0000-0000-0000-000000000001', 'sotuv-crmn', true), ('a1070000-0000-0000-0000-000000000002', 'sotuv-crmn', true);
 -- 2026-03-10 in Tashkent = 2026-03-09 19:00 UTC … 2026-03-10 19:00 UTC

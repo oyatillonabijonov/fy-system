@@ -1,10 +1,13 @@
 -- Behavioural tests for migration 100 (Telegram widget). THROWAWAY DB only.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('a1000000-0000-0000-0000-000000000001', 's100@fy.uz', '{"full_name":"Sotuvchi100","role":"xodim"}'::jsonb),
-  ('a1000000-0000-0000-0000-000000000002', 'a100@fy.uz', '{"full_name":"Admin100","role":"admin"}'::jsonb),
-  ('a1000000-0000-0000-0000-000000000003', 't100@fy.uz', '{"full_name":"Xodim100","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('a1000000-0000-0000-0000-000000000001', 's100@fy.uz', 'Sotuvchi100', 'xodim');
+  PERFORM pg_temp.make_staff('a1000000-0000-0000-0000-000000000002', 'a100@fy.uz', 'Admin100', 'admin');
+  PERFORM pg_temp.make_staff('a1000000-0000-0000-0000-000000000003', 't100@fy.uz', 'Xodim100', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('a1000000-0000-0000-0000-000000000001', 'sotuv-crmn', true);
 UPDATE public.profiles SET telegram = '@Staff_Ali' WHERE id = 'a1000000-0000-0000-0000-000000000003';
 

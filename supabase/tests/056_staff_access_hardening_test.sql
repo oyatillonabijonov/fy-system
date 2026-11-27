@@ -2,9 +2,12 @@
 -- is_admin/has_permission, must_change_password). Throwaway DB only.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('56000000-0000-0000-0000-000000000001', 'admin56@fy.uz', '{"full_name":"Admin56","role":"admin"}'::jsonb),
-  ('56000000-0000-0000-0000-000000000002', 'staff56@fy.uz', '{"full_name":"Staff56","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('56000000-0000-0000-0000-000000000001', 'admin56@fy.uz', 'Admin56', 'admin');
+  PERFORM pg_temp.make_staff('56000000-0000-0000-0000-000000000002', 'staff56@fy.uz', 'Staff56', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '56000000-0000-0000-0000-000000000001';
 UPDATE public.profiles SET must_change_password = true WHERE id = '56000000-0000-0000-0000-000000000002';
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete)

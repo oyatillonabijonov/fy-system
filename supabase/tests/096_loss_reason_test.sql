@@ -1,9 +1,12 @@
 -- Behavioural tests for migration 096 (a lost bitim says why). THROWAWAY DB only (recipe: CLAUDE.md §5).
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('96000000-0000-0000-0000-00000000000a', 'a96@fy.uz', '{"full_name":"Admin96","role":"admin"}'::jsonb),
-  ('96000000-0000-0000-0000-000000000001', 's96@fy.uz', '{"full_name":"Sotuvchi96","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('96000000-0000-0000-0000-00000000000a', 'a96@fy.uz', 'Admin96', 'admin');
+  PERFORM pg_temp.make_staff('96000000-0000-0000-0000-000000000001', 's96@fy.uz', 'Sotuvchi96', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '96000000-0000-0000-0000-00000000000a';
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('96000000-0000-0000-0000-000000000001', 'sotuv-crmn', true);
 
@@ -41,7 +44,8 @@ BEGIN
   -- 2: with a reason from the list it goes through, every reason of the list
   UPDATE public.crm_leads SET stage_id = lost, loss_reason = 'Narx' WHERE id = l1;
   IF NOT (SELECT is_lost AND loss_reason = 'Narx' FROM public.crm_leads WHERE id = l1) THEN RAISE EXCEPTION 'TEST 2 FAILED: not lost with Narx'; END IF;
-  IF array_length(public.crm_loss_reasons(), 1) <> 7 THEN RAISE EXCEPTION 'TEST 2 FAILED: the list is not seven'; END IF;
+  -- 11 since 104 (Dubl, Keyingi tadbirga, Boshqa shaharda, Raqobatchi joined the original seven)
+  IF array_length(public.crm_loss_reasons(), 1) <> 11 THEN RAISE EXCEPTION 'TEST 2 FAILED: the list is not eleven: %', public.crm_loss_reasons(); END IF;
 
   -- 3: while lost the reason can be changed to another of the list, not cleared or freed
   UPDATE public.crm_leads SET loss_reason = 'Javob bermadi' WHERE id = l1;

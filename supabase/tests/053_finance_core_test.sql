@@ -6,11 +6,14 @@
 
 -- ─── FIXTURES ────────────────────────────────────────────────────────────────
 -- F = finance editor, V = finance viewer, S = plain staff, P = Sotuv seller.
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('51000000-0000-0000-0000-000000000001', 'fin51@fy.uz',    '{"full_name":"Moliyachi","role":"xodim"}'::jsonb),
-  ('51000000-0000-0000-0000-000000000002', 'view51@fy.uz',   '{"full_name":"Kuzatuvchi","role":"xodim"}'::jsonb),
-  ('51000000-0000-0000-0000-000000000003', 'staff51@fy.uz',  '{"full_name":"Hodim","role":"xodim"}'::jsonb),
-  ('51000000-0000-0000-0000-000000000004', 'seller51@fy.uz', '{"full_name":"Sotuvchi","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('51000000-0000-0000-0000-000000000001', 'fin51@fy.uz', 'Moliyachi', 'xodim');
+  PERFORM pg_temp.make_staff('51000000-0000-0000-0000-000000000002', 'view51@fy.uz', 'Kuzatuvchi', 'xodim');
+  PERFORM pg_temp.make_staff('51000000-0000-0000-0000-000000000003', 'staff51@fy.uz', 'Hodim', 'xodim');
+  PERFORM pg_temp.make_staff('51000000-0000-0000-0000-000000000004', 'seller51@fy.uz', 'Sotuvchi', 'xodim');
+END $staff$;
 UPDATE public.profiles SET department = 'sotuv' WHERE id = '51000000-0000-0000-0000-000000000004';
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('51000000-0000-0000-0000-000000000001', 'tadbirlar-moliya', true, true,  false),
@@ -560,8 +563,9 @@ END $$;
 -- SELECT on payments returns nothing for them (merge of 049/050 into 053:
 -- payments SELECT is now Moliya-only, so amo_dashboard's revenue CTE must go
 -- through dashboard_revenue() instead of summing `payments` itself).
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('51000000-0000-0000-0000-000000000005', 'dashonly51@fy.uz', '{"full_name":"Dashboard Ko''ruvchi","role":"xodim"}'::jsonb);
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('51000000-0000-0000-0000-000000000005', 'dashonly51@fy.uz', 'Dashboard Ko''ruvchi', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('51000000-0000-0000-0000-000000000005', 'dashboard', true, false, false);
 -- amo_dashboard is SECURITY INVOKER: the calling role needs table SELECT too
@@ -584,8 +588,10 @@ DECLARE
   v_pay1   uuid;
   v_pay4   uuid;
   v_part   uuid;
-  v_from   timestamptz := '2026-09-01 00:00:00+05';
-  v_to     timestamptz := '2026-10-01 00:00:00+05';
+  -- around now(): record_payment / refund_payment stamp paid_at = now(), so a fixed month only held while
+  -- the test ran inside it (it was written in September 2026 and went red in October)
+  v_from   timestamptz := now() - interval '1 day';
+  v_to     timestamptz := now() + interval '1 day';
   v        jsonb;
   n        int;
   rev1 numeric; rev2 numeric; rev3 numeric;

@@ -2,10 +2,13 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, M = sales (sotuv-crmn), X = staff without the module
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('72000000-0000-0000-0000-000000000001', 'admin72@fy.uz', '{"full_name":"Admin72","role":"admin"}'::jsonb),
-  ('72000000-0000-0000-0000-000000000002', 'm72@fy.uz',     '{"full_name":"Sotuvchi72","role":"xodim"}'::jsonb),
-  ('72000000-0000-0000-0000-000000000003', 'x72@fy.uz',     '{"full_name":"Hodim72","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('72000000-0000-0000-0000-000000000001', 'admin72@fy.uz', 'Admin72', 'admin');
+  PERFORM pg_temp.make_staff('72000000-0000-0000-0000-000000000002', 'm72@fy.uz', 'Sotuvchi72', 'xodim');
+  PERFORM pg_temp.make_staff('72000000-0000-0000-0000-000000000003', 'x72@fy.uz', 'Hodim72', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '72000000-0000-0000-0000-000000000001';
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('72000000-0000-0000-0000-000000000002', 'sotuv-crmn', true);
 INSERT INTO public.crm_pipelines (id, name) VALUES ('a7200000-0000-0000-0000-000000000001', 'Test voronka'), ('a7200000-0000-0000-0000-000000000002', 'Boshqa');

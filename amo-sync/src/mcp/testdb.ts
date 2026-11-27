@@ -4,12 +4,14 @@ import type { Sql } from "postgres"
 
 export const testSql: Sql | null = process.env.TEST_DATABASE_URL ? postgres(process.env.TEST_DATABASE_URL, { max: 2, onnotice: () => {} }) : null
 
-/** A staff fixture with a fresh id (auth.users → the trigger makes the profile → permissions); returns the id. */
+/** A staff fixture with a fresh id (auth.users → the trigger makes the profile → permissions); returns the id.
+ *  Since 112 the trigger creates an inactive 'xodim' whatever the metadata says, so the role and is_active are
+ *  written here, as admin-create-user's step 6 does. */
 export async function staff(sql: Sql, o: { role?: "admin" | "manager" | "xodim"; modules?: string[]; active?: boolean; department?: string }): Promise<string> {
   const id = crypto.randomUUID()
   const meta = { full_name: `Fixture ${id.slice(0, 8)}`, role: o.role ?? "xodim" }
   await sql`insert into auth.users (id, email, raw_user_meta_data) values (${id}, ${`${id}@t.fy.uz`}, ${sql.json(meta)})`
-  await sql`update public.profiles set is_active = ${o.active ?? true}, department = ${o.department ?? null} where id = ${id}`
+  await sql`update public.profiles set role = ${meta.role}, is_active = ${o.active ?? true}, department = ${o.department ?? null} where id = ${id}`
   for (const module of o.modules ?? []) await sql`insert into public.user_permissions (user_id, module, can_view) values (${id}, ${module}, true)`
   return id
 }

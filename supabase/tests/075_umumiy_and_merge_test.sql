@@ -12,9 +12,12 @@ DO $$ BEGIN
   RAISE NOTICE 'TEST 1 ok: incoming call → Umumiy';
 END $$;
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('75000000-0000-0000-0000-000000000001', 'm75@fy.uz', '{"full_name":"Sotuvchi75","role":"xodim"}'::jsonb),
-  ('75000000-0000-0000-0000-000000000002', 'x75@fy.uz', '{"full_name":"Hodim75","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('75000000-0000-0000-0000-000000000001', 'm75@fy.uz', 'Sotuvchi75', 'xodim');
+  PERFORM pg_temp.make_staff('75000000-0000-0000-0000-000000000002', 'x75@fy.uz', 'Hodim75', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('75000000-0000-0000-0000-000000000001', 'sotuv-crmn', true);
 INSERT INTO public.clients (id, full_name, phone) VALUES
   ('c7500000-0000-0000-0000-000000000001', 'Aziz75', '+998901117575'), ('c7500000-0000-0000-0000-000000000002', 'Boshqa75', '+998901117576');

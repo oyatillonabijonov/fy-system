@@ -5,10 +5,14 @@
 \set ON_ERROR_STOP on
 
 -- ─── FIXTURES ────────────────────────────────────────────────────────────────
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('50000000-0000-0000-0000-000000000001', 'staff50@fy.uz', 'Staff', 'xodim');
+  PERFORM pg_temp.make_staff('50000000-0000-0000-0000-000000000002', 'seller50@fy.uz', 'Sotuvchi', 'xodim');
+  PERFORM pg_temp.make_staff('50000000-0000-0000-0000-000000000003', 'mkt50@fy.uz', 'Marketolog', 'xodim');
+END $staff$;
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('50000000-0000-0000-0000-000000000001', 'staff50@fy.uz',  '{"full_name":"Staff","role":"xodim"}'::jsonb),
-  ('50000000-0000-0000-0000-000000000002', 'seller50@fy.uz', '{"full_name":"Sotuvchi","role":"xodim"}'::jsonb),
-  ('50000000-0000-0000-0000-000000000003', 'mkt50@fy.uz',    '{"full_name":"Marketolog","role":"xodim"}'::jsonb),
   ('50000000-0000-0000-0000-000000000004', 'member50@fy.uz', '{"full_name":"Member","user_type":"member"}'::jsonb);
 UPDATE public.profiles SET department = 'sotuv'     WHERE id = '50000000-0000-0000-0000-000000000002';
 UPDATE public.profiles SET department = 'marketing' WHERE id = '50000000-0000-0000-0000-000000000003';
