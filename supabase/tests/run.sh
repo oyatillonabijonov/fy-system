@@ -25,7 +25,6 @@ EXPECTED_MIGRATION_FAILURES="013 014 016 019 021 025 029 042 048 098 099"
 # tests that are red on purpose, with the reason — shown, not counted (a case, not an array: macOS bash 3.2)
 known_reason() {
   case "$1" in
-    045) echo "KPI oy chegarasi: calculate_employee_kpi_actual updated_at bo'yicha hisoblaydi — KPI tuzatilguncha kutilmoqda" ;;
   esac
 }
 
