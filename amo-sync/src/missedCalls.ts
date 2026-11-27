@@ -5,9 +5,10 @@
 
 import type { Sql } from "postgres"
 import { chatsFor } from "./groups"
+import { COMPANY } from "./company"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
-const BITIM_URL = "https://app.fikryetakchilari.uz/sotuv/bitim/"
+const BITIM_URL = `${COMPANY.appUrl}/sotuv/bitim/`
 
 export interface MissedRow {
   phone: string; client_name: string | null; lead_id: string | null

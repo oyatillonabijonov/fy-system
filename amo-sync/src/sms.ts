@@ -7,12 +7,13 @@
 
 import type { Sql } from "postgres"
 import { verifyJwt } from "./pbx"
+import { COMPANY } from "./company"
 
 const API = "https://notify.eskiz.uz/api"
 const EMAIL = process.env.ESKIZ_EMAIL ?? ""
 const PASSWORD = process.env.ESKIZ_PASSWORD ?? ""
 const FROM = process.env.ESKIZ_FROM || "4546"
-const BASE = process.env.PUBLIC_API_URL || "https://api.fikryetakchilari.uz"
+const BASE = COMPANY.apiUrl
 const MAX_ATTEMPTS = 3
 
 // ─── Eskiz client: the token lives 30 days; log in again on 401 ───

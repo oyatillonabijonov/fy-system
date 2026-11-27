@@ -1,16 +1,17 @@
 // Meta Conversions API (migration 093). Triggers queue Lead / QualifiedLead / Purchase into
-// meta_events_log (once per bitim per event); every 30 s this sends what is due to pixel
-// 1647118073645060. Retries after 1, 10 and 60 minutes, then `failed`; an event older than
+// meta_events_log (once per bitim per event); every 30 s this sends what is due to the pixel
+// (META_PIXEL_ID, company.ts). Retries after 1, 10 and 60 minutes, then `failed`; an event older than
 // 7 days is `skipped` (Meta refuses them). No META_CAPI_TOKEN = off, rows wait.
 // The token goes in the request body only — never into a URL, a log line or the stored response.
 
 import { createHash } from "node:crypto"
 import type { Sql } from "postgres"
 import type { Capi } from "./leadScore"
+import { COMPANY } from "./company"
 
-const TOKEN = process.env.META_CAPI_TOKEN ?? ""
+const PIXEL = COMPANY.pixel
+const TOKEN = PIXEL ? process.env.META_CAPI_TOKEN ?? "" : ""   // no pixel (a customer's install without META_PIXEL_ID) = off, like no token
 const TEST_CODE = process.env.META_TEST_EVENT_CODE ?? ""
-const PIXEL = "1647118073645060"
 const ENDPOINT = `https://graph.facebook.com/v26.0/${PIXEL}/events`   // v26.0: newest Marketing API version (checked 2026-11-11)
 
 export interface QueuedEvent {
@@ -113,7 +114,7 @@ async function tick(sql: Sql): Promise<void> {
 }
 
 export function startCapi(sql: Sql): void {
-  if (!TOKEN) { console.log("[capi] META_CAPI_TOKEN yo'q — Meta'ga yuborish o'chiq (hodisalar navbatda kutadi)"); return }
+  if (!TOKEN) { console.log(`[capi] ${PIXEL ? "META_CAPI_TOKEN" : "META_PIXEL_ID"} yo'q — Meta'ga yuborish o'chiq (hodisalar navbatda kutadi)`); return }
   setInterval(() => void tick(sql).catch((e) => console.error(`[capi] ${e instanceof Error ? e.message : e}`)), 30_000)
   console.log(`[capi] Meta Conversions API yoqildi (piksel ${PIXEL}${TEST_CODE ? ", test rejimi" : ""})`)
 }

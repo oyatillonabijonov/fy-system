@@ -6,6 +6,7 @@
 // The browser authenticates with its Supabase session (HS256 JWT, JWT_SECRET).
 
 import type { Sql } from "postgres"
+import { COMPANY } from "./company"
 
 const DOMAIN = process.env.ONLINEPBX_DOMAIN ?? ""
 const KEY = process.env.ONLINEPBX_KEY ?? ""
@@ -171,7 +172,7 @@ export async function handlePbx(req: Request, sql: Sql, path: string): Promise<R
     if (rec) {
       const [call] = await sql<{ uuid: string }[]>`select uuid from crm_calls where uuid = ${rec[1]} and talk_time > 0`
       if (!call) return json({ error: "not_found" }, 404)
-      return json({ url: await audioLink(call.uuid, `https://${req.headers.get("host") ?? "api.fikryetakchilari.uz"}`) })
+      return json({ url: await audioLink(call.uuid, req.headers.get("host") ? `https://${req.headers.get("host")}` : COMPANY.apiUrl) })
     }
     return json({ error: "not_found" }, 404)
   } catch (e) {
