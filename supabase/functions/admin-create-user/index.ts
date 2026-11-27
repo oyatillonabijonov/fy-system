@@ -147,6 +147,8 @@ Deno.serve(async (req) => {
       full_name: body.full_name,
       // the admin hands out a temporary password — the web asks for a new one on first login
       must_change_password: true,
+      // the auth trigger creates every staff profile inactive (112): this is what lets them in
+      is_active: true,
     }
     const extendedFields = [
       "phone",
