@@ -22,8 +22,10 @@ BEGIN
   IF NOT (r->>'duplicate')::boolean OR (r->>'lead_id')::uuid <> k THEN RAISE EXCEPTION 'TEST 2 FAILED: not a repeat: %', r; END IF;
   IF (SELECT attribution->>'campaign_id' FROM public.crm_leads WHERE id = k) IS DISTINCT FROM 'c1' THEN
     RAISE EXCEPTION 'TEST 2 FAILED: attribution overwritten'; END IF;
+  -- the repeat's own feed row, picked by what it says: both calls run in this one transaction, so their rows
+  -- share created_at (now()) and an ORDER BY created_at, id picked one at random (8 of 20 runs failed)
   IF (SELECT meta->'attribution'->>'campaign_id' FROM public.crm_notes
-      WHERE lead_id = k AND kind = 'lead' ORDER BY created_at DESC, id DESC LIMIT 1) IS DISTINCT FROM 'c2' THEN
+      WHERE lead_id = k AND kind = 'lead' AND text LIKE 'Qayta murojaat%') IS DISTINCT FROM 'c2' THEN
     RAISE EXCEPTION 'TEST 2 FAILED: feed row lacks the new attribution'; END IF;
 
   -- 3: the old 8-argument call still works and stores nothing
