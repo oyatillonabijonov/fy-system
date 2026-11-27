@@ -13,12 +13,13 @@
 
 import type { Sql } from "postgres"
 import { chatsFor, registerChat } from "./groups"
+import { COMPANY } from "./company"
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? ""
 // Free-tier models are often "high demand" (503): try them in order
 const MODELS = (process.env.GEMINI_MODELS ?? "gemini-3.5-flash-lite,gemini-2.5-flash-lite,gemini-flash-lite-latest,gemini-2.5-flash").split(",")
-const APP_URL = "https://app.fikryetakchilari.uz/vazifalar"
+const APP_URL = `${COMPANY.appUrl}/vazifalar`
 const MAX_TASKS = 5
 
 const WEEKDAYS = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"]
@@ -83,7 +84,7 @@ const SCHEMA = {
 
 export function buildPrompt(text: string, context: string | null, author: string, today: string, clock: string, staff: Staff[], events: EventCtx[], sections: string[] = []): string {
   const weekday = WEEKDAYS[new Date(`${today}T00:00:00Z`).getUTCDay()]
-  return `Sen "Fikr Yetakchilari" jamoasining Telegram guruhidagi vazifa yordamchisisan. Xabardan vazifa(lar)ni ajrat.
+  return `Sen "${COMPANY.name}" jamoasining Telegram guruhidagi vazifa yordamchisisan. Xabardan vazifa(lar)ni ajrat.
 Bugun: ${today} (${weekday}), hozir soat ${clock}, Toshkent vaqti. Xabar muallifi: ${author}.
 Hodimlar (ism — telegram): ${staff.map((s) => `${s.full_name} — ${s.telegram ?? "yo'q"}`).join("; ")}
 Tadbirlar va loyihalar: ${JSON.stringify(events.map((e) => ({ name: e.name, start: e.start, end: e.end, sections: e.sections ?? [] })))}
@@ -392,8 +393,8 @@ export async function startTaskBot(sql: Sql): Promise<void> {
   const me = await tg<{ username: string }>("getMe", {})
   // Command menu in groups: picking it inserts "/vazifa@<bot>", which only this bot receives
   await tg("setMyCommands", { commands: [
-    { command: "task", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" },
-    { command: "vazifa", description: "Yangi vazifa qo'shish (Fikr Yetakchilari)" },
+    { command: "task", description: `Yangi vazifa qo'shish (${COMPANY.name})` },
+    { command: "vazifa", description: `Yangi vazifa qo'shish (${COMPANY.name})` },
   ], scope: { type: "all_group_chats" } })
   // Skip whatever piled up while the bot wasn't listening — never act on old chat
   const backlog = await tg<TgUpdate[]>("getUpdates", { offset: -1, timeout: 0 })

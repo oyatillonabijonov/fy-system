@@ -4,6 +4,7 @@
 import { Resvg } from "@resvg/resvg-js"
 import { join } from "node:path"
 import { readFileSync } from "node:fs"
+import { COMPANY, brandFile } from "./company"
 
 export type ReceiptKind = "payment" | "refund" | "void" | "cashback" | "expense" | "expense_void"
 
@@ -27,7 +28,7 @@ const FONT_DIR = join(import.meta.dir, "..", "fonts")
 // DM Sans = the web app's font; Inter only as fallback for Cyrillic names (DM Sans has none)
 const FONTS = ["DMSans-400", "DMSans-500", "DMSans-600", "Inter-400", "Inter-500", "Inter-600"].map((f) => join(FONT_DIR, f + ".ttf"))
 // The web app's logo (public/Sidebar/Logo.svg, 178×36), copied into the image
-const LOGO = "data:image/svg+xml;base64," + readFileSync(join(import.meta.dir, "..", "assets", "logo.svg")).toString("base64")
+const LOGO = "data:image/svg+xml;base64," + readFileSync(brandFile("logo.svg", join(import.meta.dir, "..", "assets", "logo.svg"))).toString("base64")
 
 // icon: check | cross | back arrow, drawn inside the status circle
 const KIND: Record<ReceiptKind, { title: string; fg: string; bg: string; icon: "check" | "cross" | "back" }> = {
@@ -144,7 +145,7 @@ export function renderReceipt(d: ReceiptData): Uint8Array<ArrayBuffer> {
   y += 56
   parts.push(`<line x1="${X}" y1="${y}" x2="${R}" y2="${y}" stroke="#ebebeb" stroke-width="1.5" stroke-dasharray="6 6"/>`)
   y += 40
-  text(W / 2, y, "Fikr Yetakchilari · avtomatik chek", 15, 400, "#a3a3a3", "middle")
+  text(W / 2, y, `${COMPANY.name} · avtomatik chek`, 15, 400, "#a3a3a3", "middle")
   y += 44
   const H = y + P
 
