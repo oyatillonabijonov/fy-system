@@ -1,6 +1,7 @@
 // The FY members' app (migration 105): events with show_in_app are pushed by amo-sync; the browser
 // reads the push status through PostgREST and talks to the app only through the worker (/hooks/fy/*),
 // so the app's admin key never reaches it.
+import { config } from "@/lib/config"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 
@@ -19,7 +20,7 @@ const ERRORS: Record<string, string> = {
 
 async function fyHook<T>(path: string, body?: unknown): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession()
-  const res = await fetch(`${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/fy/${path}`, {
+  const res = await fetch(`${config.apiUrl}/hooks/fy/${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
