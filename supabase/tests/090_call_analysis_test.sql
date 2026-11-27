@@ -2,12 +2,15 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, M = manager, S1/S2 = sellers (sotuv-crmn), X = staff without the module
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('90000000-0000-0000-0000-00000000000a', 'a90@fy.uz',  '{"full_name":"Admin90","role":"admin"}'::jsonb),
-  ('90000000-0000-0000-0000-00000000000b', 'm90@fy.uz',  '{"full_name":"Menejer90","role":"xodim"}'::jsonb),
-  ('90000000-0000-0000-0000-000000000001', 's190@fy.uz', '{"full_name":"Zuhra90","role":"xodim"}'::jsonb),
-  ('90000000-0000-0000-0000-000000000002', 's290@fy.uz', '{"full_name":"Hikmat90","role":"xodim"}'::jsonb),
-  ('90000000-0000-0000-0000-000000000003', 'x90@fy.uz',  '{"full_name":"Hodim90","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('90000000-0000-0000-0000-00000000000a', 'a90@fy.uz', 'Admin90', 'admin');
+  PERFORM pg_temp.make_staff('90000000-0000-0000-0000-00000000000b', 'm90@fy.uz', 'Menejer90', 'xodim');
+  PERFORM pg_temp.make_staff('90000000-0000-0000-0000-000000000001', 's190@fy.uz', 'Zuhra90', 'xodim');
+  PERFORM pg_temp.make_staff('90000000-0000-0000-0000-000000000002', 's290@fy.uz', 'Hikmat90', 'xodim');
+  PERFORM pg_temp.make_staff('90000000-0000-0000-0000-000000000003', 'x90@fy.uz', 'Hodim90', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin'   WHERE id = '90000000-0000-0000-0000-00000000000a';
 UPDATE public.profiles SET role = 'manager' WHERE id = '90000000-0000-0000-0000-00000000000b';
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES

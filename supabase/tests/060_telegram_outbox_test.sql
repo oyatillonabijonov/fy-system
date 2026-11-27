@@ -4,8 +4,11 @@
 -- TEST 1 reads the whole queue; drop rows queued by earlier test files
 TRUNCATE public.telegram_outbox;
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('60000000-0000-0000-0000-000000000001', 'admin60@fy.uz', '{"full_name":"Admin60","role":"admin"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('60000000-0000-0000-0000-000000000001', 'admin60@fy.uz', 'Admin60', 'admin');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '60000000-0000-0000-0000-000000000001';
 INSERT INTO public.events (id, name, cashback_percent) VALUES ('e6000000-0000-0000-0000-000000000001', 'Outbox tadbir', 5);
 SELECT set_config('request.jwt.claim.sub', '60000000-0000-0000-0000-000000000001', false);

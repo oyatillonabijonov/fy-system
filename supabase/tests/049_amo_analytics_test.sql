@@ -79,9 +79,12 @@ BEGIN
 END $$;
 
 -- ─── TEST 3: RLS — only users with the dashboard module read the tables ──────
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('49000000-0000-0000-0000-000000000001', 'dash@fy.uz', '{"full_name":"Dash","role":"xodim"}'::jsonb),
-  ('49000000-0000-0000-0000-000000000002', 'nodash@fy.uz', '{"full_name":"NoDash","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('49000000-0000-0000-0000-000000000001', 'dash@fy.uz', 'Dash', 'xodim');
+  PERFORM pg_temp.make_staff('49000000-0000-0000-0000-000000000002', 'nodash@fy.uz', 'NoDash', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete)
 VALUES ('49000000-0000-0000-0000-000000000001', 'dashboard', true, false, false);
 

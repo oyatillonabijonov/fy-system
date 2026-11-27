@@ -3,9 +3,12 @@
 \set ON_ERROR_STOP on
 
 -- F = finance editor, S = plain staff (no Moliya right)
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('62000000-0000-0000-0000-000000000001', 'fin62@fy.uz',   '{"full_name":"Moliyachi62","role":"xodim"}'::jsonb),
-  ('62000000-0000-0000-0000-000000000002', 'staff62@fy.uz', '{"full_name":"Hodim62","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('62000000-0000-0000-0000-000000000001', 'fin62@fy.uz', 'Moliyachi62', 'xodim');
+  PERFORM pg_temp.make_staff('62000000-0000-0000-0000-000000000002', 'staff62@fy.uz', 'Hodim62', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('62000000-0000-0000-0000-000000000001', 'tadbirlar-moliya', true, true, false);
 INSERT INTO public.events (id, name, cashback_percent, date) VALUES

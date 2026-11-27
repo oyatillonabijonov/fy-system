@@ -2,9 +2,12 @@
 -- THROWAWAY DB only (recipe: CLAUDE.md §5 "Tests").
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('59000000-0000-0000-0000-000000000001', 'admin59@fy.uz', '{"full_name":"Admin59","role":"admin"}'::jsonb),
-  ('59000000-0000-0000-0000-000000000002', 'staff59@fy.uz', '{"full_name":"Staff59","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('59000000-0000-0000-0000-000000000001', 'admin59@fy.uz', 'Admin59', 'admin');
+  PERFORM pg_temp.make_staff('59000000-0000-0000-0000-000000000002', 'staff59@fy.uz', 'Staff59', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '59000000-0000-0000-0000-000000000001';
 INSERT INTO public.clients (id, full_name, phone) VALUES ('c5900000-0000-0000-0000-000000000001', 'Keshbek Mijoz', '+998905900001');
 

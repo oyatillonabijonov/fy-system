@@ -2,10 +2,13 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, S1 / S2 = plain staff
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('71000000-0000-0000-0000-000000000001', 'admin71@fy.uz', '{"full_name":"Admin71","role":"admin"}'::jsonb),
-  ('71000000-0000-0000-0000-000000000002', 's1_71@fy.uz',   '{"full_name":"Hodim71a","role":"xodim"}'::jsonb),
-  ('71000000-0000-0000-0000-000000000003', 's2_71@fy.uz',   '{"full_name":"Hodim71b","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('71000000-0000-0000-0000-000000000001', 'admin71@fy.uz', 'Admin71', 'admin');
+  PERFORM pg_temp.make_staff('71000000-0000-0000-0000-000000000002', 's1_71@fy.uz', 'Hodim71a', 'xodim');
+  PERFORM pg_temp.make_staff('71000000-0000-0000-0000-000000000003', 's2_71@fy.uz', 'Hodim71b', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '71000000-0000-0000-0000-000000000001';
 INSERT INTO public.events (id, name) VALUES
   ('e7100000-0000-0000-0000-000000000001', 'Safar 7.0'),

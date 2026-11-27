@@ -1,8 +1,11 @@
 -- Behavioural tests for migration 102. THROWAWAY DB only.
 \set ON_ERROR_STOP on
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('a1020000-0000-0000-0000-000000000001', 's102@fy.uz', '{"full_name":"S102","role":"xodim"}'::jsonb),
-  ('a1020000-0000-0000-0000-000000000002', 'a102@fy.uz', '{"full_name":"A102","role":"admin"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('a1020000-0000-0000-0000-000000000001', 's102@fy.uz', 'S102', 'xodim');
+  PERFORM pg_temp.make_staff('a1020000-0000-0000-0000-000000000002', 'a102@fy.uz', 'A102', 'admin');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('a1020000-0000-0000-0000-000000000001', 'sotuv-crmn', true);
 DO $$
 DECLARE p uuid; t uuid; s uuid;

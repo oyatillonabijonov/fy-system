@@ -2,11 +2,14 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, S1/S2 = plain staff (no modules at all), X = deactivated staff
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('66000000-0000-0000-0000-000000000001', 'admin66@fy.uz', '{"full_name":"Admin66","role":"admin"}'::jsonb),
-  ('66000000-0000-0000-0000-000000000002', 's1_66@fy.uz',   '{"full_name":"Hodim66a","role":"xodim"}'::jsonb),
-  ('66000000-0000-0000-0000-000000000003', 's2_66@fy.uz',   '{"full_name":"Hodim66b","role":"xodim"}'::jsonb),
-  ('66000000-0000-0000-0000-000000000004', 'x66@fy.uz',     '{"full_name":"Ketgan66","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('66000000-0000-0000-0000-000000000001', 'admin66@fy.uz', 'Admin66', 'admin');
+  PERFORM pg_temp.make_staff('66000000-0000-0000-0000-000000000002', 's1_66@fy.uz', 'Hodim66a', 'xodim');
+  PERFORM pg_temp.make_staff('66000000-0000-0000-0000-000000000003', 's2_66@fy.uz', 'Hodim66b', 'xodim');
+  PERFORM pg_temp.make_staff('66000000-0000-0000-0000-000000000004', 'x66@fy.uz', 'Ketgan66', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '66000000-0000-0000-0000-000000000001';
 UPDATE public.profiles SET is_active = false WHERE id = '66000000-0000-0000-0000-000000000004';
 INSERT INTO public.events (id, name) VALUES

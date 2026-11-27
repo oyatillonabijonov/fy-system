@@ -4,9 +4,12 @@
 \set ON_ERROR_STOP on
 
 -- F = finance editor, S = staff with Tadbirlar only
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('63000000-0000-0000-0000-000000000001', 'fin63@fy.uz',   '{"full_name":"Moliyachi63","role":"xodim"}'::jsonb),
-  ('63000000-0000-0000-0000-000000000002', 'staff63@fy.uz', '{"full_name":"Hodim63","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('63000000-0000-0000-0000-000000000001', 'fin63@fy.uz', 'Moliyachi63', 'xodim');
+  PERFORM pg_temp.make_staff('63000000-0000-0000-0000-000000000002', 'staff63@fy.uz', 'Hodim63', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('63000000-0000-0000-0000-000000000001', 'tadbirlar-moliya', true, true, false),
   ('63000000-0000-0000-0000-000000000002', 'tadbirlar', true, true, false);

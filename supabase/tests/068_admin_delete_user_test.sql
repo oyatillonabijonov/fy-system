@@ -2,10 +2,13 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, S = staff with history (seller, recorded a payment, owns/created a task, commented), M = another staff
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('68000000-0000-0000-0000-000000000001', 'admin68@fy.uz', '{"full_name":"Admin68","role":"admin"}'::jsonb),
-  ('68000000-0000-0000-0000-000000000002', 's68@fy.uz',     '{"full_name":"Ketadigan68","role":"xodim"}'::jsonb),
-  ('68000000-0000-0000-0000-000000000003', 'm68@fy.uz',     '{"full_name":"Qoladigan68","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('68000000-0000-0000-0000-000000000001', 'admin68@fy.uz', 'Admin68', 'admin');
+  PERFORM pg_temp.make_staff('68000000-0000-0000-0000-000000000002', 's68@fy.uz', 'Ketadigan68', 'xodim');
+  PERFORM pg_temp.make_staff('68000000-0000-0000-0000-000000000003', 'm68@fy.uz', 'Qoladigan68', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '68000000-0000-0000-0000-000000000001';
 INSERT INTO public.events (id, name) VALUES ('e6800000-0000-0000-0000-000000000001', 'Safar 68');
 INSERT INTO public.event_participants (id, event_id, full_name, price, seller_id)

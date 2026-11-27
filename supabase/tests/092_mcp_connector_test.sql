@@ -5,9 +5,12 @@
 DELETE FROM public.mcp_calls WHERE tool = 'test92';
 DELETE FROM public.profiles WHERE id IN ('92000000-0000-0000-0000-00000000000a', '92000000-0000-0000-0000-000000000001');
 DELETE FROM auth.users WHERE id IN ('92000000-0000-0000-0000-00000000000a', '92000000-0000-0000-0000-000000000001');
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('92000000-0000-0000-0000-00000000000a', 'a92@fy.uz', '{"full_name":"Admin92","role":"admin"}'::jsonb),
-  ('92000000-0000-0000-0000-000000000001', 's92@fy.uz', '{"full_name":"Hodim92","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('92000000-0000-0000-0000-00000000000a', 'a92@fy.uz', 'Admin92', 'admin');
+  PERFORM pg_temp.make_staff('92000000-0000-0000-0000-000000000001', 's92@fy.uz', 'Hodim92', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '92000000-0000-0000-0000-00000000000a';
 
 -- the owner writes one row in each table for S

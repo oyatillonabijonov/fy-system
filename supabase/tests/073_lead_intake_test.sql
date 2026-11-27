@@ -53,15 +53,20 @@ END $$;
 
 -- TEST 4: the API roles can't call it or read the tokens
 GRANT USAGE ON SCHEMA public TO authenticated;
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ('73000000-0000-0000-0000-000000000002', 's73@fy.uz', '{"full_name":"S73","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('73000000-0000-0000-0000-000000000002', 's73@fy.uz', 'S73', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('73000000-0000-0000-0000-000000000002', 'sotuv-crmn', true);
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '73000000-0000-0000-0000-000000000002', false);
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.crm_lead_sources) THEN RAISE EXCEPTION 'TEST 4 FAILED: tokens visible to staff'; END IF;
+  -- the signature since 091 (079 added fields, 086 the voronka, 091 attribution)
   -- (checked by privilege, not by a call: a denied call segfaults the PG17 test image; prod PG15 just errors)
-  IF has_function_privilege('authenticated', 'public.intake_lead(text,text,text,text,text,jsonb)', 'execute')
-     OR has_function_privilege('anon', 'public.intake_lead(text,text,text,text,text,jsonb)', 'execute') THEN
+  IF has_function_privilege('authenticated', 'public.intake_lead(text,text,text,text,text,jsonb,jsonb,text,jsonb)', 'execute')
+     OR has_function_privilege('anon', 'public.intake_lead(text,text,text,text,text,jsonb,jsonb,text,jsonb)', 'execute') THEN
     RAISE EXCEPTION 'TEST 4 FAILED: API role can call intake_lead'; END IF;
   RAISE NOTICE 'TEST 4 ok: intake is service-only';
 END $$;

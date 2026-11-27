@@ -2,11 +2,14 @@
 -- conversion). THROWAWAY DB only (recipe: CLAUDE.md §5).
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('10200000-0000-0000-0000-000000000001', 'boss102@fy.uz', '{"full_name":"Boss102","role":"xodim"}'::jsonb),
-  ('10200000-0000-0000-0000-000000000002', 'fin102@fy.uz',  '{"full_name":"Fin102","role":"xodim"}'::jsonb),
-  ('10200000-0000-0000-0000-000000000003', 'a102@fy.uz',    '{"full_name":"SellerA102","role":"xodim"}'::jsonb),
-  ('10200000-0000-0000-0000-000000000004', 'b102@fy.uz',    '{"full_name":"SellerB102","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('10200000-0000-0000-0000-000000000001', 'boss102@fy.uz', 'Boss102', 'xodim');
+  PERFORM pg_temp.make_staff('10200000-0000-0000-0000-000000000002', 'fin102@fy.uz', 'Fin102', 'xodim');
+  PERFORM pg_temp.make_staff('10200000-0000-0000-0000-000000000003', 'a102@fy.uz', 'SellerA102', 'xodim');
+  PERFORM pg_temp.make_staff('10200000-0000-0000-0000-000000000004', 'b102@fy.uz', 'SellerB102', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES
   ('10200000-0000-0000-0000-000000000001', 'dashboard', true),
   ('10200000-0000-0000-0000-000000000002', 'dashboard', true),

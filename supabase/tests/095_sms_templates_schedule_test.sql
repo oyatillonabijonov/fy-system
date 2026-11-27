@@ -1,10 +1,13 @@
 -- Behavioural tests for migration 095 (SMS templates + scheduled / one-client sends). THROWAWAY DB only.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('95000000-0000-0000-0000-000000000001', 'sms95@fy.uz', '{"full_name":"SmsUser95","role":"xodim"}'::jsonb),
-  ('95000000-0000-0000-0000-000000000002', 'sot95@fy.uz', '{"full_name":"Sotuvchi95","role":"xodim"}'::jsonb),
-  ('95000000-0000-0000-0000-000000000003', 'x95@fy.uz',   '{"full_name":"Hodim95","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('95000000-0000-0000-0000-000000000001', 'sms95@fy.uz', 'SmsUser95', 'xodim');
+  PERFORM pg_temp.make_staff('95000000-0000-0000-0000-000000000002', 'sot95@fy.uz', 'Sotuvchi95', 'xodim');
+  PERFORM pg_temp.make_staff('95000000-0000-0000-0000-000000000003', 'x95@fy.uz', 'Hodim95', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES
   ('95000000-0000-0000-0000-000000000001', 'sms', true),
   ('95000000-0000-0000-0000-000000000002', 'sotuv-crmn', true);

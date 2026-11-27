@@ -25,19 +25,24 @@ SELECT pg_get_constraintdef(oid) AS modul_check FROM pg_constraint
 WHERE conrelid='public.user_permissions'::regclass AND contype='c';
 
 -- ═══ 4. KPI funksiyasi jonli ishlayaptimi ═══
-INSERT INTO auth.users (id, email, raw_user_meta_data)
-VALUES ('44000000-0000-0000-0000-000000000001', 'kpi@fy.uz', '{"full_name":"KPI Test","role":"admin"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('44000000-0000-0000-0000-000000000001', 'kpi@fy.uz', 'KPI Test', 'admin');
+END $staff$;
 
 INSERT INTO public.crm_pipelines (id, name) VALUES ('a4400000-0000-0000-0000-000000000001', 'Test');
-INSERT INTO public.crm_stages (id, pipeline_id, name)
-VALUES ('b4400000-0000-0000-0000-000000000001', 'a4400000-0000-0000-0000-000000000001', 'Yangi');
+-- 072: is_won follows the stage (a won flag on an open stage is reset), so the won bitimlar sit in a won stage
+INSERT INTO public.crm_stages (id, pipeline_id, name, sort_order, is_won) VALUES
+  ('b4400000-0000-0000-0000-000000000001', 'a4400000-0000-0000-0000-000000000001', 'Yangi', 0, false),
+  ('b4400000-0000-0000-0000-000000000002', 'a4400000-0000-0000-0000-000000000001', 'Yutildi', 9, true);
 
 -- Bu oyda yutilgan 2 ta lid + 1 ta yutilmagan + 1 ta boshqa xodimniki
 INSERT INTO public.crm_leads (name, pipeline_id, stage_id, responsible_user_id, price, is_won, updated_at) VALUES
-  ('Yutilgan A', 'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000001','44000000-0000-0000-0000-000000000001', 10000000, true,  now()),
-  ('Yutilgan B', 'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000001','44000000-0000-0000-0000-000000000001',  5000000, true,  now()),
+  ('Yutilgan A', 'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000002','44000000-0000-0000-0000-000000000001', 10000000, true,  now()),
+  ('Yutilgan B', 'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000002','44000000-0000-0000-0000-000000000001',  5000000, true,  now()),
   ('Ochiq',      'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000001','44000000-0000-0000-0000-000000000001',  9000000, false, now()),
-  ('Egasiz',     'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000001', NULL,                                   7000000, true,  now());
+  ('Egasiz',     'a4400000-0000-0000-0000-000000000001','b4400000-0000-0000-0000-000000000002', NULL,                                   7000000, true,  now());
 
 DO $$
 DECLARE r record; y int; m int;

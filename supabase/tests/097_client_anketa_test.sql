@@ -1,10 +1,15 @@
 -- Behavioural tests for migration 097 (client anketa links + approval). THROWAWAY DB only.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('97000000-0000-0000-0000-000000000001', 'm97@fy.uz', '{"full_name":"Mijozchi97","role":"xodim"}'::jsonb),
-  ('97000000-0000-0000-0000-000000000002', 's97@fy.uz', '{"full_name":"Sotuvchi97","role":"xodim"}'::jsonb),
-  ('97000000-0000-0000-0000-000000000003', 'a97@fy.uz', '{"full_name":"Admin97","role":"admin"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+-- 108: every accepted anketa carries a photo in its link's folder (a personal link whose card has one excepted)
+CREATE FUNCTION pg_temp.pic(p_token text) RETURNS text LANGUAGE sql AS $$ SELECT 'anketa/' || (public.anketa_open(p_token)->>'link_id') || '/p.jpg' $$;
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('97000000-0000-0000-0000-000000000001', 'm97@fy.uz', 'Mijozchi97', 'xodim');
+  PERFORM pg_temp.make_staff('97000000-0000-0000-0000-000000000002', 's97@fy.uz', 'Sotuvchi97', 'xodim');
+  PERFORM pg_temp.make_staff('97000000-0000-0000-0000-000000000003', 'a97@fy.uz', 'Admin97', 'admin');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES
   ('97000000-0000-0000-0000-000000000001', 'mijozlar', true),
   ('97000000-0000-0000-0000-000000000002', 'sotuv-crmn', true);
@@ -73,7 +78,8 @@ DO $$
 DECLARE t text := current_setting('test.ta'); lid text := public.anketa_open(current_setting('test.ta'))->>'link_id';
 BEGIN
   PERFORM set_config('test.la', lid, false);
-  PERFORM public.anketa_submit(t, '{"full_name":"Ali Valiyev","company":"Savdo"}');
+  BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Ali Valiyev","company":"Savdo"}'); RAISE EXCEPTION 'TEST 3 FAILED: sent without a photo';
+    EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_photo_required' THEN RAISE; END IF; END;
   PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali Valiyevich', 'company', 'Savdo', 'photo_path', 'anketa/' || lid || '/p.jpg'));
   IF public.anketa_open(t)->>'full_name' <> 'Ali Valiyevich' THEN RAISE EXCEPTION 'TEST 3 FAILED: open shows %', public.anketa_open(t); END IF;
   IF public.anketa_open(t)->>'photo_path' <> 'anketa/' || lid || '/p.jpg' THEN RAISE EXCEPTION 'TEST 3 FAILED: photo %', public.anketa_open(t); END IF;
@@ -94,8 +100,8 @@ DO $$
 DECLARE t text := current_setting('test.tu');
 BEGIN
   IF public.anketa_open(t)->>'kind' <> 'universal' OR coalesce(public.anketa_open(t)->>'full_name', '') <> '' THEN RAISE EXCEPTION 'TEST 4 FAILED: open %', public.anketa_open(t); END IF;
-  PERFORM public.anketa_submit(t, '{"full_name":"Ali U","phone":"90 197 00 01"}');
-  PERFORM public.anketa_submit(t, '{"full_name":"Ali U2","phone":"998901970001"}');
+  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali U', 'phone', '90 197 00 01', 'photo_path', pg_temp.pic(t)));
+  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Ali U2', 'phone', '998901970001', 'photo_path', pg_temp.pic(t)));
   BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Bad","phone":"12345"}'); RAISE EXCEPTION 'TEST 4 FAILED: bad phone';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_phone' THEN RAISE; END IF; END;
 END $$;
@@ -138,7 +144,7 @@ END $$;
 
 -- TEST 6: a client created between submit and approval is attached to, not duplicated
 SET ROLE anon;
-DO $$ BEGIN PERFORM public.anketa_submit(current_setting('test.tu'), '{"full_name":"Bobur","phone":"+998901970002"}'); END $$;
+DO $$ BEGIN PERFORM public.anketa_submit(current_setting('test.tu'), jsonb_build_object('full_name', 'Bobur', 'phone', '+998901970002', 'photo_path', pg_temp.pic(current_setting('test.tu')))); END $$;
 RESET ROLE;
 DO $$ BEGIN
   IF (SELECT client_id FROM public.client_profile_submissions WHERE phone = '+998901970002') IS NOT NULL THEN RAISE EXCEPTION 'TEST 6 FAILED: matched nobody yet'; END IF;
@@ -159,7 +165,7 @@ END $$;
 
 -- TEST 7: no match at all → a new client from the anketa, a customer
 SET ROLE anon;
-DO $$ BEGIN PERFORM public.anketa_submit(current_setting('test.tu'), '{"full_name":"Dilnoza","phone":"+998901970003","activity":"Ta''lim"}'); END $$;
+DO $$ BEGIN PERFORM public.anketa_submit(current_setting('test.tu'), jsonb_build_object('full_name', 'Dilnoza', 'phone', '+998901970003', 'activity', 'Ta''lim', 'photo_path', pg_temp.pic(current_setting('test.tu')))); END $$;
 RESET ROLE;
 SET ROLE authenticated;
 DO $$ BEGIN PERFORM public.approve_profile_submission((SELECT id FROM public.client_profile_submissions WHERE phone = '+998901970003'), '{}'); END $$;
@@ -217,8 +223,8 @@ DECLARE t text := current_setting('test.tc');
 BEGIN
   BEGIN PERFORM public.anketa_open(current_setting('test.tu')); RAISE EXCEPTION 'TEST 9 FAILED: old universal opens';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_invalid' THEN RAISE; END IF; END;
-  FOR i IN 1..20 LOOP PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Cecil ' || i)); END LOOP;
-  BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Cecil 21"}'); RAISE EXCEPTION 'TEST 9 FAILED: 21st accepted';
+  FOR i IN 1..20 LOOP PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Cecil ' || i, 'photo_path', pg_temp.pic(t))); END LOOP;
+  BEGIN PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Cecil 21', 'photo_path', pg_temp.pic(t))); RAISE EXCEPTION 'TEST 9 FAILED: 21st accepted';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_rate_limited' THEN RAISE; END IF; END;
 END $$;
 RESET ROLE;
@@ -242,9 +248,9 @@ SET ROLE anon;
 DO $$
 DECLARE t text := current_setting('test.tu2'); v uuid;
 BEGIN
-  v := public.anketa_submit(t, '{"full_name":"Farhod","phone":"+998901970006"}');
+  v := public.anketa_submit(t, jsonb_build_object('full_name', 'Farhod', 'phone', '+998901970006', 'photo_path', pg_temp.pic(t)));
   IF v IS NULL THEN RAISE EXCEPTION 'TEST 10 FAILED: submit returns no id'; END IF;
-  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Farhod', 'phone', '+998901970007', 'replace_id', v));
+  PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Farhod', 'phone', '+998901970007', 'replace_id', v, 'photo_path', pg_temp.pic(t)));
 END $$;
 RESET ROLE;
 DO $$ BEGIN
@@ -271,8 +277,8 @@ SELECT set_config('request.headers', '{"cf-connecting-ip":"9.9.9.9"}', false);
 DO $$
 DECLARE t text := current_setting('test.tu2');
 BEGIN
-  FOR i IN 1..60 LOOP PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Mehmon ' || i, 'phone', '+99890198' || lpad(i::text, 4, '0'))); END LOOP;
-  BEGIN PERFORM public.anketa_submit(t, '{"full_name":"Mehmon 61","phone":"+998901989999"}'); RAISE EXCEPTION 'TEST 12 FAILED: 61st accepted';
+  FOR i IN 1..60 LOOP PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Mehmon ' || i, 'phone', '+99890198' || lpad(i::text, 4, '0'), 'photo_path', pg_temp.pic(t))); END LOOP;
+  BEGIN PERFORM public.anketa_submit(t, jsonb_build_object('full_name', 'Mehmon 61', 'phone', '+998901989999', 'photo_path', pg_temp.pic(t))); RAISE EXCEPTION 'TEST 12 FAILED: 61st accepted';
     EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'anketa_rate_limited' THEN RAISE; END IF; END;
   RAISE NOTICE 'TEST 12 ok';
 END $$;

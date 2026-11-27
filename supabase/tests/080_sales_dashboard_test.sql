@@ -1,9 +1,12 @@
 -- Behavioural tests for migration 080 (sales_dashboard). THROWAWAY DB only (recipe: CLAUDE.md §5).
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('78000000-0000-0000-0000-000000000001', 's78@fy.uz', '{"full_name":"Sotuvchi78","role":"xodim"}'::jsonb),
-  ('78000000-0000-0000-0000-000000000002', 'x78@fy.uz', '{"full_name":"Begona78","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('78000000-0000-0000-0000-000000000001', 's78@fy.uz', 'Sotuvchi78', 'xodim');
+  PERFORM pg_temp.make_staff('78000000-0000-0000-0000-000000000002', 'x78@fy.uz', 'Begona78', 'xodim');
+END $staff$;
 -- Dashboard bor, sotuv-crmn YO'Q: funksiya baribir ishlashi kerak (DEFINER)
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('78000000-0000-0000-0000-000000000001', 'dashboard', true);
 

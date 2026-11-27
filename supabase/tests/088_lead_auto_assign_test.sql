@@ -1,10 +1,13 @@
 -- Behavioural tests for migration 088 (lead auto-assign). THROWAWAY DB only (recipe: CLAUDE.md §5).
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('88000000-0000-0000-0000-000000000001', 's1@t88.uz', '{"full_name":"Sotuvchi1","role":"xodim"}'::jsonb),
-  ('88000000-0000-0000-0000-000000000002', 's2@t88.uz', '{"full_name":"Sotuvchi2","role":"xodim"}'::jsonb),
-  ('88000000-0000-0000-0000-000000000003', 's3@t88.uz', '{"full_name":"Sotuvchi3","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('88000000-0000-0000-0000-000000000001', 's1@t88.uz', 'Sotuvchi1', 'xodim');
+  PERFORM pg_temp.make_staff('88000000-0000-0000-0000-000000000002', 's2@t88.uz', 'Sotuvchi2', 'xodim');
+  PERFORM pg_temp.make_staff('88000000-0000-0000-0000-000000000003', 's3@t88.uz', 'Sotuvchi3', 'xodim');
+END $staff$;
 INSERT INTO public.crm_pipelines (id, name, sort_order, auto_assign) VALUES
   ('a8800000-0000-0000-0000-000000000001', 'T88 A', -2, true),
   ('a8800000-0000-0000-0000-000000000002', 'T88 B', -1, true),

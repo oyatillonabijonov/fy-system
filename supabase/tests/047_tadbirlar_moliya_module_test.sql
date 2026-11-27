@@ -17,9 +17,11 @@
 
 -- ─── FIXTURES ────────────────────────────────────────────────────────────────
 -- handle_new_user() auto-creates the profiles row for staff users.
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('47000000-0000-0000-0000-000000000001', 'perm@fy.uz',
-   '{"full_name":"Perm User","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('47000000-0000-0000-0000-000000000001', 'perm@fy.uz', 'Perm User', 'xodim');
+END $staff$;
 
 -- Used by TEST 1/2 only (CHECK constraint checks) — inserted after 047 already
 -- ran in this stand, so it is NOT used to verify the backfill. TEST 3 below
@@ -54,17 +56,18 @@ END $$;
 -- combinations, no 'tadbirlar-moliya' twin), then we re-apply the REAL
 -- migration file (docker cp'd to /tmp/m047.sql — see header) via \i, so the
 -- actual backfill INSERT ... SELECT runs against this data, not a copy of it.
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('47000000-0000-0000-0000-000000000002', 'perm2@fy.uz', '{"full_name":"Perm User 2","role":"xodim"}'::jsonb),
-  ('47000000-0000-0000-0000-000000000003', 'perm3@fy.uz', '{"full_name":"Perm User 3","role":"xodim"}'::jsonb),
-  ('47000000-0000-0000-0000-000000000004', 'perm4@fy.uz', '{"full_name":"Perm User 4","role":"xodim"}'::jsonb);
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('47000000-0000-0000-0000-000000000002', 'perm2@fy.uz', 'Perm User 2', 'xodim');
+  PERFORM pg_temp.make_staff('47000000-0000-0000-0000-000000000003', 'perm3@fy.uz', 'Perm User 3', 'xodim');
+  PERFORM pg_temp.make_staff('47000000-0000-0000-0000-000000000004', 'perm4@fy.uz', 'Perm User 4', 'xodim');
+END $staff$;
 
 INSERT INTO public.user_permissions (user_id, module, can_view, can_edit, can_delete) VALUES
   ('47000000-0000-0000-0000-000000000002', 'tadbirlar', true,  true,  false),
   ('47000000-0000-0000-0000-000000000003', 'tadbirlar', true,  false, true),
   ('47000000-0000-0000-0000-000000000004', 'tadbirlar', false, false, false);
 
-\i /tmp/m047.sql
+\ir ../migrations/047_tadbirlar_moliya_module.sql
 
 DO $$
 DECLARE
@@ -109,7 +112,7 @@ UPDATE public.user_permissions
 SET can_edit = NOT can_edit
 WHERE user_id = '47000000-0000-0000-0000-000000000002' AND module = 'tadbirlar-moliya';
 
-\i /tmp/m047.sql
+\ir ../migrations/047_tadbirlar_moliya_module.sql
 
 DO $$
 DECLARE

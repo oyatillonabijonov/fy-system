@@ -1,8 +1,11 @@
 -- Behavioural tests for migration 109 (tasks.completed_by). THROWAWAY DB only.
 \set ON_ERROR_STOP on
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('a1090000-0000-0000-0000-000000000001', 'a109@fy.uz', '{"full_name":"Bajaruvchi109","role":"xodim"}'::jsonb),
-  ('a1090000-0000-0000-0000-000000000002', 'b109@fy.uz', '{"full_name":"Boshqa109","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('a1090000-0000-0000-0000-000000000001', 'a109@fy.uz', 'Bajaruvchi109', 'xodim');
+  PERFORM pg_temp.make_staff('a1090000-0000-0000-0000-000000000002', 'b109@fy.uz', 'Boshqa109', 'xodim');
+END $staff$;
 INSERT INTO public.tasks (id, title, assignee_id) VALUES ('b1090000-0000-0000-0000-000000000001', 'Test 109', 'a1090000-0000-0000-0000-000000000001');
 GRANT USAGE ON SCHEMA public TO authenticated;
 SET ROLE authenticated;

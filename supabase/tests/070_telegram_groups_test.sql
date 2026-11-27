@@ -2,10 +2,13 @@
 \set ON_ERROR_STOP on
 
 -- A = admin, I = staff with the 'integratsiyalar' module, S = staff without it
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('70000000-0000-0000-0000-000000000001', 'admin70@fy.uz', '{"full_name":"Admin70","role":"admin"}'::jsonb),
-  ('70000000-0000-0000-0000-000000000002', 'i70@fy.uz',     '{"full_name":"Integ70","role":"xodim"}'::jsonb),
-  ('70000000-0000-0000-0000-000000000003', 's70@fy.uz',     '{"full_name":"Oddiy70","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('70000000-0000-0000-0000-000000000001', 'admin70@fy.uz', 'Admin70', 'admin');
+  PERFORM pg_temp.make_staff('70000000-0000-0000-0000-000000000002', 'i70@fy.uz', 'Integ70', 'xodim');
+  PERFORM pg_temp.make_staff('70000000-0000-0000-0000-000000000003', 's70@fy.uz', 'Oddiy70', 'xodim');
+END $staff$;
 UPDATE public.profiles SET role = 'admin' WHERE id = '70000000-0000-0000-0000-000000000001';
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES ('70000000-0000-0000-0000-000000000002', 'integratsiyalar', true);
 INSERT INTO public.telegram_groups (chat_id, title, payments) VALUES (-1001, 'Moliya', true);

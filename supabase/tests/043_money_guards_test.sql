@@ -17,11 +17,13 @@
 -- ─── FIXTURES ────────────────────────────────────────────────────────────────
 -- handle_new_user() auto-creates the profiles row for staff, and skips it when
 -- user_metadata.user_type = 'member' — which is exactly what makes is_staff() false.
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('11111111-1111-1111-1111-111111111111', 's@fy.uz', 'Staff', 'admin');
+END $staff$;
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('11111111-1111-1111-1111-111111111111', 's@fy.uz',
-   '{"full_name":"Staff","role":"admin"}'::jsonb),
-  ('22222222-2222-2222-2222-222222222222', 'm@fy.uz',
-   '{"full_name":"Member","user_type":"member"}'::jsonb);
+  ('22222222-2222-2222-2222-222222222222', 'm@fy.uz', '{"full_name":"Member","user_type":"member"}'::jsonb);
 
 DO $$
 BEGIN
@@ -276,9 +278,12 @@ END $$;
 INSERT INTO public.crm_contacts (id, name, phone) VALUES
   ('c1000000-0000-0000-0000-0000000000f1', 'Nomsiz 1', '-'),
   ('c1000000-0000-0000-0000-0000000000f2', 'Nomsiz 2', 'yo''q');
-INSERT INTO public.crm_leads (id, name, contact_id, price) VALUES
-  ('1ead0000-0000-0000-0000-0000000000f1', 'Lead 1', 'c1000000-0000-0000-0000-0000000000f1', 5000000),
-  ('1ead0000-0000-0000-0000-0000000000f2', 'Lead 2', 'c1000000-0000-0000-0000-0000000000f2', 7000000);
+-- 072 made pipeline_id / stage_id required on every bitim
+INSERT INTO public.crm_pipelines (id, name) VALUES ('a1000000-0000-0000-0000-0000000000f1', 'F voronka');
+INSERT INTO public.crm_stages (id, pipeline_id, name, sort_order) VALUES ('b1000000-0000-0000-0000-0000000000f1', 'a1000000-0000-0000-0000-0000000000f1', 'Yangi', 0);
+INSERT INTO public.crm_leads (id, name, contact_id, price, pipeline_id, stage_id) VALUES
+  ('1ead0000-0000-0000-0000-0000000000f1', 'Lead 1', 'c1000000-0000-0000-0000-0000000000f1', 5000000, 'a1000000-0000-0000-0000-0000000000f1', 'b1000000-0000-0000-0000-0000000000f1'),
+  ('1ead0000-0000-0000-0000-0000000000f2', 'Lead 2', 'c1000000-0000-0000-0000-0000000000f2', 7000000, 'a1000000-0000-0000-0000-0000000000f1', 'b1000000-0000-0000-0000-0000000000f1');
 
 -- F1: member may not close a lead as won
 DO $$

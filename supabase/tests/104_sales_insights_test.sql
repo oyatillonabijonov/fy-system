@@ -2,10 +2,13 @@
 -- THROWAWAY DB only (recipe: CLAUDE.md §5).
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('10400000-0000-0000-0000-000000000001', 'boss104@fy.uz', '{"full_name":"Boss104","role":"xodim"}'::jsonb),
-  ('10400000-0000-0000-0000-000000000002', 'fin104@fy.uz',  '{"full_name":"Fin104","role":"xodim"}'::jsonb),
-  ('10400000-0000-0000-0000-000000000003', 's104@fy.uz',    '{"full_name":"Seller104","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('10400000-0000-0000-0000-000000000001', 'boss104@fy.uz', 'Boss104', 'xodim');
+  PERFORM pg_temp.make_staff('10400000-0000-0000-0000-000000000002', 'fin104@fy.uz', 'Fin104', 'xodim');
+  PERFORM pg_temp.make_staff('10400000-0000-0000-0000-000000000003', 's104@fy.uz', 'Seller104', 'xodim');
+END $staff$;
 INSERT INTO public.user_permissions (user_id, module, can_view) VALUES
   ('10400000-0000-0000-0000-000000000001', 'dashboard', true),
   ('10400000-0000-0000-0000-000000000002', 'dashboard', true),

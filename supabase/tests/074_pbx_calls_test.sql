@@ -2,8 +2,11 @@
 -- Runs as the table owner, like amo-sync.
 \set ON_ERROR_STOP on
 
-INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
-  ('74000000-0000-0000-0000-000000000001', 'm74@fy.uz', '{"full_name":"Sotuvchi74","role":"xodim"}'::jsonb);
+-- staff logins: the shared helper (112 — the auth trigger no longer trusts metadata)
+\ir _helpers.sql
+DO $staff$ BEGIN
+  PERFORM pg_temp.make_staff('74000000-0000-0000-0000-000000000001', 'm74@fy.uz', 'Sotuvchi74', 'xodim');
+END $staff$;
 UPDATE public.profiles SET pbx_ext = '100' WHERE id = '74000000-0000-0000-0000-000000000001';
 INSERT INTO public.crm_pipelines (id, name, sort_order) VALUES ('a7400000-0000-0000-0000-000000000001', 'Qo''ng''iroqlar', -2);
 INSERT INTO public.crm_stages (id, pipeline_id, name, sort_order) VALUES ('b7400000-0000-0000-0000-000000000001', 'a7400000-0000-0000-0000-000000000001', 'Yangi', 0);
