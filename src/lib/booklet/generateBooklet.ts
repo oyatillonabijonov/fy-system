@@ -82,7 +82,6 @@ export async function generateBooklet(
           event,
           participants: pageParticipants,
           pageNumber: page + 1,
-          totalPages,
           totalParticipants: resolved.length,
           cardsPerPage: CARDS_PER_PAGE,
         })
