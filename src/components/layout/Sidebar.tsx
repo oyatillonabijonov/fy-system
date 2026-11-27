@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useTheme, useSidebarScope, MODES, PHOTOS, photoThumb } from "@/context/ThemeContext"
 import { useAuth } from "@/context/AuthContext"
 import { signOut } from "@/lib/supabase/queries/auth"
+import { config } from "@/lib/config"
 import { navigationSections, type NavItem } from "./nav"
 import { useTgUnread } from "@/hooks/useTelegram"
 import { TgBadge } from "@/components/telegram/TgBadge"
@@ -141,7 +142,7 @@ export function Sidebar() {
                 {!isCollapsed && (
                     <img
                         src={darkSidebar ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
-                        alt="Biznes Klub Logo"
+                        alt={config.companyName}
                         className="w-auto h-7"
                     />
                 )}

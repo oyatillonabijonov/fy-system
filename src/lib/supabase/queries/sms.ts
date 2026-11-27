@@ -1,3 +1,4 @@
+import { config } from "@/lib/config"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 
@@ -147,7 +148,7 @@ export async function setSmsOptOut(clientId: string, optOut: boolean): Promise<v
 /** Ask amo-sync to submit new templates and re-read Eskiz's states now (the Eskiz key never reaches the browser) */
 export async function syncSmsTemplates(): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession()
-  const res = await fetch(`${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/sms/templates/sync`, {
+  const res = await fetch(`${config.apiUrl}/hooks/sms/templates/sync`, {
     method: "POST", headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
   })
   if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error === "eskiz_error" ? "Eskiz javob bermadi" : `HTTP ${res.status}`)

@@ -11,13 +11,14 @@
 import Anthropic from "@anthropic-ai/sdk"
 import type { Sql } from "postgres"
 import { audioLink } from "./pbx"
+import { COMPANY } from "./company"
 
 const KEY = process.env.GEMINI_API_KEY ?? ""
 const MODELS = (process.env.CALL_ANALYSIS_MODELS ?? "gemini-3.5-flash-lite").split(",").map((m) => m.trim()).filter(Boolean)
 const CLAUDE_KEY = process.env.ANTHROPIC_API_KEY ?? ""
 const CLAUDE_MODEL = process.env.CALL_ANALYSIS_CLAUDE_MODEL || "claude-opus-5-5"
 const DAILY_MAX = Number(process.env.CALL_ANALYSIS_DAILY_MAX) || 150
-const BASE = "https://api.fikryetakchilari.uz"
+const BASE = COMPANY.apiUrl
 
 export interface Claim {
   call_uuid: string; direction: "in" | "out"; started_at: Date; duration: number; talk_time: number; attempts: number
@@ -37,7 +38,10 @@ export interface Analysis {
   words: { word: string; count: number | null; why: string }[]; advice: string[]; script_missed: string[]
 }
 
-export const CLUB = "Fikr Yetakchilari"
+export const CLUB = COMPANY.name
+const WHO = [`"${CLUB}"`, COMPANY.kind].filter(Boolean).join(" ")   // "Fikr Yetakchilari" biznes klubi
+// how the analysis tells the seller's voice from the client's: ours speaks of the club's events, a customer's of its product
+const SELLER_MARKS = COMPANY.product ? "kompaniya nomidan gapiradigan, mahsulot, narx, muddat haqida ma'lumot beradigan" : "klub nomidan gapiradigan, tadbir, narx, vaqt, spiker haqida ma'lumot beradigan"
 
 const STR = { type: "STRING" }
 const LIST = { type: "ARRAY", items: STR }
@@ -108,12 +112,12 @@ Suhbatda uchrashi mumkin bo'lgan nomlar (shu ko'rinishda yoz): ${namesHint(c)}`
 }
 
 export function analysisPrompt(c: Claim, lines: Line[]): string {
-  return `Sen tajribali sotuv bo'limi rahbari va murabbiysan. Quyida "${CLUB}" biznes klubi sotuvchisining mijoz bilan telefon suhbati matni (A va B — ikki ovoz). Klub tadbirkorlar uchun pullik tadbirlar o'tkazadi; sotuvchining maqsadi — mijozni tadbirga yozish yoki keyingi aniq qadamni kelishish.
+  return `Sen tajribali sotuv bo'limi rahbari va murabbiysan. Quyida ${WHO} sotuvchisining mijoz bilan telefon suhbati matni (A va B — ikki ovoz). ${COMPANY.about}
 
 Ma'lum faktlar:
 ${factsText(c)}
 
-1. Avval A va B dan qaysi biri SOTUVCHI ekanini mazmunga qarab aniqla (seller_voice): sotuvchi — klub nomidan gapiradigan, tadbir, narx, vaqt, spiker haqida ma'lumot beradigan, mijozni ismi bilan chaqiradigan tomon; mijoz — savol beradigan, to'laydigan tomon.
+1. Avval A va B dan qaysi biri SOTUVCHI ekanini mazmunga qarab aniqla (seller_voice): sotuvchi — ${SELLER_MARKS}, mijozni ismi bilan chaqiradigan tomon; mijoz — savol beradigan, to'laydigan tomon.
 2. Faqat SOTUVCHINING gaplarini bahola. Hamma izoh va tavsiyalar O'ZBEK tilida (suhbat ruscha bo'lsa ham), sodda va aniq; umumiy gaplar emas, shu suhbatdan dalil keltir. mistakes.quote — faqat sotuvchi aytgan gap; har bir xatoga ro'yxatdan bitta tag tanla.
 Matndagi g'aliz yoki tushunarsiz joylar yozuv sifati yoki avtomatik matn xatosi bo'lishi mumkin — bunday joy uchun sotuvchini ayblama.
 

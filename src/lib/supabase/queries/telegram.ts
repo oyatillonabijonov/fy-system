@@ -1,4 +1,5 @@
 // Telegram widget (migration 100): reads through PostgREST + RLS, writes through the worker (/hooks/tg/*).
+import { config } from "@/lib/config"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 import { tgErrorText, type TgInboxRow } from "@/lib/telegram"
@@ -17,7 +18,7 @@ export type LoginState = { state: "wait" } | { state: "qr"; url: string } | { st
 /** The worker; a refusal becomes an Error with the Uzbek text */
 export async function tgHook<T>(path: string, body?: unknown): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession()
-  const res = await fetch(`${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/tg/${path}`, {
+  const res = await fetch(`${config.apiUrl}/hooks/tg/${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),

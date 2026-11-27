@@ -72,7 +72,7 @@ function placeLines(doc: jsPDF, text: string, maxW: number): string[] {
 
 export interface Sign { place: string; direction: Direction }
 
-function sign(doc: jsPDF, x: number, y: number, { place, direction }: Sign, st: SignStyle) {
+function sign(doc: jsPDF, x: number, y: number, { place, direction }: Sign, st: SignStyle, club: string) {
   gradient(doc, x, y, SW, BAND, st.band)
   gradient(doc, x, y + BAND, SW, STRIP, st.strip)
 
@@ -110,14 +110,14 @@ function sign(doc: jsPDF, x: number, y: number, { place, direction }: Sign, st: 
   doc.setFont("DMSans", "bold")
   doc.setFontSize(CLUB)
   doc.setTextColor(...st.club)
-  const club = "Fikr Yetakchilari", cw = doc.getTextWidth(club)
+  const cw = doc.getTextWidth(club)
   const lx = both ? x + (SW - m - 4.5 - cw) / 2 : right ? x + PAD : x + SW - PAD - m - 4.5 - cw
   mark(doc, lx, cy - m / 2, m, st.mark)
   doc.text(club, lx + m + 4.5, cy + (CAP * CLUB * PT) / 2)
 }
 
-/** Draws every sign onto `doc` (A4 landscape, mm), two per page */
-export function drawSigns(doc: jsPDF, signs: Sign[], style: SignStyle) {
+/** Draws every sign onto `doc` (A4 landscape, mm), two per page; `club` is the company name on the strip */
+export function drawSigns(doc: jsPDF, signs: Sign[], style: SignStyle, club: string) {
   signs.forEach((s, i) => {
     if (i > 0 && i % 2 === 0) doc.addPage()
     if (i % 2 === 0) {
@@ -126,6 +126,6 @@ export function drawSigns(doc: jsPDF, signs: Sign[], style: SignStyle) {
       const cy = Y0 + SH + GAP / 2
       doc.line(0, cy, X0 - 1.5, cy); doc.line(X0 + SW + 1.5, cy, 297, cy)
     }
-    sign(doc, X0, Y0 + (i % 2) * (SH + GAP), s, style)
+    sign(doc, X0, Y0 + (i % 2) * (SH + GAP), s, style, club)
   })
 }

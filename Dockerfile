@@ -15,5 +15,8 @@ RUN bun run build
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Company settings are applied when the container starts, not at build: one image for every customer (CLAUDE.md §5)
+COPY docker/40-app-config.sh /docker-entrypoint.d/40-app-config.sh
+RUN chmod +x /docker-entrypoint.d/40-app-config.sh
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

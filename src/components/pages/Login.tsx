@@ -5,6 +5,7 @@ import { Eye, EyeSlash, ArrowRight } from "@phosphor-icons/react"
 import { signIn } from "@/lib/supabase/queries/auth"
 import { useAuth } from "@/context/AuthContext"
 import { useTheme } from "@/context/ThemeContext"
+import { config, copyright } from "@/lib/config"
 
 export function Login() {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ export function Login() {
   return (
     <div className="min-h-screen max-sm:min-h-dvh relative overflow-hidden flex items-center justify-center p-4 max-sm:p-0 max-sm:bg-surface">
       {/* Club photo background; a light shade keeps the footer text readable */}
-      <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover max-sm:hidden" />
+      <img src={config.loginBg} alt="" className="absolute inset-0 w-full h-full object-cover max-sm:hidden" />
       <div className="absolute inset-0 bg-black/25 max-sm:hidden" />
 
       <div className="relative z-10 w-full max-w-[400px] max-sm:max-w-none max-sm:min-h-dvh max-sm:flex max-sm:flex-col">
@@ -24,7 +25,7 @@ export function Login() {
           <div className="flex flex-col items-center gap-5 text-center">
             <img
               src={themeId === "dark" ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"}
-              alt="Fikr Yetakchilari"
+              alt={config.companyName}
               className="h-8 w-auto"
             />
             <div className="flex flex-col gap-1">
@@ -37,7 +38,7 @@ export function Login() {
         </div>
 
         <p className="text-center text-sm text-white/85 max-sm:text-ink-faint mt-5 max-sm:mt-0 max-sm:pt-2 max-sm:pb-[max(20px,env(safe-area-inset-bottom))]">
-          © 2026 Fikr Yetakchilari · Biznes Klub
+          {copyright}
         </p>
       </div>
     </div>

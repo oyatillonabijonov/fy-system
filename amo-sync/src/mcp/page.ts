@@ -1,20 +1,25 @@
 // The sign-in page the connector opens from Claude: the platform's own login look (photo ground, one card, DM Sans), as one HTML string.
 // No script. Fonts and the photo come from /mcp/assets/v1/ on this origin; the CSP allows nothing else.
-import { join } from "node:path"
+import { join, resolve } from "node:path"
+import { COMPANY, brandFile } from "../company"
 
 const ROOT = join(import.meta.dir, "..", "..")
 const A = "/mcp/assets/v1/"
+// A customer's own photo and icon come from the mounted brand folder (company.ts); a file that isn't there keeps ours
+const OWN_BG = brandFile("login-bg.jpg", ""), OWN_ICON = brandFile("icon-192.png", "")
+const BG = OWN_BG ? "login-bg.jpg" : "login-bg.webp"
 const FILES = new Map<string, [file: string, type: string]>([
   ["dm-sans-400.ttf", ["fonts/DMSans-400.ttf", "font/ttf"]],
   ["dm-sans-500.ttf", ["fonts/DMSans-500.ttf", "font/ttf"]],
   ["dm-sans-600.ttf", ["fonts/DMSans-600.ttf", "font/ttf"]],
-  ["login-bg.webp", ["assets/login-bg.webp", "image/webp"]],
+  [BG, OWN_BG ? [OWN_BG, "image/jpeg"] : ["assets/login-bg.webp", "image/webp"]],
+  ...(OWN_ICON ? [["icon.png", [OWN_ICON, "image/png"]] as [string, [string, string]]] : []),
 ])
 
 /** A file of the page (a font, the photo), or null. The path carries a version, so the answer may be cached for good. */
 export function asset(pathname: string): Response | null {
   const hit = pathname.startsWith(A) ? FILES.get(pathname.slice(A.length)) : undefined
-  return hit ? new Response(Bun.file(join(ROOT, hit[0])), { headers: { "content-type": hit[1], "cache-control": "public, max-age=31536000, immutable" } }) : null
+  return hit ? new Response(Bun.file(resolve(ROOT, hit[0])), { headers: { "content-type": hit[1], "cache-control": "public, max-age=31536000, immutable" } }) : null
 }
 
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
@@ -25,10 +30,14 @@ const RAYS = Array.from({ length: 12 }, (_, i) => {
   const p = (r: number) => `${(12 + Math.cos(a) * r).toFixed(2)} ${(12 + Math.sin(a) * r).toFixed(2)}`
   return `M${p(2.6)}L${p(i % 2 ? 7.4 : 9.4)}`
 }).join("")
+// The company's tile: its own icon; else ours — or, on a customer's install with no icon given, the name's first letter
+const TILE = OWN_ICON ? `<img src="${A}icon.png" width="48" height="48" alt="">`
+  : COMPANY.product ? `<svg width="48" height="48" viewBox="0 0 36 36"><rect width="36" height="36" rx="8" fill="#1c1c1c"/><text x="18" y="24.5" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="18" font-weight="600" fill="#f2f2f2">${esc([...COMPANY.name][0] ?? "")}</text></svg>`
+  : `<svg width="48" height="48" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#f86742"/><path d="M21.2 8.15H8.36v19.7h6.42v-6.57h6.42v-6.56h6.43V8.15H21.2z" fill="#ffede8"/></svg>`
 const BRIDGE = `<div class="bridge" aria-hidden="true">
 <span class="tile claude"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#d97757" stroke-width="2.1" stroke-linecap="round"><path d="${RAYS}"/></svg></span>
 <span class="link"><i></i><b><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5h10M10.6 3.1L13 5.5l-2.4 2.4M13 10.5H3M5.4 8.1L3 10.5l2.4 2.4"/></svg></b><i></i></span>
-<span class="tile"><svg width="48" height="48" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#f86742"/><path d="M21.2 8.15H8.36v19.7h6.42v-6.57h6.42v-6.56h6.43V8.15H21.2z" fill="#ffede8"/></svg></span>
+<span class="tile">${TILE}</span>
 </div>`
 const ARROW = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9.2 4.2L13 8l-3.8 3.8"/></svg>`
 
@@ -73,7 +82,7 @@ button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 button svg{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
 button:hover svg{transform:translateX(2px)}
 @media (min-width:481px){
-body{background:#3d4a2c url(${A}login-bg.webp) center/cover}
+body{background:#3d4a2c url(${A}${BG}) center/cover}
 body::before{content:"";position:fixed;inset:0;background:var(--shade)}
 .foot{color:#ffffffd9}
 }
@@ -100,8 +109,8 @@ ${alert}<button type="submit">Kirish${ARROW}</button></form>
 <p class="fine">Claude ma&#39;lumotni faqat sizning huquqingiz doirasida o&#39;qiydi. Kirgach, ${esc(a.host)} manziliga qaytasiz.</p>`
     : `<div class="head">${BRIDGE}<div class="t"><h1>Ulanib bo&#39;lmadi</h1></div></div>${alert}`
   const html = `<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>FY Tizim — Claude ulanishi</title><style>${CSS}</style></head><body><main class="wrap"><div class="card">${body}</div>
-<p class="fine foot">© 2026 Fikr Yetakchilari · Biznes Klub</p></main></body></html>`
+<title>${esc(COMPANY.shortName)} — Claude ulanishi</title><style>${CSS}</style></head><body><main class="wrap"><div class="card">${body}</div>
+<p class="fine foot">© 2026 ${esc([COMPANY.name, COMPANY.tagline].filter(Boolean).join(" · "))}</p></main></body></html>`
   return new Response(html, { status, headers: {
     "cache-control": "no-store", "content-type": "text/html; charset=utf-8", "x-frame-options": "DENY",
     "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; frame-ancestors 'none'",

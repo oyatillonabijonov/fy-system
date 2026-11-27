@@ -13,9 +13,10 @@
 
 import type { Sql } from "postgres"
 import { verifyJwt } from "./pbx"
+import { COMPANY } from "./company"
 
-const TOKEN = process.env.FY_ADMIN_TOKEN ?? ""
-const BASE = "https://com.fikryetakchilari.uz"
+const BASE = COMPANY.fyAppUrl
+const TOKEN = BASE ? process.env.FY_ADMIN_TOKEN ?? "" : ""   // no address (a customer's install) = off, like no token
 
 export interface EventRow {
   id: string; name: string; description: string | null; location: string | null; cover_image: string | null
@@ -121,7 +122,7 @@ async function tick(sql: Sql): Promise<void> {
 }
 
 export function startFyApp(sql: Sql): void {
-  if (!TOKEN) { console.log("[fy-app] FY_ADMIN_TOKEN yo'q — ilovaga yuborish o'chiq (navbat kutadi)"); return }
+  if (!TOKEN) { console.log(`[fy-app] ${BASE ? "FY_ADMIN_TOKEN" : "FY_APP_URL"} yo'q — ilovaga yuborish o'chiq (navbat kutadi)`); return }
   setInterval(() => void tick(sql).catch((e) => console.error(`[fy-app] ${e instanceof Error ? e.message : e}`)), 30_000)
   console.log("[fy-app] FY ilovasiga tadbirlar yuboriladi")
 }

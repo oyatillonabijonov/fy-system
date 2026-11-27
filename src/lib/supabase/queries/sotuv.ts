@@ -1,3 +1,4 @@
+import { config } from "@/lib/config"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { pickCallbacks, type Callback, type CallbackRow } from "@/lib/phoneCall"
 import { supabase } from "../client"
@@ -427,7 +428,7 @@ export async function findCallContact(phone: string): Promise<{ name: string; le
 /** amo-sync's /hooks/pbx/* with the signed-in session (the PBX key never reaches the browser) */
 export async function pbxApi<T>(path: string): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession()
-  const res = await fetch(`${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/pbx/${path}`, {
+  const res = await fetch(`${config.apiUrl}/hooks/pbx/${path}`, {
     headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
   })
   const body = (await res.json().catch(() => ({}))) as T & { error?: string }

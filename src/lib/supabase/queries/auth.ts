@@ -1,3 +1,4 @@
+import { config } from "@/lib/config"
 import { isAuthRetryableFetchError } from "@supabase/supabase-js"
 import { supabase } from "../client"
 import type { Database } from "../types"
@@ -287,7 +288,7 @@ export async function createUser(input: {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error("Tizimga kirilmagan")
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+  const supabaseUrl = config.apiUrl
   const functionUrl = `${supabaseUrl}/functions/v1/admin-create-user`
 
   let response: Response

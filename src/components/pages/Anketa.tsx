@@ -7,6 +7,7 @@ import { useTheme } from "@/context/ThemeContext"
 import { PhoneInput } from "@/components/ui/PhoneInput"
 import { useMedia } from "@/hooks/useMedia"
 import { validPhone } from "@/lib/phone"
+import { config, copyright } from "@/lib/config"
 import { ANKETA_LABELS, type AnketaFields } from "@/lib/anketa"
 import { anketaPhotoUrl, openAnketa, submitAnketa, uploadAnketaPhoto, type AnketaOpen } from "@/lib/supabase/queries/anketa"
 
@@ -27,19 +28,19 @@ export function Anketa() {
   const [state, setState] = useState<State>({ step: "loading" })
 
   useEffect(() => {
-    document.title = "Fikr Yetakchilari — ma'lumotlaringiz"
+    document.title = `${config.companyName} — ma'lumotlaringiz`
     openAnketa(token).then((info) => setState({ step: "form", info, draft: { phone: "", lastId: null } }), (e: Error) => setState({ step: "invalid", message: e.message }))
   }, [token])
 
   return (
     <div className="min-h-screen max-sm:min-h-dvh relative overflow-hidden flex items-center justify-center p-4 max-sm:p-0 max-sm:bg-surface">
-      {wide && <img src="/images/bg-field.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />}
+      {wide && <img src={config.loginBg} alt="" className="absolute inset-0 w-full h-full object-cover" />}
       {wide && <div className="absolute inset-0 bg-black/25" />}
 
       <div className="relative z-10 w-full max-w-[440px] max-sm:max-w-none max-sm:min-h-dvh max-sm:flex max-sm:flex-col">
         <div className="bg-surface border border-line rounded-overlay p-6 sm:p-8 flex flex-col gap-6 max-sm:flex-1 max-sm:border-0 max-sm:rounded-none max-sm:px-5 max-sm:pt-[max(24px,env(safe-area-inset-top))]">
           <div className="flex flex-col items-center gap-4 text-center">
-            <img src={themeId === "dark" ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"} alt="Fikr Yetakchilari" className="h-8 w-auto" />
+            <img src={themeId === "dark" ? "/Sidebar/Logo-white.svg" : "/Sidebar/Logo.svg"} alt={config.companyName} className="h-8 w-auto" />
             <div className="flex flex-col gap-1">
               <h1 className="text-lg max-sm:text-xl font-semibold text-ink">Ma'lumotlaringiz</h1>
               <p className="text-base text-ink-muted">Klub a'zolari bazasi uchun — to'g'rilang va yetishmaganini to'ldiring</p>
@@ -60,7 +61,7 @@ export function Anketa() {
           )}
         </div>
         <p className="text-center text-sm text-white/85 max-sm:text-ink-faint mt-5 max-sm:mt-0 max-sm:pt-2 max-sm:pb-[max(20px,env(safe-area-inset-bottom))]">
-          © 2026 Fikr Yetakchilari · Biznes Klub
+          {copyright}
         </p>
       </div>
     </div>

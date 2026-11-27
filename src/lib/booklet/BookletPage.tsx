@@ -1,5 +1,6 @@
 import type { Event, Participant } from "../supabase/queries/events"
 import { formatDate } from "../format"
+import { config } from "../config"
 import { BookletCard, BOOKLET, BOOKLET_CARD_GAP } from "./BookletCard"
 
 interface BookletPageProps {
@@ -91,7 +92,7 @@ export function BookletPage({
           color: BOOKLET.muted,
         }}
       >
-        <span style={{ fontWeight: 500, color: BOOKLET.ink }}>Fikr Yetakchilari</span>
+        <span style={{ fontWeight: 500, color: BOOKLET.ink }}>{config.companyName}</span>
         <span style={{ fontVariantNumeric: "tabular-nums" }}>
           Sahifa {pageNumber} / {totalPages}
         </span>

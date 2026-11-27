@@ -1,3 +1,4 @@
+import { config } from "@/lib/config"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { supabase } from "../client"
 
@@ -60,7 +61,7 @@ export interface LeadSource {
 
 /** The address a form posts to (amo-sync behind the gateway's /hooks/) */
 export const leadHookUrl = (s: Pick<LeadSource, "id" | "token">) =>
-  `${(import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "")}/hooks/lead/${s.id}?token=${s.token}`
+  `${config.apiUrl}/hooks/lead/${s.id}?token=${s.token}`
 
 export async function getLeadSources(): Promise<LeadSource[]> {
   const { data, error } = await db.from("crm_lead_sources")
