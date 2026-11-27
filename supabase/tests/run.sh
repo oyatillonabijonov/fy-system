@@ -5,6 +5,7 @@
 #
 #   supabase/tests/run.sh            every test
 #   supabase/tests/run.sh 053 097    only the tests whose file name starts with these
+#   REPEAT=20 supabase/tests/run.sh 091   each chosen test 20 times, each time in its own clean copy (flaky hunt)
 #
 # How: the schema is built ONCE in the `postgres` database (only there does the Supabase image have
 # auth.uid(), the realtime publication and pg_cron), then every test gets `CREATE DATABASE tN TEMPLATE
@@ -18,6 +19,7 @@
 set -uo pipefail
 
 IMAGE=${IMAGE:-public.ecr.aws/supabase/postgres:17.6.1.106}
+REPEAT=${REPEAT:-1}
 # migrations that fail on this image for a known reason: no storage schema; 042's constraint already exists
 EXPECTED_MIGRATION_FAILURES="013 014 016 019 021 025 029 042 048 098 099"
 # tests that are red on purpose, with the reason — shown, not counted (a case, not an array: macOS bash 3.2)
@@ -60,6 +62,7 @@ for f in "$root"/tests/*_test.sql; do
   if [ $# -eq 0 ]; then tests+=("$b"); else for p in "$@"; do [[ $b == "$p"* ]] && tests+=("$b"); done; fi
 done
 [ ${#tests[@]} -gt 0 ] || { echo "no tests match: $*"; exit 2; }
+if [ "$REPEAT" -gt 1 ]; then once=("${tests[@]}"); tests=(); for _ in $(seq 1 "$REPEAT"); do tests+=("${once[@]}"); done; fi
 
 psql_sa -c "ALTER DATABASE postgres ALLOW_CONNECTIONS false" >/dev/null
 psql_sa -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'postgres' AND pid <> pg_backend_pid()" >/dev/null
